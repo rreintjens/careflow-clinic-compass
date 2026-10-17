@@ -36,7 +36,7 @@ function where(org: Org, e: Equipment) {
 function neededFor(org: Org, e: Equipment) {
   const names = [...new Set(org.requirements.filter((r) => r.kind === "equipment" && r.equipment_kind === e.kind).map((r) => org.treatments.find((t) => t.id === r.treatment_id)?.name_nl).filter(Boolean))] as string[];
   if (!names.length) return "Nog geen behandeling";
-  return names.length === 1 ? names[0] : `${names[names.length - 1]} en andere ${optLabel(org, "equipment_kind", e.kind).toLowerCase()}behandelingen`;
+  return names.length === 1 ? (names[0] as string) : `${names[names.length - 1]} en andere ${optLabel(org, "equipment_kind", e.kind).toLowerCase()}behandelingen`;
 }
 
 function EquipmentPage() {
@@ -137,7 +137,7 @@ function EquipmentModal({ org, equipment, onClose }: { org: Org; equipment: Equi
   });
   return (
     <>
-      <Modal open onOpenChange={(o) => !o && onClose()} title={equipment ? equipment.name : "Apparaat toevoegen"} description={MOBILITY_HELP[mobility]}
+      <Modal open onOpenChange={(o) => !o && onClose()} title={equipment ? equipment.name : "Apparaat toevoegen"} description={MOBILITY_HELP[mobility] ?? ""}
         footer={
           <div className="flex w-full items-center justify-between">
             {equipment ? <TextLink tone="warning" onClick={() => del.mutate()}>Apparaat verwijderen</TextLink> : <span />}
