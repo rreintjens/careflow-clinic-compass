@@ -114,7 +114,7 @@ function List({ title, rows, onPick }: { title: string; rows: Array<{ id: string
       <div className="flex flex-col gap-2">
         {rows.map((r) => (
           <button key={r.id} type="button" onClick={() => onPick(r.id)} className="flex min-h-[60px] items-center gap-4 rounded-[16px] bg-sand px-5 text-left">
-            <span className="flex size-8 shrink-0 items-center justify-center">{r.icon && <img src={r.icon.startsWith("/") ? r.icon : `/treatments-icons/${r.icon}.svg`} alt="" className="size-7" onError={(e) => (e.currentTarget.style.display = "none")} />}</span>
+            <span className="flex size-8 shrink-0 items-center justify-center">{r.icon && <img src={`/treatment-icons/${r.icon}.png`} alt="" className="size-7" />}</span>
             <span className="flex-1"><span className="block whitespace-nowrap text-[16px]">{r.title}</span>{r.sub && <span className="block text-[13px] text-muted-foreground">{r.sub}</span>}</span>
             <Chevron />
           </button>
