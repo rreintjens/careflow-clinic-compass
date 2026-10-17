@@ -71,7 +71,7 @@ function EquipmentPage() {
 
   const located = org.equipment.filter((d) => d.placement !== "travelling");
   const travelling = org.equipment.filter((d) => d.placement === "travelling" && matches(d));
-  const locations = org.locations.filter((l) => locFilter === "all" || l.id === locFilter);
+  const locations = org.locations.filter((l) => locFilter === "all" || l.id === locFilter).sort((a, b) => Number(a.kind === "online") - Number(b.kind === "online"));
   const clinicCount = org.locations.filter((l) => l.kind === "clinic").length;
   const toggle = (id: string) => setOpen((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
 
@@ -225,11 +225,12 @@ function DeviceModal({ org, draft, onClose }: { org: Org; draft: Draft; onClose:
   const d = draft.device;
   const initialType = org.equipmentTypes.find((t) => t.id === d?.type_id);
   const [kindId, setKindId] = useState(initialType?.kind_id ?? org.equipmentKinds[0]?.id ?? "");
-  const [typeId, setTypeId] = useState(initialType?.id ?? "");
+  const firstType = (k: string) => org.equipmentTypes.find((t) => t.kind_id === k)?.id ?? "";
+  const [typeId, setTypeId] = useState(initialType?.id ?? firstType(initialType?.kind_id ?? org.equipmentKinds[0]?.id ?? ""));
   const [placement, setPlacement] = useState<Placement>((d?.placement as Placement) ?? draft.placement ?? "fixed_room");
   const clinics = org.locations.filter((l) => l.kind === "clinic");
   const [loc, setLoc] = useState(d?.location_id ?? draft.locationId ?? clinics[0]?.id ?? "");
-  const [room, setRoom] = useState(d?.room_id ?? draft.roomId ?? "");
+  const [room, setRoom] = useState(d?.room_id ?? draft.roomId ?? roomsOf(org, d?.location_id ?? draft.locationId ?? clinics[0]?.id ?? "")[0]?.id ?? "");
   const [status, setStatus] = useState(d?.status ?? "in_use");
   const today = new Date().toISOString().slice(0, 10);
   const maintOptions = [
@@ -280,7 +281,7 @@ function DeviceModal({ org, draft, onClose }: { org: Org; draft: Draft; onClose:
           </div>
         }>
         <div className="grid grid-cols-2 gap-4">
-          <Select label="Soort" value={kindId} onChange={(v) => { setKindId(v); setTypeId(""); }} options={org.equipmentKinds.map((k) => ({ value: k.id, label: k.name }))} help="De soort bepaalt welke behandelingen ermee kunnen; nieuwe soorten maak je bij Behandelingen." />
+          <Select label="Soort" value={kindId} onChange={(v) => { setKindId(v); setTypeId(firstType(v)); }} options={org.equipmentKinds.map((k) => ({ value: k.id, label: k.name }))} help="De soort bepaalt welke behandelingen ermee kunnen; nieuwe soorten maak je bij Behandelingen." />
           <Select label="Merk en type" value={typeId} onChange={(v) => (v === "__new" ? setNewType(true) : setTypeId(v))} options={[...types.map((t) => ({ value: t.id, label: `${t.brand} ${t.type}`.trim() })), { value: "__new", label: "Nieuw type" }]} help="Keuzelijst van bekende typen, of nieuw type." />
         </div>
         <div className="mt-5 text-[13px] font-medium">Waar staat het?</div>
@@ -295,7 +296,7 @@ function DeviceModal({ org, draft, onClose }: { org: Org; draft: Draft; onClose:
         </div>
         {placement !== "travelling" ? (
           <div className="mt-5 grid grid-cols-2 gap-4">
-            <Select label="Locatie" value={loc} onChange={(v) => { setLoc(v); setRoom(""); }} options={clinics.map((l) => ({ value: l.id, label: l.name }))} />
+            <Select label="Locatie" value={loc} onChange={(v) => { setLoc(v); setRoom(roomsOf(org, v)[0]?.id ?? ""); }} options={clinics.map((l) => ({ value: l.id, label: l.name }))} />
             {placement === "fixed_room" && (
               <Select label="Kamer" value={room} onChange={setRoom} options={rooms.map((r, i) => ({ value: r.id, label: `Kamer ${i + 1} · ${r.name}` }))} help="Alleen kamers van de gekozen locatie." />
             )}
