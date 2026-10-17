@@ -129,3 +129,8 @@
     outline-offset: 2px;
   }
 }
+
+@utility hatch {
+  background-image: repeating-linear-gradient(135deg, var(--color-mist) 0 6px, transparent 6px 12px);
+  background-color: var(--color-background);
+}
