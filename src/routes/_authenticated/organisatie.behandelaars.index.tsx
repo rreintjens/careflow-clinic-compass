@@ -27,7 +27,6 @@ function PractitionersPage() {
   const [roleF, setRoleF] = useState("all");
   const [locF, setLocF] = useState("all");
   const [statusF, setStatusF] = useState("active");
-  const [showAll, setShowAll] = useState(false);
   const [newOpen, setNewOpen] = useState(false);
 
   const filtered = org.practitioners
@@ -35,7 +34,7 @@ function PractitionersPage() {
     .filter((p) => roleF === "all" || p.role_id === roleF)
     .filter((p) => locF === "all" || workLocationIds(org, p.id).includes(locF))
     .filter((p) => statusF === "all" || p.status === statusF);
-  const shown = showAll ? filtered : filtered.slice(0, 14);
+  const shown = filtered;
 
   return (
     <div className="flex flex-col gap-6">
@@ -50,7 +49,7 @@ function PractitionersPage() {
         <Select label="Locatie" value={locF} onChange={setLocF} options={[{ value: "all", label: "Alle locaties" }, ...org.locations.map((l) => ({ value: l.id, label: l.name }))]} className="w-[200px] [&>label]:sr-only" />
         <Select label="Status" value={statusF} onChange={setStatusF} options={[{ value: "all", label: "Alle statussen" }, ...opts(org, "practitioner_status")]} className="w-[150px] [&>label]:sr-only" />
         <span className="ml-auto whitespace-nowrap text-[13px] text-muted-foreground">
-          {shown.length} van {filtered.length} behandelaars getoond · <TextLink onClick={() => setShowAll(true)}>Toon alles</TextLink>
+          {filtered.length} behandelaars
         </span>
       </div>
       <div className="overflow-x-auto">
