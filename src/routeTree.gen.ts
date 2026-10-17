@@ -25,9 +25,6 @@ import { Route as AuthenticatedInstellingenGebruikersEnRollenRouteImport } from 
 import { Route as AuthenticatedInstellingenKoppelingenRouteImport } from './routes/_authenticated/instellingen.koppelingen'
 import { Route as AuthenticatedInstellingenLogboekRouteImport } from './routes/_authenticated/instellingen.logboek'
 import { Route as AuthenticatedOrganisatieApparatuurRouteImport } from './routes/_authenticated/organisatie.apparatuur'
-import { Route as AuthenticatedOrganisatieBehandelaarsRouteImport } from './routes/_authenticated/organisatie.behandelaars'
-import { Route as AuthenticatedOrganisatieBehandelingenRouteImport } from './routes/_authenticated/organisatie.behandelingen'
-import { Route as AuthenticatedOrganisatieLocatiesRouteImport } from './routes/_authenticated/organisatie.locaties'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -118,24 +115,6 @@ const AuthenticatedOrganisatieApparatuurRoute =
     path: '/organisatie/apparatuur',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedOrganisatieBehandelaarsRoute =
-  AuthenticatedOrganisatieBehandelaarsRouteImport.update({
-    id: '/organisatie/behandelaars',
-    path: '/organisatie/behandelaars',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedOrganisatieBehandelingenRoute =
-  AuthenticatedOrganisatieBehandelingenRouteImport.update({
-    id: '/organisatie/behandelingen',
-    path: '/organisatie/behandelingen',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedOrganisatieLocatiesRoute =
-  AuthenticatedOrganisatieLocatiesRouteImport.update({
-    id: '/organisatie/locaties',
-    path: '/organisatie/locaties',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -152,9 +131,6 @@ export interface FileRoutesByFullPath {
   '/instellingen/koppelingen': typeof AuthenticatedInstellingenKoppelingenRoute
   '/instellingen/logboek': typeof AuthenticatedInstellingenLogboekRoute
   '/organisatie/apparatuur': typeof AuthenticatedOrganisatieApparatuurRoute
-  '/organisatie/behandelaars': typeof AuthenticatedOrganisatieBehandelaarsRoute
-  '/organisatie/behandelingen': typeof AuthenticatedOrganisatieBehandelingenRoute
-  '/organisatie/locaties': typeof AuthenticatedOrganisatieLocatiesRoute
   '/agenda/': typeof AuthenticatedAgendaIndexRoute
 }
 export interface FileRoutesByTo {
@@ -172,9 +148,6 @@ export interface FileRoutesByTo {
   '/instellingen/koppelingen': typeof AuthenticatedInstellingenKoppelingenRoute
   '/instellingen/logboek': typeof AuthenticatedInstellingenLogboekRoute
   '/organisatie/apparatuur': typeof AuthenticatedOrganisatieApparatuurRoute
-  '/organisatie/behandelaars': typeof AuthenticatedOrganisatieBehandelaarsRoute
-  '/organisatie/behandelingen': typeof AuthenticatedOrganisatieBehandelingenRoute
-  '/organisatie/locaties': typeof AuthenticatedOrganisatieLocatiesRoute
   '/agenda': typeof AuthenticatedAgendaIndexRoute
 }
 export interface FileRoutesById {
@@ -194,9 +167,6 @@ export interface FileRoutesById {
   '/_authenticated/instellingen/koppelingen': typeof AuthenticatedInstellingenKoppelingenRoute
   '/_authenticated/instellingen/logboek': typeof AuthenticatedInstellingenLogboekRoute
   '/_authenticated/organisatie/apparatuur': typeof AuthenticatedOrganisatieApparatuurRoute
-  '/_authenticated/organisatie/behandelaars': typeof AuthenticatedOrganisatieBehandelaarsRoute
-  '/_authenticated/organisatie/behandelingen': typeof AuthenticatedOrganisatieBehandelingenRoute
-  '/_authenticated/organisatie/locaties': typeof AuthenticatedOrganisatieLocatiesRoute
   '/_authenticated/agenda/': typeof AuthenticatedAgendaIndexRoute
 }
 export interface FileRouteTypes {
@@ -216,9 +186,6 @@ export interface FileRouteTypes {
     | '/instellingen/koppelingen'
     | '/instellingen/logboek'
     | '/organisatie/apparatuur'
-    | '/organisatie/behandelaars'
-    | '/organisatie/behandelingen'
-    | '/organisatie/locaties'
     | '/agenda/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -236,9 +203,6 @@ export interface FileRouteTypes {
     | '/instellingen/koppelingen'
     | '/instellingen/logboek'
     | '/organisatie/apparatuur'
-    | '/organisatie/behandelaars'
-    | '/organisatie/behandelingen'
-    | '/organisatie/locaties'
     | '/agenda'
   id:
     | '__root__'
@@ -257,9 +221,6 @@ export interface FileRouteTypes {
     | '/_authenticated/instellingen/koppelingen'
     | '/_authenticated/instellingen/logboek'
     | '/_authenticated/organisatie/apparatuur'
-    | '/_authenticated/organisatie/behandelaars'
-    | '/_authenticated/organisatie/behandelingen'
-    | '/_authenticated/organisatie/locaties'
     | '/_authenticated/agenda/'
   fileRoutesById: FileRoutesById
 }
@@ -384,27 +345,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOrganisatieApparatuurRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/organisatie/behandelaars': {
-      id: '/_authenticated/organisatie/behandelaars'
-      path: '/organisatie/behandelaars'
-      fullPath: '/organisatie/behandelaars'
-      preLoaderRoute: typeof AuthenticatedOrganisatieBehandelaarsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/organisatie/behandelingen': {
-      id: '/_authenticated/organisatie/behandelingen'
-      path: '/organisatie/behandelingen'
-      fullPath: '/organisatie/behandelingen'
-      preLoaderRoute: typeof AuthenticatedOrganisatieBehandelingenRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/organisatie/locaties': {
-      id: '/_authenticated/organisatie/locaties'
-      path: '/organisatie/locaties'
-      fullPath: '/organisatie/locaties'
-      preLoaderRoute: typeof AuthenticatedOrganisatieLocatiesRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
   }
 }
 
@@ -420,9 +360,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedInstellingenKoppelingenRoute: typeof AuthenticatedInstellingenKoppelingenRoute
   AuthenticatedInstellingenLogboekRoute: typeof AuthenticatedInstellingenLogboekRoute
   AuthenticatedOrganisatieApparatuurRoute: typeof AuthenticatedOrganisatieApparatuurRoute
-  AuthenticatedOrganisatieBehandelaarsRoute: typeof AuthenticatedOrganisatieBehandelaarsRoute
-  AuthenticatedOrganisatieBehandelingenRoute: typeof AuthenticatedOrganisatieBehandelingenRoute
-  AuthenticatedOrganisatieLocatiesRoute: typeof AuthenticatedOrganisatieLocatiesRoute
   AuthenticatedAgendaIndexRoute: typeof AuthenticatedAgendaIndexRoute
 }
 
@@ -444,11 +381,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedInstellingenLogboekRoute: AuthenticatedInstellingenLogboekRoute,
   AuthenticatedOrganisatieApparatuurRoute:
     AuthenticatedOrganisatieApparatuurRoute,
-  AuthenticatedOrganisatieBehandelaarsRoute:
-    AuthenticatedOrganisatieBehandelaarsRoute,
-  AuthenticatedOrganisatieBehandelingenRoute:
-    AuthenticatedOrganisatieBehandelingenRoute,
-  AuthenticatedOrganisatieLocatiesRoute: AuthenticatedOrganisatieLocatiesRoute,
   AuthenticatedAgendaIndexRoute: AuthenticatedAgendaIndexRoute,
 }
 
