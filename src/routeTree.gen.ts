@@ -25,6 +25,7 @@ import { Route as AuthenticatedInstellingenGebruikersEnRollenRouteImport } from 
 import { Route as AuthenticatedInstellingenKoppelingenRouteImport } from './routes/_authenticated/instellingen.koppelingen'
 import { Route as AuthenticatedInstellingenLogboekRouteImport } from './routes/_authenticated/instellingen.logboek'
 import { Route as AuthenticatedOrganisatieApparatuurRouteImport } from './routes/_authenticated/organisatie.apparatuur'
+import { Route as AuthenticatedOrganisatieBehandelingenIndexRouteImport } from './routes/_authenticated/organisatie.behandelingen.index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -115,6 +116,12 @@ const AuthenticatedOrganisatieApparatuurRoute =
     path: '/organisatie/apparatuur',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedOrganisatieBehandelingenIndexRoute =
+  AuthenticatedOrganisatieBehandelingenIndexRouteImport.update({
+    id: '/organisatie/behandelingen/',
+    path: '/organisatie/behandelingen/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -132,6 +139,7 @@ export interface FileRoutesByFullPath {
   '/instellingen/logboek': typeof AuthenticatedInstellingenLogboekRoute
   '/organisatie/apparatuur': typeof AuthenticatedOrganisatieApparatuurRoute
   '/agenda/': typeof AuthenticatedAgendaIndexRoute
+  '/organisatie/behandelingen/': typeof AuthenticatedOrganisatieBehandelingenIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -149,6 +157,7 @@ export interface FileRoutesByTo {
   '/instellingen/logboek': typeof AuthenticatedInstellingenLogboekRoute
   '/organisatie/apparatuur': typeof AuthenticatedOrganisatieApparatuurRoute
   '/agenda': typeof AuthenticatedAgendaIndexRoute
+  '/organisatie/behandelingen': typeof AuthenticatedOrganisatieBehandelingenIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -168,6 +177,7 @@ export interface FileRoutesById {
   '/_authenticated/instellingen/logboek': typeof AuthenticatedInstellingenLogboekRoute
   '/_authenticated/organisatie/apparatuur': typeof AuthenticatedOrganisatieApparatuurRoute
   '/_authenticated/agenda/': typeof AuthenticatedAgendaIndexRoute
+  '/_authenticated/organisatie/behandelingen/': typeof AuthenticatedOrganisatieBehandelingenIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -187,6 +197,7 @@ export interface FileRouteTypes {
     | '/instellingen/logboek'
     | '/organisatie/apparatuur'
     | '/agenda/'
+    | '/organisatie/behandelingen/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -204,6 +215,7 @@ export interface FileRouteTypes {
     | '/instellingen/logboek'
     | '/organisatie/apparatuur'
     | '/agenda'
+    | '/organisatie/behandelingen'
   id:
     | '__root__'
     | '/'
@@ -222,6 +234,7 @@ export interface FileRouteTypes {
     | '/_authenticated/instellingen/logboek'
     | '/_authenticated/organisatie/apparatuur'
     | '/_authenticated/agenda/'
+    | '/_authenticated/organisatie/behandelingen/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -345,6 +358,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOrganisatieApparatuurRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/organisatie/behandelingen/': {
+      id: '/_authenticated/organisatie/behandelingen/'
+      path: '/organisatie/behandelingen'
+      fullPath: '/organisatie/behandelingen/'
+      preLoaderRoute: typeof AuthenticatedOrganisatieBehandelingenIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -361,6 +381,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedInstellingenLogboekRoute: typeof AuthenticatedInstellingenLogboekRoute
   AuthenticatedOrganisatieApparatuurRoute: typeof AuthenticatedOrganisatieApparatuurRoute
   AuthenticatedAgendaIndexRoute: typeof AuthenticatedAgendaIndexRoute
+  AuthenticatedOrganisatieBehandelingenIndexRoute: typeof AuthenticatedOrganisatieBehandelingenIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -382,6 +403,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedOrganisatieApparatuurRoute:
     AuthenticatedOrganisatieApparatuurRoute,
   AuthenticatedAgendaIndexRoute: AuthenticatedAgendaIndexRoute,
+  AuthenticatedOrganisatieBehandelingenIndexRoute:
+    AuthenticatedOrganisatieBehandelingenIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
