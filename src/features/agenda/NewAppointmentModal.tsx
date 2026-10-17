@@ -5,12 +5,12 @@ import { useEffect, useMemo, useState } from "react";
 import { Modal } from "@/components/Modal";
 import { PillButton } from "@/components/PillButton";
 import { Select } from "@/components/Select";
-import { agendaRefQuery, patientSearchQuery } from "@/data/agenda";
+import { patientSearchQuery, type AgendaRef } from "@/data/agenda";
 import { createStaffAppointment, getStaffSlots } from "@/data/agenda.functions";
 import { fmtTime } from "@/domain/slots";
 import { cn } from "@/lib/utils";
 
-type Ref = Awaited<ReturnType<typeof agendaRefQuery.queryFn>>;
+type Ref = AgendaRef;
 const initials = (a: string, b: string) => `${a.charAt(0)}${b.charAt(0)}`.toUpperCase();
 const dmy = (d: string | null) => (d ? d.split("-").reverse().join("-") : "");
 

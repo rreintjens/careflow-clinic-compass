@@ -8,7 +8,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { PillButton } from "@/components/PillButton";
 import { SegmentedControl } from "@/components/SegmentedControl";
 import { Select } from "@/components/Select";
-import { agendaApptsQuery, agendaRefQuery } from "@/data/agenda";
+import { agendaApptsQuery, agendaRefQuery, type AgendaAppt } from "@/data/agenda";
 import { daySegments, freePlaces, hourRange, weekStart, type Segment } from "@/domain/agenda";
 import type { SlotBlock, SlotException } from "@/domain/slots";
 import { fmtTime } from "@/domain/slots";
@@ -182,7 +182,7 @@ function SegBox({ g, top0, name, online }: { g: Segment; top0: number; name: str
   );
 }
 
-type Appt = Awaited<ReturnType<ReturnType<typeof agendaApptsQuery>["queryFn"] & ((...a: never[]) => unknown)>>[number] & { s: { date: string; minute: number }; e: { minute: number } };
+type Appt = AgendaAppt & { s: { date: string; minute: number }; e: { minute: number } };
 
 /** The single patient card (short form); the full record opens via "Open dossier". */
 function AppointmentPanel({ a, treatment, online, onClose }: { a: Appt; treatment: string; online: boolean; onClose: () => void }) {
