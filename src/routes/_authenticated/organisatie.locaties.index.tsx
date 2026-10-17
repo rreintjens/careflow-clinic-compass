@@ -8,21 +8,14 @@ import { Modal } from "@/components/Modal";
 import { PageHeader } from "@/components/PageHeader";
 import { PillButton } from "@/components/PillButton";
 import { Select } from "@/components/Select";
-import { createLocation, opts, orgQuery, type Org } from "@/data/organisation";
-import { treatmentBookability } from "@/features/organisation/bookability";
+import { createLocation, opts, orgQuery } from "@/data/organisation";
+import { notBookableAt } from "@/features/organisation/bookability";
 
 export const Route = createFileRoute("/_authenticated/organisatie/locaties/")({
   head: () => ({ meta: [{ title: "Locaties · Beheer · The Body Clinic" }, { name: "robots", content: "noindex" }] }),
   loader: ({ context }) => context.queryClient.ensureQueryData(orgQuery),
   component: LocationsPage,
 });
-
-/** Treatments offered at a location that cannot be booked there. */
-export function notBookableAt(org: Org, locationId: string) {
-  return org.treatmentLocations
-    .filter((tl) => tl.location_id === locationId)
-    .filter((tl) => treatmentBookability(org, tl.treatment_id).perLocation.find((p) => p.locationId === locationId)?.reason !== "ok").length;
-}
 
 function LocationsPage() {
   const { data: org } = useSuspenseQuery(orgQuery);

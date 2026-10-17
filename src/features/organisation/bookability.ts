@@ -38,3 +38,11 @@ export const REASON_TEXT: Record<BookabilityReason, string> = {
   no_room: "Geen kamer op deze locatie.",
   no_equipment: "Benodigde apparatuur niet op deze locatie.",
 };
+
+/** Treatments offered at a location that cannot be booked there. */
+export function notBookableAt(org: Org, locationId: string) {
+  return org.treatmentLocations
+    .filter((tl) => tl.location_id === locationId)
+    .filter((tl) => treatmentBookability(org, tl.treatment_id).perLocation.find((p) => p.locationId === locationId)?.reason !== "ok").length;
+}
+
