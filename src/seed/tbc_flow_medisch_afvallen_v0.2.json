@@ -1,1258 +1,1262 @@
 {
- "meta": {
-  "brand": "The Body Clinic",
-  "treatment": "consult-medisch-afvallen",
-  "version": "0.2",
-  "date": "2026-10-17",
-  "language": "nl",
-  "note": "All patient-facing texts are Dutch and must be editable in the admin (questionnaire builder). Thresholds and texts are configuration, never hard-coded."
- },
- "settings": {
-  "age": {
-   "min": 18,
-   "max": 85
+  "meta": {
+    "brand": "The Body Clinic",
+    "treatment": "consult-medisch-afvallen",
+    "version": "0.2",
+    "date": "2026-10-17",
+    "language": "nl",
+    "note": "All patient-facing texts are Dutch and must be editable in the admin (questionnaire builder). Thresholds and texts are configuration, never hard-coded."
   },
-  "bmi": {
-   "red_below": 18.0,
-   "waist_from": 25.0,
-   "direct_from": 30.0,
-   "waist_from_reduced": 23.0,
-   "direct_from_reduced": 27.5
-  },
-  "waist_cm": {
-   "male_min": 102,
-   "female_min": 88,
-   "male_min_reduced": 90,
-   "female_min_reduced": 80
-  },
-  "reduced_threshold_regions": [
-   "Zuid-Azië of Hindoestaanse afkomst",
-   "Oost- of Zuidoost-Aziatisch",
-   "Midden-Oosten of Noord-Afrika",
-   "Afrikaans of Afrikaans-Caribisch"
-  ],
-  "reduced_waist_regions": [
-   "Zuid-Azië of Hindoestaanse afkomst",
-   "Oost- of Zuidoost-Aziatisch",
-   "Midden-Oosten of Noord-Afrika"
-  ]
- },
- "computed_fields": {
-  "bmi": "{weight_kg} / ({height_cm}/100)^2",
-  "age": "years_since({date_of_birth})",
-  "reduced_thresholds": "any_in({origin}, settings.reduced_threshold_regions)",
-  "reduced_waist": "any_in({origin}, settings.reduced_waist_regions)",
-  "bmi_waist_from": "reduced_thresholds ? settings.bmi.waist_from_reduced : settings.bmi.waist_from",
-  "bmi_direct_from": "reduced_thresholds ? settings.bmi.direct_from_reduced : settings.bmi.direct_from",
-  "waist_min": "(sex=='Vrouw' ? (reduced_waist ? settings.waist_cm.female_min_reduced : settings.waist_cm.female_min) : (reduced_waist ? settings.waist_cm.male_min_reduced : settings.waist_cm.male_min))"
- },
- "questionnaires": [
-  {
-   "id": "triage",
-   "name": "Vragen medisch afvallen",
-   "moment": "before_booking_confirmation",
-   "outcomes": {
-    "green": "continue_to_details",
-    "red": "release_slot_show_rejection_send_email"
-   },
-   "pages": [
-    {
-     "id": "intro",
-     "type": "text",
-     "title": "Een paar korte vragen",
-     "body": "Je hebt een moment gekozen. Voordat we de afspraak bevestigen, stellen we je een paar vragen over je gezondheid. Zo weten we zeker dat het programma zinvol voor je is.",
-     "bullets": [
-      "Duurt ongeveer 3 minuten",
-      "Vertrouwelijk, alleen zichtbaar voor ons medisch team",
-      "Beoordeeld door de arts"
-     ],
-     "button": "Starten"
+  "settings": {
+    "age": {
+      "min": 18,
+      "max": 85
     },
-    {
-     "id": "p_dob",
-     "section": "Over jou",
-     "items": [
-      {
-       "id": "date_of_birth",
-       "text": "Wat is je geboortedatum?",
-       "type": "date_segmented",
-       "help": "Medisch afvallen met medicatie is er voor volwassenen van 18 tot en met 85 jaar.",
-       "red_if": {
-        "any": [
-         {
-          "field": "age",
-          "op": "lt",
-          "value": 18
-         },
-         {
-          "field": "age",
-          "op": "gt",
-          "value": 85
-         }
-        ]
-       },
-       "reuse_in": "details_form"
-      }
-     ]
+    "bmi": {
+      "red_below": 18.0,
+      "waist_from": 25.0,
+      "direct_from": 30.0,
+      "waist_from_reduced": 23.0,
+      "direct_from_reduced": 27.5
     },
-    {
-     "id": "p_sex",
-     "section": "Over jou",
-     "items": [
-      {
-       "id": "sex",
-       "text": "Wat is je biologisch geslacht?",
-       "type": "single_choice",
-       "options": [
-        "Man",
-        "Vrouw"
-       ]
-      }
-     ]
+    "waist_cm": {
+      "male_min": 102,
+      "female_min": 88,
+      "male_min_reduced": 90,
+      "female_min_reduced": 80
     },
-    {
-     "id": "p_origin",
-     "section": "Over jou",
-     "items": [
-      {
-       "id": "origin",
-       "text": "Komen jij of een van je ouders uit een van deze regio’s?",
-       "type": "multi_choice",
-       "help": "Bij sommige achtergronden kunnen gezondheidsrisico’s al bij een lagere BMI optreden.",
-       "options": [
-        "Zuid-Azië of Hindoestaanse afkomst",
-        "Oost- of Zuidoost-Aziatisch",
-        "Midden-Oosten of Noord-Afrika",
-        "Afrikaans of Afrikaans-Caribisch"
-       ],
-       "exclusive_option": "Geen van deze"
-      }
-     ]
-    },
-    {
-     "id": "p_bmi",
-     "section": "Over jou",
-     "items": [
-      {
-       "id": "height_weight",
-       "text": "Wat is je lengte en gewicht?",
-       "type": "height_weight",
-       "fields": {
-        "height_cm": {
-         "min": 120,
-         "max": 230
-        },
-        "weight_kg": {
-         "min": 35,
-         "max": 300
-        }
-       },
-       "show_bmi_after_digits": 2,
-       "red_if": {
-        "all": [
-         {
-          "field": "bmi",
-          "op": "lt",
-          "value": "settings.bmi.red_below"
-         }
-        ]
-       }
-      }
-     ]
-    },
-    {
-     "id": "p_flow",
-     "type": "flow_overview",
-     "title": "Je bent op de helft",
-     "body": "Nog drie vragen over je veiligheid, daarna je gegevens.",
-     "steps": "auto"
-    },
-    {
-     "id": "p_comorb",
-     "section": "Je gewicht",
-     "show_if": {
-      "all": [
-       {
-        "field": "bmi",
-        "op": "gte",
-        "value": "bmi_waist_from"
-       },
-       {
-        "field": "bmi",
-        "op": "lt",
-        "value": "bmi_direct_from"
-       }
-      ]
-     },
-     "items": [
-      {
-       "id": "comorbidities",
-       "text": "Heb je een van deze aandoeningen die met je gewicht samenhangen?",
-       "type": "multi_choice",
-       "options": [
-        "Hoge bloeddruk",
-        "Diabetes type 2 of prediabetes",
-        "Verhoogd cholesterol",
-        "Slaapapneu",
-        "Artrose of gewrichtsklachten door je gewicht",
-        "PCOS",
-        "Vetlever",
-        "Hart- en vaatziekte"
-       ],
-       "exclusive_option": "Geen van deze",
-       "signal_if": "any_except_exclusive",
-       "note": "Shortlist ter validatie door Nicolette (open punt 8.4 Doc 02)."
-      }
-     ]
-    },
-    {
-     "id": "p_waist",
-     "section": "Je gewicht",
-     "show_if": {
-      "all": [
-       {
-        "field": "bmi",
-        "op": "gte",
-        "value": "bmi_waist_from"
-       },
-       {
-        "field": "bmi",
-        "op": "lt",
-        "value": "bmi_direct_from"
-       },
-       {
-        "field": "comorbidities",
-        "op": "eq",
-        "value": [
-         "Geen van deze"
-        ]
-       }
-      ]
-     },
-     "items": [
-      {
-       "id": "waist_cm",
-       "text": "Wat is je buikomvang?",
-       "type": "measure_with_image",
-       "image": "buikomvang-meten",
-       "unit": "cm",
-       "help": "Meet op navelhoogte.",
-       "allow_unknown": "Weet ik niet",
-       "signal_if": {
-        "all": [
-         {
-          "field": "waist_cm",
-          "op": "gte",
-          "value": "waist_min"
-         }
-        ]
-       },
-       "signal_label": "vergrote buikomvang"
-      }
-     ]
-    },
-    {
-     "id": "p_burden",
-     "section": "Je gewicht",
-     "show_if": {
-      "all": [
-       {
-        "field": "bmi",
-        "op": "gte",
-        "value": "bmi_waist_from"
-       },
-       {
-        "field": "bmi",
-        "op": "lt",
-        "value": "bmi_direct_from"
-       },
-       {
-        "field": "comorbidities",
-        "op": "eq",
-        "value": [
-         "Geen van deze"
-        ]
-       },
-       {
-        "any": [
-         {
-          "field": "waist_cm",
-          "op": "lt",
-          "value": "waist_min"
-         },
-         {
-          "field": "waist_cm",
-          "op": "eq",
-          "value": "unknown"
-         }
-        ]
-       }
-      ]
-     },
-     "items": [
-      {
-       "id": "burden",
-       "text": "Ervaar je fysiek of mentaal veel last van je overgewicht?",
-       "type": "single_choice",
-       "help": "Denk aan lichamelijke klachten, vermoeidheid, somberheid of beperkingen in je dagelijks leven.",
-       "options": [
-        "Ja, ik ervaar veel last",
-        "Nee"
-       ],
-       "red_if": {
-        "all": [
-         {
-          "field": "burden",
-          "op": "eq",
-          "value": "Nee"
-         }
-        ]
-       },
-       "signal_if": [
-        "Ja, ik ervaar veel last"
-       ],
-       "signal_label": "lijdensdruk"
-      },
-      {
-       "id": "burden_text",
-       "text": "Waar heb je het meeste last van?",
-       "type": "text",
-       "optional": true,
-       "show_if": {
-        "all": [
-         {
-          "field": "burden",
-          "op": "eq",
-          "value": "Ja, ik ervaar veel last"
-         }
-        ]
-       }
-      }
-     ]
-    },
-    {
-     "id": "p_low_bmi",
-     "section": "Je gewicht",
-     "type": "question_page",
-     "show_if": {
-      "all": [
-       {
-        "field": "bmi",
-        "op": "gte",
-        "value": 18
-       },
-       {
-        "field": "bmi",
-        "op": "lt",
-        "value": "bmi_waist_from"
-       }
-      ]
-     },
-     "items": [
-      {
-       "id": "higher_weight_past",
-       "text": "Had je in het verleden een hoger gewicht?",
-       "type": "yes_no"
-      },
-      {
-       "id": "weightloss_meds_now",
-       "text": "Gebruik je afslankmedicatie?",
-       "type": "single_choice",
-       "options": [
-        "Ja, ik gebruik nu afslankmedicatie",
-        "Ja, ik ben gestopt en kom weer aan",
-        "Nee"
-       ]
-      }
-     ],
-     "red_if": {
-      "all": [
-       {
-        "field": "higher_weight_past",
-        "op": "eq",
-        "value": "no"
-       },
-       {
-        "field": "weightloss_meds_now",
-        "op": "eq",
-        "value": "Nee"
-       }
-      ]
-     },
-     "signal_label": "laag BMI, historie of medicatie"
-    },
-    {
-     "id": "p_safety",
-     "section": "Veiligheidscheck",
-     "type": "question_page",
-     "title": "Drie vragen over je veiligheid",
-     "items": [
-      {
-       "id": "conditions",
-       "text": "Heb je een van deze aandoeningen?",
-       "type": "multi_choice",
-       "options": [
-        "Ernstig hartfalen",
-        "Ernstig leverfalen",
-        "Ernstig nierfalen",
-        "Gastroparese (maagverlamming)"
-       ],
-       "exclusive_option": "Geen van deze",
-       "red_if": {
-        "all": [
-         {
-          "field": "conditions",
-          "op": "not_eq",
-          "value": [
-           "Geen van deze"
-          ]
-         }
-        ]
-       }
-      },
-      {
-       "id": "men2",
-       "text": "Is bij jou of bij een naast familielid ooit medullaire schildklierkanker of het MEN 2-syndroom vastgesteld?",
-       "type": "single_choice",
-       "options": [
-        "Bij mezelf",
-        "Bij een ouder",
-        "Bij mijn kind",
-        "Bij een biologische broer of zus",
-        "Bij geen van hen"
-       ],
-       "red_if": {
-        "all": [
-         {
-          "field": "men2",
-          "op": "not_eq",
-          "value": "Bij geen van hen"
-         }
-        ]
-       }
-      },
-      {
-       "id": "mental",
-       "text": "Is een van deze situaties op dit moment op jou van toepassing?",
-       "type": "single_choice",
-       "options": [
-        "Een verslaving",
-        "Een ernstige depressie",
-        "Een vastgestelde eetstoornis",
-        "Geen van deze"
-       ],
-       "red_if": {
-        "all": [
-         {
-          "field": "mental",
-          "op": "not_eq",
-          "value": "Geen van deze"
-         }
-        ]
-       }
-      }
-     ]
-    },
-    {
-     "id": "good_news",
-     "type": "text",
-     "title": "Goed nieuws: je komt mogelijk in aanmerking",
-     "body": "De arts beoordeelt je antwoorden vóór het consult. Nog één stap: je gegevens, daarna bevestigen we je afspraak.",
-     "button": "Naar je gegevens",
-     "icon": "vinkje-cirkel"
-    }
-   ],
-   "rejection": {
-    "email": "none (no address known yet); optional field to send the text by e-mail",
-    "store_answers": false,
-    "count_reason_anonymously": true,
-    "buttons": [
-     "Vragen opnieuw doorlopen",
-     "Naar bodyclinic.nl"
+    "reduced_threshold_regions": [
+      "Zuid-Azië of Hindoestaanse afkomst",
+      "Oost- of Zuidoost-Aziatisch",
+      "Midden-Oosten of Noord-Afrika",
+      "Afrikaans of Afrikaans-Caribisch"
     ],
-    "variants": {
-     "age": {
-      "title": "Dit programma is er voor 18 tot en met 85 jaar",
-      "body": "Op basis van je geboortedatum kunnen we je nu geen afspraak aanbieden. De gereserveerde tijd is weer vrijgegeven."
-     },
-     "bmi_low": {
-      "title": "We kunnen je nu niet verder helpen",
-      "body": "Met je lengte en gewicht past medisch afvallen met medicatie niet bij jouw situatie. De gereserveerde tijd is weer vrijgegeven.",
-      "advice": "Wil je toch aan je gewicht werken? Bespreek het met je huisarts."
-     },
-     "weight_route": {
-      "title": "We kunnen je nu niet verder helpen",
-      "body": "Op basis van je gewicht en je antwoorden is er op dit moment geen medische reden voor dit programma. De gereserveerde tijd is weer vrijgegeven.",
-      "advice": "Verandert je situatie, dan ben je altijd welkom om de vragen opnieuw te doorlopen. Twijfel je? Bespreek het met je huisarts."
-     },
-     "medical": {
-      "title": "We kunnen je nu niet verder helpen",
-      "body": "Op basis van je antwoorden kan de arts je op dit moment niet veilig behandelen. De gereserveerde tijd is weer vrijgegeven; je hoeft niets te doen.",
-      "advice": "Bespreek je wens om af te vallen met je huisarts. Die kent je situatie en kan je verder helpen of doorverwijzen."
-     }
+    "reduced_waist_regions": [
+      "Zuid-Azië of Hindoestaanse afkomst",
+      "Oost- of Zuidoost-Aziatisch",
+      "Midden-Oosten of Noord-Afrika"
+    ]
+  },
+  "computed_fields": {
+    "bmi": "{weight_kg} / ({height_cm}/100)^2",
+    "age": "years_since({date_of_birth})",
+    "reduced_thresholds": "any_in({origin}, settings.reduced_threshold_regions)",
+    "reduced_waist": "any_in({origin}, settings.reduced_waist_regions)",
+    "bmi_waist_from": "reduced_thresholds ? settings.bmi.waist_from_reduced : settings.bmi.waist_from",
+    "bmi_direct_from": "reduced_thresholds ? settings.bmi.direct_from_reduced : settings.bmi.direct_from",
+    "waist_min": "(sex=='Vrouw' ? (reduced_waist ? settings.waist_cm.female_min_reduced : settings.waist_cm.female_min) : (reduced_waist ? settings.waist_cm.male_min_reduced : settings.waist_cm.male_min))"
+  },
+  "questionnaires": [
+    {
+      "id": "triage",
+      "name": "Vragen medisch afvallen",
+      "moment": "before_booking_confirmation",
+      "outcomes": {
+        "green": "continue_to_details",
+        "red": "release_slot_show_rejection_send_email"
+      },
+      "pages": [
+        {
+          "id": "intro",
+          "type": "text",
+          "title": "Een paar korte vragen",
+          "body": "Je hebt een moment gekozen. Voordat we de afspraak bevestigen, stellen we je een paar vragen over je gezondheid. Zo weten we zeker dat het programma zinvol voor je is.",
+          "bullets": [
+            "Duurt ongeveer 3 minuten",
+            "Vertrouwelijk, alleen zichtbaar voor ons medisch team",
+            "Beoordeeld door de arts"
+          ],
+          "button": "Starten"
+        },
+        {
+          "id": "p_dob",
+          "section": "Over jou",
+          "items": [
+            {
+              "id": "date_of_birth",
+              "text": "Wat is je geboortedatum?",
+              "type": "date_segmented",
+              "help": "Medisch afvallen met medicatie is er voor volwassenen van 18 tot en met 85 jaar.",
+              "red_if": {
+                "any": [
+                  {
+                    "field": "age",
+                    "op": "lt",
+                    "value": 18
+                  },
+                  {
+                    "field": "age",
+                    "op": "gt",
+                    "value": 85
+                  }
+                ]
+              },
+              "reuse_in": "details_form"
+            }
+          ]
+        },
+        {
+          "id": "p_sex",
+          "section": "Over jou",
+          "items": [
+            {
+              "id": "sex",
+              "text": "Wat is je biologisch geslacht?",
+              "type": "single_choice",
+              "options": [
+                "Man",
+                "Vrouw"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "p_origin",
+          "section": "Over jou",
+          "items": [
+            {
+              "id": "origin",
+              "text": "Komen jij of een van je ouders uit een van deze regio’s?",
+              "type": "multi_choice",
+              "help": "Bij sommige achtergronden kunnen gezondheidsrisico’s al bij een lagere BMI optreden.",
+              "options": [
+                "Zuid-Azië of Hindoestaanse afkomst",
+                "Oost- of Zuidoost-Aziatisch",
+                "Midden-Oosten of Noord-Afrika",
+                "Afrikaans of Afrikaans-Caribisch"
+              ],
+              "exclusive_option": "Geen van deze"
+            }
+          ]
+        },
+        {
+          "id": "p_bmi",
+          "section": "Over jou",
+          "items": [
+            {
+              "id": "height_weight",
+              "text": "Wat is je lengte en gewicht?",
+              "type": "height_weight",
+              "fields": {
+                "height_cm": {
+                  "min": 120,
+                  "max": 230
+                },
+                "weight_kg": {
+                  "min": 35,
+                  "max": 300
+                }
+              },
+              "show_bmi_after_digits": 2,
+              "red_if": {
+                "all": [
+                  {
+                    "field": "bmi",
+                    "op": "lt",
+                    "value": "settings.bmi.red_below"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "p_flow",
+          "type": "flow_overview",
+          "title": "Je bent op de helft",
+          "body": "Nog drie vragen over je veiligheid, daarna je gegevens.",
+          "steps": "auto"
+        },
+        {
+          "id": "p_comorb",
+          "section": "Je gewicht",
+          "show_if": {
+            "all": [
+              {
+                "field": "bmi",
+                "op": "gte",
+                "value": "bmi_waist_from"
+              },
+              {
+                "field": "bmi",
+                "op": "lt",
+                "value": "bmi_direct_from"
+              }
+            ]
+          },
+          "items": [
+            {
+              "id": "comorbidities",
+              "text": "Heb je een van deze aandoeningen die met je gewicht samenhangen?",
+              "type": "multi_choice",
+              "options": [
+                "Hoge bloeddruk",
+                "Diabetes type 2 of prediabetes",
+                "Verhoogd cholesterol",
+                "Slaapapneu",
+                "Artrose of gewrichtsklachten door je gewicht",
+                "PCOS",
+                "Vetlever",
+                "Hart- en vaatziekte"
+              ],
+              "exclusive_option": "Geen van deze",
+              "signal_if": "any_except_exclusive",
+              "note": "Shortlist ter validatie door Nicolette (open punt 8.4 Doc 02)."
+            }
+          ]
+        },
+        {
+          "id": "p_waist",
+          "section": "Je gewicht",
+          "show_if": {
+            "all": [
+              {
+                "field": "bmi",
+                "op": "gte",
+                "value": "bmi_waist_from"
+              },
+              {
+                "field": "bmi",
+                "op": "lt",
+                "value": "bmi_direct_from"
+              },
+              {
+                "field": "comorbidities",
+                "op": "eq",
+                "value": [
+                  "Geen van deze"
+                ]
+              }
+            ]
+          },
+          "items": [
+            {
+              "id": "waist_cm",
+              "text": "Wat is je buikomvang?",
+              "type": "measure_with_image",
+              "image": "buikomvang-meten",
+              "unit": "cm",
+              "help": "Meet op navelhoogte.",
+              "allow_unknown": "Weet ik niet",
+              "signal_if": {
+                "all": [
+                  {
+                    "field": "waist_cm",
+                    "op": "gte",
+                    "value": "waist_min"
+                  }
+                ]
+              },
+              "signal_label": "vergrote buikomvang"
+            }
+          ]
+        },
+        {
+          "id": "p_burden",
+          "section": "Je gewicht",
+          "show_if": {
+            "all": [
+              {
+                "field": "bmi",
+                "op": "gte",
+                "value": "bmi_waist_from"
+              },
+              {
+                "field": "bmi",
+                "op": "lt",
+                "value": "bmi_direct_from"
+              },
+              {
+                "field": "comorbidities",
+                "op": "eq",
+                "value": [
+                  "Geen van deze"
+                ]
+              },
+              {
+                "any": [
+                  {
+                    "field": "waist_cm",
+                    "op": "lt",
+                    "value": "waist_min"
+                  },
+                  {
+                    "field": "waist_cm",
+                    "op": "eq",
+                    "value": "unknown"
+                  }
+                ]
+              }
+            ]
+          },
+          "items": [
+            {
+              "id": "burden",
+              "text": "Ervaar je fysiek of mentaal veel last van je overgewicht?",
+              "type": "single_choice",
+              "help": "Denk aan lichamelijke klachten, vermoeidheid, somberheid of beperkingen in je dagelijks leven.",
+              "options": [
+                "Ja, ik ervaar veel last",
+                "Nee"
+              ],
+              "red_if": {
+                "all": [
+                  {
+                    "field": "burden",
+                    "op": "eq",
+                    "value": "Nee"
+                  }
+                ]
+              },
+              "signal_if": [
+                "Ja, ik ervaar veel last"
+              ],
+              "signal_label": "lijdensdruk"
+            },
+            {
+              "id": "burden_text",
+              "text": "Waar heb je het meeste last van?",
+              "type": "text",
+              "optional": true,
+              "show_if": {
+                "all": [
+                  {
+                    "field": "burden",
+                    "op": "eq",
+                    "value": "Ja, ik ervaar veel last"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "p_low_bmi",
+          "section": "Je gewicht",
+          "type": "question_page",
+          "show_if": {
+            "all": [
+              {
+                "field": "bmi",
+                "op": "gte",
+                "value": 18
+              },
+              {
+                "field": "bmi",
+                "op": "lt",
+                "value": "bmi_waist_from"
+              }
+            ]
+          },
+          "items": [
+            {
+              "id": "higher_weight_past",
+              "text": "Had je in het verleden een hoger gewicht?",
+              "type": "yes_no"
+            },
+            {
+              "id": "weightloss_meds_now",
+              "text": "Gebruik je afslankmedicatie?",
+              "type": "single_choice",
+              "options": [
+                "Ja, ik gebruik nu afslankmedicatie",
+                "Ja, ik ben gestopt en kom weer aan",
+                "Nee"
+              ]
+            }
+          ],
+          "red_if": {
+            "all": [
+              {
+                "field": "higher_weight_past",
+                "op": "eq",
+                "value": "no"
+              },
+              {
+                "field": "weightloss_meds_now",
+                "op": "eq",
+                "value": "Nee"
+              }
+            ]
+          },
+          "signal_label": "laag BMI, historie of medicatie"
+        },
+        {
+          "id": "p_safety",
+          "section": "Veiligheidscheck",
+          "type": "question_page",
+          "title": "Drie vragen over je veiligheid",
+          "items": [
+            {
+              "id": "conditions",
+              "text": "Heb je een van deze aandoeningen?",
+              "type": "multi_choice",
+              "options": [
+                "Ernstig hartfalen",
+                "Ernstig leverfalen",
+                "Ernstig nierfalen",
+                "Gastroparese (maagverlamming)"
+              ],
+              "exclusive_option": "Geen van deze",
+              "red_if": {
+                "all": [
+                  {
+                    "field": "conditions",
+                    "op": "not_eq",
+                    "value": [
+                      "Geen van deze"
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "id": "men2",
+              "text": "Is bij jou of bij een naast familielid ooit medullaire schildklierkanker of het MEN 2-syndroom vastgesteld?",
+              "type": "single_choice",
+              "options": [
+                "Bij mezelf",
+                "Bij een ouder",
+                "Bij mijn kind",
+                "Bij een biologische broer of zus",
+                "Bij geen van hen"
+              ],
+              "red_if": {
+                "all": [
+                  {
+                    "field": "men2",
+                    "op": "not_eq",
+                    "value": "Bij geen van hen"
+                  }
+                ]
+              }
+            },
+            {
+              "id": "mental",
+              "text": "Is een van deze situaties op dit moment op jou van toepassing?",
+              "type": "single_choice",
+              "options": [
+                "Een verslaving",
+                "Een ernstige depressie",
+                "Een vastgestelde eetstoornis",
+                "Geen van deze"
+              ],
+              "red_if": {
+                "all": [
+                  {
+                    "field": "mental",
+                    "op": "not_eq",
+                    "value": "Geen van deze"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "good_news",
+          "type": "text",
+          "title": "Goed nieuws: je komt mogelijk in aanmerking",
+          "body": "De arts beoordeelt je antwoorden vóór het consult. Nog één stap: je gegevens, daarna bevestigen we je afspraak.",
+          "button": "Naar je gegevens",
+          "icon": "vinkje-cirkel"
+        }
+      ],
+      "rejection": {
+        "email": "none (no address known yet); optional field to send the text by e-mail",
+        "store_answers": false,
+        "count_reason_anonymously": true,
+        "buttons": [
+          "Vragen opnieuw doorlopen",
+          "Naar bodyclinic.nl"
+        ],
+        "variants": {
+          "age": {
+            "title": "Dit programma is er voor 18 tot en met 85 jaar",
+            "body": "Op basis van je geboortedatum kunnen we je nu geen afspraak aanbieden. De gereserveerde tijd is weer vrijgegeven."
+          },
+          "bmi_low": {
+            "title": "We kunnen je nu niet verder helpen",
+            "body": "Met je lengte en gewicht past medisch afvallen met medicatie niet bij jouw situatie. De gereserveerde tijd is weer vrijgegeven.",
+            "advice": "Wil je toch aan je gewicht werken? Bespreek het met je huisarts."
+          },
+          "weight_route": {
+            "title": "We kunnen je nu niet verder helpen",
+            "body": "Op basis van je gewicht en je antwoorden is er op dit moment geen medische reden voor dit programma. De gereserveerde tijd is weer vrijgegeven.",
+            "advice": "Verandert je situatie, dan ben je altijd welkom om de vragen opnieuw te doorlopen. Twijfel je? Bespreek het met je huisarts."
+          },
+          "medical": {
+            "title": "We kunnen je nu niet verder helpen",
+            "body": "Op basis van je antwoorden kan de arts je op dit moment niet veilig behandelen. De gereserveerde tijd is weer vrijgegeven; je hoeft niets te doen.",
+            "advice": "Bespreek je wens om af te vallen met je huisarts. Die kent je situatie en kan je verder helpen of doorverwijzen."
+          }
+        }
+      }
+    },
+    {
+      "id": "medical",
+      "name": "Medische vragenlijst medisch afvallen",
+      "moment": "after_booking",
+      "outcomes": {
+        "all": "save_to_record_and_flag_signals"
+      },
+      "resume": "per_page_via_email_link",
+      "not_filled_on_consult_day": "consult_proceeds_doctor_asks",
+      "reminder": {
+        "after_days": 2,
+        "template": "reminder_questionnaire"
+      },
+      "prefill_from_triage": [
+        "sex",
+        "height_weight",
+        "waist_cm",
+        "comorbidities",
+        "conditions",
+        "weightloss_meds_now"
+      ],
+      "pages": [
+        {
+          "id": "m_welcome",
+          "type": "text",
+          "title": "Fijn dat je er bent",
+          "body": "Met deze vragen bereidt {behandelaar_voornaam} jouw consult voor. Het duurt ongeveer 8 minuten; je kunt tussendoor stoppen en later verdergaan via de link in je mail.",
+          "show_practitioner_card": true,
+          "button": "Beginnen"
+        },
+        {
+          "id": "m_weight",
+          "type": "question_page",
+          "title": "Jouw gewicht",
+          "items": [
+            {
+              "id": "max_weight",
+              "text": "Wat is je hoogste gewicht ooit geweest?",
+              "type": "number",
+              "unit": "kg"
+            },
+            {
+              "id": "fat_distribution",
+              "text": "Hoe is je vetverdeling?",
+              "type": "single_choice",
+              "options": [
+                "Vooral buik",
+                "Vooral heupen en benen",
+                "Gelijkmatig"
+              ]
+            },
+            {
+              "id": "burden",
+              "text": "Welke last ervaar je van het overgewicht?",
+              "type": "text"
+            },
+            {
+              "id": "diagnosed",
+              "text": "Heeft een arts al de diagnose overgewicht of obesitas gesteld en een behandeling aangeraden?",
+              "type": "yes_no"
+            },
+            {
+              "id": "blood_test",
+              "text": "Is er recent bloedonderzoek gedaan?",
+              "type": "yes_no"
+            },
+            {
+              "id": "blood_test_detail",
+              "text": "Wanneer, en wat kwam eruit?",
+              "type": "text",
+              "show_if": {
+                "all": [
+                  {
+                    "field": "blood_test",
+                    "op": "eq",
+                    "value": "yes"
+                  }
+                ]
+              }
+            },
+            {
+              "id": "weight_course",
+              "text": "Hoe is je gewicht over de jaren verlopen?",
+              "type": "single_choice",
+              "options": [
+                "Snel aangekomen",
+                "Geleidelijk",
+                "Schommelend"
+              ]
+            },
+            {
+              "id": "gain_factors",
+              "text": "Welke factoren hebben volgens jou meegespeeld in de gewichtstoename?",
+              "type": "text"
+            },
+            {
+              "id": "diets",
+              "text": "Heb je dieetpogingen gedaan?",
+              "type": "yes_no"
+            },
+            {
+              "id": "diets_detail",
+              "text": "Welke?",
+              "type": "text",
+              "show_if": {
+                "all": [
+                  {
+                    "field": "diets",
+                    "op": "eq",
+                    "value": "yes"
+                  }
+                ]
+              }
+            },
+            {
+              "id": "weight_stable",
+              "text": "Is je gewicht op dit moment stabiel?",
+              "type": "yes_no"
+            },
+            {
+              "id": "weight_trend",
+              "text": "Val je af of kom je nog aan?",
+              "type": "single_choice",
+              "show_if": {
+                "all": [
+                  {
+                    "field": "weight_stable",
+                    "op": "eq",
+                    "value": "no"
+                  }
+                ]
+              },
+              "options": [
+                "Ik val af",
+                "Ik kom aan"
+              ]
+            },
+            {
+              "id": "weightloss_meds",
+              "text": "Heb je ooit afslankmedicatie gebruikt, of gebruik je die nu?",
+              "type": "yes_no",
+              "prefill_from": "triage.weightloss_meds_now"
+            },
+            {
+              "id": "weightloss_meds_detail",
+              "text": "Welke, en wanneer?",
+              "type": "text",
+              "show_if": {
+                "all": [
+                  {
+                    "field": "weightloss_meds",
+                    "op": "eq",
+                    "value": "yes"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "m_history",
+          "type": "question_page",
+          "title": "Medische achtergrond",
+          "help": "Ernstig hart-, lever- of nierfalen en gastroparese heb je bij het boeken al beantwoord; die vragen we niet opnieuw.",
+          "items": [
+            {
+              "id": "under_treatment",
+              "text": "Ben je op dit moment onder behandeling van een huisarts of specialist?",
+              "type": "yes_no"
+            },
+            {
+              "id": "under_treatment_detail",
+              "text": "Waarvoor?",
+              "type": "text",
+              "show_if": {
+                "all": [
+                  {
+                    "field": "under_treatment",
+                    "op": "eq",
+                    "value": "yes"
+                  }
+                ]
+              }
+            },
+            {
+              "id": "recent_surgery",
+              "text": "Heb je recent een operatie gehad?",
+              "type": "yes_no"
+            },
+            {
+              "id": "surgery_detail",
+              "text": "Welke operatie, en wanneer?",
+              "type": "text",
+              "show_if": {
+                "all": [
+                  {
+                    "field": "recent_surgery",
+                    "op": "eq",
+                    "value": "yes"
+                  }
+                ]
+              }
+            },
+            {
+              "id": "hypertension",
+              "text": "Heb je een te hoge bloeddruk, boven 140/90?",
+              "type": "yes_no"
+            },
+            {
+              "id": "heart",
+              "text": "Heb je een hartritmestoornis of een andere hartaandoening?",
+              "type": "yes_no"
+            },
+            {
+              "id": "stroke_infarct",
+              "text": "Heb je een TIA, een beroerte of een hartinfarct gehad?",
+              "type": "yes_no"
+            },
+            {
+              "id": "dm1",
+              "text": "Heb je diabetes type 1?",
+              "type": "yes_no"
+            },
+            {
+              "id": "dm2",
+              "text": "Heb je diabetes type 2?",
+              "type": "yes_no"
+            },
+            {
+              "id": "cholesterol",
+              "text": "Heb je een verhoogd cholesterol?",
+              "type": "yes_no"
+            },
+            {
+              "id": "liver_gall",
+              "text": "Heb je een aandoening aan lever of galblaas?",
+              "type": "yes_no"
+            },
+            {
+              "id": "kidney",
+              "text": "Heb je een aandoening aan de nieren?",
+              "type": "yes_no"
+            },
+            {
+              "id": "ibd",
+              "text": "Heb je een chronische darmziekte, zoals Crohn of colitis ulcerosa?",
+              "type": "yes_no"
+            },
+            {
+              "id": "gi_complaints",
+              "text": "Heb je maag- of darmklachten?",
+              "type": "yes_no"
+            },
+            {
+              "id": "metabolic",
+              "text": "Heb je een stofwisselingsziekte, zoals Cushing?",
+              "type": "yes_no"
+            },
+            {
+              "id": "pancreatitis",
+              "text": "Heb je ooit een alvleesklierontsteking gehad?",
+              "type": "yes_no",
+              "signal_if": "yes"
+            },
+            {
+              "id": "asthma_copd",
+              "text": "Heb je astma, COPD of chronische bronchitis?",
+              "type": "yes_no"
+            },
+            {
+              "id": "thyroid",
+              "text": "Heb je een schildklierafwijking, of gehad?",
+              "type": "yes_no"
+            },
+            {
+              "id": "arthrosis",
+              "text": "Heb je artrose, slijtage van knie of heup?",
+              "type": "yes_no"
+            },
+            {
+              "id": "family",
+              "text": "Komen deze aandoeningen in je familie voor?",
+              "type": "multi_choice",
+              "options": [
+                "Overgewicht",
+                "Familiaire schildklierkanker"
+              ],
+              "exclusive_option": "Geen van deze",
+              "signal_if": [
+                "Familiaire schildklierkanker"
+              ]
+            },
+            {
+              "id": "pregnancy_wish",
+              "text": "Wil je binnen een jaar zwanger worden?",
+              "type": "yes_no",
+              "show_if": {
+                "all": [
+                  {
+                    "field": "triage.sex",
+                    "op": "eq",
+                    "value": "Vrouw"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "m_meds",
+          "type": "question_page",
+          "title": "Medicatie en middelen",
+          "items": [
+            {
+              "id": "medication",
+              "text": "Welke medicatie gebruik je op dit moment? Naam en dosering.",
+              "type": "text",
+              "prefill_from": "lsp_if_consented"
+            },
+            {
+              "id": "med_problems",
+              "text": "Heb je ooit problemen gehad bij het gebruik van medicijnen, zoals een allergische reactie, ernstige bijwerkingen of afhankelijkheid?",
+              "type": "yes_no"
+            },
+            {
+              "id": "med_problems_detail",
+              "text": "Welke?",
+              "type": "text",
+              "show_if": {
+                "all": [
+                  {
+                    "field": "med_problems",
+                    "op": "eq",
+                    "value": "yes"
+                  }
+                ]
+              }
+            },
+            {
+              "id": "lithium",
+              "text": "Gebruik je op dit moment lithium?",
+              "type": "yes_no",
+              "signal_if": "yes"
+            },
+            {
+              "id": "glp1_allergy",
+              "text": "Ben je allergisch voor de werkzame stof of hulpstoffen van afslankmedicatie, zoals semaglutide, tirzepatide of liraglutide?",
+              "type": "single_choice",
+              "options": [
+                "Ja",
+                "Nee",
+                "Weet ik niet"
+              ],
+              "signal_if": [
+                "Ja",
+                "Weet ik niet"
+              ]
+            },
+            {
+              "id": "allergies",
+              "text": "Heb je allergieën?",
+              "type": "yes_no"
+            },
+            {
+              "id": "allergies_detail",
+              "text": "Welke?",
+              "type": "text",
+              "show_if": {
+                "all": [
+                  {
+                    "field": "allergies",
+                    "op": "eq",
+                    "value": "yes"
+                  }
+                ]
+              }
+            },
+            {
+              "id": "alcohol",
+              "text": "Drink je alcohol?",
+              "type": "yes_no"
+            },
+            {
+              "id": "alcohol_amount",
+              "text": "Hoeveel, per dag, week of maand?",
+              "type": "text",
+              "show_if": {
+                "all": [
+                  {
+                    "field": "alcohol",
+                    "op": "eq",
+                    "value": "yes"
+                  }
+                ]
+              }
+            },
+            {
+              "id": "drugs",
+              "text": "Gebruik je drugs?",
+              "type": "yes_no"
+            },
+            {
+              "id": "drugs_detail",
+              "text": "Wat en hoeveel?",
+              "type": "text",
+              "show_if": {
+                "all": [
+                  {
+                    "field": "drugs",
+                    "op": "eq",
+                    "value": "yes"
+                  }
+                ]
+              }
+            },
+            {
+              "id": "smoking",
+              "text": "Rook je?",
+              "type": "yes_no"
+            },
+            {
+              "id": "smoking_amount",
+              "text": "Hoeveel?",
+              "type": "text",
+              "show_if": {
+                "all": [
+                  {
+                    "field": "smoking",
+                    "op": "eq",
+                    "value": "yes"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "m_food",
+          "type": "question_page",
+          "title": "Eten",
+          "items": [
+            {
+              "id": "diet_satisfied",
+              "text": "Ben je tevreden over je eetpatroon?",
+              "type": "yes_no"
+            },
+            {
+              "id": "hunger",
+              "text": "Heb je vaak honger?",
+              "type": "yes_no"
+            },
+            {
+              "id": "hunger_when",
+              "text": "Wanneer het meest?",
+              "type": "text",
+              "show_if": {
+                "all": [
+                  {
+                    "field": "hunger",
+                    "op": "eq",
+                    "value": "yes"
+                  }
+                ]
+              }
+            },
+            {
+              "id": "satiety",
+              "text": "Ben je snel verzadigd?",
+              "type": "single_choice",
+              "options": [
+                "Snel",
+                "Gemiddeld",
+                "Niet snel"
+              ]
+            },
+            {
+              "id": "regularity",
+              "text": "Eet je regelmatig, of sla je maaltijden over?",
+              "type": "single_choice",
+              "options": [
+                "Ik eet regelmatig",
+                "Ik sla regelmatig een maaltijd over"
+              ]
+            },
+            {
+              "id": "skipped_meal",
+              "text": "Welke maaltijd sla je over?",
+              "type": "text",
+              "show_if": {
+                "all": [
+                  {
+                    "field": "regularity",
+                    "op": "eq",
+                    "value": "Ik sla regelmatig een maaltijd over"
+                  }
+                ]
+              }
+            },
+            {
+              "id": "meals_per_day",
+              "text": "Hoe vaak eet je op een dag, inclusief tussendoortjes?",
+              "type": "single_choice",
+              "options": [
+                "1 tot 2",
+                "3 tot 4",
+                "5 of meer"
+              ]
+            },
+            {
+              "id": "portion",
+              "text": "Hoe schat je je portiegrootte in?",
+              "type": "single_choice",
+              "options": [
+                "Klein",
+                "Gemiddeld",
+                "Groot"
+              ]
+            },
+            {
+              "id": "snacking",
+              "text": "Snaai je weleens?",
+              "type": "yes_no"
+            },
+            {
+              "id": "snacking_trigger",
+              "text": "Waardoor wordt dat uitgelokt?",
+              "type": "text",
+              "show_if": {
+                "all": [
+                  {
+                    "field": "snacking",
+                    "op": "eq",
+                    "value": "yes"
+                  }
+                ]
+              }
+            },
+            {
+              "id": "emotional_eating",
+              "text": "Herken je je in emotie-eten?",
+              "type": "yes_no"
+            }
+          ]
+        },
+        {
+          "id": "m_mind",
+          "type": "question_page",
+          "title": "Bewegen, mentaal en slaap",
+          "items": [
+            {
+              "id": "exercise_satisfied",
+              "text": "Ben je tevreden over je beweegpatroon?",
+              "type": "yes_no"
+            },
+            {
+              "id": "daily_activity",
+              "text": "Beweeg je dagelijks voldoende?",
+              "type": "yes_no"
+            },
+            {
+              "id": "sports",
+              "text": "Sport je?",
+              "type": "yes_no"
+            },
+            {
+              "id": "sports_detail",
+              "text": "Wat doe je en hoe vaak?",
+              "type": "text",
+              "show_if": {
+                "all": [
+                  {
+                    "field": "sports",
+                    "op": "eq",
+                    "value": "yes"
+                  }
+                ]
+              }
+            },
+            {
+              "id": "psych_now",
+              "text": "Heb je op dit moment psychische klachten, zoals somberheid of angst?",
+              "type": "yes_no"
+            },
+            {
+              "id": "binge",
+              "text": "Heb je weleens last van eetbuien, of gehad?",
+              "type": "yes_no"
+            },
+            {
+              "id": "psych_treated",
+              "text": "Ben je ooit behandeld door een psycholoog of psychiater?",
+              "type": "yes_no"
+            },
+            {
+              "id": "psych_history",
+              "text": "Heb je ooit psychische problemen gehad, zoals een verslaving, een eetstoornis of een ernstige depressie?",
+              "type": "yes_no"
+            },
+            {
+              "id": "psych_history_detail",
+              "text": "Wil je daar iets over kwijt?",
+              "type": "text",
+              "show_if": {
+                "all": [
+                  {
+                    "field": "psych_history",
+                    "op": "eq",
+                    "value": "yes"
+                  }
+                ]
+              }
+            },
+            {
+              "id": "stress",
+              "text": "Heb je veel stress?",
+              "type": "yes_no"
+            },
+            {
+              "id": "stress_lifestyle",
+              "text": "Beïnvloedt dat je leefstijl?",
+              "type": "yes_no",
+              "show_if": {
+                "all": [
+                  {
+                    "field": "stress",
+                    "op": "eq",
+                    "value": "yes"
+                  }
+                ]
+              }
+            },
+            {
+              "id": "sleep",
+              "text": "Slaap je goed?",
+              "type": "yes_no"
+            },
+            {
+              "id": "snoring",
+              "text": "Snurk je?",
+              "type": "yes_no"
+            },
+            {
+              "id": "rested",
+              "text": "Word je uitgerust wakker?",
+              "type": "yes_no",
+              "show_if": {
+                "all": [
+                  {
+                    "field": "snoring",
+                    "op": "eq",
+                    "value": "yes"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "m_finish",
+          "type": "question_page",
+          "title": "Bijna klaar",
+          "items": [
+            {
+              "id": "truth",
+              "text": "Ik verklaar dat ik deze vragen naar mijn beste weten juist en naar waarheid heb beantwoord.",
+              "type": "checkbox_required"
+            },
+            {
+              "id": "review",
+              "text": "Klopt alles? Bekijk je antwoorden.",
+              "type": "answer_summary"
+            }
+          ],
+          "button": "Versturen"
+        },
+        {
+          "id": "m_done",
+          "type": "text",
+          "title": "Dank je wel, {voornaam}",
+          "body": "Je antwoorden staan klaar voor {behandelaar_voornaam}. Ze leest ze vóór jullie consult op {dag} om {tijd}.",
+          "button": "Naar bodyclinic.nl"
+        }
+      ]
     }
-   }
+  ],
+  "rules": {
+    "exclusive_option": "Selecting it clears other options and vice versa.",
+    "follow_up": "A follow-up with show_if appears directly under its parent on the same page, without reload.",
+    "red": "On the first red answer in the triage: release the reserved slot, show the matching rejection variant, do not store answers, count the reason anonymously. Red reasons: age outside 18-85; BMI below 18; middle BMI group with no comorbidity, no enlarged waist and no burden; low BMI group with no weight history and no medication; a hard condition; MEN 2; a mental situation. BMI >= 30 (27.5 reduced) skips the weight questions. (Routing from Doc 02 v2.2, confirmed by Rob 17-10.)",
+    "signal": "Signals never block; they are shown to the doctor in the record before the consult.",
+    "page_progress": "Each question page shows 'pagina x van n' and 'k van m vragen beantwoord'.",
+    "resume": "Medical questionnaire is saved per page; the e-mail link reopens the last page."
   },
-  {
-   "id": "medical",
-   "name": "Medische vragenlijst medisch afvallen",
-   "moment": "after_booking",
-   "outcomes": {
-    "all": "save_to_record_and_flag_signals"
-   },
-   "resume": "per_page_via_email_link",
-   "not_filled_on_consult_day": "consult_proceeds_doctor_asks",
-   "reminder": {
-    "after_days": 2,
-    "template": "reminder_questionnaire"
-   },
-   "prefill_from_triage": [
-    "sex",
-    "height_weight",
-    "waist_cm",
-    "comorbidities",
-    "conditions",
-    "weightloss_meds_now"
-   ],
-   "pages": [
-    {
-     "id": "m_welcome",
-     "type": "text",
-     "title": "Fijn dat je er bent",
-     "body": "Met deze vragen bereidt {behandelaar_voornaam} jouw consult voor. Het duurt ongeveer 8 minuten; je kunt tussendoor stoppen en later verdergaan via de link in je mail.",
-     "show_practitioner_card": true,
-     "button": "Beginnen"
+  "treatment_fields": {
+    "description_for_mails": "{behandeling_omschrijving}",
+    "preparation": "{voorbereiding} in confirmation and appointment reminder",
+    "aftercare": "{nazorg} in thank-you mail",
+    "cancel_until_hours": "default from general settings (24), overridable per category/treatment (e.g. injectables 48)",
+    "no_show_fee_eur": "default none, overridable (e.g. injectables 60)",
+    "languages": "every patient text field exists per language (nl, en); fallback nl",
+    "image_for_mails": "per category, fallback template default"
+  },
+  "roles": {
+    "landing": {
+      "superadmin": "dashboard",
+      "admin": "dashboard",
+      "arts": "mijn-dag",
+      "therapeut": "mijn-dag",
+      "customer_care": "agenda",
+      "assistent": "agenda"
     },
-    {
-     "id": "m_weight",
-     "type": "question_page",
-     "title": "Jouw gewicht",
-     "items": [
-      {
-       "id": "max_weight",
-       "text": "Wat is je hoogste gewicht ooit geweest?",
-       "type": "number",
-       "unit": "kg"
-      },
-      {
-       "id": "fat_distribution",
-       "text": "Hoe is je vetverdeling?",
-       "type": "single_choice",
-       "options": [
-        "Vooral buik",
-        "Vooral heupen en benen",
-        "Gelijkmatig"
-       ]
-      },
-      {
-       "id": "burden",
-       "text": "Welke last ervaar je van het overgewicht?",
-       "type": "text"
-      },
-      {
-       "id": "diagnosed",
-       "text": "Heeft een arts al de diagnose overgewicht of obesitas gesteld en een behandeling aangeraden?",
-       "type": "yes_no"
-      },
-      {
-       "id": "blood_test",
-       "text": "Is er recent bloedonderzoek gedaan?",
-       "type": "yes_no"
-      },
-      {
-       "id": "blood_test_detail",
-       "text": "Wanneer, en wat kwam eruit?",
-       "type": "text",
-       "show_if": {
-        "all": [
-         {
-          "field": "blood_test",
-          "op": "eq",
-          "value": "yes"
-         }
-        ]
-       }
-      },
-      {
-       "id": "weight_course",
-       "text": "Hoe is je gewicht over de jaren verlopen?",
-       "type": "single_choice",
-       "options": [
-        "Snel aangekomen",
-        "Geleidelijk",
-        "Schommelend"
-       ]
-      },
-      {
-       "id": "gain_factors",
-       "text": "Welke factoren hebben volgens jou meegespeeld in de gewichtstoename?",
-       "type": "text"
-      },
-      {
-       "id": "diets",
-       "text": "Heb je dieetpogingen gedaan?",
-       "type": "yes_no"
-      },
-      {
-       "id": "diets_detail",
-       "text": "Welke?",
-       "type": "text",
-       "show_if": {
-        "all": [
-         {
-          "field": "diets",
-          "op": "eq",
-          "value": "yes"
-         }
-        ]
-       }
-      },
-      {
-       "id": "weight_stable",
-       "text": "Is je gewicht op dit moment stabiel?",
-       "type": "yes_no"
-      },
-      {
-       "id": "weight_trend",
-       "text": "Val je af of kom je nog aan?",
-       "type": "single_choice",
-       "show_if": {
-        "all": [
-         {
-          "field": "weight_stable",
-          "op": "eq",
-          "value": "no"
-         }
-        ]
-       }
-      },
-      {
-       "id": "weightloss_meds",
-       "text": "Heb je ooit afslankmedicatie gebruikt, of gebruik je die nu?",
-       "type": "yes_no",
-       "prefill_from": "triage.weightloss_meds_now"
-      },
-      {
-       "id": "weightloss_meds_detail",
-       "text": "Welke, en wanneer?",
-       "type": "text",
-       "show_if": {
-        "all": [
-         {
-          "field": "weightloss_meds",
-          "op": "eq",
-          "value": "yes"
-         }
-        ]
-       }
-      }
-     ]
-    },
-    {
-     "id": "m_history",
-     "type": "question_page",
-     "title": "Medische achtergrond",
-     "help": "Ernstig hart-, lever- of nierfalen en gastroparese heb je bij het boeken al beantwoord; die vragen we niet opnieuw.",
-     "items": [
-      {
-       "id": "under_treatment",
-       "text": "Ben je op dit moment onder behandeling van een huisarts of specialist?",
-       "type": "yes_no"
-      },
-      {
-       "id": "under_treatment_detail",
-       "text": "Waarvoor?",
-       "type": "text",
-       "show_if": {
-        "all": [
-         {
-          "field": "under_treatment",
-          "op": "eq",
-          "value": "yes"
-         }
-        ]
-       }
-      },
-      {
-       "id": "recent_surgery",
-       "text": "Heb je recent een operatie gehad?",
-       "type": "yes_no"
-      },
-      {
-       "id": "surgery_detail",
-       "text": "Welke operatie, en wanneer?",
-       "type": "text",
-       "show_if": {
-        "all": [
-         {
-          "field": "recent_surgery",
-          "op": "eq",
-          "value": "yes"
-         }
-        ]
-       }
-      },
-      {
-       "id": "hypertension",
-       "text": "Heb je een te hoge bloeddruk, boven 140/90?",
-       "type": "yes_no"
-      },
-      {
-       "id": "heart",
-       "text": "Heb je een hartritmestoornis of een andere hartaandoening?",
-       "type": "yes_no"
-      },
-      {
-       "id": "stroke_infarct",
-       "text": "Heb je een TIA, een beroerte of een hartinfarct gehad?",
-       "type": "yes_no"
-      },
-      {
-       "id": "dm1",
-       "text": "Heb je diabetes type 1?",
-       "type": "yes_no"
-      },
-      {
-       "id": "dm2",
-       "text": "Heb je diabetes type 2?",
-       "type": "yes_no"
-      },
-      {
-       "id": "cholesterol",
-       "text": "Heb je een verhoogd cholesterol?",
-       "type": "yes_no"
-      },
-      {
-       "id": "liver_gall",
-       "text": "Heb je een aandoening aan lever of galblaas?",
-       "type": "yes_no"
-      },
-      {
-       "id": "kidney",
-       "text": "Heb je een aandoening aan de nieren?",
-       "type": "yes_no"
-      },
-      {
-       "id": "ibd",
-       "text": "Heb je een chronische darmziekte, zoals Crohn of colitis ulcerosa?",
-       "type": "yes_no"
-      },
-      {
-       "id": "gi_complaints",
-       "text": "Heb je maag- of darmklachten?",
-       "type": "yes_no"
-      },
-      {
-       "id": "metabolic",
-       "text": "Heb je een stofwisselingsziekte, zoals Cushing?",
-       "type": "yes_no"
-      },
-      {
-       "id": "pancreatitis",
-       "text": "Heb je ooit een alvleesklierontsteking gehad?",
-       "type": "yes_no",
-       "signal_if": "yes"
-      },
-      {
-       "id": "asthma_copd",
-       "text": "Heb je astma, COPD of chronische bronchitis?",
-       "type": "yes_no"
-      },
-      {
-       "id": "thyroid",
-       "text": "Heb je een schildklierafwijking, of gehad?",
-       "type": "yes_no"
-      },
-      {
-       "id": "arthrosis",
-       "text": "Heb je artrose, slijtage van knie of heup?",
-       "type": "yes_no"
-      },
-      {
-       "id": "family",
-       "text": "Komen deze aandoeningen in je familie voor?",
-       "type": "multi_choice",
-       "options": [
-        "Overgewicht",
-        "Familiaire schildklierkanker"
-       ],
-       "exclusive_option": "Geen van deze",
-       "signal_if": [
-        "Familiaire schildklierkanker"
-       ]
-      },
-      {
-       "id": "pregnancy_wish",
-       "text": "Wil je binnen een jaar zwanger worden?",
-       "type": "yes_no",
-       "show_if": {
-        "all": [
-         {
-          "field": "triage.sex",
-          "op": "eq",
-          "value": "Vrouw"
-         }
-        ]
-       }
-      }
-     ]
-    },
-    {
-     "id": "m_meds",
-     "type": "question_page",
-     "title": "Medicatie en middelen",
-     "items": [
-      {
-       "id": "medication",
-       "text": "Welke medicatie gebruik je op dit moment? Naam en dosering.",
-       "type": "text",
-       "prefill_from": "lsp_if_consented"
-      },
-      {
-       "id": "med_problems",
-       "text": "Heb je ooit problemen gehad bij het gebruik van medicijnen, zoals een allergische reactie, ernstige bijwerkingen of afhankelijkheid?",
-       "type": "yes_no"
-      },
-      {
-       "id": "med_problems_detail",
-       "text": "Welke?",
-       "type": "text",
-       "show_if": {
-        "all": [
-         {
-          "field": "med_problems",
-          "op": "eq",
-          "value": "yes"
-         }
-        ]
-       }
-      },
-      {
-       "id": "lithium",
-       "text": "Gebruik je op dit moment lithium?",
-       "type": "yes_no",
-       "signal_if": "yes"
-      },
-      {
-       "id": "glp1_allergy",
-       "text": "Ben je allergisch voor de werkzame stof of hulpstoffen van afslankmedicatie, zoals semaglutide, tirzepatide of liraglutide?",
-       "type": "single_choice",
-       "options": [
-        "Ja",
-        "Nee",
-        "Weet ik niet"
-       ],
-       "signal_if": [
-        "Ja",
-        "Weet ik niet"
-       ]
-      },
-      {
-       "id": "allergies",
-       "text": "Heb je allergieën?",
-       "type": "yes_no"
-      },
-      {
-       "id": "allergies_detail",
-       "text": "Welke?",
-       "type": "text",
-       "show_if": {
-        "all": [
-         {
-          "field": "allergies",
-          "op": "eq",
-          "value": "yes"
-         }
-        ]
-       }
-      },
-      {
-       "id": "alcohol",
-       "text": "Drink je alcohol?",
-       "type": "yes_no"
-      },
-      {
-       "id": "alcohol_amount",
-       "text": "Hoeveel, per dag, week of maand?",
-       "type": "text",
-       "show_if": {
-        "all": [
-         {
-          "field": "alcohol",
-          "op": "eq",
-          "value": "yes"
-         }
-        ]
-       }
-      },
-      {
-       "id": "drugs",
-       "text": "Gebruik je drugs?",
-       "type": "yes_no"
-      },
-      {
-       "id": "drugs_detail",
-       "text": "Wat en hoeveel?",
-       "type": "text",
-       "show_if": {
-        "all": [
-         {
-          "field": "drugs",
-          "op": "eq",
-          "value": "yes"
-         }
-        ]
-       }
-      },
-      {
-       "id": "smoking",
-       "text": "Rook je?",
-       "type": "yes_no"
-      },
-      {
-       "id": "smoking_amount",
-       "text": "Hoeveel?",
-       "type": "text",
-       "show_if": {
-        "all": [
-         {
-          "field": "smoking",
-          "op": "eq",
-          "value": "yes"
-         }
-        ]
-       }
-      }
-     ]
-    },
-    {
-     "id": "m_food",
-     "type": "question_page",
-     "title": "Eten",
-     "items": [
-      {
-       "id": "diet_satisfied",
-       "text": "Ben je tevreden over je eetpatroon?",
-       "type": "yes_no"
-      },
-      {
-       "id": "hunger",
-       "text": "Heb je vaak honger?",
-       "type": "yes_no"
-      },
-      {
-       "id": "hunger_when",
-       "text": "Wanneer het meest?",
-       "type": "text",
-       "show_if": {
-        "all": [
-         {
-          "field": "hunger",
-          "op": "eq",
-          "value": "yes"
-         }
-        ]
-       }
-      },
-      {
-       "id": "satiety",
-       "text": "Ben je snel verzadigd?",
-       "type": "single_choice",
-       "options": [
-        "Snel",
-        "Gemiddeld",
-        "Niet snel"
-       ]
-      },
-      {
-       "id": "regularity",
-       "text": "Eet je regelmatig, of sla je maaltijden over?",
-       "type": "single_choice",
-       "options": [
-        "Ik eet regelmatig",
-        "Ik sla regelmatig een maaltijd over"
-       ]
-      },
-      {
-       "id": "skipped_meal",
-       "text": "Welke maaltijd sla je over?",
-       "type": "text",
-       "show_if": {
-        "all": [
-         {
-          "field": "regularity",
-          "op": "eq",
-          "value": "Ik sla regelmatig een maaltijd over"
-         }
-        ]
-       }
-      },
-      {
-       "id": "meals_per_day",
-       "text": "Hoe vaak eet je op een dag, inclusief tussendoortjes?",
-       "type": "single_choice",
-       "options": [
-        "1 tot 2",
-        "3 tot 4",
-        "5 of meer"
-       ]
-      },
-      {
-       "id": "portion",
-       "text": "Hoe schat je je portiegrootte in?",
-       "type": "single_choice",
-       "options": [
-        "Klein",
-        "Gemiddeld",
-        "Groot"
-       ]
-      },
-      {
-       "id": "snacking",
-       "text": "Snaai je weleens?",
-       "type": "yes_no"
-      },
-      {
-       "id": "snacking_trigger",
-       "text": "Waardoor wordt dat uitgelokt?",
-       "type": "text",
-       "show_if": {
-        "all": [
-         {
-          "field": "snacking",
-          "op": "eq",
-          "value": "yes"
-         }
-        ]
-       }
-      },
-      {
-       "id": "emotional_eating",
-       "text": "Herken je je in emotie-eten?",
-       "type": "yes_no"
-      }
-     ]
-    },
-    {
-     "id": "m_mind",
-     "type": "question_page",
-     "title": "Bewegen, mentaal en slaap",
-     "items": [
-      {
-       "id": "exercise_satisfied",
-       "text": "Ben je tevreden over je beweegpatroon?",
-       "type": "yes_no"
-      },
-      {
-       "id": "daily_activity",
-       "text": "Beweeg je dagelijks voldoende?",
-       "type": "yes_no"
-      },
-      {
-       "id": "sports",
-       "text": "Sport je?",
-       "type": "yes_no"
-      },
-      {
-       "id": "sports_detail",
-       "text": "Wat doe je en hoe vaak?",
-       "type": "text",
-       "show_if": {
-        "all": [
-         {
-          "field": "sports",
-          "op": "eq",
-          "value": "yes"
-         }
-        ]
-       }
-      },
-      {
-       "id": "psych_now",
-       "text": "Heb je op dit moment psychische klachten, zoals somberheid of angst?",
-       "type": "yes_no"
-      },
-      {
-       "id": "binge",
-       "text": "Heb je weleens last van eetbuien, of gehad?",
-       "type": "yes_no"
-      },
-      {
-       "id": "psych_treated",
-       "text": "Ben je ooit behandeld door een psycholoog of psychiater?",
-       "type": "yes_no"
-      },
-      {
-       "id": "psych_history",
-       "text": "Heb je ooit psychische problemen gehad, zoals een verslaving, een eetstoornis of een ernstige depressie?",
-       "type": "yes_no"
-      },
-      {
-       "id": "psych_history_detail",
-       "text": "Wil je daar iets over kwijt?",
-       "type": "text",
-       "show_if": {
-        "all": [
-         {
-          "field": "psych_history",
-          "op": "eq",
-          "value": "yes"
-         }
-        ]
-       }
-      },
-      {
-       "id": "stress",
-       "text": "Heb je veel stress?",
-       "type": "yes_no"
-      },
-      {
-       "id": "stress_lifestyle",
-       "text": "Beïnvloedt dat je leefstijl?",
-       "type": "yes_no",
-       "show_if": {
-        "all": [
-         {
-          "field": "stress",
-          "op": "eq",
-          "value": "yes"
-         }
-        ]
-       }
-      },
-      {
-       "id": "sleep",
-       "text": "Slaap je goed?",
-       "type": "yes_no"
-      },
-      {
-       "id": "snoring",
-       "text": "Snurk je?",
-       "type": "yes_no"
-      },
-      {
-       "id": "rested",
-       "text": "Word je uitgerust wakker?",
-       "type": "yes_no",
-       "show_if": {
-        "all": [
-         {
-          "field": "snoring",
-          "op": "eq",
-          "value": "yes"
-         }
-        ]
-       }
-      }
-     ]
-    },
-    {
-     "id": "m_finish",
-     "type": "question_page",
-     "title": "Bijna klaar",
-     "items": [
-      {
-       "id": "truth",
-       "text": "Ik verklaar dat ik deze vragen naar mijn beste weten juist en naar waarheid heb beantwoord.",
-       "type": "checkbox_required"
-      },
-      {
-       "id": "review",
-       "text": "Klopt alles? Bekijk je antwoorden.",
-       "type": "answer_summary"
-      }
-     ],
-     "button": "Versturen"
-    },
-    {
-     "id": "m_done",
-     "type": "text",
-     "title": "Dank je wel, {voornaam}",
-     "body": "Je antwoorden staan klaar voor {behandelaar_voornaam}. Ze leest ze vóór jullie consult op {dag} om {tijd}.",
-     "button": "Naar bodyclinic.nl"
+    "consult_mode": [
+      "arts",
+      "therapeut"
+    ],
+    "record_visibility": {
+      "customer_care": "overview (limited), timeline, documents; no medical, no treatment tabs"
     }
-   ]
-  }
- ],
- "rules": {
-  "exclusive_option": "Selecting it clears other options and vice versa.",
-  "follow_up": "A follow-up with show_if appears directly under its parent on the same page, without reload.",
-  "red": "On the first red answer in the triage: release the reserved slot, show the matching rejection variant, do not store answers, count the reason anonymously. Red reasons: age outside 18-85; BMI below 18; middle BMI group with no comorbidity, no enlarged waist and no burden; low BMI group with no weight history and no medication; a hard condition; MEN 2; a mental situation. BMI >= 30 (27.5 reduced) skips the weight questions. (Routing from Doc 02 v2.2, confirmed by Rob 17-10.)",
-  "signal": "Signals never block; they are shown to the doctor in the record before the consult.",
-  "page_progress": "Each question page shows 'pagina x van n' and 'k van m vragen beantwoord'.",
-  "resume": "Medical questionnaire is saved per page; the e-mail link reopens the last page."
- },
- "treatment_fields": {
-  "description_for_mails": "{behandeling_omschrijving}",
-  "preparation": "{voorbereiding} in confirmation and appointment reminder",
-  "aftercare": "{nazorg} in thank-you mail",
-  "cancel_until_hours": "default from general settings (24), overridable per category/treatment (e.g. injectables 48)",
-  "no_show_fee_eur": "default none, overridable (e.g. injectables 60)",
-  "languages": "every patient text field exists per language (nl, en); fallback nl",
-  "image_for_mails": "per category, fallback template default"
- },
- "roles": {
-  "landing": {
-   "superadmin": "dashboard",
-   "admin": "dashboard",
-   "arts": "mijn-dag",
-   "therapeut": "mijn-dag",
-   "customer_care": "agenda",
-   "assistent": "agenda"
   },
-  "consult_mode": [
-   "arts",
-   "therapeut"
-  ],
-  "record_visibility": {
-   "customer_care": "overview (limited), timeline, documents; no medical, no treatment tabs"
-  }
- },
- "ui_rules": {
-  "selects": "Any field with a finite set of values is a select with those values, never a free text field with an example.",
-  "patient_card": "One identical patient card everywhere a patient is clicked (agenda, mijn dag, patient list): short, primary action Open dossier, Meet button, signals, 5 facts.",
-  "record_tabs": [
-   "Overzicht",
-   "Tijdlijn",
-   "Medisch (intake, anamnese, metingen)",
-   "Behandeling (consult, behandelplan, afspraken)",
-   "Documenten"
-  ],
-  "consult_mode": "Sticky consult bar (patient, time window, remaining-time progress, clock, next patient, Meet, agenda) + draggable floating notes panel (S/O/E/P, 8-step checklist) with autosave on every keystroke and visible last-saved time; persists across tabs, agenda and other records until 'Consult afronden'.",
-  "consult_close": "Checklist (report, measurements, plan, follow-up), automatic actions (thank-you mail with aftercare, pharmacy request once plan exists, optional GP letter, lock report), then next patient.",
-  "timeline": "Every event on the patient (booking started, triage, details, confirmation, mails, calls, questionnaire, appointments, consults, plan, measurements, orders) in one chronological list with filters.",
-  "google_meet": "One linked Google account creates a calendar event with a unique Meet link per online appointment and invites the practitioner; same link in practitioner's Google Calendar, Mijn dag, patient card, record and patient mails; reschedule keeps the link.",
-  "mail_templates": "7 base templates by moment; variation via treatment fields and conditional blocks (online/clinic, new/existing, has questionnaire); overrides per category or treatment only when structure differs; most specific wins.",
-  "questionnaire_versions": "Draft vs published; answers bound to version; in-progress fills finish on old version; test mode; JSON import/export.",
-  "dob_field": "dd-mm-jjjj segmented, digits only, auto-advance, validate after year, show age."
- },
- "booking": {
-  "order": [
-   "entry_link",
-   "location",
-   "date_time",
-   "optional_practitioner",
-   "triage",
-   "details_form",
-   "confirmation"
-  ],
-  "details_form": {
-   "existing_patient_toggle": true,
-   "existing_patient_hides": [
-    "how_found"
-   ],
-   "gp_name_if": "gp_inform == yes",
-   "lsp_consent": "asked here only",
-   "dob_field": "date_segmented, dd-mm-jjjj, digits only, auto-advance, validate after year, age shown"
+  "ui_rules": {
+    "selects": "Any field with a finite set of values is a select with those values, never a free text field with an example.",
+    "patient_card": "One identical patient card everywhere a patient is clicked (agenda, mijn dag, patient list): short, primary action Open dossier, Meet button, signals, 5 facts.",
+    "record_tabs": [
+      "Overzicht",
+      "Tijdlijn",
+      "Medisch (intake, anamnese, metingen)",
+      "Behandeling (consult, behandelplan, afspraken)",
+      "Documenten"
+    ],
+    "consult_mode": "Sticky consult bar (patient, time window, remaining-time progress, clock, next patient, Meet, agenda) + draggable floating notes panel (S/O/E/P, 8-step checklist) with autosave on every keystroke and visible last-saved time; persists across tabs, agenda and other records until 'Consult afronden'.",
+    "consult_close": "Checklist (report, measurements, plan, follow-up), automatic actions (thank-you mail with aftercare, pharmacy request once plan exists, optional GP letter, lock report), then next patient.",
+    "timeline": "Every event on the patient (booking started, triage, details, confirmation, mails, calls, questionnaire, appointments, consults, plan, measurements, orders) in one chronological list with filters.",
+    "google_meet": "One linked Google account creates a calendar event with a unique Meet link per online appointment and invites the practitioner; same link in practitioner's Google Calendar, Mijn dag, patient card, record and patient mails; reschedule keeps the link.",
+    "mail_templates": "7 base templates by moment; variation via treatment fields and conditional blocks (online/clinic, new/existing, has questionnaire); overrides per category or treatment only when structure differs; most specific wins.",
+    "questionnaire_versions": "Draft vs published; answers bound to version; in-progress fills finish on old version; test mode; JSON import/export.",
+    "dob_field": "dd-mm-jjjj segmented, digits only, auto-advance, validate after year, show age."
   },
-  "emails": {
-   "confirmation": "template by treatment > category > all, with {extra_tekst} from treatment",
-   "reminder_questionnaire": "2 days after booking if medical not completed",
-   "reminder_appointment": "1 day before"
-  },
-  "export": {
-   "ekis_daily_file": "06:00, new patients and answers",
-   "ekis_number_back": "open with Hamid"
+  "booking": {
+    "order": [
+      "entry_link",
+      "location",
+      "date_time",
+      "optional_practitioner",
+      "triage",
+      "details_form",
+      "confirmation"
+    ],
+    "details_form": {
+      "existing_patient_toggle": true,
+      "existing_patient_hides": [
+        "how_found"
+      ],
+      "gp_name_if": "gp_inform == yes",
+      "lsp_consent": "asked here only",
+      "dob_field": "date_segmented, dd-mm-jjjj, digits only, auto-advance, validate after year, age shown"
+    },
+    "emails": {
+      "confirmation": "template by treatment > category > all, with {extra_tekst} from treatment",
+      "reminder_questionnaire": "2 days after booking if medical not completed",
+      "reminder_appointment": "1 day before"
+    },
+    "export": {
+      "ekis_daily_file": "06:00, new patients and answers",
+      "ekis_number_back": "open with Hamid"
+    }
   }
- }
 }
