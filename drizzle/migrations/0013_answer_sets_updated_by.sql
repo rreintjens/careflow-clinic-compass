@@ -1,0 +1,1 @@
+ALTER TABLE public.answer_sets ADD COLUMN updated_by uuid NULL;

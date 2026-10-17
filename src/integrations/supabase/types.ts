@@ -14,6 +14,76 @@ export type Database = {
   }
   public: {
     Tables: {
+      answer_sets: {
+        Row: {
+          answers: Json
+          appointment_id: string | null
+          completed_at: string | null
+          created_at: string
+          id: string
+          patient_id: string
+          questionnaire_key: string
+          signals: Json
+          status: string
+          tenant_id: string
+          updated_at: string
+          updated_by: string | null
+          version_id: string | null
+        }
+        Insert: {
+          answers?: Json
+          appointment_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          patient_id: string
+          questionnaire_key: string
+          signals?: Json
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version_id?: string | null
+        }
+        Update: {
+          answers?: Json
+          appointment_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          patient_id?: string
+          questionnaire_key?: string
+          signals?: Json
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "answer_sets_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "answer_sets_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "answer_sets_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "questionnaire_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       appointments: {
         Row: {
           cancel_reason: string | null
@@ -27,8 +97,11 @@ export type Database = {
           location_id: string
           manage_token: string
           meet_link: string | null
+          new_patient: boolean | null
           patient_id: string | null
+          patient_note: string | null
           practitioner_id: string
+          referral_source: string | null
           room_id: string | null
           source: string | null
           starts_at: string
@@ -50,8 +123,11 @@ export type Database = {
           location_id: string
           manage_token?: string
           meet_link?: string | null
+          new_patient?: boolean | null
           patient_id?: string | null
+          patient_note?: string | null
           practitioner_id: string
+          referral_source?: string | null
           room_id?: string | null
           source?: string | null
           starts_at: string
@@ -73,8 +149,11 @@ export type Database = {
           location_id?: string
           manage_token?: string
           meet_link?: string | null
+          new_patient?: boolean | null
           patient_id?: string | null
+          patient_note?: string | null
           practitioner_id?: string
+          referral_source?: string | null
           room_id?: string | null
           source?: string | null
           starts_at?: string
@@ -921,8 +1000,55 @@ export type Database = {
         }
         Relationships: []
       }
+      patient_consents: {
+        Row: {
+          appointment_id: string | null
+          created_at: string
+          granted: boolean
+          id: string
+          kind: string
+          patient_id: string
+          tenant_id: string
+        }
+        Insert: {
+          appointment_id?: string | null
+          created_at?: string
+          granted: boolean
+          id?: string
+          kind: string
+          patient_id: string
+          tenant_id?: string
+        }
+        Update: {
+          appointment_id?: string | null
+          created_at?: string
+          granted?: boolean
+          id?: string
+          kind?: string
+          patient_id?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_consents_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_consents_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patients: {
         Row: {
+          city: string | null
+          country: string | null
           created_at: string
           created_by: string | null
           date_of_birth: string
@@ -930,15 +1056,24 @@ export type Database = {
           deleted_reason: string | null
           email: string
           first_name: string
+          gp_name: string | null
+          house_number: string | null
+          house_suffix: string | null
           id: string
           last_name: string
           patient_number: number
           phone: string | null
+          phone_country: string | null
+          postcode: string | null
+          salutation: string | null
+          street: string | null
           tenant_id: string
           updated_at: string
           updated_by: string | null
         }
         Insert: {
+          city?: string | null
+          country?: string | null
           created_at?: string
           created_by?: string | null
           date_of_birth: string
@@ -946,15 +1081,24 @@ export type Database = {
           deleted_reason?: string | null
           email: string
           first_name: string
+          gp_name?: string | null
+          house_number?: string | null
+          house_suffix?: string | null
           id?: string
           last_name: string
           patient_number?: number
           phone?: string | null
+          phone_country?: string | null
+          postcode?: string | null
+          salutation?: string | null
+          street?: string | null
           tenant_id?: string
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
+          city?: string | null
+          country?: string | null
           created_at?: string
           created_by?: string | null
           date_of_birth?: string
@@ -962,10 +1106,17 @@ export type Database = {
           deleted_reason?: string | null
           email?: string
           first_name?: string
+          gp_name?: string | null
+          house_number?: string | null
+          house_suffix?: string | null
           id?: string
           last_name?: string
           patient_number?: number
           phone?: string | null
+          phone_country?: string | null
+          postcode?: string | null
+          salutation?: string | null
+          street?: string | null
           tenant_id?: string
           updated_at?: string
           updated_by?: string | null

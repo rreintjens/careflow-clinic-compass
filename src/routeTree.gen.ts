@@ -16,6 +16,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedPatientenRouteImport } from './routes/_authenticated/patienten'
 import { Route as AuthIndexRouteImport } from './routes/auth.index'
 import { Route as Auth2faRouteImport } from './routes/auth.2fa'
+import { Route as VragenlijstTokenRouteImport } from './routes/vragenlijst.$token'
 import { Route as AuthenticatedAgendaIndexRouteImport } from './routes/_authenticated/agenda.index'
 import { Route as AuthenticatedAgendaMijnDagRouteImport } from './routes/_authenticated/agenda.mijn-dag'
 import { Route as AuthenticatedAgendaRoosterRouteImport } from './routes/_authenticated/agenda.rooster'
@@ -68,6 +69,11 @@ const AuthIndexRoute = AuthIndexRouteImport.update({
 const Auth2faRoute = Auth2faRouteImport.update({
   id: '/auth/2fa',
   path: '/auth/2fa',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VragenlijstTokenRoute = VragenlijstTokenRouteImport.update({
+  id: '/vragenlijst/$token',
+  path: '/vragenlijst/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAgendaIndexRoute =
@@ -191,6 +197,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/patienten': typeof AuthenticatedPatientenRoute
   '/auth/2fa': typeof Auth2faRoute
+  '/vragenlijst/$token': typeof VragenlijstTokenRoute
   '/auth/': typeof AuthIndexRoute
   '/agenda/mijn-dag': typeof AuthenticatedAgendaMijnDagRoute
   '/agenda/rooster': typeof AuthenticatedAgendaRoosterRoute
@@ -218,6 +225,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/patienten': typeof AuthenticatedPatientenRoute
   '/auth/2fa': typeof Auth2faRoute
+  '/vragenlijst/$token': typeof VragenlijstTokenRoute
   '/auth': typeof AuthIndexRoute
   '/agenda/mijn-dag': typeof AuthenticatedAgendaMijnDagRoute
   '/agenda/rooster': typeof AuthenticatedAgendaRoosterRoute
@@ -247,6 +255,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/patienten': typeof AuthenticatedPatientenRoute
   '/auth/2fa': typeof Auth2faRoute
+  '/vragenlijst/$token': typeof VragenlijstTokenRoute
   '/auth/': typeof AuthIndexRoute
   '/_authenticated/agenda/mijn-dag': typeof AuthenticatedAgendaMijnDagRoute
   '/_authenticated/agenda/rooster': typeof AuthenticatedAgendaRoosterRoute
@@ -276,6 +285,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/patienten'
     | '/auth/2fa'
+    | '/vragenlijst/$token'
     | '/auth/'
     | '/agenda/mijn-dag'
     | '/agenda/rooster'
@@ -303,6 +313,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/patienten'
     | '/auth/2fa'
+    | '/vragenlijst/$token'
     | '/auth'
     | '/agenda/mijn-dag'
     | '/agenda/rooster'
@@ -331,6 +342,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/patienten'
     | '/auth/2fa'
+    | '/vragenlijst/$token'
     | '/auth/'
     | '/_authenticated/agenda/mijn-dag'
     | '/_authenticated/agenda/rooster'
@@ -358,6 +370,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   BoekenRoute: typeof BoekenRoute
   Auth2faRoute: typeof Auth2faRoute
+  VragenlijstTokenRoute: typeof VragenlijstTokenRoute
   AuthIndexRoute: typeof AuthIndexRoute
 }
 
@@ -410,6 +423,13 @@ declare module '@tanstack/react-router' {
       path: '/auth/2fa'
       fullPath: '/auth/2fa'
       preLoaderRoute: typeof Auth2faRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/vragenlijst/$token': {
+      id: '/vragenlijst/$token'
+      path: '/vragenlijst/$token'
+      fullPath: '/vragenlijst/$token'
+      preLoaderRoute: typeof VragenlijstTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/agenda/': {
@@ -618,6 +638,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   BoekenRoute: BoekenRoute,
   Auth2faRoute: Auth2faRoute,
+  VragenlijstTokenRoute: VragenlijstTokenRoute,
   AuthIndexRoute: AuthIndexRoute,
 }
 export const routeTree = rootRouteImport

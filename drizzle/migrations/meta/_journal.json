@@ -85,6 +85,20 @@
       "when": 1792278818552,
       "tag": "0011_appointments_and_holds",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792280217781,
+      "tag": "0012_booking_details",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1792280233880,
+      "tag": "0013_answer_sets_updated_by",
+      "breakpoints": true
     }
   ]
 }
