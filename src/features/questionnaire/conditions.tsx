@@ -1,6 +1,6 @@
 import { SegmentedControl } from "@/components/SegmentedControl";
 import { Select } from "@/components/Select";
-import { TextLink } from "@/components/Field";
+import { TextLink, inputCls } from "@/components/Field";
 import { isLeaf, type Condition, type Leaf, type Op, type QuestionnaireDef } from "@/domain/questionnaire/engine";
 
 export interface FieldInfo { value: string; label: string; options?: string[]; kind: "answer" | "computed" }
@@ -79,19 +79,21 @@ export function ConditionEditor({ value, onChange, fields, ops, refs }: {
 function LeafRow({ leaf, onChange, fields, ops, refs }: { leaf: Leaf; onChange: (l: Leaf) => void; fields: FieldInfo[]; ops: Array<{ value: string; label: string }>; refs: Array<{ value: string; label: string }> }) {
   const f = fields.find((x) => x.value === leaf.field);
   const isMulti = Array.isArray(leaf.value);
-  const valueOptions = f?.options
-    ? f.options.map((o) => ({ value: o, label: o === "yes" ? "Ja" : o === "no" ? "Nee" : o === "unknown" ? "Weet ik niet" : o }))
-    : refs;
   const current = isMulti ? String((leaf.value as unknown[])[0] ?? "") : String(leaf.value ?? "");
+  const fieldSel = <Select label="Veld" value={leaf.field} onChange={(v) => onChange({ ...leaf, field: v, value: "" })} options={withCurrent(fields.map((x) => ({ value: x.value, label: short(x.label) })), leaf.field)} />;
+  const opSel = <Select label="Toets" value={leaf.op} onChange={(v) => onChange({ ...leaf, op: v as Op })} options={ops} />;
+  if (f?.options) {
+    const options = f.options.map((o) => ({ value: o, label: o === "yes" ? "Ja" : o === "no" ? "Nee" : o === "unknown" ? "Weet ik niet" : o }));
+    return <div className="grid grid-cols-3 gap-2">{fieldSel}{opSel}<Select label="Waarde" value={current} onChange={(v) => onChange({ ...leaf, value: isMulti ? [v] : v })} options={withCurrent(options, current)} /></div>;
+  }
+  const numeric = typeof leaf.value === "number";
   return (
     <div className="grid grid-cols-3 gap-2">
-      <Select label="Veld" value={leaf.field} onChange={(v) => onChange({ ...leaf, field: v, value: "" })} options={fields.map((x) => ({ value: x.value, label: short(x.label) }))} />
-      <Select label="Toets" value={leaf.op} onChange={(v) => onChange({ ...leaf, op: v as Op })} options={ops} />
-      {f?.options || refs.some((r) => r.value === current) || !current || Number.isNaN(Number(current)) ? (
-        <Select label="Waarde" value={current} onChange={(v) => onChange({ ...leaf, value: isMulti ? [v] : (f?.options ? v : Number.isNaN(Number(v)) ? v : Number(v)) })} options={withCurrent(valueOptions, current)} />
-      ) : (
-        <Select label="Waarde" value={current} onChange={(v) => onChange({ ...leaf, value: Number.isNaN(Number(v)) ? v : Number(v) })} options={withCurrent(refs, current)} />
-      )}
+      {fieldSel}{opSel}
+      <div className="flex flex-col gap-2">
+        <Select label="Waarde" value={numeric ? "__num" : current} onChange={(v) => onChange({ ...leaf, value: v === "__num" ? 0 : v })} options={[...withCurrent(refs, numeric ? "" : current), { value: "__num", label: "Vast getal" }]} />
+        {numeric && <input inputMode="decimal" aria-label="Getal" className={inputCls} value={String(leaf.value).replace(".", ",")} onChange={(e) => { const n = Number(e.target.value.replace(",", ".")); if (!Number.isNaN(n)) onChange({ ...leaf, value: n }); }} />}
+      </div>
     </div>
   );
 }
