@@ -9,7 +9,7 @@ import { PillButton } from "@/components/PillButton";
 import { dayPart, nextStep, sortLocations, type Catalog } from "@/domain/booking";
 import { fmtTime, type Slot } from "@/domain/slots";
 import { cn } from "@/lib/utils";
-import { getBookingCatalog, getBookingSlots } from "@/server/booking.functions";
+import { getBookingCatalog, getBookingSlots } from "@/data/booking.functions";
 
 const search = z.object({
   merk: z.string().optional(), lang: z.enum(["nl", "en"]).optional(), bron: z.string().optional(),
