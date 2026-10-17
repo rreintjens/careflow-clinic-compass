@@ -19,3 +19,14 @@ describe("daySegments", () => {
 describe("hourRange", () => {
   it.each([[[], [8, 17]], [[540, 1020], [8, 17]], [[450, 1230], [7, 21]]] as const)("%j → %j", (m, r) => expect(hourRange(m)).toEqual(r));
 });
+
+import { freePlaces, weekStart } from "./agenda";
+describe("freePlaces", () => {
+  const work = [{ start: 540, end: 720, locationId: "L", kind: "work" as const }, { start: 720, end: 780, locationId: null, kind: "break" as const }];
+  it("6 half hours, none booked", () => expect(freePlaces(work, [])).toBe(6));
+  it("a 30-min appointment takes one", () => expect(freePlaces(work, [{ start: 570, end: 600 }])).toBe(5));
+  it("a 15-min appointment at :15 still blocks its half hour", () => expect(freePlaces(work, [{ start: 555, end: 570 }])).toBe(5));
+});
+describe("weekStart", () => {
+  it.each([["2026-10-20", "2026-10-19"], ["2026-10-19", "2026-10-19"], ["2026-10-25", "2026-10-19"]])("%s → %s", (d, w) => expect(weekStart(d)).toBe(w));
+});

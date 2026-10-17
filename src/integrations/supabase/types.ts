@@ -86,6 +86,7 @@ export type Database = {
       }
       appointments: {
         Row: {
+          booking_reason: string | null
           cancel_reason: string | null
           created_at: string
           created_by: string | null
@@ -98,6 +99,7 @@ export type Database = {
           manage_token: string
           meet_link: string | null
           new_patient: boolean | null
+          notify: string
           patient_id: string | null
           patient_note: string | null
           practitioner_id: string
@@ -112,6 +114,7 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          booking_reason?: string | null
           cancel_reason?: string | null
           created_at?: string
           created_by?: string | null
@@ -124,6 +127,7 @@ export type Database = {
           manage_token?: string
           meet_link?: string | null
           new_patient?: boolean | null
+          notify?: string
           patient_id?: string | null
           patient_note?: string | null
           practitioner_id: string
@@ -138,6 +142,7 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          booking_reason?: string | null
           cancel_reason?: string | null
           created_at?: string
           created_by?: string | null
@@ -150,6 +155,7 @@ export type Database = {
           manage_token?: string
           meet_link?: string | null
           new_patient?: boolean | null
+          notify?: string
           patient_id?: string | null
           patient_note?: string | null
           practitioner_id?: string

@@ -28,3 +28,20 @@ export function hourRange(minutes: readonly number[]): [number, number] {
   if (!minutes.length) return [8, 17];
   return [Math.min(8, Math.floor(Math.min(...minutes) / 60)), Math.max(17, Math.ceil(Math.max(...minutes) / 60))];
 }
+
+/** Free 30-minute places in work segments that no appointment overlaps (week tile "Vrije plekken"). */
+export function freePlaces(segments: readonly Segment[], appts: ReadonlyArray<{ start: number; end: number }>, step = 30): number {
+  let n = 0;
+  for (const g of segments) {
+    if (g.kind !== "work") continue;
+    for (let t = g.start; t + step <= g.end; t += step) if (!appts.some((a) => a.start < t + step && a.end > t)) n++;
+  }
+  return n;
+}
+
+/** Monday of the ISO week containing `date` (YYYY-MM-DD). */
+export function weekStart(date: string): string {
+  const d = new Date(`${date}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+  return d.toISOString().slice(0, 10);
+}
