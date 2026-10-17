@@ -1,24 +1,16 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
+// The patient booking flow arrives in phase 4; until then / opens staff sign-in.
 export const Route = createFileRoute("/")({
-  component: Index,
+  head: () => ({
+    meta: [
+      { title: "The Body Clinic · Agenda en dossier" },
+      { name: "description", content: "Agenda en dossier voor medewerkers van The Body Clinic." },
+      { property: "og:title", content: "The Body Clinic · Agenda en dossier" },
+      { property: "og:description", content: "Agenda en dossier voor medewerkers van The Body Clinic." },
+    ],
+  }),
+  beforeLoad: () => {
+    throw redirect({ to: "/auth" });
+  },
 });
-
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
-  return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
-  );
-}

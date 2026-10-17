@@ -10,33 +10,264 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedPatientenRouteImport } from './routes/_authenticated/patienten'
+import { Route as AuthIndexRouteImport } from './routes/auth.index'
+import { Route as Auth2faRouteImport } from './routes/auth.2fa'
+import { Route as AuthenticatedAgendaIndexRouteImport } from './routes/_authenticated/agenda.index'
+import { Route as AuthenticatedAgendaMijnDagRouteImport } from './routes/_authenticated/agenda.mijn-dag'
+import { Route as AuthenticatedBoekingsflowBoekingslinksRouteImport } from './routes/_authenticated/boekingsflow.boekingslinks'
+import { Route as AuthenticatedBoekingsflowEMailsRouteImport } from './routes/_authenticated/boekingsflow.e-mails'
+import { Route as AuthenticatedBoekingsflowVragenlijstenRouteImport } from './routes/_authenticated/boekingsflow.vragenlijsten'
+import { Route as AuthenticatedInstellingenAlgemeenRouteImport } from './routes/_authenticated/instellingen.algemeen'
+import { Route as AuthenticatedInstellingenGebruikersEnRollenRouteImport } from './routes/_authenticated/instellingen.gebruikers-en-rollen'
+import { Route as AuthenticatedInstellingenKoppelingenRouteImport } from './routes/_authenticated/instellingen.koppelingen'
+import { Route as AuthenticatedInstellingenLogboekRouteImport } from './routes/_authenticated/instellingen.logboek'
+import { Route as AuthenticatedOrganisatieApparatuurRouteImport } from './routes/_authenticated/organisatie.apparatuur'
+import { Route as AuthenticatedOrganisatieBehandelaarsRouteImport } from './routes/_authenticated/organisatie.behandelaars'
+import { Route as AuthenticatedOrganisatieBehandelingenRouteImport } from './routes/_authenticated/organisatie.behandelingen'
+import { Route as AuthenticatedOrganisatieLocatiesRouteImport } from './routes/_authenticated/organisatie.locaties'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPatientenRoute = AuthenticatedPatientenRouteImport.update({
+  id: '/patienten',
+  path: '/patienten',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthIndexRoute = AuthIndexRouteImport.update({
+  id: '/auth/',
+  path: '/auth/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Auth2faRoute = Auth2faRouteImport.update({
+  id: '/auth/2fa',
+  path: '/auth/2fa',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedAgendaIndexRoute =
+  AuthenticatedAgendaIndexRouteImport.update({
+    id: '/agenda/',
+    path: '/agenda/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAgendaMijnDagRoute =
+  AuthenticatedAgendaMijnDagRouteImport.update({
+    id: '/agenda/mijn-dag',
+    path: '/agenda/mijn-dag',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedBoekingsflowBoekingslinksRoute =
+  AuthenticatedBoekingsflowBoekingslinksRouteImport.update({
+    id: '/boekingsflow/boekingslinks',
+    path: '/boekingsflow/boekingslinks',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedBoekingsflowEMailsRoute =
+  AuthenticatedBoekingsflowEMailsRouteImport.update({
+    id: '/boekingsflow/e-mails',
+    path: '/boekingsflow/e-mails',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedBoekingsflowVragenlijstenRoute =
+  AuthenticatedBoekingsflowVragenlijstenRouteImport.update({
+    id: '/boekingsflow/vragenlijsten',
+    path: '/boekingsflow/vragenlijsten',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedInstellingenAlgemeenRoute =
+  AuthenticatedInstellingenAlgemeenRouteImport.update({
+    id: '/instellingen/algemeen',
+    path: '/instellingen/algemeen',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedInstellingenGebruikersEnRollenRoute =
+  AuthenticatedInstellingenGebruikersEnRollenRouteImport.update({
+    id: '/instellingen/gebruikers-en-rollen',
+    path: '/instellingen/gebruikers-en-rollen',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedInstellingenKoppelingenRoute =
+  AuthenticatedInstellingenKoppelingenRouteImport.update({
+    id: '/instellingen/koppelingen',
+    path: '/instellingen/koppelingen',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedInstellingenLogboekRoute =
+  AuthenticatedInstellingenLogboekRouteImport.update({
+    id: '/instellingen/logboek',
+    path: '/instellingen/logboek',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedOrganisatieApparatuurRoute =
+  AuthenticatedOrganisatieApparatuurRouteImport.update({
+    id: '/organisatie/apparatuur',
+    path: '/organisatie/apparatuur',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedOrganisatieBehandelaarsRoute =
+  AuthenticatedOrganisatieBehandelaarsRouteImport.update({
+    id: '/organisatie/behandelaars',
+    path: '/organisatie/behandelaars',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedOrganisatieBehandelingenRoute =
+  AuthenticatedOrganisatieBehandelingenRouteImport.update({
+    id: '/organisatie/behandelingen',
+    path: '/organisatie/behandelingen',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedOrganisatieLocatiesRoute =
+  AuthenticatedOrganisatieLocatiesRouteImport.update({
+    id: '/organisatie/locaties',
+    path: '/organisatie/locaties',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/patienten': typeof AuthenticatedPatientenRoute
+  '/auth/2fa': typeof Auth2faRoute
+  '/auth/': typeof AuthIndexRoute
+  '/agenda/mijn-dag': typeof AuthenticatedAgendaMijnDagRoute
+  '/boekingsflow/boekingslinks': typeof AuthenticatedBoekingsflowBoekingslinksRoute
+  '/boekingsflow/e-mails': typeof AuthenticatedBoekingsflowEMailsRoute
+  '/boekingsflow/vragenlijsten': typeof AuthenticatedBoekingsflowVragenlijstenRoute
+  '/instellingen/algemeen': typeof AuthenticatedInstellingenAlgemeenRoute
+  '/instellingen/gebruikers-en-rollen': typeof AuthenticatedInstellingenGebruikersEnRollenRoute
+  '/instellingen/koppelingen': typeof AuthenticatedInstellingenKoppelingenRoute
+  '/instellingen/logboek': typeof AuthenticatedInstellingenLogboekRoute
+  '/organisatie/apparatuur': typeof AuthenticatedOrganisatieApparatuurRoute
+  '/organisatie/behandelaars': typeof AuthenticatedOrganisatieBehandelaarsRoute
+  '/organisatie/behandelingen': typeof AuthenticatedOrganisatieBehandelingenRoute
+  '/organisatie/locaties': typeof AuthenticatedOrganisatieLocatiesRoute
+  '/agenda/': typeof AuthenticatedAgendaIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/patienten': typeof AuthenticatedPatientenRoute
+  '/auth/2fa': typeof Auth2faRoute
+  '/auth': typeof AuthIndexRoute
+  '/agenda/mijn-dag': typeof AuthenticatedAgendaMijnDagRoute
+  '/boekingsflow/boekingslinks': typeof AuthenticatedBoekingsflowBoekingslinksRoute
+  '/boekingsflow/e-mails': typeof AuthenticatedBoekingsflowEMailsRoute
+  '/boekingsflow/vragenlijsten': typeof AuthenticatedBoekingsflowVragenlijstenRoute
+  '/instellingen/algemeen': typeof AuthenticatedInstellingenAlgemeenRoute
+  '/instellingen/gebruikers-en-rollen': typeof AuthenticatedInstellingenGebruikersEnRollenRoute
+  '/instellingen/koppelingen': typeof AuthenticatedInstellingenKoppelingenRoute
+  '/instellingen/logboek': typeof AuthenticatedInstellingenLogboekRoute
+  '/organisatie/apparatuur': typeof AuthenticatedOrganisatieApparatuurRoute
+  '/organisatie/behandelaars': typeof AuthenticatedOrganisatieBehandelaarsRoute
+  '/organisatie/behandelingen': typeof AuthenticatedOrganisatieBehandelingenRoute
+  '/organisatie/locaties': typeof AuthenticatedOrganisatieLocatiesRoute
+  '/agenda': typeof AuthenticatedAgendaIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/patienten': typeof AuthenticatedPatientenRoute
+  '/auth/2fa': typeof Auth2faRoute
+  '/auth/': typeof AuthIndexRoute
+  '/_authenticated/agenda/mijn-dag': typeof AuthenticatedAgendaMijnDagRoute
+  '/_authenticated/boekingsflow/boekingslinks': typeof AuthenticatedBoekingsflowBoekingslinksRoute
+  '/_authenticated/boekingsflow/e-mails': typeof AuthenticatedBoekingsflowEMailsRoute
+  '/_authenticated/boekingsflow/vragenlijsten': typeof AuthenticatedBoekingsflowVragenlijstenRoute
+  '/_authenticated/instellingen/algemeen': typeof AuthenticatedInstellingenAlgemeenRoute
+  '/_authenticated/instellingen/gebruikers-en-rollen': typeof AuthenticatedInstellingenGebruikersEnRollenRoute
+  '/_authenticated/instellingen/koppelingen': typeof AuthenticatedInstellingenKoppelingenRoute
+  '/_authenticated/instellingen/logboek': typeof AuthenticatedInstellingenLogboekRoute
+  '/_authenticated/organisatie/apparatuur': typeof AuthenticatedOrganisatieApparatuurRoute
+  '/_authenticated/organisatie/behandelaars': typeof AuthenticatedOrganisatieBehandelaarsRoute
+  '/_authenticated/organisatie/behandelingen': typeof AuthenticatedOrganisatieBehandelingenRoute
+  '/_authenticated/organisatie/locaties': typeof AuthenticatedOrganisatieLocatiesRoute
+  '/_authenticated/agenda/': typeof AuthenticatedAgendaIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/dashboard'
+    | '/patienten'
+    | '/auth/2fa'
+    | '/auth/'
+    | '/agenda/mijn-dag'
+    | '/boekingsflow/boekingslinks'
+    | '/boekingsflow/e-mails'
+    | '/boekingsflow/vragenlijsten'
+    | '/instellingen/algemeen'
+    | '/instellingen/gebruikers-en-rollen'
+    | '/instellingen/koppelingen'
+    | '/instellingen/logboek'
+    | '/organisatie/apparatuur'
+    | '/organisatie/behandelaars'
+    | '/organisatie/behandelingen'
+    | '/organisatie/locaties'
+    | '/agenda/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/dashboard'
+    | '/patienten'
+    | '/auth/2fa'
+    | '/auth'
+    | '/agenda/mijn-dag'
+    | '/boekingsflow/boekingslinks'
+    | '/boekingsflow/e-mails'
+    | '/boekingsflow/vragenlijsten'
+    | '/instellingen/algemeen'
+    | '/instellingen/gebruikers-en-rollen'
+    | '/instellingen/koppelingen'
+    | '/instellingen/logboek'
+    | '/organisatie/apparatuur'
+    | '/organisatie/behandelaars'
+    | '/organisatie/behandelingen'
+    | '/organisatie/locaties'
+    | '/agenda'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/_authenticated/dashboard'
+    | '/_authenticated/patienten'
+    | '/auth/2fa'
+    | '/auth/'
+    | '/_authenticated/agenda/mijn-dag'
+    | '/_authenticated/boekingsflow/boekingslinks'
+    | '/_authenticated/boekingsflow/e-mails'
+    | '/_authenticated/boekingsflow/vragenlijsten'
+    | '/_authenticated/instellingen/algemeen'
+    | '/_authenticated/instellingen/gebruikers-en-rollen'
+    | '/_authenticated/instellingen/koppelingen'
+    | '/_authenticated/instellingen/logboek'
+    | '/_authenticated/organisatie/apparatuur'
+    | '/_authenticated/organisatie/behandelaars'
+    | '/_authenticated/organisatie/behandelingen'
+    | '/_authenticated/organisatie/locaties'
+    | '/_authenticated/agenda/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  Auth2faRoute: typeof Auth2faRoute
+  AuthIndexRoute: typeof AuthIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +279,187 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/patienten': {
+      id: '/_authenticated/patienten'
+      path: '/patienten'
+      fullPath: '/patienten'
+      preLoaderRoute: typeof AuthenticatedPatientenRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/auth/': {
+      id: '/auth/'
+      path: '/auth'
+      fullPath: '/auth/'
+      preLoaderRoute: typeof AuthIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/2fa': {
+      id: '/auth/2fa'
+      path: '/auth/2fa'
+      fullPath: '/auth/2fa'
+      preLoaderRoute: typeof Auth2faRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/agenda/': {
+      id: '/_authenticated/agenda/'
+      path: '/agenda'
+      fullPath: '/agenda/'
+      preLoaderRoute: typeof AuthenticatedAgendaIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/agenda/mijn-dag': {
+      id: '/_authenticated/agenda/mijn-dag'
+      path: '/agenda/mijn-dag'
+      fullPath: '/agenda/mijn-dag'
+      preLoaderRoute: typeof AuthenticatedAgendaMijnDagRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/boekingsflow/boekingslinks': {
+      id: '/_authenticated/boekingsflow/boekingslinks'
+      path: '/boekingsflow/boekingslinks'
+      fullPath: '/boekingsflow/boekingslinks'
+      preLoaderRoute: typeof AuthenticatedBoekingsflowBoekingslinksRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/boekingsflow/e-mails': {
+      id: '/_authenticated/boekingsflow/e-mails'
+      path: '/boekingsflow/e-mails'
+      fullPath: '/boekingsflow/e-mails'
+      preLoaderRoute: typeof AuthenticatedBoekingsflowEMailsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/boekingsflow/vragenlijsten': {
+      id: '/_authenticated/boekingsflow/vragenlijsten'
+      path: '/boekingsflow/vragenlijsten'
+      fullPath: '/boekingsflow/vragenlijsten'
+      preLoaderRoute: typeof AuthenticatedBoekingsflowVragenlijstenRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/instellingen/algemeen': {
+      id: '/_authenticated/instellingen/algemeen'
+      path: '/instellingen/algemeen'
+      fullPath: '/instellingen/algemeen'
+      preLoaderRoute: typeof AuthenticatedInstellingenAlgemeenRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/instellingen/gebruikers-en-rollen': {
+      id: '/_authenticated/instellingen/gebruikers-en-rollen'
+      path: '/instellingen/gebruikers-en-rollen'
+      fullPath: '/instellingen/gebruikers-en-rollen'
+      preLoaderRoute: typeof AuthenticatedInstellingenGebruikersEnRollenRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/instellingen/koppelingen': {
+      id: '/_authenticated/instellingen/koppelingen'
+      path: '/instellingen/koppelingen'
+      fullPath: '/instellingen/koppelingen'
+      preLoaderRoute: typeof AuthenticatedInstellingenKoppelingenRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/instellingen/logboek': {
+      id: '/_authenticated/instellingen/logboek'
+      path: '/instellingen/logboek'
+      fullPath: '/instellingen/logboek'
+      preLoaderRoute: typeof AuthenticatedInstellingenLogboekRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/organisatie/apparatuur': {
+      id: '/_authenticated/organisatie/apparatuur'
+      path: '/organisatie/apparatuur'
+      fullPath: '/organisatie/apparatuur'
+      preLoaderRoute: typeof AuthenticatedOrganisatieApparatuurRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/organisatie/behandelaars': {
+      id: '/_authenticated/organisatie/behandelaars'
+      path: '/organisatie/behandelaars'
+      fullPath: '/organisatie/behandelaars'
+      preLoaderRoute: typeof AuthenticatedOrganisatieBehandelaarsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/organisatie/behandelingen': {
+      id: '/_authenticated/organisatie/behandelingen'
+      path: '/organisatie/behandelingen'
+      fullPath: '/organisatie/behandelingen'
+      preLoaderRoute: typeof AuthenticatedOrganisatieBehandelingenRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/organisatie/locaties': {
+      id: '/_authenticated/organisatie/locaties'
+      path: '/organisatie/locaties'
+      fullPath: '/organisatie/locaties'
+      preLoaderRoute: typeof AuthenticatedOrganisatieLocatiesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedPatientenRoute: typeof AuthenticatedPatientenRoute
+  AuthenticatedAgendaMijnDagRoute: typeof AuthenticatedAgendaMijnDagRoute
+  AuthenticatedBoekingsflowBoekingslinksRoute: typeof AuthenticatedBoekingsflowBoekingslinksRoute
+  AuthenticatedBoekingsflowEMailsRoute: typeof AuthenticatedBoekingsflowEMailsRoute
+  AuthenticatedBoekingsflowVragenlijstenRoute: typeof AuthenticatedBoekingsflowVragenlijstenRoute
+  AuthenticatedInstellingenAlgemeenRoute: typeof AuthenticatedInstellingenAlgemeenRoute
+  AuthenticatedInstellingenGebruikersEnRollenRoute: typeof AuthenticatedInstellingenGebruikersEnRollenRoute
+  AuthenticatedInstellingenKoppelingenRoute: typeof AuthenticatedInstellingenKoppelingenRoute
+  AuthenticatedInstellingenLogboekRoute: typeof AuthenticatedInstellingenLogboekRoute
+  AuthenticatedOrganisatieApparatuurRoute: typeof AuthenticatedOrganisatieApparatuurRoute
+  AuthenticatedOrganisatieBehandelaarsRoute: typeof AuthenticatedOrganisatieBehandelaarsRoute
+  AuthenticatedOrganisatieBehandelingenRoute: typeof AuthenticatedOrganisatieBehandelingenRoute
+  AuthenticatedOrganisatieLocatiesRoute: typeof AuthenticatedOrganisatieLocatiesRoute
+  AuthenticatedAgendaIndexRoute: typeof AuthenticatedAgendaIndexRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedPatientenRoute: AuthenticatedPatientenRoute,
+  AuthenticatedAgendaMijnDagRoute: AuthenticatedAgendaMijnDagRoute,
+  AuthenticatedBoekingsflowBoekingslinksRoute:
+    AuthenticatedBoekingsflowBoekingslinksRoute,
+  AuthenticatedBoekingsflowEMailsRoute: AuthenticatedBoekingsflowEMailsRoute,
+  AuthenticatedBoekingsflowVragenlijstenRoute:
+    AuthenticatedBoekingsflowVragenlijstenRoute,
+  AuthenticatedInstellingenAlgemeenRoute:
+    AuthenticatedInstellingenAlgemeenRoute,
+  AuthenticatedInstellingenGebruikersEnRollenRoute:
+    AuthenticatedInstellingenGebruikersEnRollenRoute,
+  AuthenticatedInstellingenKoppelingenRoute:
+    AuthenticatedInstellingenKoppelingenRoute,
+  AuthenticatedInstellingenLogboekRoute: AuthenticatedInstellingenLogboekRoute,
+  AuthenticatedOrganisatieApparatuurRoute:
+    AuthenticatedOrganisatieApparatuurRoute,
+  AuthenticatedOrganisatieBehandelaarsRoute:
+    AuthenticatedOrganisatieBehandelaarsRoute,
+  AuthenticatedOrganisatieBehandelingenRoute:
+    AuthenticatedOrganisatieBehandelingenRoute,
+  AuthenticatedOrganisatieLocatiesRoute: AuthenticatedOrganisatieLocatiesRoute,
+  AuthenticatedAgendaIndexRoute: AuthenticatedAgendaIndexRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  Auth2faRoute: Auth2faRoute,
+  AuthIndexRoute: AuthIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
