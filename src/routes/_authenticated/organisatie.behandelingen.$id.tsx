@@ -13,7 +13,7 @@ import { Select } from "@/components/Select";
 import {
   addPractitionersToTreatment, deleteRequirement, fullName, generalDefaultsQuery, locName, mainCategories, offeredLocationIds, optLabel, opts,
   orgQuery, removePractitionerTreatment, roleName, saveRequirement, saveTreatment, setPractitionerTreatmentExclusions, subCategories,
-  treatmentMainCategoryIds, workLocationIds, type Org, type Requirement,
+  treatmentMainCategoryIds, workLocationIds, type Org, type Requirement, kindName, kindOpts,
 } from "@/data/organisation";
 import { durationOptions, practitionerExcludedHere, practitionerTreatmentLocations } from "@/domain/organisation";
 import { REASON_TEXT, treatmentBookability } from "@/features/organisation/bookability";
@@ -206,7 +206,7 @@ function TreatmentForm({ org, defaults, onSaved, onCancel }: { org: Org; default
               <tbody className="divide-y divide-line">
                 {reqs.map((r) => (
                   <tr key={r.id}>
-                    <td className={tdCls}>{r.kind === "room" ? "Een kamer" : optLabel(org, "equipment_kind", r.equipment_kind)}</td>
+                    <td className={tdCls}>{r.kind === "room" ? "Een kamer" : kindName(org, r.equipment_kind)}</td>
                     <td className={tdCls}>{r.kind === "room" ? "Elke vrije behandelkamer op de locatie" : "Vast in een kamer, of een verplaatsbare die dan op de locatie is"}</td>
                     <td className={tdCls}>{r.quantity}</td>
                     <td className={tdCls}>{optLabel(org, "requirement_duration", r.duration)}</td>
@@ -437,7 +437,7 @@ function PractitionerLocationsModal({ org, treatmentId, practitionerId, onClose,
 }
 
 function RequirementModal({ org, treatmentId, requirement, onClose, onSaved }: { org: Org; treatmentId: string; requirement: Requirement | null; onClose: () => void; onSaved: () => Promise<void> }) {
-  const kindOptions = [{ value: "room", label: "Een kamer" }, ...opts(org, "equipment_kind")];
+  const kindOptions = [{ value: "room", label: "Een kamer" }, ...kindOpts(org)];
   const [kind, setKind] = useState(requirement ? (requirement.kind === "room" ? "room" : requirement.equipment_kind ?? "room") : "room");
   const [qty, setQty] = useState(String(requirement?.quantity ?? 1));
   const [duration, setDuration] = useState(requirement?.duration ?? "whole");

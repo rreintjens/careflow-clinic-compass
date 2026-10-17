@@ -1,15 +1,17 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
-import { Card } from "@/components/Card";
-import { PlusIcon, Tag, TextField, TextLink, tdCls, thCls } from "@/components/Field";
+import { PlusIcon, SearchField, Tag, TextField, TextLink, thCls } from "@/components/Field";
 import { Modal } from "@/components/Modal";
 import { PageHeader } from "@/components/PageHeader";
 import { PillButton } from "@/components/PillButton";
 import { Select } from "@/components/Select";
-import { addEquipmentException, deleteEquipment, locName, optLabel, opts, orgQuery, saveEquipment, type Equipment, type Org } from "@/data/organisation";
+import { deleteEquipment, kindOpts, locName, opts, orgQuery, saveEquipment, saveEquipmentType, saveRoom, type Org, type Room } from "@/data/organisation";
+import { addMonths, type Placement } from "@/domain/equipment";
+import { brandType, deviceNames, kindOfType, previewName, roomNumber, roomsOf, type Device } from "@/features/organisation/devices";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/organisatie/apparatuur")({
   head: () => ({ meta: [{ title: "Apparatuur · Beheer · The Body Clinic" }, { name: "robots", content: "noindex" }] }),
@@ -17,177 +19,346 @@ export const Route = createFileRoute("/_authenticated/organisatie/apparatuur")({
   component: EquipmentPage,
 });
 
-const DAYS = ["Maandag", "Dinsdag", "Woensdag", "Donderdag", "Vrijdag", "Zaterdag"];
-const MOBILITY_HELP: Record<string, string> = {
-  fixed_room: "Vast in een kamer. Een behandeling die het nodig heeft, krijgt die kamer.",
-  within_location: "Verplaatsbaar binnen een locatie. Het gaat mee naar de kamer van de afspraak.",
-  between_locations: "Verplaatsbaar tussen locaties. Per dag kies je waar het staat; alleen daar is een behandeling die dag boekbaar.",
-};
+const DAYS = ["Ma", "Di", "Wo", "Do", "Vr", "Za"];
+const DAYS_LONG = ["Maandag", "Dinsdag", "Woensdag", "Donderdag", "Vrijdag", "Zaterdag"];
 
-function where(org: Org, e: Equipment) {
-  if (e.mobility === "fixed_room") {
-    const r = org.rooms.find((x) => x.id === e.room_id);
-    return r ? `${locName(org, r.location_id)}, ${r.name.toLowerCase()}` : "Nog geen kamer";
-  }
-  if (e.mobility === "within_location") return e.location_id ? `${locName(org, e.location_id)}, gaat mee naar de kamer van de afspraak` : "Nog geen locatie";
-  return "Wisselt per dag, zie hieronder";
+function BuildingIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="4" y="3" width="16" height="18" rx="1.5" /><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2M10 21v-3h4v3" />
+    </svg>
+  );
 }
+function DeviceIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="3" /><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8" />
+    </svg>
+  );
+}
+function Chevron({ open }: { open: boolean }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={cn("text-primary transition-transform", open && "rotate-180")}>
+      <path d="M6 9l6 6 6-6" />
+    </svg>
+  );
+}
+const IconBox = ({ children, className }: { children: ReactNode; className?: string }) => (
+  <span className={cn("inline-flex shrink-0 items-center justify-center rounded-[10px] bg-background text-primary", className)}>{children}</span>
+);
 
-function neededFor(org: Org, e: Equipment) {
-  const names = [...new Set(org.requirements.filter((r) => r.kind === "equipment" && r.equipment_kind === e.kind).map((r) => org.treatments.find((t) => t.id === r.treatment_id)?.name_nl).filter(Boolean))] as string[];
-  if (!names.length) return "Nog geen behandeling";
-  return names.length === 1 ? (names[0] as string) : `${names[names.length - 1]} en andere ${optLabel(org, "equipment_kind", e.kind).toLowerCase()}behandelingen`;
-}
+type Draft = { device: Device | null; placement?: Placement; locationId?: string; roomId?: string };
+
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
 function EquipmentPage() {
   const { data: org } = useSuspenseQuery(orgQuery);
-  const [modal, setModal] = useState<Equipment | "new" | null>(null);
-  const between = org.equipment.filter((e) => e.mobility === "between_locations");
-  let prevNeed = "";
+  const names = deviceNames(org);
+  const [q, setQ] = useState("");
+  const [locFilter, setLocFilter] = useState("all");
+  const [kindFilter, setKindFilter] = useState("all");
+  const firstClinic = org.locations.find((l) => l.name === "Amsterdam-Zuid")?.id ?? org.locations.find((l) => l.kind === "clinic")?.id ?? "";
+  const [open, setOpen] = useState<Set<string>>(new Set([firstClinic]));
+  const [draft, setDraft] = useState<Draft | null>(null);
+  const [roomModal, setRoomModal] = useState<{ locationId: string; room: Room | null } | null>(null);
+
+  const ql = q.trim().toLowerCase();
+  const matches = (d: Device) =>
+    (kindFilter === "all" || kindOfType(org, d.type_id)?.key === kindFilter) &&
+    (!ql || (names.get(d.id) ?? "").toLowerCase().includes(ql) || (kindOfType(org, d.type_id)?.name ?? "").toLowerCase().includes(ql));
+  const roomMatches = (r: Room) => !ql || r.name.toLowerCase().includes(ql) || r.purpose.toLowerCase().includes(ql);
+  const filtering = !!ql || kindFilter !== "all";
+
+  const located = org.equipment.filter((d) => d.placement !== "travelling");
+  const travelling = org.equipment.filter((d) => d.placement === "travelling" && matches(d));
+  const locations = org.locations.filter((l) => locFilter === "all" || l.id === locFilter).sort((a, b) => Number(a.kind === "online") - Number(b.kind === "online"));
+  const clinicCount = org.locations.filter((l) => l.kind === "clinic").length;
+  const toggle = (id: string) => setOpen((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+
+  const row = (d: Device, compact = false) => {
+    const kind = kindOfType(org, d.type_id);
+    return (
+      <div key={d.id} className="flex items-center gap-3 rounded-[12px] bg-sand px-3 py-2.5">
+        <IconBox className="h-8 w-8"><DeviceIcon /></IconBox>
+        <div className="min-w-0 flex-1">
+          <div className="truncate whitespace-nowrap text-[13px]">{brandType(org, d.type_id)}</div>
+          <div className="truncate whitespace-nowrap text-[11px] text-muted-foreground">{kind?.name}{d.status !== "in_use" ? ` · ${opts(org, "equipment_status").find((o) => o.value === d.status)?.label ?? ""}` : ""}</div>
+        </div>
+        {d.placement === "fixed_room" ? <span className="whitespace-nowrap text-xs">Vast</span> : <Tag>Verplaatsbaar</Tag>}
+        <TextLink onClick={() => setDraft({ device: d })}>Wijzig</TextLink>
+        {compact && null}
+      </div>
+    );
+  };
+
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title="Apparatuur" description="Apparaten die een behandeling nodig heeft. Vast in een kamer, of verplaatsbaar." actions={<PillButton size="lg" onClick={() => setModal("new")}><PlusIcon />Apparaat toevoegen</PillButton>} />
-      <div className="grid grid-cols-3 gap-4">
-        {[
-          ["1", "Vast in een kamer", "Een apparaat dat niet te verplaatsen is, zoals een laser of afzuiger. Je legt het vast bij de kamer. Een behandeling die het nodig heeft, krijgt die kamer."],
-          ["2", "Verplaatsbaar binnen een locatie", "Een apparaat op wieltjes. Het hoort bij een locatie en gaat mee naar de kamer van de afspraak. Het systeem reserveert het apparaat én een vrije kamer."],
-          ["3", "Verplaatsbaar tussen locaties", "Een apparaat dat per dag ergens anders staat. Je plant per dag op welke locatie het is. Alleen die dag kan de behandeling daar."],
-        ].map(([n, t, d]) => (
-          <div key={n} className="rounded-[18px] bg-sand p-5">
-            <div className="flex items-center gap-3"><span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-background text-xs font-semibold">{n}</span><span className="text-[15px] font-semibold">{t}</span></div>
-            <p className="mt-3 text-[13px] leading-[1.6]">{d}</p>
-          </div>
-        ))}
+      <PageHeader
+        title="Apparatuur"
+        description="Per locatie: de kamers met wat erin staat. Een apparaat heeft een soort; de soort bepaalt welke behandelingen in die kamer kunnen. Namen zijn de soort plus een nummer, je verzint ze niet zelf."
+        actions={<PillButton size="lg" onClick={() => setDraft({ device: null })}><PlusIcon />Apparaat toevoegen</PillButton>}
+      />
+      <div className="flex items-center gap-3">
+        <SearchField className="w-[300px]" placeholder="Zoek een apparaat of kamer" value={q} onChange={(e) => setQ(e.target.value)} />
+        <InlineSelect value={locFilter} onChange={setLocFilter} options={[{ value: "all", label: "Alle locaties" }, ...org.locations.map((l) => ({ value: l.id, label: l.name }))]} />
+        <InlineSelect value={kindFilter} onChange={setKindFilter} options={[{ value: "all", label: "Alle soorten" }, ...kindOpts(org)]} />
+        <span className="ml-auto whitespace-nowrap text-[13px] text-muted-foreground">
+          {plural(clinicCount, "locatie", "locaties")} · {plural(org.rooms.length, "kamer", "kamers")} · {plural(org.equipment.length, "apparaat", "apparaten")}
+        </span>
       </div>
-      <div className="grid grid-cols-[minmax(0,1fr)_300px] items-start gap-6">
-        <Card title="Alle apparatuur" description="Klik op Wijzig om een apparaat aan te passen; dat opent een pop-up. Vaste apparatuur zie je ook bij de kamers van de locatie; het is hetzelfde gegeven.">
+
+      {locations.map((l) => {
+        const rooms = roomsOf(org, l.id);
+        const here = located.filter((d) => d.location_id === l.id);
+        const isOpen = open.has(l.id) || (filtering && here.some(matches));
+        const summary = l.kind === "online" ? "Geen kamers; Google Meet" : `${plural(rooms.length, "kamer", "kamers")} · ${plural(here.length, "apparaat", "apparaten")}`;
+        if (!isOpen)
+          return (
+            <button key={l.id} type="button" onClick={() => toggle(l.id)} className="flex items-center justify-between rounded-[18px] border border-line bg-background px-6 py-4 text-left">
+              <span className="whitespace-nowrap text-[15px] font-semibold">{l.name}</span>
+              <span className="flex items-center gap-4 whitespace-nowrap text-[13px] text-muted-foreground">{summary}<Chevron open={false} /></span>
+            </button>
+          );
+        const movable = here.filter((d) => d.placement === "movable_location" && matches(d));
+        return (
+          <section key={l.id} className="rounded-[20px] border border-line bg-background p-6">
+            <div className="flex items-center gap-4">
+              <IconBox className="h-11 w-11 bg-sand"><BuildingIcon /></IconBox>
+              <div className="min-w-0 flex-1">
+                <div className="whitespace-nowrap text-[17px] font-semibold">{l.name}</div>
+                <div className="whitespace-nowrap text-[13px] text-muted-foreground">{l.kind === "online" ? summary : `${l.address ?? ""} · ${summary}`}</div>
+              </div>
+              {l.kind === "clinic" && (
+                <>
+                  <PillButton variant="outline" onClick={() => setRoomModal({ locationId: l.id, room: null })}><PlusIcon />Kamer toevoegen</PillButton>
+                  <PillButton variant="outline" onClick={() => setDraft({ device: null, locationId: l.id })}><PlusIcon />Apparaat toevoegen</PillButton>
+                </>
+              )}
+              <button type="button" aria-label="Inklappen" onClick={() => toggle(l.id)} className="p-2"><Chevron open /></button>
+            </div>
+            {l.kind === "clinic" && (
+              <>
+                <div className="mt-5 grid grid-cols-3 gap-3">
+                  {rooms.filter((r) => roomMatches(r) || here.some((d) => d.room_id === r.id && matches(d)) || !filtering).map((r, i) => {
+                    const devs = here.filter((d) => d.placement === "fixed_room" && d.room_id === r.id && (matches(d) || !filtering));
+                    return (
+                      <div key={r.id} className={cn("rounded-[16px] border border-line p-4", devs.length > 2 && "col-span-3")}>
+                        <div className="flex items-start gap-3">
+                          <button type="button" className="min-w-0 flex-1 text-left" onClick={() => setRoomModal({ locationId: l.id, room: r })}>
+                            <div className="truncate whitespace-nowrap text-sm font-semibold">Kamer {(roomNumber(org, r.id) ?? i + 1)} · {r.name}</div>
+                            <div className="truncate whitespace-nowrap text-xs text-muted-foreground">{r.purpose}</div>
+                          </button>
+                          <button type="button" aria-label="Apparaat in deze kamer toevoegen" onClick={() => setDraft({ device: null, placement: "fixed_room", locationId: l.id, roomId: r.id })} className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-dashed border-primary text-primary"><PlusIcon /></button>
+                        </div>
+                        <div className="mt-3 flex flex-col gap-2">
+                          {devs.length ? devs.map((d) => row(d)) : <p className="text-xs text-muted-foreground">Geen apparatuur; alleen consulten en injectables</p>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {movable.length > 0 && (
+                  <div className="mt-5">
+                    <div className="mb-2 text-[13px]">Verplaatsbaar binnen {l.name}</div>
+                    <div className="grid grid-cols-2 gap-3">{movable.map((d) => row(d))}</div>
+                  </div>
+                )}
+              </>
+            )}
+          </section>
+        );
+      })}
+
+      <section className="rounded-[20px] border border-line bg-sand p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-[17px] font-semibold">Reist tussen locaties</h2>
+            <p className="text-[13px] text-muted-foreground">Apparatuur die per dag op een andere locatie staat. Het weekschema bepaalt waar een behandeling boekbaar is.</p>
+          </div>
+          <PillButton variant="outline" onClick={() => setDraft({ device: null, placement: "travelling" })}><PlusIcon />Reizend apparaat toevoegen</PillButton>
+        </div>
+        <div className="mt-4 overflow-x-auto">
           <table className="w-full">
-            <thead><tr className="border-b border-line"><th className={thCls}>Apparaat</th><th className={thCls}>Soort</th><th className={thCls}>Hoe</th><th className={thCls}>Waar</th><th className={thCls}>Nodig voor</th><th className={thCls} /></tr></thead>
+            <thead><tr className="border-b border-line"><th className={thCls}>Apparaat</th>{DAYS.map((d) => <th key={d} className={thCls}>{d}</th>)}<th className={thCls} /></tr></thead>
             <tbody className="divide-y divide-line">
-              {org.equipment.map((e) => {
-                const need = neededFor(org, e);
-                const shown = need === prevNeed ? "Idem" : need;
-                prevNeed = need;
-                return (
-                  <tr key={e.id}>
-                    <td className={tdCls}>{e.name}</td>
-                    <td className={tdCls}>{optLabel(org, "equipment_kind", e.kind)}</td>
-                    <td className={tdCls}><Tag tone={e.mobility === "fixed_room" ? "teal" : "sand"}>{optLabel(org, "equipment_mobility", e.mobility)}</Tag></td>
-                    <td className={tdCls}>{where(org, e)}</td>
-                    <td className={tdCls}>{shown}</td>
-                    <td className={tdCls}><TextLink onClick={() => setModal(e)}>Wijzig</TextLink></td>
-                  </tr>
-                );
-              })}
+              {travelling.map((d) => (
+                <tr key={d.id}>
+                  <td className="px-2.5 py-3">
+                    <div className="flex items-center gap-3">
+                      <IconBox className="h-8 w-8"><DeviceIcon /></IconBox>
+                      <div><div className="whitespace-nowrap text-sm font-semibold">{names.get(d.id)}</div><div className="whitespace-nowrap text-xs text-muted-foreground">{kindOfType(org, d.type_id)?.name}</div></div>
+                    </div>
+                  </td>
+                  {DAYS.map((_, i) => {
+                    const s = org.dayLocations.find((x) => x.equipment_id === d.id && x.weekday === i + 1);
+                    return <td key={i} className="whitespace-nowrap px-2.5 py-3 text-sm">{s?.location_id ? locName(org, s.location_id) : "–"}</td>;
+                  })}
+                  <td className="px-2.5 py-3"><TextLink onClick={() => setDraft({ device: d })}>Wijzig</TextLink></td>
+                </tr>
+              ))}
             </tbody>
           </table>
-          {between.map((e) => (
-            <div key={e.id} className="mt-5 rounded-[14px] bg-sand p-4 text-sm">
-              <div className="font-medium">{e.name}, per dag</div>
-              <div className="mt-2 grid grid-cols-3 gap-2 text-[13px]">
-                {DAYS.map((d, i) => {
-                  const dl = org.dayLocations.find((x) => x.equipment_id === e.id && x.weekday === i + 1);
-                  return <div key={d}><span className="text-muted-foreground">{d}: </span>{dl?.location_id ? locName(org, dl.location_id) : "Niet ingepland"}</div>;
-                })}
-              </div>
-            </div>
-          ))}
-          <div className="mt-4"><PillButton variant="outline" onClick={() => setModal("new")}><PlusIcon />Apparaat toevoegen</PillButton></div>
-        </Card>
-        <Card title="Zo rekent de agenda">
-          <div className="flex flex-col gap-3 text-sm leading-[1.6]">
-            <p>Een behandeling vraagt bijvoorbeeld “een kamer” en “een laser”. Een tijd is alleen boekbaar als op dat moment op die locatie een vrije kamer is, een vrije laser, en een behandelaar die het doet.</p>
-            <p>Bij een vaste laser telt de kamer waar hij staat. Bij een verplaatsbare laser telt elke vrije kamer, plus het apparaat. Bij het boeken worden kamer en apparaat samen vastgelegd, zodat er nooit twee afspraken op hetzelfde apparaat staan.</p>
-          </div>
-        </Card>
-      </div>
-      {modal && <EquipmentModal org={org} equipment={modal === "new" ? null : modal} onClose={() => setModal(null)} />}
+        </div>
+      </section>
+
+      {draft && <DeviceModal org={org} draft={draft} onClose={() => setDraft(null)} />}
+      {roomModal && <RoomModal org={org} {...roomModal} onClose={() => setRoomModal(null)} />}
     </div>
   );
 }
 
-function EquipmentModal({ org, equipment, onClose }: { org: Org; equipment: Equipment | null; onClose: () => void }) {
+/** Filter select without a visible label (label kept for screen readers). */
+function InlineSelect({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: { value: string; label: string }[] }) {
+  return <Select label="" value={value} onChange={onChange} options={options} className="w-auto min-w-[150px] [&>label]:sr-only" />;
+}
+
+const PLACEMENTS: Array<{ value: Placement; title: string; help: string }> = [
+  { value: "fixed_room", title: "Vast in een kamer", help: "Altijd in dezelfde kamer; de kamer is dan boekbaar voor deze soort." },
+  { value: "movable_location", title: "Verplaatsbaar binnen een locatie", help: "Wisselt tussen kamers; de locatie is boekbaar, de kamer wordt bij de afspraak gekozen." },
+  { value: "travelling", title: "Reist tussen locaties", help: "Per dag op een andere locatie; je vult een weekschema in." },
+];
+
+const fmtDate = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+
+function DeviceModal({ org, draft, onClose }: { org: Org; draft: Draft; onClose: () => void }) {
   const qc = useQueryClient();
-  const refresh = () => qc.invalidateQueries({ queryKey: orgQuery.queryKey });
-  const [name, setName] = useState(equipment?.name ?? "");
-  const [kind, setKind] = useState(equipment?.kind ?? opts(org, "equipment_kind")[0]?.value ?? "");
-  const [mobility, setMobility] = useState(equipment?.mobility ?? "fixed_room");
-  const [room, setRoom] = useState(equipment?.room_id ?? "");
-  const [loc, setLoc] = useState(equipment?.location_id ?? "");
-  const [recurrence, setRecurrence] = useState(equipment?.recurrence ?? "weekly");
-  const [days, setDays] = useState(DAYS.map((_, i) => org.dayLocations.find((d) => d.equipment_id === equipment?.id && d.weekday === i + 1)?.location_id ?? "none"));
-  const [excOpen, setExcOpen] = useState(false);
+  const d = draft.device;
+  const initialType = org.equipmentTypes.find((t) => t.id === d?.type_id);
+  const [kindId, setKindId] = useState(initialType?.kind_id ?? org.equipmentKinds[0]?.id ?? "");
+  const firstType = (k: string) => org.equipmentTypes.find((t) => t.kind_id === k)?.id ?? "";
+  const [typeId, setTypeId] = useState(initialType?.id ?? firstType(initialType?.kind_id ?? org.equipmentKinds[0]?.id ?? ""));
+  const [placement, setPlacement] = useState<Placement>((d?.placement as Placement) ?? draft.placement ?? "fixed_room");
   const clinics = org.locations.filter((l) => l.kind === "clinic");
-  const roomOptions = org.rooms.map((r) => ({ value: r.id, label: `${locName(org, r.location_id)} · ${r.name}` }));
-  const valid = name.trim() && kind && (mobility !== "fixed_room" || room) && (mobility !== "within_location" || loc);
+  const [loc, setLoc] = useState(d?.location_id ?? draft.locationId ?? clinics[0]?.id ?? "");
+  const [room, setRoom] = useState(d?.room_id ?? draft.roomId ?? roomsOf(org, d?.location_id ?? draft.locationId ?? clinics[0]?.id ?? "")[0]?.id ?? "");
+  const [status, setStatus] = useState(d?.status ?? "in_use");
+  const today = new Date().toISOString().slice(0, 10);
+  const maintOptions = [
+    { value: "none", label: "Geen onderhoud" },
+    ...opts(org, "maintenance_interval").map((o) => {
+      const next = d?.maintenance_interval_months === Number(o.value) && d.next_maintenance_on ? d.next_maintenance_on : addMonths(today, Number(o.value));
+      return { value: `${o.value}|${next}`, label: `${o.label}, volgende ${fmtDate(next)}` };
+    }),
+  ];
+  const [maint, setMaint] = useState(d?.maintenance_interval_months && d.next_maintenance_on ? `${d.maintenance_interval_months}|${d.next_maintenance_on}` : "none");
+  const [schedule, setSchedule] = useState(DAYS.map((_, i) => org.dayLocations.find((s) => s.equipment_id === d?.id && s.weekday === i + 1)?.location_id ?? "none"));
+  const [newType, setNewType] = useState(false);
+
+  const types = org.equipmentTypes.filter((t) => t.kind_id === kindId);
+  const rooms = roomsOf(org, loc);
+  const kind = org.equipmentKinds.find((k) => k.id === kindId);
+  const valid = !!typeId && (placement === "travelling" || !!loc) && (placement !== "fixed_room" || !!room);
+  const draftRow = { id: d?.id ?? null, type_id: typeId, placement, location_id: placement === "travelling" ? null : loc, room_id: placement === "fixed_room" ? room : null };
+  const name = valid ? previewName(org, draftRow) : "";
+
+  const refresh = () => qc.invalidateQueries({ queryKey: orgQuery.queryKey });
   const save = useMutation({
-    mutationFn: () =>
-      saveEquipment(
-        equipment?.id ?? null,
-        { name: name.trim(), kind, mobility, room_id: mobility === "fixed_room" ? room : null, location_id: mobility === "within_location" ? loc : null, recurrence },
-        days.map((d, i) => ({ weekday: i + 1, location_id: d === "none" ? null : d })),
-      ),
-    onSuccess: async () => { await refresh(); toast.success("Opgeslagen"); onClose(); },
+    mutationFn: () => {
+      const [mi, next] = maint === "none" ? [null, null] : maint.split("|");
+      return saveEquipment(
+        d?.id ?? null,
+        { type_id: draftRow.type_id, placement, location_id: draftRow.location_id, room_id: draftRow.room_id, status, maintenance_interval_months: mi ? Number(mi) : null, next_maintenance_on: next ?? null },
+        { name, kind: kind?.key ?? "" },
+        schedule.map((s, i) => ({ weekday: i + 1, location_id: s === "none" ? null : s })),
+      );
+    },
+    onSuccess: async () => { await refresh(); toast.success(d ? "Opgeslagen" : "Apparaat toegevoegd"); onClose(); },
     onError: () => toast.error("Opslaan is niet gelukt"),
   });
   const del = useMutation({
-    mutationFn: () => deleteEquipment(equipment?.id ?? ""),
+    mutationFn: () => deleteEquipment(d?.id ?? ""),
     onSuccess: async () => { await refresh(); toast.success("Apparaat verwijderd"); onClose(); },
     onError: () => toast.error("Verwijderen is niet gelukt"),
   });
+
   return (
     <>
-      <Modal open onOpenChange={(o) => !o && onClose()} title={equipment ? equipment.name : "Apparaat toevoegen"} description={MOBILITY_HELP[mobility] ?? ""}
+      <Modal open onOpenChange={(o) => !o && onClose()} width="lg" title={d ? "Apparaat wijzigen" : "Apparaat toevoegen"} description="Kies eerst de soort, dan waar het staat"
         footer={
           <div className="flex w-full items-center justify-between">
-            {equipment ? <TextLink tone="warning" onClick={() => del.mutate()}>Apparaat verwijderen</TextLink> : <span />}
-            <div className="flex gap-2"><PillButton variant="outline" onClick={onClose}>Annuleren</PillButton><PillButton disabled={!valid || save.isPending} onClick={() => save.mutate()}>Opslaan</PillButton></div>
+            {d ? <TextLink tone="warning" onClick={() => del.mutate()}>Apparaat verwijderen</TextLink> : <span />}
+            <div className="flex gap-2"><PillButton variant="outline" onClick={onClose}>Annuleren</PillButton><PillButton disabled={!valid || save.isPending} onClick={() => save.mutate()}>{d ? "Opslaan" : "Toevoegen"}</PillButton></div>
           </div>
         }>
         <div className="grid grid-cols-2 gap-4">
-          <TextField label="Naam" value={name} onChange={(e) => setName(e.target.value)} />
-          <Select label="Soort" value={kind} onChange={setKind} options={opts(org, "equipment_kind")} />
-          <Select label="Hoe" value={mobility} onChange={setMobility} options={opts(org, "equipment_mobility")} className="col-span-2" />
-          {mobility === "fixed_room" && <Select label="Kamer" value={room} onChange={setRoom} options={roomOptions} className="col-span-2" />}
-          {mobility === "within_location" && <Select label="Locatie" value={loc} onChange={setLoc} options={clinics.map((l) => ({ value: l.id, label: l.name }))} className="col-span-2" />}
+          <Select label="Soort" value={kindId} onChange={(v) => { setKindId(v); setTypeId(firstType(v)); }} options={org.equipmentKinds.map((k) => ({ value: k.id, label: k.name }))} help="De soort bepaalt welke behandelingen ermee kunnen; nieuwe soorten maak je bij Behandelingen." />
+          <Select label="Merk en type" value={typeId} onChange={(v) => (v === "__new" ? setNewType(true) : setTypeId(v))} options={[...types.map((t) => ({ value: t.id, label: `${t.brand} ${t.type}`.trim() })), { value: "__new", label: "Nieuw type" }]} help="Keuzelijst van bekende typen, of nieuw type." />
         </div>
-        {mobility === "between_locations" && (
-          <>
-            <div className="mt-5 text-[13px] font-medium">Waar staat het?</div>
-            <div className="mt-2 grid grid-cols-2 gap-4">
-              {DAYS.map((d, i) => (
-                <Select key={d} label={d} value={days[i] ?? "none"} onChange={(v) => setDays(days.map((x, j) => (j === i ? v : x)))} options={[{ value: "none", label: "Niet ingepland" }, ...clinics.map((l) => ({ value: l.id, label: l.name }))]} />
-              ))}
-            </div>
-            <div className="mt-4 flex items-end gap-4">
-              <Select label="Herhaling" value={recurrence} onChange={setRecurrence} options={opts(org, "recurrence").filter((o) => o.value !== "once")} className="w-[180px]" />
-              {equipment && <span className="pb-3"><TextLink onClick={() => setExcOpen(true)}>Uitzondering toevoegen, zoals onderhoud</TextLink></span>}
-            </div>
-          </>
+        <div className="mt-5 text-[13px] font-medium">Waar staat het?</div>
+        <div className="mt-2 grid grid-cols-3 gap-3">
+          {PLACEMENTS.map((p) => (
+            <button key={p.value} type="button" onClick={() => setPlacement(p.value)}
+              className={cn("rounded-[14px] border p-4 text-left", placement === p.value ? "border-primary bg-teal-light" : "border-line bg-background")}>
+              <div className="text-sm">{p.title}</div>
+              <div className="mt-1 text-xs leading-[1.5] text-muted-foreground">{p.help}</div>
+            </button>
+          ))}
+        </div>
+        {placement !== "travelling" ? (
+          <div className="mt-5 grid grid-cols-2 gap-4">
+            <Select label="Locatie" value={loc} onChange={(v) => { setLoc(v); setRoom(roomsOf(org, v)[0]?.id ?? ""); }} options={clinics.map((l) => ({ value: l.id, label: l.name }))} />
+            {placement === "fixed_room" && (
+              <Select label="Kamer" value={room} onChange={setRoom} options={rooms.map((r, i) => ({ value: r.id, label: `Kamer ${i + 1} · ${r.name}` }))} help="Alleen kamers van de gekozen locatie." />
+            )}
+          </div>
+        ) : (
+          <div className="mt-5 grid grid-cols-3 gap-4">
+            {DAYS_LONG.map((day, i) => (
+              <Select key={day} label={day} value={schedule[i] ?? "none"} onChange={(v) => setSchedule(schedule.map((x, j) => (j === i ? v : x)))} options={[{ value: "none", label: "Geen" }, ...clinics.map((l) => ({ value: l.id, label: l.name }))]} />
+            ))}
+          </div>
         )}
-        {mobility !== "between_locations" && equipment && <div className="mt-4"><TextLink onClick={() => setExcOpen(true)}>Uitzondering toevoegen, zoals onderhoud</TextLink></div>}
+        <div className="mt-5 grid grid-cols-2 gap-4">
+          <Select label="Status" value={status} onChange={setStatus} options={opts(org, "equipment_status")} />
+          <Select label="Onderhoud" value={maint} onChange={setMaint} options={maintOptions} help="Bij onderhoud is de kamer die dag niet boekbaar voor deze soort." />
+        </div>
+        {name && (
+          <div className="mt-5 flex items-start gap-3 rounded-[14px] bg-teal-light px-4 py-3 text-[13px] leading-[1.6]">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="mt-0.5 shrink-0 text-primary"><path d="M5 12l5 5 9-10" /></svg>
+            <span>Naam wordt automatisch <strong className="font-semibold">{name}</strong>. Staat er al een van deze soort, dan komt er een nummer achter.</span>
+          </div>
+        )}
       </Modal>
-      {excOpen && equipment && <EquipmentExceptionModal equipmentId={equipment.id} onClose={() => setExcOpen(false)} />}
+      {newType && kind && <NewTypeModal kindId={kind.id} kindName={kind.name} onClose={() => setNewType(false)} onSaved={async (id) => { await refresh(); setTypeId(id); setNewType(false); }} />}
     </>
   );
 }
 
-function EquipmentExceptionModal({ equipmentId, onClose }: { equipmentId: string; onClose: () => void }) {
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
-  const [note, setNote] = useState("");
+function NewTypeModal({ kindId, kindName, onClose, onSaved }: { kindId: string; kindName: string; onClose: () => void; onSaved: (id: string) => Promise<void> }) {
+  const [brand, setBrand] = useState("");
+  const [type, setType] = useState("");
   const save = useMutation({
-    mutationFn: () => addEquipmentException({ equipment_id: equipmentId, date_from: from, date_to: to || from, note: note.trim() || null }),
-    onSuccess: () => { toast.success("Uitzondering toegevoegd"); onClose(); },
+    mutationFn: () => saveEquipmentType({ kind_id: kindId, brand: brand.trim(), type: type.trim() }),
+    onSuccess: (id) => onSaved(id),
     onError: () => toast.error("Opslaan is niet gelukt"),
   });
   return (
-    <Modal open onOpenChange={(o) => !o && onClose()} title="Uitzondering toevoegen" description="Dagen waarop het apparaat niet beschikbaar is, bijvoorbeeld voor onderhoud."
-      footer={<><PillButton variant="outline" onClick={onClose}>Annuleren</PillButton><PillButton disabled={!from || (!!to && to < from) || save.isPending} onClick={() => save.mutate()}>Opslaan</PillButton></>}>
+    <Modal open onOpenChange={(o) => !o && onClose()} title="Nieuw type" description={`Voor de soort ${kindName}`}
+      footer={<><PillButton variant="outline" onClick={onClose}>Annuleren</PillButton><PillButton disabled={!brand.trim() || !type.trim() || save.isPending} onClick={() => save.mutate()}>Opslaan</PillButton></>}>
       <div className="grid grid-cols-2 gap-4">
-        <TextField label="Van" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-        <TextField label="Tot en met" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
-        <TextField label="Reden" value={note} onChange={(e) => setNote(e.target.value)} className="col-span-2" />
+        <TextField label="Merk" value={brand} onChange={(e) => setBrand(e.target.value)} />
+        <TextField label="Type" value={type} onChange={(e) => setType(e.target.value)} />
+      </div>
+    </Modal>
+  );
+}
+
+function RoomModal({ org, locationId, room, onClose }: { org: Org; locationId: string; room: Room | null; onClose: () => void }) {
+  const qc = useQueryClient();
+  const [name, setName] = useState(room?.name ?? "");
+  const [purpose, setPurpose] = useState(room?.purpose ?? "");
+  const count = roomsOf(org, locationId).length;
+  const save = useMutation({
+    mutationFn: () => saveRoom(room?.id ?? null, { location_id: locationId, name: name.trim(), purpose: purpose.trim(), sort: count }),
+    onSuccess: async () => { await qc.invalidateQueries({ queryKey: orgQuery.queryKey }); toast.success("Opgeslagen"); onClose(); },
+    onError: () => toast.error("Opslaan is niet gelukt"),
+  });
+  return (
+    <Modal open onOpenChange={(o) => !o && onClose()} title={room ? `Kamer ${roomNumber(org, room.id)} wijzigen` : "Kamer toevoegen"} description={locName(org, locationId)}
+      footer={<><PillButton variant="outline" onClick={onClose}>Annuleren</PillButton><PillButton disabled={!name.trim() || save.isPending} onClick={() => save.mutate()}>Opslaan</PillButton></>}>
+      <div className="grid grid-cols-2 gap-4">
+        <TextField label="Naam" value={name} onChange={(e) => setName(e.target.value)} />
+        <TextField label="Waarvoor" value={purpose} onChange={(e) => setPurpose(e.target.value)} />
       </div>
     </Modal>
   );

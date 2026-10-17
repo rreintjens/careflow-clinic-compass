@@ -26,7 +26,7 @@ type Table = keyof Database["public"]["Tables"];
 const TENANT_TABLES: Table[] = [
   "roles", "role_permissions", "settings", "holidays", "patients", "practitioner_roles", "locations",
   "location_hours", "location_exceptions", "rooms", "equipment", "equipment_day_locations",
-  "equipment_exceptions", "treatment_categories", "treatments", "treatment_category_links",
+  "equipment_exceptions", "equipment_kinds", "equipment_types", "equipment_schedule", "treatment_categories", "treatments", "treatment_category_links",
   "treatment_practitioner_roles", "treatment_locations", "treatment_requirements", "practitioners",
   "practitioner_languages", "practitioner_locations", "practitioner_treatments", "schedule_blocks",
   "schedule_exceptions", "audit_log",

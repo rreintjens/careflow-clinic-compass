@@ -29,7 +29,7 @@ export const orgQuery = queryOptions({
   queryKey: ["org"],
   queryFn: async () => {
     const [
-      options, roles, languages, locations, hours, rooms, equipment, dayLocs, categories, treatments,
+      options, roles, languages, locations, hours, rooms, equipment, dayLocs, kinds, types, categories, treatments,
       catLinks, treatRoles, treatLocs, reqs, practitioners, pracLangs, pracLocs, pracTreats,
     ] = await Promise.all([
       supabase.from("option_lists").select("*").order("sort"),
@@ -39,7 +39,9 @@ export const orgQuery = queryOptions({
       supabase.from("location_hours").select("*"),
       supabase.from("rooms").select("*").order("sort"),
       supabase.from("equipment").select("*").order("sort"),
-      supabase.from("equipment_day_locations").select("*"),
+      supabase.from("equipment_schedule").select("*"),
+      supabase.from("equipment_kinds").select("*").order("sort"),
+      supabase.from("equipment_types").select("*").order("brand").order("type"),
       supabase.from("treatment_categories").select("*").order("sort"),
       supabase.from("treatments").select("*").order("name_nl"),
       supabase.from("treatment_category_links").select("*").order("sort"),
@@ -60,6 +62,8 @@ export const orgQuery = queryOptions({
       rooms: must(rooms),
       equipment: must(equipment),
       dayLocations: must(dayLocs),
+      equipmentKinds: must(kinds),
+      equipmentTypes: must(types),
       categories: must(categories),
       treatments: must(treatments),
       categoryLinks: must(catLinks),
@@ -107,6 +111,8 @@ export const opts = (org: Org, listKey: string): Option[] =>
 export const optLabel = (org: Org, listKey: string, value: string | null | undefined) =>
   org.options.find((o) => o.list_key === listKey && o.value === value)?.label_nl ?? "";
 
+export const kindOpts = (org: Org): Option[] => org.equipmentKinds.map((k) => ({ value: k.key, label: k.name }));
+export const kindName = (org: Org, key: string | null | undefined) => org.equipmentKinds.find((k) => k.key === key)?.name ?? "";
 export const fullName = (p: Pick<Practitioner, "first_name" | "last_name">) => `${p.first_name} ${p.last_name}`;
 export const roleName = (org: Org, roleId: string) => org.roles.find((r) => r.id === roleId)?.name_nl ?? "";
 export const locName = (org: Org, id: string) => org.locations.find((l) => l.id === id)?.name ?? "";
@@ -132,7 +138,7 @@ export const equipmentLite = (org: Org): EquipmentLite[] =>
   org.equipment.map((e) => ({
     id: e.id,
     kind: e.kind,
-    mobility: e.mobility as Mobility,
+    mobility: e.placement as Mobility,
     room_id: e.room_id,
     location_id: e.location_id,
     day_locations: org.dayLocations.filter((d) => d.equipment_id === e.id),
@@ -290,29 +296,40 @@ export async function saveHours(locationId: string, rows: Array<{ weekday: numbe
 export async function addLocationException(row: T["location_exceptions"]["Insert"]) {
   await ok(supabase.from("location_exceptions").insert(row));
 }
-export async function saveRoom(id: string | null, row: { location_id: string; name: string; sort: number }) {
-  if (id) await ok(supabase.from("rooms").update({ name: row.name }).eq("id", id));
+export async function saveRoom(id: string | null, row: { location_id: string; name: string; sort: number; purpose?: string }) {
+  if (id) await ok(supabase.from("rooms").update({ name: row.name, ...(row.purpose !== undefined ? { purpose: row.purpose } : {}) }).eq("id", id));
   else await ok(supabase.from("rooms").insert(row));
 }
 export async function deleteRoom(id: string) {
   await ok(supabase.from("rooms").delete().eq("id", id));
 }
 
-export async function saveEquipment(
-  id: string | null,
-  row: { name: string; kind: string; mobility: string; room_id: string | null; location_id: string | null; recurrence: string },
-  days: Array<{ weekday: number; location_id: string | null }>,
-) {
+export interface DeviceInput {
+  type_id: string; placement: "fixed_room" | "movable_location" | "travelling"; location_id: string | null; room_id: string | null;
+  status: string; maintenance_interval_months: number | null; next_maintenance_on: string | null;
+}
+/** Saves a device; the deprecated name/kind/mobility columns are kept in sync for old readers. */
+export async function saveEquipment(id: string | null, row: DeviceInput, legacy: { name: string; kind: string }, schedule: Array<{ weekday: number; location_id: string | null }>) {
+  const full = { ...row, name: legacy.name, kind: legacy.kind, mobility: row.placement === "fixed_room" ? "fixed_room" : row.placement === "movable_location" ? "within_location" : "between_locations" };
   let eid = id;
-  if (eid) await ok(supabase.from("equipment").update(row).eq("id", eid));
+  if (eid) await ok(supabase.from("equipment").update(full).eq("id", eid));
   else {
-    const { data, error } = await supabase.from("equipment").insert({ ...row, sort: 999 }).select("id").single();
+    const { data, error } = await supabase.from("equipment").insert({ ...full, sort: 999 }).select("id").single();
     if (error) throw error;
     eid = data.id;
   }
-  await ok(supabase.from("equipment_day_locations").delete().eq("equipment_id", eid));
-  if (row.mobility === "between_locations" && days.length)
-    await ok(supabase.from("equipment_day_locations").insert(days.map((d) => ({ equipment_id: eid as string, ...d }))));
+  await ok(supabase.from("equipment_schedule").delete().eq("equipment_id", eid));
+  if (row.placement === "travelling" && schedule.length)
+    await ok(supabase.from("equipment_schedule").insert(schedule.map((d) => ({ equipment_id: eid as string, ...d }))));
+}
+export async function saveEquipmentType(row: { kind_id: string; brand: string; type: string }) {
+  const { data, error } = await supabase.from("equipment_types").insert(row).select("id").single();
+  if (error) throw error;
+  return data.id;
+}
+export async function saveEquipmentKind(id: string | null, row: { key: string; name: string; sort: number }) {
+  if (id) await ok(supabase.from("equipment_kinds").update({ name: row.name }).eq("id", id));
+  else await ok(supabase.from("equipment_kinds").insert(row));
 }
 export async function deleteEquipment(id: string) {
   await ok(supabase.from("equipment").delete().eq("id", id));
