@@ -11,6 +11,7 @@ import { Select } from "@/components/Select";
 import { deleteEquipment, kindOpts, locName, opts, orgQuery, saveEquipment, saveEquipmentType, saveRoom, type Org, type Room } from "@/data/organisation";
 import { addMonths, type Placement } from "@/domain/equipment";
 import { brandType, deviceNames, kindOfType, previewName, roomNumber, roomsOf, type Device } from "@/features/organisation/devices";
+import { EquipmentKindsModal } from "@/features/organisation/EquipmentKindsModal";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/organisatie/apparatuur")({
@@ -60,6 +61,7 @@ function EquipmentPage() {
   const firstClinic = org.locations.find((l) => l.name === "Amsterdam-Zuid")?.id ?? org.locations.find((l) => l.kind === "clinic")?.id ?? "";
   const [open, setOpen] = useState<Set<string>>(new Set([firstClinic]));
   const [draft, setDraft] = useState<Draft | null>(null);
+  const [kindsOpen, setKindsOpen] = useState(false);
   const [roomModal, setRoomModal] = useState<{ locationId: string; room: Room | null } | null>(null);
 
   const ql = q.trim().toLowerCase();
@@ -96,7 +98,7 @@ function EquipmentPage() {
       <PageHeader
         title="Apparatuur"
         description="Per locatie: de kamers met wat erin staat. Een apparaat heeft een soort; de soort bepaalt welke behandelingen in die kamer kunnen. Namen zijn de soort plus een nummer, je verzint ze niet zelf."
-        actions={<PillButton size="lg" onClick={() => setDraft({ device: null })}><PlusIcon />Apparaat toevoegen</PillButton>}
+        actions={<div className="flex gap-3"><PillButton size="lg" variant="outline" onClick={() => setKindsOpen(true)}>Soorten beheren</PillButton><PillButton size="lg" onClick={() => setDraft({ device: null })}><PlusIcon />Apparaat toevoegen</PillButton></div>}
       />
       <div className="flex items-center gap-3">
         <SearchField className="w-[300px]" placeholder="Zoek een apparaat of kamer" value={q} onChange={(e) => setQ(e.target.value)} />
@@ -201,6 +203,7 @@ function EquipmentPage() {
         </div>
       </section>
 
+      {kindsOpen && <EquipmentKindsModal org={org} onClose={() => setKindsOpen(false)} />}
       {draft && <DeviceModal org={org} draft={draft} onClose={() => setDraft(null)} />}
       {roomModal && <RoomModal org={org} {...roomModal} onClose={() => setRoomModal(null)} />}
     </div>
@@ -243,6 +246,7 @@ function DeviceModal({ org, draft, onClose }: { org: Org; draft: Draft; onClose:
   const [maint, setMaint] = useState(d?.maintenance_interval_months && d.next_maintenance_on ? `${d.maintenance_interval_months}|${d.next_maintenance_on}` : "none");
   const [schedule, setSchedule] = useState(DAYS.map((_, i) => org.dayLocations.find((s) => s.equipment_id === d?.id && s.weekday === i + 1)?.location_id ?? "none"));
   const [newType, setNewType] = useState(false);
+  const [kindsOpen, setKindsOpen] = useState(false);
 
   const types = org.equipmentTypes.filter((t) => t.kind_id === kindId);
   const rooms = roomsOf(org, loc);
@@ -281,7 +285,7 @@ function DeviceModal({ org, draft, onClose }: { org: Org; draft: Draft; onClose:
           </div>
         }>
         <div className="grid grid-cols-2 gap-4">
-          <Select label="Soort" value={kindId} onChange={(v) => { setKindId(v); setTypeId(firstType(v)); }} options={org.equipmentKinds.map((k) => ({ value: k.id, label: k.name }))} help="De soort bepaalt welke behandelingen ermee kunnen; nieuwe soorten maak je bij Behandelingen." />
+          <Select label="Soort" value={kindId} onChange={(v) => { if (v === "__new") { setKindsOpen(true); return; } setKindId(v); setTypeId(firstType(v)); }} options={[...org.equipmentKinds.map((k) => ({ value: k.id, label: k.name })), { value: "__new", label: "Nieuwe soort…" }]} help="De soort bepaalt welke behandelingen ermee kunnen; nieuwe soorten maak je bij Behandelingen." />
           <Select label="Merk en type" value={typeId} onChange={(v) => (v === "__new" ? setNewType(true) : setTypeId(v))} options={[...types.map((t) => ({ value: t.id, label: `${t.brand} ${t.type}`.trim() })), { value: "__new", label: "Nieuw type" }]} help="Keuzelijst van bekende typen, of nieuw type." />
         </div>
         <div className="mt-5 text-[13px] font-medium">Waar staat het?</div>
@@ -319,6 +323,7 @@ function DeviceModal({ org, draft, onClose }: { org: Org; draft: Draft; onClose:
           </div>
         )}
       </Modal>
+      {kindsOpen && <EquipmentKindsModal org={org} onClose={() => setKindsOpen(false)} onCreated={(id) => { setKindId(id); setTypeId(firstType(id)); setKindsOpen(false); }} />}
       {newType && kind && <NewTypeModal kindId={kind.id} kindName={kind.name} onClose={() => setNewType(false)} onSaved={async (id) => { await refresh(); setTypeId(id); setNewType(false); }} />}
     </>
   );
