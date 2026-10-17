@@ -58,7 +58,7 @@ function Page() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title="Agenda" actions={<><Link to="/agenda/rooster"><PillButton variant="secondary">Rooster bewerken</PillButton></Link></>} />
+      <PageHeader title="Agenda" actions={<><Link to="/agenda/rooster"><PillButton variant="outline">Rooster bewerken</PillButton></Link></>} />
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <button type="button" aria-label="Vorige dag" onClick={() => go({ datum: shift(date, -1), afspraak: undefined })} className="flex size-9 items-center justify-center rounded-full bg-sand"><img src="/ui-icons/pijl-links.svg" alt="" className="size-4" /></button>
@@ -128,7 +128,9 @@ function SegBox({ g, top0, name, online }: { g: Segment; top0: number; name: str
   );
 }
 
-type Appt = NonNullable<ReturnType<typeof useQuery<Awaited<ReturnType<NonNullable<ReturnType<typeof agendaQuery>["queryFn"]>>>>>["data"]>["appointments"][number] & { s: { minute: number }; e: { minute: number } };
+type AgendaData = Awaited<ReturnType<typeof loadType>>;
+declare function loadType(): Promise<{ appointments: Array<{ id: string; starts_at: string; ends_at: string; meet_link: string | null; source: string | null; new_patient: boolean | null; referral_source: string | null; patient: { patient_number: number | string | null; first_name: string; last_name: string; date_of_birth: string | null; phone: string | null } | null }> }>;
+type Appt = AgendaData["appointments"][number] & { s: { minute: number }; e: { minute: number } };
 
 /** The single patient card (short form); the full record opens via "Open dossier". */
 function AppointmentPanel({ a, date, treatment, online, onClose }: { a: Appt; date: string; treatment: string; online: boolean; onClose: () => void }) {
@@ -152,8 +154,8 @@ function AppointmentPanel({ a, date, treatment, online, onClose }: { a: Appt; da
       {online && (
         <div className="flex items-center gap-4 rounded-[14px] bg-sand p-4">
           {a.meet_link
-            ? <a href={a.meet_link} target="_blank" rel="noreferrer"><PillButton variant="secondary"><img src="/ui-icons/videogesprek.svg" alt="" className="size-4" />Start Google Meet</PillButton></a>
-            : <PillButton variant="secondary" disabled><img src="/ui-icons/videogesprek.svg" alt="" className="size-4" />Start Google Meet</PillButton>}
+            ? <a href={a.meet_link} target="_blank" rel="noreferrer"><PillButton variant="outline"><img src="/ui-icons/videogesprek.svg" alt="" className="size-4" />Start Google Meet</PillButton></a>
+            : <PillButton variant="outline" disabled><img src="/ui-icons/videogesprek.svg" alt="" className="size-4" />Start Google Meet</PillButton>}
           <p className="text-[12px] text-muted-foreground">Dezelfde link als in je Google Agenda en in de mail van de patiënt.</p>
         </div>
       )}
