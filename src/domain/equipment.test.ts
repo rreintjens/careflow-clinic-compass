@@ -61,3 +61,13 @@ describe("device names", () => {
     expect(addMonths("2026-08-31", 6)).toBe("2027-02-28");
   });
 });
+
+import { kindDeleteBlocker } from "./equipment";
+describe("kindDeleteBlocker", () => {
+  it.each([
+    [{ treatments: 0, devices: 0, children: 0 }, null],
+    [{ treatments: 2, devices: 0, children: 0 }, "Verwijderen kan niet: 2 behandelingen vereisen deze soort."],
+    [{ treatments: 0, devices: 1, children: 0 }, "Verwijderen kan niet: 1 apparaat heeft deze soort."],
+    [{ treatments: 1, devices: 3, children: 1 }, "Verwijderen kan niet: 1 behandeling vereist deze soort, 3 apparaten hebben deze soort, 1 soort hoort erbij."],
+  ])("%j", (u, expected) => expect(kindDeleteBlocker(u)).toBe(expected));
+});
