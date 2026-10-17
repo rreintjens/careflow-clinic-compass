@@ -1,0 +1,534 @@
+[
+ {
+  "name": "vinkje",
+  "tags": [
+   "check",
+   "ok",
+   "klaar",
+   "gelukt"
+  ],
+  "file": "vinkje.svg"
+ },
+ {
+  "name": "vinkje-cirkel",
+  "tags": [
+   "check",
+   "rond",
+   "gelukt"
+  ],
+  "file": "vinkje-cirkel.svg"
+ },
+ {
+  "name": "kruis",
+  "tags": [
+   "sluiten",
+   "nee",
+   "fout"
+  ],
+  "file": "kruis.svg"
+ },
+ {
+  "name": "plus",
+  "tags": [
+   "toevoegen",
+   "nieuw"
+  ],
+  "file": "plus.svg"
+ },
+ {
+  "name": "min",
+  "tags": [
+   "minder",
+   "verwijderen"
+  ],
+  "file": "min.svg"
+ },
+ {
+  "name": "info",
+  "tags": [
+   "uitleg",
+   "i"
+  ],
+  "file": "info.svg"
+ },
+ {
+  "name": "waarschuwing",
+  "tags": [
+   "let",
+   "op",
+   "uitroepteken"
+  ],
+  "file": "waarschuwing.svg"
+ },
+ {
+  "name": "vraagteken",
+  "tags": [
+   "hulp",
+   "faq"
+  ],
+  "file": "vraagteken.svg"
+ },
+ {
+  "name": "telefoon",
+  "tags": [
+   "bellen",
+   "contact"
+  ],
+  "file": "telefoon.svg"
+ },
+ {
+  "name": "mobiel",
+  "tags": [
+   "smartphone",
+   "sms"
+  ],
+  "file": "mobiel.svg"
+ },
+ {
+  "name": "e-mail",
+  "tags": [
+   "mail",
+   "bericht",
+   "envelop"
+  ],
+  "file": "e-mail.svg"
+ },
+ {
+  "name": "chat",
+  "tags": [
+   "bericht",
+   "gesprek",
+   "whatsapp"
+  ],
+  "file": "chat.svg"
+ },
+ {
+  "name": "videogesprek",
+  "tags": [
+   "online",
+   "meet",
+   "camera"
+  ],
+  "file": "videogesprek.svg"
+ },
+ {
+  "name": "kalender",
+  "tags": [
+   "datum",
+   "afspraak",
+   "agenda"
+  ],
+  "file": "kalender.svg"
+ },
+ {
+  "name": "klok",
+  "tags": [
+   "tijd",
+   "duur",
+   "minuten"
+  ],
+  "file": "klok.svg"
+ },
+ {
+  "name": "timer",
+  "tags": [
+   "duur",
+   "wachten"
+  ],
+  "file": "timer.svg"
+ },
+ {
+  "name": "herinnering",
+  "tags": [
+   "bel",
+   "notificatie"
+  ],
+  "file": "herinnering.svg"
+ },
+ {
+  "name": "locatie",
+  "tags": [
+   "adres",
+   "kliniek",
+   "pin",
+   "kaart"
+  ],
+  "file": "locatie.svg"
+ },
+ {
+  "name": "gebouw",
+  "tags": [
+   "kliniek",
+   "pand"
+  ],
+  "file": "gebouw.svg"
+ },
+ {
+  "name": "huis",
+  "tags": [
+   "thuis",
+   "online"
+  ],
+  "file": "huis.svg"
+ },
+ {
+  "name": "route",
+  "tags": [
+   "navigatie",
+   "weg"
+  ],
+  "file": "route.svg"
+ },
+ {
+  "name": "auto",
+  "tags": [
+   "parkeren",
+   "bereikbaarheid"
+  ],
+  "file": "auto.svg"
+ },
+ {
+  "name": "arts",
+  "tags": [
+   "dokter",
+   "persoon"
+  ],
+  "file": "arts.svg"
+ },
+ {
+  "name": "persoon",
+  "tags": [
+   "patiënt",
+   "profiel"
+  ],
+  "file": "persoon.svg"
+ },
+ {
+  "name": "team",
+  "tags": [
+   "mensen",
+   "groep",
+   "collega"
+  ],
+  "file": "team.svg"
+ },
+ {
+  "name": "stethoscoop",
+  "tags": [
+   "medisch",
+   "consult"
+  ],
+  "file": "stethoscoop.svg"
+ },
+ {
+  "name": "hart",
+  "tags": [
+   "gezondheid",
+   "cardio"
+  ],
+  "file": "hart.svg"
+ },
+ {
+  "name": "hartslag",
+  "tags": [
+   "puls",
+   "bloeddruk"
+  ],
+  "file": "hartslag.svg"
+ },
+ {
+  "name": "weegschaal",
+  "tags": [
+   "gewicht",
+   "bmi",
+   "kilo"
+  ],
+  "file": "weegschaal.svg"
+ },
+ {
+  "name": "meetlint",
+  "tags": [
+   "buikomvang",
+   "maat",
+   "centimeter"
+  ],
+  "file": "meetlint.svg"
+ },
+ {
+  "name": "spuit",
+  "tags": [
+   "injectie",
+   "medicatie"
+  ],
+  "file": "spuit.svg"
+ },
+ {
+  "name": "pil",
+  "tags": [
+   "medicijn",
+   "tablet"
+  ],
+  "file": "pil.svg"
+ },
+ {
+  "name": "druppel",
+  "tags": [
+   "bloed",
+   "vocht"
+  ],
+  "file": "druppel.svg"
+ },
+ {
+  "name": "appel",
+  "tags": [
+   "voeding",
+   "eten"
+  ],
+  "file": "appel.svg"
+ },
+ {
+  "name": "beweging",
+  "tags": [
+   "sport",
+   "lopen",
+   "wandelen"
+  ],
+  "file": "beweging.svg"
+ },
+ {
+  "name": "slaap",
+  "tags": [
+   "maan",
+   "nacht",
+   "rust"
+  ],
+  "file": "slaap.svg"
+ },
+ {
+  "name": "hersenen",
+  "tags": [
+   "mentaal",
+   "stress",
+   "hoofd"
+  ],
+  "file": "hersenen.svg"
+ },
+ {
+  "name": "document",
+  "tags": [
+   "formulier",
+   "vragenlijst"
+  ],
+  "file": "document.svg"
+ },
+ {
+  "name": "klembord",
+  "tags": [
+   "lijst",
+   "checklist"
+  ],
+  "file": "klembord.svg"
+ },
+ {
+  "name": "slot",
+  "tags": [
+   "privacy",
+   "vertrouwelijk",
+   "veilig"
+  ],
+  "file": "slot.svg"
+ },
+ {
+  "name": "schild",
+  "tags": [
+   "veilig",
+   "beschermd",
+   "avg"
+  ],
+  "file": "schild.svg"
+ },
+ {
+  "name": "oog",
+  "tags": [
+   "zichtbaar",
+   "bekijken"
+  ],
+  "file": "oog.svg"
+ },
+ {
+  "name": "ster",
+  "tags": [
+   "beoordeling",
+   "review",
+   "favoriet"
+  ],
+  "file": "ster.svg"
+ },
+ {
+  "name": "duim-omhoog",
+  "tags": [
+   "goed",
+   "tevreden"
+  ],
+  "file": "duim-omhoog.svg"
+ },
+ {
+  "name": "cadeau",
+  "tags": [
+   "aanbieding",
+   "actie"
+  ],
+  "file": "cadeau.svg"
+ },
+ {
+  "name": "euro",
+  "tags": [
+   "prijs",
+   "betalen",
+   "kosten"
+  ],
+  "file": "euro.svg"
+ },
+ {
+  "name": "tag",
+  "tags": [
+   "label",
+   "korting"
+  ],
+  "file": "tag.svg"
+ },
+ {
+  "name": "pijl-rechts",
+  "tags": [
+   "verder",
+   "volgende"
+  ],
+  "file": "pijl-rechts.svg"
+ },
+ {
+  "name": "pijl-links",
+  "tags": [
+   "terug",
+   "vorige"
+  ],
+  "file": "pijl-links.svg"
+ },
+ {
+  "name": "vernieuwen",
+  "tags": [
+   "opnieuw",
+   "herhalen"
+  ],
+  "file": "vernieuwen.svg"
+ },
+ {
+  "name": "zoeken",
+  "tags": [
+   "vergrootglas"
+  ],
+  "file": "zoeken.svg"
+ },
+ {
+  "name": "download",
+  "tags": [
+   "opslaan",
+   "bestand"
+  ],
+  "file": "download.svg"
+ },
+ {
+  "name": "link",
+  "tags": [
+   "koppeling",
+   "url"
+  ],
+  "file": "link.svg"
+ },
+ {
+  "name": "instellingen",
+  "tags": [
+   "tandwiel"
+  ],
+  "file": "instellingen.svg"
+ },
+ {
+  "name": "zon",
+  "tags": [
+   "dag",
+   "ochtend",
+   "energie"
+  ],
+  "file": "zon.svg"
+ },
+ {
+  "name": "blad",
+  "tags": [
+   "natuur",
+   "gezond",
+   "leefstijl"
+  ],
+  "file": "blad.svg"
+ },
+ {
+  "name": "trofee",
+  "tags": [
+   "doel",
+   "resultaat",
+   "behaald"
+  ],
+  "file": "trofee.svg"
+ },
+ {
+  "name": "vlag",
+  "tags": [
+   "doel",
+   "finish",
+   "mijlpaal"
+  ],
+  "file": "vlag.svg"
+ },
+ {
+  "name": "grafiek",
+  "tags": [
+   "voortgang",
+   "resultaat",
+   "trend"
+  ],
+  "file": "grafiek.svg"
+ },
+ {
+  "name": "kaart-chip",
+  "tags": [
+   "gegevens",
+   "formulier",
+   "invullen"
+  ],
+  "file": "kaart-chip.svg"
+ },
+ {
+  "name": "vlinder",
+  "tags": [
+   "verandering",
+   "nieuw",
+   "begin"
+  ],
+  "file": "vlinder.svg"
+ },
+ {
+  "name": "koffie",
+  "tags": [
+   "pauze",
+   "ontspannen"
+  ],
+  "file": "koffie.svg"
+ },
+ {
+  "name": "handen",
+  "tags": [
+   "samen",
+   "begeleiding",
+   "steun"
+  ],
+  "file": "handen.svg"
+ }
+]
