@@ -77,12 +77,17 @@ export type Database = {
           id: string
           kind: string
           location_id: string | null
+          maintenance_interval_months: number | null
           mobility: string
           name: string
+          next_maintenance_on: string | null
+          placement: string
           recurrence: string
           room_id: string | null
           sort: number
+          status: string
           tenant_id: string
+          type_id: string | null
           updated_at: string
           updated_by: string | null
         }
@@ -92,12 +97,17 @@ export type Database = {
           id?: string
           kind: string
           location_id?: string | null
+          maintenance_interval_months?: number | null
           mobility: string
           name: string
+          next_maintenance_on?: string | null
+          placement?: string
           recurrence?: string
           room_id?: string | null
           sort?: number
+          status?: string
           tenant_id?: string
+          type_id?: string | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -107,12 +117,17 @@ export type Database = {
           id?: string
           kind?: string
           location_id?: string | null
+          maintenance_interval_months?: number | null
           mobility?: string
           name?: string
+          next_maintenance_on?: string | null
+          placement?: string
           recurrence?: string
           room_id?: string | null
           sort?: number
+          status?: string
           tenant_id?: string
+          type_id?: string | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -136,6 +151,13 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equipment_type_id_fkey"
+            columns: ["type_id"]
+            isOneToOne: false
+            referencedRelation: "equipment_types"
             referencedColumns: ["id"]
           },
         ]
@@ -242,6 +264,156 @@ export type Database = {
           },
           {
             foreignKeyName: "equipment_exceptions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      equipment_kinds: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          key: string
+          name: string
+          sort: number
+          tenant_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          key: string
+          name: string
+          sort?: number
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          key?: string
+          name?: string
+          sort?: number
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipment_kinds_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      equipment_schedule: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          equipment_id: string
+          location_id: string | null
+          tenant_id: string
+          updated_at: string
+          updated_by: string | null
+          weekday: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          equipment_id: string
+          location_id?: string | null
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          weekday: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          equipment_id?: string
+          location_id?: string | null
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          weekday?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipment_schedule_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "equipment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equipment_schedule_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equipment_schedule_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      equipment_types: {
+        Row: {
+          brand: string
+          created_at: string
+          created_by: string | null
+          id: string
+          kind_id: string
+          tenant_id: string
+          type: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          brand: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind_id: string
+          tenant_id?: string
+          type: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          brand?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind_id?: string
+          tenant_id?: string
+          type?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipment_types_kind_id_fkey"
+            columns: ["kind_id"]
+            isOneToOne: false
+            referencedRelation: "equipment_kinds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equipment_types_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -1155,6 +1327,7 @@ export type Database = {
           id: string
           location_id: string
           name: string
+          purpose: string
           sort: number
           tenant_id: string
           updated_at: string
@@ -1166,6 +1339,7 @@ export type Database = {
           id?: string
           location_id: string
           name: string
+          purpose?: string
           sort?: number
           tenant_id?: string
           updated_at?: string
@@ -1177,6 +1351,7 @@ export type Database = {
           id?: string
           location_id?: string
           name?: string
+          purpose?: string
           sort?: number
           tenant_id?: string
           updated_at?: string
@@ -1844,6 +2019,13 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "treatment_requirements_kind_fk"
+            columns: ["tenant_id", "equipment_kind"]
+            isOneToOne: false
+            referencedRelation: "equipment_kinds"
+            referencedColumns: ["tenant_id", "key"]
+          },
           {
             foreignKeyName: "treatment_requirements_tenant_id_fkey"
             columns: ["tenant_id"]
