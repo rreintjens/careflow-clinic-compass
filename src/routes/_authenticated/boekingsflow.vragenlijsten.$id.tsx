@@ -167,11 +167,11 @@ function Builder() {
             )}
           </div>
         </div>
-        {!editable && <p className="mt-2 text-[13px] text-muted-foreground">Dit is de actieve versie; die verandert niet meer. Maak een nieuwe versie om te wijzigen.</p>}
+        {!editable && <p className="mt-3 rounded-[12px] bg-signal px-4 py-3 text-sm">Je bekijkt de actieve versie; die patiënten nu krijgen en die daarom niet verandert. Klik rechtsboven op “Nieuwe versie maken” om te wijzigen; daarna publiceer je die versie.</p>}
       </div>
 
       <Card title="Opbouw van de vragenlijst" description="Vragen en pagina’s in de volgorde die de patiënt ziet. Sleep om de volgorde te wijzigen. Een pijl onder een regel betekent: alleen onder een voorwaarde.">
-        <div className={cn("flex flex-col gap-2", !editable && "pointer-events-none opacity-90")}>
+        <div className="flex flex-col gap-2">
           {def.pages.map((p, pi) => {
             const items = p.items ?? [];
             if (!items.length) return row("Pagina", p.title ?? "", [pageTypeLabel(p.type ?? "text"), p.body?.slice(0, 80)].filter(Boolean).join(" · "), p.show_if ? cond(p.show_if) : null, () => setEdit({ kind: "page", index: pi }), { pageIdx: pi });

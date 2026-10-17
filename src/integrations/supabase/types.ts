@@ -14,6 +14,114 @@ export type Database = {
   }
   public: {
     Tables: {
+      appointments: {
+        Row: {
+          cancel_reason: string | null
+          created_at: string
+          created_by: string | null
+          ends_at: string
+          hold_expires_at: string | null
+          hold_token: string | null
+          id: string
+          language: string
+          location_id: string
+          manage_token: string
+          meet_link: string | null
+          patient_id: string | null
+          practitioner_id: string
+          room_id: string | null
+          source: string | null
+          starts_at: string
+          status: string
+          tenant_id: string
+          treatment_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          cancel_reason?: string | null
+          created_at?: string
+          created_by?: string | null
+          ends_at: string
+          hold_expires_at?: string | null
+          hold_token?: string | null
+          id?: string
+          language?: string
+          location_id: string
+          manage_token?: string
+          meet_link?: string | null
+          patient_id?: string | null
+          practitioner_id: string
+          room_id?: string | null
+          source?: string | null
+          starts_at: string
+          status?: string
+          tenant_id?: string
+          treatment_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          cancel_reason?: string | null
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string
+          hold_expires_at?: string | null
+          hold_token?: string | null
+          id?: string
+          language?: string
+          location_id?: string
+          manage_token?: string
+          meet_link?: string | null
+          patient_id?: string | null
+          practitioner_id?: string
+          room_id?: string | null
+          source?: string | null
+          starts_at?: string
+          status?: string
+          tenant_id?: string
+          treatment_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_practitioner_id_fkey"
+            columns: ["practitioner_id"]
+            isOneToOne: false
+            referencedRelation: "practitioners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_treatment_id_fkey"
+            columns: ["treatment_id"]
+            isOneToOne: false
+            referencedRelation: "treatments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_log: {
         Row: {
           action: string
@@ -2299,6 +2407,30 @@ export type Database = {
           },
         ]
       }
+      triage_rejection_counts: {
+        Row: {
+          count: number
+          day: string
+          questionnaire_key: string
+          reason: string
+          tenant_id: string
+        }
+        Insert: {
+          count?: number
+          day: string
+          questionnaire_key: string
+          reason: string
+          tenant_id?: string
+        }
+        Update: {
+          count?: number
+          day?: string
+          questionnaire_key?: string
+          reason?: string
+          tenant_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -2342,6 +2474,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      count_triage_rejection: {
+        Args: { _questionnaire: string; _reason: string; _tenant: string }
+        Returns: undefined
+      }
       current_role_key: { Args: never; Returns: string }
       current_tenant: { Args: never; Returns: string }
       current_tenant_slug: { Args: never; Returns: string }
