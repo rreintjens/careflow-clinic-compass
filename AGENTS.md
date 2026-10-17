@@ -10,7 +10,7 @@
 <!-- LOVABLE:END -->
 
 ## Architecture rules (The Body Clinic)
-- Read the design package rules first: binding engineering/security directive overrides defaults; build one phase per turn and stop for owner confirmation.
+- Read the design package rules first: binding engineering/security directive overrides defaults; build phases in order; the owner asked not to pause for confirmation between phases.
 - TanStack Start (not React Router); app-internal server logic in `createServerFn`, never new Edge Functions — platform stack.
 - Pure business logic in `src/domain/` with table-driven tests; typed queries in `src/data/`; shared UI in `src/components/` (one PillButton, Card, Select, SegmentedControl, Modal, Sidebar…) — no duplicates, add a prop instead.
 - Configuration (settings, option lists, texts, roles, permissions, landing pages) lives in DB rows; code never contains those values.
