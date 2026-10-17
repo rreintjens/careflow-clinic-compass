@@ -107,7 +107,7 @@ function Page() {
         <div className="flex flex-wrap items-center gap-3">
           <Select label="Behandelaar" className="w-[230px] [&>label]:sr-only" value={practitionerId ?? "all"} onChange={(v) => go({ behandelaar: v === "all" ? undefined : v })}
             options={[...(week ? [] : [{ value: "all", label: "Alle behandelaars" }]), ...(ref?.practitioners ?? []).map((p) => ({ value: p.id, label: `${p.first_name} ${p.last_name}` }))]} />
-          <SegmentedControl label="Weergave" value={week ? "week" : "dag"} onChange={(v) => go({ weergave: v === "week" ? "week" : undefined, afspraak: undefined })} options={[{ value: "dag", label: "Dag" }, { value: "week", label: "Week" }]} />
+          <SegmentedControl label="Weergave" value={week ? "week" : "dag"} onChange={(v) => v === "mijn" ? void navigate({ to: "/agenda/mijn-dag", search: { datum: s.datum } }) : go({ weergave: v === "week" ? "week" : undefined, afspraak: undefined })} options={[{ value: "dag", label: "Dag" }, { value: "week", label: "Week" }, { value: "mijn", label: "Mijn dag" }]} />
           <Select label="Locatie" className="w-[190px] [&>label]:sr-only" value={s.locatie ?? "all"} onChange={(v) => go({ locatie: v === "all" ? undefined : v })}
             options={[{ value: "all", label: "Alle locaties" }, ...(ref?.locations ?? []).map((l) => ({ value: l.id, label: l.name }))]} />
           {!week && <Select label="Categorie" className="w-[200px] [&>label]:sr-only" value={s.categorie ?? "all"} onChange={(v) => go({ categorie: v === "all" ? undefined : v })}
