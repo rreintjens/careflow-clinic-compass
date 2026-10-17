@@ -8,6 +8,7 @@ Owner asked to continue through all phases without pausing for confirmation.
 - [x] Phase 2b – multi-tenancy retrofit (URL prefix /t/<slug>/ still open)
 - [x] Equipment prompt (per location/room, generated names, kinds, maintenance)
 - [x] Practitioners page shows the full list (owner request)
+- [x] Practitioners list sorted alphabetically (owner request)
 - [ ] Phase 3 – Questionnaire builder and seed import
 - [ ] Phase 4 – Patient booking flow
 - [ ] Phase 5 – Agenda, Mijn dag, patient card, record, consult mode

@@ -29,7 +29,7 @@ function PractitionersPage() {
   const [statusF, setStatusF] = useState("active");
   const [newOpen, setNewOpen] = useState(false);
 
-  const filtered = org.practitioners
+  const filtered = [...org.practitioners].sort((a, b) => fullName(a).localeCompare(fullName(b), "nl"))
     .filter((p) => !q || fullName(p).toLowerCase().includes(q.toLowerCase()))
     .filter((p) => roleF === "all" || p.role_id === roleF)
     .filter((p) => locF === "all" || workLocationIds(org, p.id).includes(locF))
