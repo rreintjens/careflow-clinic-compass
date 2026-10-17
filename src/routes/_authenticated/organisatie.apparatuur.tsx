@@ -257,7 +257,7 @@ function DeviceModal({ org, draft, onClose }: { org: Org; draft: Draft; onClose:
       const [mi, next] = maint === "none" ? [null, null] : maint.split("|");
       return saveEquipment(
         d?.id ?? null,
-        { ...draftRow, status, maintenance_interval_months: mi ? Number(mi) : null, next_maintenance_on: next ?? null },
+        { type_id: draftRow.type_id, placement, location_id: draftRow.location_id, room_id: draftRow.room_id, status, maintenance_interval_months: mi ? Number(mi) : null, next_maintenance_on: next ?? null },
         { name, kind: kind?.key ?? "" },
         schedule.map((s, i) => ({ weekday: i + 1, location_id: s === "none" ? null : s })),
       );
