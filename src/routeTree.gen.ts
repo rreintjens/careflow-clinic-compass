@@ -26,6 +26,7 @@ import { Route as AuthenticatedInstellingenKoppelingenRouteImport } from './rout
 import { Route as AuthenticatedInstellingenLogboekRouteImport } from './routes/_authenticated/instellingen.logboek'
 import { Route as AuthenticatedOrganisatieApparatuurRouteImport } from './routes/_authenticated/organisatie.apparatuur'
 import { Route as AuthenticatedBoekingsflowVragenlijstenIndexRouteImport } from './routes/_authenticated/boekingsflow.vragenlijsten.index'
+import { Route as AuthenticatedBoekingsflowVragenlijstenIdRouteImport } from './routes/_authenticated/boekingsflow.vragenlijsten.$id'
 import { Route as AuthenticatedOrganisatieBehandelaarsIndexRouteImport } from './routes/_authenticated/organisatie.behandelaars.index'
 import { Route as AuthenticatedOrganisatieBehandelaarsIdRouteImport } from './routes/_authenticated/organisatie.behandelaars.$id'
 import { Route as AuthenticatedOrganisatieBehandelingenIndexRouteImport } from './routes/_authenticated/organisatie.behandelingen.index'
@@ -128,6 +129,12 @@ const AuthenticatedBoekingsflowVragenlijstenIndexRoute =
     path: '/boekingsflow/vragenlijsten/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedBoekingsflowVragenlijstenIdRoute =
+  AuthenticatedBoekingsflowVragenlijstenIdRouteImport.update({
+    id: '/boekingsflow/vragenlijsten/$id',
+    path: '/boekingsflow/vragenlijsten/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedOrganisatieBehandelaarsIndexRoute =
   AuthenticatedOrganisatieBehandelaarsIndexRouteImport.update({
     id: '/organisatie/behandelaars/',
@@ -181,6 +188,7 @@ export interface FileRoutesByFullPath {
   '/instellingen/logboek': typeof AuthenticatedInstellingenLogboekRoute
   '/organisatie/apparatuur': typeof AuthenticatedOrganisatieApparatuurRoute
   '/agenda/': typeof AuthenticatedAgendaIndexRoute
+  '/boekingsflow/vragenlijsten/$id': typeof AuthenticatedBoekingsflowVragenlijstenIdRoute
   '/organisatie/behandelaars/$id': typeof AuthenticatedOrganisatieBehandelaarsIdRoute
   '/organisatie/behandelingen/$id': typeof AuthenticatedOrganisatieBehandelingenIdRoute
   '/organisatie/locaties/$id': typeof AuthenticatedOrganisatieLocatiesIdRoute
@@ -205,6 +213,7 @@ export interface FileRoutesByTo {
   '/instellingen/logboek': typeof AuthenticatedInstellingenLogboekRoute
   '/organisatie/apparatuur': typeof AuthenticatedOrganisatieApparatuurRoute
   '/agenda': typeof AuthenticatedAgendaIndexRoute
+  '/boekingsflow/vragenlijsten/$id': typeof AuthenticatedBoekingsflowVragenlijstenIdRoute
   '/organisatie/behandelaars/$id': typeof AuthenticatedOrganisatieBehandelaarsIdRoute
   '/organisatie/behandelingen/$id': typeof AuthenticatedOrganisatieBehandelingenIdRoute
   '/organisatie/locaties/$id': typeof AuthenticatedOrganisatieLocatiesIdRoute
@@ -231,6 +240,7 @@ export interface FileRoutesById {
   '/_authenticated/instellingen/logboek': typeof AuthenticatedInstellingenLogboekRoute
   '/_authenticated/organisatie/apparatuur': typeof AuthenticatedOrganisatieApparatuurRoute
   '/_authenticated/agenda/': typeof AuthenticatedAgendaIndexRoute
+  '/_authenticated/boekingsflow/vragenlijsten/$id': typeof AuthenticatedBoekingsflowVragenlijstenIdRoute
   '/_authenticated/organisatie/behandelaars/$id': typeof AuthenticatedOrganisatieBehandelaarsIdRoute
   '/_authenticated/organisatie/behandelingen/$id': typeof AuthenticatedOrganisatieBehandelingenIdRoute
   '/_authenticated/organisatie/locaties/$id': typeof AuthenticatedOrganisatieLocatiesIdRoute
@@ -257,6 +267,7 @@ export interface FileRouteTypes {
     | '/instellingen/logboek'
     | '/organisatie/apparatuur'
     | '/agenda/'
+    | '/boekingsflow/vragenlijsten/$id'
     | '/organisatie/behandelaars/$id'
     | '/organisatie/behandelingen/$id'
     | '/organisatie/locaties/$id'
@@ -281,6 +292,7 @@ export interface FileRouteTypes {
     | '/instellingen/logboek'
     | '/organisatie/apparatuur'
     | '/agenda'
+    | '/boekingsflow/vragenlijsten/$id'
     | '/organisatie/behandelaars/$id'
     | '/organisatie/behandelingen/$id'
     | '/organisatie/locaties/$id'
@@ -306,6 +318,7 @@ export interface FileRouteTypes {
     | '/_authenticated/instellingen/logboek'
     | '/_authenticated/organisatie/apparatuur'
     | '/_authenticated/agenda/'
+    | '/_authenticated/boekingsflow/vragenlijsten/$id'
     | '/_authenticated/organisatie/behandelaars/$id'
     | '/_authenticated/organisatie/behandelingen/$id'
     | '/_authenticated/organisatie/locaties/$id'
@@ -443,6 +456,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBoekingsflowVragenlijstenIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/boekingsflow/vragenlijsten/$id': {
+      id: '/_authenticated/boekingsflow/vragenlijsten/$id'
+      path: '/boekingsflow/vragenlijsten/$id'
+      fullPath: '/boekingsflow/vragenlijsten/$id'
+      preLoaderRoute: typeof AuthenticatedBoekingsflowVragenlijstenIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/organisatie/behandelaars/': {
       id: '/_authenticated/organisatie/behandelaars/'
       path: '/organisatie/behandelaars'
@@ -501,6 +521,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedInstellingenLogboekRoute: typeof AuthenticatedInstellingenLogboekRoute
   AuthenticatedOrganisatieApparatuurRoute: typeof AuthenticatedOrganisatieApparatuurRoute
   AuthenticatedAgendaIndexRoute: typeof AuthenticatedAgendaIndexRoute
+  AuthenticatedBoekingsflowVragenlijstenIdRoute: typeof AuthenticatedBoekingsflowVragenlijstenIdRoute
   AuthenticatedOrganisatieBehandelaarsIdRoute: typeof AuthenticatedOrganisatieBehandelaarsIdRoute
   AuthenticatedOrganisatieBehandelingenIdRoute: typeof AuthenticatedOrganisatieBehandelingenIdRoute
   AuthenticatedOrganisatieLocatiesIdRoute: typeof AuthenticatedOrganisatieLocatiesIdRoute
@@ -528,6 +549,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedOrganisatieApparatuurRoute:
     AuthenticatedOrganisatieApparatuurRoute,
   AuthenticatedAgendaIndexRoute: AuthenticatedAgendaIndexRoute,
+  AuthenticatedBoekingsflowVragenlijstenIdRoute:
+    AuthenticatedBoekingsflowVragenlijstenIdRoute,
   AuthenticatedOrganisatieBehandelaarsIdRoute:
     AuthenticatedOrganisatieBehandelaarsIdRoute,
   AuthenticatedOrganisatieBehandelingenIdRoute:
