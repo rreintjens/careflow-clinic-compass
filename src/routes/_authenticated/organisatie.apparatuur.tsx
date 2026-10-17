@@ -9,7 +9,7 @@ import { Modal } from "@/components/Modal";
 import { PageHeader } from "@/components/PageHeader";
 import { PillButton } from "@/components/PillButton";
 import { Select } from "@/components/Select";
-import { addEquipmentException, deleteEquipment, locName, optLabel, opts, orgQuery, saveEquipment, type Equipment, type Org } from "@/data/organisation";
+import { addEquipmentException, deleteEquipment, locName, optLabel, opts, orgQuery, saveEquipment, type Equipment, type Org , kindName, kindOpts } from "@/data/organisation";
 
 export const Route = createFileRoute("/_authenticated/organisatie/apparatuur")({
   head: () => ({ meta: [{ title: "Apparatuur · Beheer · The Body Clinic" }, { name: "robots", content: "noindex" }] }),
@@ -36,7 +36,7 @@ function where(org: Org, e: Equipment) {
 function neededFor(org: Org, e: Equipment) {
   const names = [...new Set(org.requirements.filter((r) => r.kind === "equipment" && r.equipment_kind === e.kind).map((r) => org.treatments.find((t) => t.id === r.treatment_id)?.name_nl).filter(Boolean))] as string[];
   if (!names.length) return "Nog geen behandeling";
-  return names.length === 1 ? (names[0] as string) : `${names[names.length - 1]} en andere ${optLabel(org, "equipment_kind", e.kind).toLowerCase()}behandelingen`;
+  return names.length === 1 ? (names[0] as string) : `${names[names.length - 1]} en andere ${kindName(org, e.kind).toLowerCase()}behandelingen`;
 }
 
 function EquipmentPage() {
@@ -71,7 +71,7 @@ function EquipmentPage() {
                 return (
                   <tr key={e.id}>
                     <td className={tdCls}>{e.name}</td>
-                    <td className={tdCls}>{optLabel(org, "equipment_kind", e.kind)}</td>
+                    <td className={tdCls}>{kindName(org, e.kind)}</td>
                     <td className={tdCls}><Tag tone={e.mobility === "fixed_room" ? "teal" : "sand"}>{optLabel(org, "equipment_mobility", e.mobility)}</Tag></td>
                     <td className={tdCls}>{where(org, e)}</td>
                     <td className={tdCls}>{shown}</td>
@@ -110,7 +110,7 @@ function EquipmentModal({ org, equipment, onClose }: { org: Org; equipment: Equi
   const qc = useQueryClient();
   const refresh = () => qc.invalidateQueries({ queryKey: orgQuery.queryKey });
   const [name, setName] = useState(equipment?.name ?? "");
-  const [kind, setKind] = useState(equipment?.kind ?? opts(org, "equipment_kind")[0]?.value ?? "");
+  const [kind, setKind] = useState(equipment?.kind ?? kindOpts(org)[0]?.value ?? "");
   const [mobility, setMobility] = useState(equipment?.mobility ?? "fixed_room");
   const [room, setRoom] = useState(equipment?.room_id ?? "");
   const [loc, setLoc] = useState(equipment?.location_id ?? "");
@@ -146,7 +146,7 @@ function EquipmentModal({ org, equipment, onClose }: { org: Org; equipment: Equi
         }>
         <div className="grid grid-cols-2 gap-4">
           <TextField label="Naam" value={name} onChange={(e) => setName(e.target.value)} />
-          <Select label="Soort" value={kind} onChange={setKind} options={opts(org, "equipment_kind")} />
+          <Select label="Soort" value={kind} onChange={setKind} options={kindOpts(org)} />
           <Select label="Hoe" value={mobility} onChange={setMobility} options={opts(org, "equipment_mobility")} className="col-span-2" />
           {mobility === "fixed_room" && <Select label="Kamer" value={room} onChange={setRoom} options={roomOptions} className="col-span-2" />}
           {mobility === "within_location" && <Select label="Locatie" value={loc} onChange={setLoc} options={clinics.map((l) => ({ value: l.id, label: l.name }))} className="col-span-2" />}

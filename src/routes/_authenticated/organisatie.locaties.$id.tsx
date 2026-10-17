@@ -10,7 +10,7 @@ import { PillButton } from "@/components/PillButton";
 import { Select } from "@/components/Select";
 import {
   addLocationException, deleteRoom, fullName, optLabel, opts, orgQuery, saveHours, saveLocation, saveRoom, workLocationIds, type Org, type Room,
-} from "@/data/organisation";
+, kindName, kindOpts } from "@/data/organisation";
 import { hhmm, quarterTimes } from "@/domain/organisation";
 import { REASON_TEXT, treatmentBookability } from "@/features/organisation/bookability";
 import { supabase } from "@/integrations/supabase/client";
@@ -76,7 +76,7 @@ function LocationForm({ org }: { org: Org }) {
     const ts = org.treatmentLocations.filter((tl) => tl.location_id === id).map((tl) => tl.treatment_id)
       .filter((tid) => org.requirements.some((q) => q.treatment_id === tid && q.kind === "equipment" && kinds.includes(q.equipment_kind ?? "")))
       .map((tid) => org.treatments.find((t) => t.id === tid)?.name_nl).filter(Boolean);
-    return `${ts.length ? ts.join(", ") : optLabel(org, "equipment_kind", kinds[0])}, en de rest als die vrij is`;
+    return `${ts.length ? ts.join(", ") : kindName(org, kinds[0])}, en de rest als die vrij is`;
   };
 
   return (
@@ -141,7 +141,7 @@ function LocationForm({ org }: { org: Org }) {
                     return (
                       <tr key={r.id}>
                         <td className={tdCls}>{r.name}</td>
-                        <td className={tdCls}>{f.length ? <span className="flex gap-1">{f.map((e) => <Tag key={e.id}>{optLabel(org, "equipment_kind", e.kind)}</Tag>)}</span> : <span className="text-muted-foreground">Geen</span>}</td>
+                        <td className={tdCls}>{f.length ? <span className="flex gap-1">{f.map((e) => <Tag key={e.id}>{kindName(org, e.kind)}</Tag>)}</span> : <span className="text-muted-foreground">Geen</span>}</td>
                         <td className={tdCls}>{suitedFor(r)}</td>
                         <td className={tdCls}><TextLink onClick={() => setRoomModal(r)}>Wijzig</TextLink></td>
                       </tr>
