@@ -18,7 +18,7 @@ export const agendaQuery = (date: string, from: string, to: string) => queryOpti
       supabase.from("appointments").select("id, starts_at, ends_at, status, practitioner_id, location_id, treatment_id, meet_link, source, new_patient, referral_source, patient:patients(id, patient_number, first_name, last_name, date_of_birth, phone)")
         .in("status", ["booked"]).gte("starts_at", from).lt("starts_at", to),
       supabase.from("locations").select("id, name, kind"),
-      supabase.from("treatments").select("id, name_nl, category_id"),
+      supabase.from("treatments").select("id, name_nl"),
     ]);
     return { practitioners: must(prac), blocks: must(blocks), exceptions: must(exc), appointments: must(appts), locations: must(locs), treatments: must(treats) };
   },
