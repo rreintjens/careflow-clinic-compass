@@ -327,9 +327,18 @@ export async function saveEquipmentType(row: { kind_id: string; brand: string; t
   if (error) throw error;
   return data.id;
 }
-export async function saveEquipmentKind(id: string | null, row: { key: string; name: string; sort: number }) {
-  if (id) await ok(supabase.from("equipment_kinds").update({ name: row.name }).eq("id", id));
+/** Saves a kind and sets exactly which treatments require it (CRUD on treatment_requirements). */
+export async function saveEquipmentKind(org: Org, id: string | null, row: { key: string; name: string; sort: number; parent_id: string | null }, treatmentIds: string[]) {
+  if (id) await ok(supabase.from("equipment_kinds").update({ name: row.name, parent_id: row.parent_id }).eq("id", id));
   else await ok(supabase.from("equipment_kinds").insert(row));
+  const current = org.requirements.filter((r) => r.kind === "equipment" && r.equipment_kind === row.key);
+  for (const r of current) if (!treatmentIds.includes(r.treatment_id)) await deleteRequirement(r.id);
+  const missing = treatmentIds.filter((t) => !current.some((r) => r.treatment_id === t));
+  if (missing.length)
+    await ok(supabase.from("treatment_requirements").insert(missing.map((t) => ({ treatment_id: t, kind: "equipment", equipment_kind: row.key, quantity: 1, duration: "whole", sort: 99 }))));
+}
+export async function deleteEquipmentKind(id: string) {
+  await ok(supabase.from("equipment_kinds").delete().eq("id", id));
 }
 export async function deleteEquipment(id: string) {
   await ok(supabase.from("equipment").delete().eq("id", id));

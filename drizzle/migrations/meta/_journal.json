@@ -64,6 +64,13 @@
       "when": 1792276596051,
       "tag": "0008_equipment_by_location",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792277320562,
+      "tag": "0009_equipment_kind_parent",
+      "breakpoints": true
     }
   ]
 }

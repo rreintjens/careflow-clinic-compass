@@ -1,0 +1,2 @@
+ALTER TABLE public.equipment_kinds ADD COLUMN parent_id uuid REFERENCES public.equipment_kinds(id) ON DELETE RESTRICT;
+ALTER TABLE public.equipment_kinds ADD CONSTRAINT equipment_kinds_parent_not_self CHECK (parent_id IS NULL OR parent_id <> id);

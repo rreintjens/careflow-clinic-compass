@@ -91,3 +91,12 @@ export function addMonths(date: string, months: number): string {
   d.setUTCDate(Math.min(day, last));
   return d.toISOString().slice(0, 10);
 }
+
+/** Why a kind cannot be deleted, or null when nothing references it. */
+export function kindDeleteBlocker(usage: { treatments: number; devices: number; children: number }): string | null {
+  const parts: string[] = [];
+  if (usage.treatments) parts.push(`${usage.treatments} ${usage.treatments === 1 ? "behandeling vereist" : "behandelingen vereisen"} deze soort`);
+  if (usage.devices) parts.push(`${usage.devices} ${usage.devices === 1 ? "apparaat heeft" : "apparaten hebben"} deze soort`);
+  if (usage.children) parts.push(`${usage.children} ${usage.children === 1 ? "soort hoort" : "soorten horen"} erbij`);
+  return parts.length ? `Verwijderen kan niet: ${parts.join(", ")}.` : null;
+}
