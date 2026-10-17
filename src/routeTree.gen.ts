@@ -17,6 +17,7 @@ import { Route as AuthIndexRouteImport } from './routes/auth.index'
 import { Route as Auth2faRouteImport } from './routes/auth.2fa'
 import { Route as AuthenticatedAgendaIndexRouteImport } from './routes/_authenticated/agenda.index'
 import { Route as AuthenticatedAgendaMijnDagRouteImport } from './routes/_authenticated/agenda.mijn-dag'
+import { Route as AuthenticatedAgendaRoosterRouteImport } from './routes/_authenticated/agenda.rooster'
 import { Route as AuthenticatedBoekingsflowBoekingslinksRouteImport } from './routes/_authenticated/boekingsflow.boekingslinks'
 import { Route as AuthenticatedBoekingsflowEMailsRouteImport } from './routes/_authenticated/boekingsflow.e-mails'
 import { Route as AuthenticatedBoekingsflowVragenlijstenRouteImport } from './routes/_authenticated/boekingsflow.vragenlijsten'
@@ -71,6 +72,12 @@ const AuthenticatedAgendaMijnDagRoute =
   AuthenticatedAgendaMijnDagRouteImport.update({
     id: '/agenda/mijn-dag',
     path: '/agenda/mijn-dag',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAgendaRoosterRoute =
+  AuthenticatedAgendaRoosterRouteImport.update({
+    id: '/agenda/rooster',
+    path: '/agenda/rooster',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedBoekingsflowBoekingslinksRoute =
@@ -165,6 +172,7 @@ export interface FileRoutesByFullPath {
   '/auth/2fa': typeof Auth2faRoute
   '/auth/': typeof AuthIndexRoute
   '/agenda/mijn-dag': typeof AuthenticatedAgendaMijnDagRoute
+  '/agenda/rooster': typeof AuthenticatedAgendaRoosterRoute
   '/boekingsflow/boekingslinks': typeof AuthenticatedBoekingsflowBoekingslinksRoute
   '/boekingsflow/e-mails': typeof AuthenticatedBoekingsflowEMailsRoute
   '/boekingsflow/vragenlijsten': typeof AuthenticatedBoekingsflowVragenlijstenRoute
@@ -188,6 +196,7 @@ export interface FileRoutesByTo {
   '/auth/2fa': typeof Auth2faRoute
   '/auth': typeof AuthIndexRoute
   '/agenda/mijn-dag': typeof AuthenticatedAgendaMijnDagRoute
+  '/agenda/rooster': typeof AuthenticatedAgendaRoosterRoute
   '/boekingsflow/boekingslinks': typeof AuthenticatedBoekingsflowBoekingslinksRoute
   '/boekingsflow/e-mails': typeof AuthenticatedBoekingsflowEMailsRoute
   '/boekingsflow/vragenlijsten': typeof AuthenticatedBoekingsflowVragenlijstenRoute
@@ -213,6 +222,7 @@ export interface FileRoutesById {
   '/auth/2fa': typeof Auth2faRoute
   '/auth/': typeof AuthIndexRoute
   '/_authenticated/agenda/mijn-dag': typeof AuthenticatedAgendaMijnDagRoute
+  '/_authenticated/agenda/rooster': typeof AuthenticatedAgendaRoosterRoute
   '/_authenticated/boekingsflow/boekingslinks': typeof AuthenticatedBoekingsflowBoekingslinksRoute
   '/_authenticated/boekingsflow/e-mails': typeof AuthenticatedBoekingsflowEMailsRoute
   '/_authenticated/boekingsflow/vragenlijsten': typeof AuthenticatedBoekingsflowVragenlijstenRoute
@@ -238,6 +248,7 @@ export interface FileRouteTypes {
     | '/auth/2fa'
     | '/auth/'
     | '/agenda/mijn-dag'
+    | '/agenda/rooster'
     | '/boekingsflow/boekingslinks'
     | '/boekingsflow/e-mails'
     | '/boekingsflow/vragenlijsten'
@@ -261,6 +272,7 @@ export interface FileRouteTypes {
     | '/auth/2fa'
     | '/auth'
     | '/agenda/mijn-dag'
+    | '/agenda/rooster'
     | '/boekingsflow/boekingslinks'
     | '/boekingsflow/e-mails'
     | '/boekingsflow/vragenlijsten'
@@ -285,6 +297,7 @@ export interface FileRouteTypes {
     | '/auth/2fa'
     | '/auth/'
     | '/_authenticated/agenda/mijn-dag'
+    | '/_authenticated/agenda/rooster'
     | '/_authenticated/boekingsflow/boekingslinks'
     | '/_authenticated/boekingsflow/e-mails'
     | '/_authenticated/boekingsflow/vragenlijsten'
@@ -365,6 +378,13 @@ declare module '@tanstack/react-router' {
       path: '/agenda/mijn-dag'
       fullPath: '/agenda/mijn-dag'
       preLoaderRoute: typeof AuthenticatedAgendaMijnDagRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/agenda/rooster': {
+      id: '/_authenticated/agenda/rooster'
+      path: '/agenda/rooster'
+      fullPath: '/agenda/rooster'
+      preLoaderRoute: typeof AuthenticatedAgendaRoosterRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/boekingsflow/boekingslinks': {
@@ -472,6 +492,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedPatientenRoute: typeof AuthenticatedPatientenRoute
   AuthenticatedAgendaMijnDagRoute: typeof AuthenticatedAgendaMijnDagRoute
+  AuthenticatedAgendaRoosterRoute: typeof AuthenticatedAgendaRoosterRoute
   AuthenticatedBoekingsflowBoekingslinksRoute: typeof AuthenticatedBoekingsflowBoekingslinksRoute
   AuthenticatedBoekingsflowEMailsRoute: typeof AuthenticatedBoekingsflowEMailsRoute
   AuthenticatedBoekingsflowVragenlijstenRoute: typeof AuthenticatedBoekingsflowVragenlijstenRoute
@@ -493,6 +514,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedPatientenRoute: AuthenticatedPatientenRoute,
   AuthenticatedAgendaMijnDagRoute: AuthenticatedAgendaMijnDagRoute,
+  AuthenticatedAgendaRoosterRoute: AuthenticatedAgendaRoosterRoute,
   AuthenticatedBoekingsflowBoekingslinksRoute:
     AuthenticatedBoekingsflowBoekingslinksRoute,
   AuthenticatedBoekingsflowEMailsRoute: AuthenticatedBoekingsflowEMailsRoute,
