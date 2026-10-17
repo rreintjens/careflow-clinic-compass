@@ -2,6 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
 
 import { Logo } from "@/components/Logo";
+import { Select } from "@/components/Select";
 import { cn } from "@/lib/utils";
 
 const icon = (children: ReactNode) => (
@@ -62,9 +63,12 @@ export interface SidebarProps {
   email: string;
   roleName: string;
   onSignOut: () => void;
+  /** Shown as a switcher only when the user has more than one membership. */
+  tenants?: ReadonlyArray<{ tenant_id: string; display_name: string; active: boolean }>;
+  onSwitchTenant?: (tenantId: string) => void;
 }
 
-export function Sidebar({ fullName, email, roleName, onSignOut }: SidebarProps) {
+export function Sidebar({ fullName, email, roleName, onSignOut, tenants = [], onSwitchTenant }: SidebarProps) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(GROUPS.map((g) => [g.key, pathname.startsWith(`/${g.key}`)])),
@@ -79,6 +83,15 @@ export function Sidebar({ fullName, email, roleName, onSignOut }: SidebarProps) 
         <Logo small />
         <span className="whitespace-nowrap rounded-full bg-teal-light px-2.5 py-[3px] text-xs font-semibold text-primary-hover">Beheer</span>
       </div>
+      {tenants.length > 1 && onSwitchTenant && (
+        <Select
+          label="Organisatie"
+          className="px-1"
+          options={tenants.map((t) => ({ value: t.tenant_id, label: t.display_name }))}
+          value={tenants.find((t) => t.active)?.tenant_id ?? ""}
+          onChange={onSwitchTenant}
+        />
+      )}
       <nav aria-label="Hoofdmenu" className="flex flex-col gap-0.5">
         {MAIN.map((m) => {
           const active = pathname === m.to || pathname.startsWith(`${m.to}/`);

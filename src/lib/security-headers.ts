@@ -10,7 +10,8 @@ export function securityHeaders(): Record<string, string> {
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline'",
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob:",
+    // signed storage URLs (practitioner photos) come from the backend origin
+    `img-src 'self' data: blob: ${supabaseOrigin} https://*.supabase.co`,
     "font-src 'self' data:",
     `connect-src 'self' ${supabaseOrigin} https://*.supabase.co wss://*.supabase.co https://*.lovable.cloud wss://*.lovable.cloud`,
     "object-src 'none'",

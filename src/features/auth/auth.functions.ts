@@ -6,6 +6,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
 import { isLocked, registerFailure, signInSchema, type LockState } from "@/domain/auth";
+import { pickActiveTenant } from "@/domain/tenancy";
 
 async function sha256(text: string): Promise<string> {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
@@ -28,6 +29,8 @@ async function admin() {
 
 async function audit(entry: {
   userId: string | null;
+  tenantId?: string | null;
+  roleKey?: string | null;
   action: string;
   category: string;
   details?: Record<string, string | number | boolean | null>;
@@ -36,6 +39,8 @@ async function audit(entry: {
   const { ip, userAgent } = requestMeta();
   await db.from("audit_log").insert({
     user_id: entry.userId,
+    tenant_id: entry.tenantId ?? null,
+    role_key: entry.roleKey ?? null,
     action: entry.action,
     category: entry.category,
     record_type: "auth",
@@ -47,7 +52,7 @@ async function audit(entry: {
 
 async function numberSetting(key: string, fallback: number): Promise<number> {
   const db = await admin();
-  const { data } = await db.from("settings").select("value").eq("key", key).maybeSingle();
+  const { data } = await db.from("group_settings").select("value").eq("key", key).maybeSingle();
   return typeof data?.value === "number" ? data.value : fallback;
 }
 
@@ -80,9 +85,19 @@ export const signInStaff = createServerFn({ method: "POST" })
     const { data: auth, error } = await client.auth.signInWithPassword(data);
 
     let blocked = false;
+    let memberships: Array<{ tenantId: string; sort: number; roleKey: string }> = [];
     if (auth?.user) {
       const { data: profile } = await db.from("profiles").select("blocked").eq("id", auth.user.id).maybeSingle();
-      blocked = !profile || profile.blocked;
+      const { data: ms } = await db
+        .from("tenant_memberships")
+        .select("tenant_id, tenants(sort), roles(key)")
+        .eq("user_id", auth.user.id);
+      memberships = (ms ?? []).map((m) => ({
+        tenantId: m.tenant_id,
+        sort: (m.tenants as { sort: number } | null)?.sort ?? 0,
+        roleKey: (m.roles as { key: string } | null)?.key ?? "",
+      }));
+      blocked = !profile || profile.blocked || memberships.length === 0;
     }
 
     if (error || !auth.session || blocked) {
@@ -105,11 +120,23 @@ export const signInStaff = createServerFn({ method: "POST" })
     }
 
     await db.from("login_attempts").delete().eq("email_hash", emailHash);
-    await audit({ userId: auth.user.id, action: "login", category: "login" });
+
+    // The active tenant lives in the signed JWT (app_metadata), written only here and by switchTenant.
+    const meta = (auth.user.app_metadata ?? {}) as Record<string, unknown>;
+    const current = typeof meta["active_tenant"] === "string" ? (meta["active_tenant"] as string) : null;
+    const active = pickActiveTenant(memberships, current);
+    let session = auth.session;
+    if (active !== current) {
+      await db.auth.admin.updateUserById(auth.user.id, { app_metadata: { ...meta, active_tenant: active } });
+      const refreshed = await client.auth.refreshSession({ refresh_token: session.refresh_token });
+      if (refreshed.data.session) session = refreshed.data.session;
+    }
+    const roleKey = memberships.find((m) => m.tenantId === active)?.roleKey ?? null;
+    await audit({ userId: auth.user.id, tenantId: active, roleKey, action: "login", category: "login" });
     return {
       ok: true as const,
-      accessToken: auth.session.access_token,
-      refreshToken: auth.session.refresh_token,
+      accessToken: session.access_token,
+      refreshToken: session.refresh_token,
     };
   });
 
@@ -120,6 +147,27 @@ export const logAuthEvent = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const aal = (context.claims as { aal?: string }).aal;
     if (data.action === "mfa_verified" && aal !== "aal2") throw new Error("Not verified");
-    await audit({ userId: context.userId, action: data.action, category: "login" });
+    const meta = (context.claims as { app_metadata?: { active_tenant?: string } }).app_metadata;
+    const { data: role } = await context.supabase.rpc("current_role_key");
+    await audit({ userId: context.userId, tenantId: meta?.active_tenant ?? null, roleKey: role ?? null, action: data.action, category: "login" });
     return { ok: true };
+  });
+
+/** Switches the active tenant: membership is checked, the claim is written server-side, and the switch is logged. */
+export const switchTenant = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ tenantId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { data: mine, error } = await context.supabase.rpc("my_tenants");
+    if (error) throw new Error("Wisselen is niet gelukt");
+    const target = (mine ?? []).find((t) => t.tenant_id === data.tenantId);
+    if (!target) throw new Error("Geen toegang tot deze organisatie");
+    const db = await admin();
+    const { data: u } = await db.auth.admin.getUserById(context.userId);
+    const meta = (u.user?.app_metadata ?? {}) as Record<string, unknown>;
+    const from = typeof meta["active_tenant"] === "string" ? (meta["active_tenant"] as string) : null;
+    await db.auth.admin.updateUserById(context.userId, { app_metadata: { ...meta, active_tenant: data.tenantId } });
+    await audit({ userId: context.userId, tenantId: from, action: "tenant_switched_out", category: "login", details: { to: target.slug } });
+    await audit({ userId: context.userId, tenantId: data.tenantId, action: "tenant_switched_in", category: "login", details: { to: target.slug } });
+    return { ok: true, slug: target.slug };
   });

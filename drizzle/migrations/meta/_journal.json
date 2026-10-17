@@ -22,6 +22,41 @@
       "when": 1792273583155,
       "tag": "0002_phase2_organisation",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792275566890,
+      "tag": "0003_phase2b_tenancy_structure",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792275714422,
+      "tag": "0004_phase2b_tenancy_policies",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792275753314,
+      "tag": "0005_phase2b_tenant_storage",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792275897242,
+      "tag": "0006_phase2b_patient_number_default",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792275945217,
+      "tag": "0007_phase2b_group_audit",
+      "breakpoints": true
     }
   ]
 }

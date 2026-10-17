@@ -2,6 +2,7 @@ import { queryOptions } from "@tanstack/react-query";
 
 import type { EquipmentLite, Mobility } from "@/domain/organisation";
 import { supabase } from "@/integrations/supabase/client";
+import { practitionerPhotoBucket } from "@/data/tenant";
 import type { Database } from "@/integrations/supabase/types";
 
 type T = Database["public"]["Tables"];
@@ -139,7 +140,9 @@ export const equipmentLite = (org: Org): EquipmentLite[] =>
 
 export function photoUrl(path: string | null): Promise<string | null> {
   if (!path) return Promise.resolve(null);
-  return supabase.storage.from("practitioner-photos").createSignedUrl(path, 3600).then((r) => r.data?.signedUrl ?? null);
+  return practitionerPhotoBucket()
+    .then((b) => supabase.storage.from(b).createSignedUrl(path, 3600))
+    .then((r) => r.data?.signedUrl ?? null);
 }
 
 // ---------- writes ----------
@@ -263,7 +266,7 @@ export async function createPractitioner(row: { first_name: string; last_name: s
 export async function uploadPractitionerPhoto(practitionerId: string, file: File) {
   const ext = (file.name.split(".").pop() ?? "jpg").toLowerCase();
   const path = `${practitionerId}/${Date.now()}.${ext}`;
-  const up = await supabase.storage.from("practitioner-photos").upload(path, file, { upsert: true, contentType: file.type });
+  const up = await supabase.storage.from(await practitionerPhotoBucket()).upload(path, file, { upsert: true, contentType: file.type });
   if (up.error) throw up.error;
   await ok(supabase.from("practitioners").update({ photo_path: path }).eq("id", practitionerId));
 }

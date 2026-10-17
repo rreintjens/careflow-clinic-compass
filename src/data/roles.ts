@@ -9,7 +9,7 @@ export const rolesQuery = queryOptions({
       supabase.from("roles").select("*").order("sort"),
       supabase.from("permissions").select("*").order("sort"),
       supabase.from("role_permissions").select("role_id, permission_key"),
-      supabase.from("user_roles").select("user_id, role_id"),
+      supabase.rpc("current_tenant").then((t) => supabase.from("tenant_memberships").select("user_id, role_id").eq("tenant_id", t.data ?? "")),
     ]);
     for (const r of [roles, perms, rp, users]) if (r.error) throw r.error;
     return { roles: roles.data ?? [], permissions: perms.data ?? [], rolePermissions: rp.data ?? [], userRoles: users.data ?? [] };
