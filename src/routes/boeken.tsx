@@ -1,7 +1,7 @@
 import { useQuery, useSuspenseQuery, queryOptions } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 
 import { Logo } from "@/components/Logo";
@@ -9,7 +9,9 @@ import { PillButton } from "@/components/PillButton";
 import { dayPart, nextStep, sortLocations, type Catalog } from "@/domain/booking";
 import { fmtTime, type Slot } from "@/domain/slots";
 import { cn } from "@/lib/utils";
-import { getBookingCatalog, getBookingSlots } from "@/data/booking.functions";
+import { getBookingCatalog, getBookingSlots, getTriage, holdSlot, releaseHold } from "@/data/booking.functions";
+import { QuestionnaireRunner } from "@/features/questionnaire/QuestionnaireRunner";
+import type { Answers, FlowFile, QuestionnaireDef } from "@/domain/questionnaire/engine";
 
 const search = z.object({
   merk: z.string().optional(), lang: z.enum(["nl", "en"]).optional(), bron: z.string().optional(),
@@ -62,6 +64,10 @@ function Booking() {
   const back = step.kind === "category" ? undefined : () => window.history.back();
   const close = () => navigate({ search: { merk: s.merk, lang: s.lang, bron: s.bron } });
   const phone = c.tenant.phone;
+
+  if (step.kind === "planner" && s.stap === "vasthouden" && s.d && s.tijd) {
+    return <HoldStep c={c} s={s} treatmentId={step.treatment} locationId={step.location} practitionerId={step.practitioner ?? "any"} tx={tx} lang={lang} go={go} />;
+  }
 
   return (
     <Shell lang={lang} progress={progress} onBack={back} onClose={close} onLang={step.kind === "category" ? () => go({ lang: lang === "nl" ? "en" : "nl" }, true) : undefined}
@@ -313,5 +319,76 @@ function PlannerStep({ c, s, step, tx, lang, go }: { c: Full; s: Search; step: E
         </div>
       )}
     </>
+  );
+}
+
+const ANSWERS_KEY = "tbc-booking-answers";
+const HOLD_KEY = "tbc-booking-hold";
+const readJson = <T,>(k: string): T | null => { try { return JSON.parse(sessionStorage.getItem(k) ?? "null") as T; } catch { return null; } };
+
+/** Holds the chosen time, runs the triage while the hold lasts, and handles expiry and red outcomes. */
+function HoldStep({ c, s, treatmentId, locationId, practitionerId, tx, lang, go }: { c: Full; s: Search; treatmentId: string; locationId: string; practitionerId: string; tx: Tx; lang: string; go: (p: Partial<Search>, replace?: boolean) => void }) {
+  const hold = useServerFn(holdSlot);
+  const release = useServerFn(releaseHold);
+  const triageFn = useServerFn(getTriage);
+  const treatment = c.treatments.find((x) => x.id === treatmentId);
+  const triageKey = treatment?.pre_questionnaire_key ?? null;
+  const triage = useQuery({ queryKey: ["booking-triage", s.merk ?? "", triageKey], queryFn: () => triageFn({ data: { merk: s.merk, key: triageKey ?? "" } }), enabled: !!triageKey, staleTime: 60_000 });
+  const [state, setState] = useState<{ kind: "loading" } | { kind: "taken" } | { kind: "held"; token: string; expiresAt: number; minutes: number } | { kind: "expired"; minutes: number } | { kind: "done" }>({ kind: "loading" });
+  const [initial, setInitial] = useState<Answers | null>(null);
+  const started = useRef(false);
+
+  useEffect(() => {
+    if (started.current) return;
+    started.current = true;
+    setInitial(readJson<Answers>(ANSWERS_KEY) ?? {});
+    const prev = readJson<{ token: string }>(HOLD_KEY);
+    hold({ data: { merk: s.merk, treatmentId, locationId, practitionerId, date: s.d ?? "", time: s.tijd ?? "", language: lang === "en" ? "en" : "nl", source: s.bron, replaceToken: prev?.token } }).then((r) => {
+      if (!r.ok) { setState({ kind: "taken" }); return; }
+      sessionStorage.setItem(HOLD_KEY, JSON.stringify({ token: r.token, expiresAt: r.expiresAt }));
+      setState({ kind: "held", token: r.token, expiresAt: Date.parse(r.expiresAt), minutes: r.holdMinutes });
+    }, () => setState({ kind: "taken" }));
+  }, [hold, s, treatmentId, locationId, practitionerId, lang]);
+
+  useEffect(() => {
+    if (state.kind !== "held") return;
+    const id = window.setInterval(() => { if (Date.now() >= state.expiresAt) setState({ kind: "expired", minutes: state.minutes }); }, 1000);
+    return () => window.clearInterval(id);
+  }, [state]);
+
+  const keep = useCallback((a: Answers) => sessionStorage.setItem(ANSWERS_KEY, JSON.stringify(a)), []);
+  const fmt = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString(lang === "en" ? "en-GB" : "nl-NL", { timeZone: "UTC", weekday: "long", day: "numeric", month: "long" });
+  const loc = c.locations.find((l) => l.id === locationId);
+  const choice = `${fmt(s.d ?? "")}, ${s.tijd} · ${loc?.kind === "online" ? tx("online_word") : loc?.name ?? ""}`;
+  const again = () => go({ stap: undefined, tijd: undefined });
+
+  if (state.kind === "taken") return (
+    <Shell lang={lang} progress={0.45} onBack={again} footer={<PillButton size="lg" className="w-full" onClick={again}>{tx("choose_again")}</PillButton>}>
+      <p className="text-[15px] leading-[1.6]">{tx("slot_taken")}</p>
+    </Shell>
+  );
+  if (state.kind === "expired") return (
+    <Shell lang={lang} progress={0.6} onBack={again} footer={<PillButton size="lg" className="w-full" onClick={again}>{tx("choose_again")}</PillButton>}>
+      <Title sub={tx("expired_body", { min: state.minutes })}>{tx("expired_title")}</Title>
+      <div className="rounded-[18px] bg-sand p-5">
+        <p className="text-[13px] text-muted-foreground">{tx("your_choice")}</p>
+        <p className="mt-2 text-[15px] font-semibold first-letter:uppercase">{choice}</p>
+        <p className="mt-3 flex items-center gap-2 text-[14px]"><img src="/ui-icons/vinkje.svg" alt="" className="size-4" onError={(e) => { e.currentTarget.style.display = "none"; }} />{tx("answers_kept")}</p>
+      </div>
+    </Shell>
+  );
+  if (state.kind === "loading" || initial === null || (triageKey && triage.isLoading)) return <Shell lang={lang} progress={0.5}><div className="h-40 animate-pulse rounded-[16px] bg-sand" /></Shell>;
+  if (state.kind === "done" || !triageKey || !triage.data) return (
+    // Details form and confirmation follow in the next build step.
+    <Shell lang={lang} progress={0.7} onBack={again}><Title>{tx("step_details")}</Title></Shell>
+  );
+  const ui = Object.fromEntries(c.ui.filter((u) => u.list_key === "questionnaire_ui").map((u) => [u.value, (lang === "en" && u.label_en) || u.label_nl]));
+  const p = c.practitioners.find((x) => x.id === practitionerId);
+  return (
+    <QuestionnaireRunner fullScreen flow={triage.data.flow as unknown as FlowFile} def={triage.data.definition as unknown as QuestionnaireDef} ui={ui} today={todayLocal()} initial={initial}
+      vars={{ dag: fmt(s.d ?? ""), tijd: s.tijd ?? "", behandelaar_voornaam: p?.first_name ?? "", voornaam: "" }}
+      onAnswers={keep}
+      onRed={(red) => { sessionStorage.removeItem(ANSWERS_KEY); sessionStorage.removeItem(HOLD_KEY); void release({ data: { merk: s.merk, token: state.token, questionnaire: triageKey, reason: red.reason } }); }}
+      onFinish={(a) => { keep(a); setState({ kind: "done" }); }} />
   );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 
 import { Logo } from "@/components/Logo";
 import {
@@ -130,7 +130,7 @@ export function QuestionnaireRunner({
   );
 }
 
-function Frame({ progress, onBack, children, footer, scrollRef, fullScreen }: { progress: number; onBack?: (() => void) | undefined; children: ReactNode; footer: ReactNode; scrollRef: React.RefObject<HTMLDivElement | null>; fullScreen: boolean }) {
+function Frame({ progress, onBack, children, footer, scrollRef, fullScreen }: { progress: number; onBack?: (() => void) | undefined; children: ReactNode; footer: ReactNode; scrollRef: RefObject<HTMLDivElement | null>; fullScreen: boolean }) {
   return (
     <div className={cn("flex flex-col bg-background", fullScreen ? "mx-auto min-h-screen w-full max-w-[390px]" : "h-[844px] w-[390px] overflow-hidden rounded-[28px] border border-line")}>
       <div className="flex h-14 items-center justify-between px-5">
