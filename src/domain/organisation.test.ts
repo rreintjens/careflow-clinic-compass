@@ -43,7 +43,7 @@ describe("locationBookability", () => {
     expect(locationBookability({ ...base, location: dh, practitioners: [{ practitioner_id: "p", location_ids: ["dh"], excluded_location_ids: [] }] })).toBe("no_equipment");
   });
   it("movable laser within the location counts", () => {
-    const movable: EquipmentLite = { id: "l2", kind: "laser", mobility: "within_location", room_id: null, location_id: "dh", day_locations: [] };
+    const movable: EquipmentLite = { id: "l2", kind: "laser", mobility: "movable_location", room_id: null, location_id: "dh", day_locations: [] };
     expect(locationBookability({ ...base, equipment: [movable], location: dh, practitioners: [{ practitioner_id: "p", location_ids: ["dh"], excluded_location_ids: [] }] })).toBe("ok");
   });
   it("online needs no room or equipment", () => {

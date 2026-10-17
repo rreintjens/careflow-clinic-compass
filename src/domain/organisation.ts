@@ -1,6 +1,7 @@
 /** Pure organisation rules: bookability, schedule checks, option generators. */
 
-export type Mobility = "fixed_room" | "within_location" | "between_locations";
+export type { Placement as Mobility } from "./equipment";
+import type { Placement } from "./equipment";
 
 export interface LocationLite {
   id: string;
@@ -14,7 +15,7 @@ export interface RoomLite {
 export interface EquipmentLite {
   id: string;
   kind: string;
-  mobility: Mobility;
+  mobility: Placement;
   room_id: string | null;
   location_id: string | null;
   day_locations: Array<{ weekday: number; location_id: string | null }>;
@@ -53,7 +54,7 @@ export function practitionerExcludedHere(
 /** Whether a piece of equipment can ever be at a location. */
 export function equipmentAvailableAt(e: EquipmentLite, locationId: string, rooms: readonly RoomLite[]): boolean {
   if (e.mobility === "fixed_room") return rooms.some((r) => r.id === e.room_id && r.location_id === locationId);
-  if (e.mobility === "within_location") return e.location_id === locationId;
+  if (e.mobility === "movable_location") return e.location_id === locationId;
   return e.day_locations.some((d) => d.location_id === locationId);
 }
 

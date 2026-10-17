@@ -29,7 +29,7 @@ export const orgQuery = queryOptions({
   queryKey: ["org"],
   queryFn: async () => {
     const [
-      options, roles, languages, locations, hours, rooms, equipment, dayLocs, categories, treatments,
+      options, roles, languages, locations, hours, rooms, equipment, dayLocs, kinds, types, categories, treatments,
       catLinks, treatRoles, treatLocs, reqs, practitioners, pracLangs, pracLocs, pracTreats,
     ] = await Promise.all([
       supabase.from("option_lists").select("*").order("sort"),
@@ -39,7 +39,9 @@ export const orgQuery = queryOptions({
       supabase.from("location_hours").select("*"),
       supabase.from("rooms").select("*").order("sort"),
       supabase.from("equipment").select("*").order("sort"),
-      supabase.from("equipment_day_locations").select("*"),
+      supabase.from("equipment_schedule").select("*"),
+      supabase.from("equipment_kinds").select("*").order("sort"),
+      supabase.from("equipment_types").select("*").order("brand").order("type"),
       supabase.from("treatment_categories").select("*").order("sort"),
       supabase.from("treatments").select("*").order("name_nl"),
       supabase.from("treatment_category_links").select("*").order("sort"),
@@ -60,6 +62,8 @@ export const orgQuery = queryOptions({
       rooms: must(rooms),
       equipment: must(equipment),
       dayLocations: must(dayLocs),
+      equipmentKinds: must(kinds),
+      equipmentTypes: must(types),
       categories: must(categories),
       treatments: must(treatments),
       categoryLinks: must(catLinks),
@@ -132,7 +136,7 @@ export const equipmentLite = (org: Org): EquipmentLite[] =>
   org.equipment.map((e) => ({
     id: e.id,
     kind: e.kind,
-    mobility: e.mobility as Mobility,
+    mobility: e.placement as Mobility,
     room_id: e.room_id,
     location_id: e.location_id,
     day_locations: org.dayLocations.filter((d) => d.equipment_id === e.id),

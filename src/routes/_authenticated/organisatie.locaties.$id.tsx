@@ -69,7 +69,7 @@ function LocationForm({ org }: { org: Org }) {
   }).filter((r) => r.t).sort((a, b) => (a.t?.name_nl ?? "").localeCompare(b.t?.name_nl ?? ""));
   const okCount = here.filter((h) => h.reason === "ok").length;
 
-  const roomFeatures = (r: Room) => org.equipment.filter((e) => e.mobility === "fixed_room" && e.room_id === r.id);
+  const roomFeatures = (r: Room) => org.equipment.filter((e) => e.placement === "fixed_room" && e.room_id === r.id);
   const suitedFor = (r: Room) => {
     const kinds = roomFeatures(r).map((e) => e.kind);
     if (!kinds.length) return "Alles zonder speciale apparatuur";
