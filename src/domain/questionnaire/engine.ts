@@ -169,7 +169,7 @@ export function pageProgress(p: Page, ctx: Ctx) {
 }
 
 /** Which rejection variant a red rule shows when none is set explicitly. */
-export function defaultRedVariant(source: { field?: string; section?: string }, variants: string[]): string {
+export function defaultRedVariant(source: { field?: string | undefined; section?: string | undefined }, variants: string[]): string {
   const want = source.field === "age" ? "age" : source.field === "bmi" ? "bmi_low" : source.section === "Veiligheidscheck" ? "medical" : "weight_route";
   return variants.includes(want) ? want : (variants[0] ?? want);
 }

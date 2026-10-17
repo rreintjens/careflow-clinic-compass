@@ -5,10 +5,10 @@ import { joinFlow, splitFlow } from "@/domain/questionnaire/io";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 
-async function ok<T>(p: PromiseLike<{ data: T; error: unknown }>): Promise<T> {
+async function ok<T>(p: PromiseLike<{ data: T; error: unknown }>): Promise<NonNullable<T>> {
   const { data, error } = await p;
   if (error) throw error;
-  return data;
+  return data as NonNullable<T>;
 }
 
 export const questionnairesQuery = queryOptions({
@@ -38,12 +38,12 @@ export const flowOf = (d: QData, flowId: string) => d.flows.find((f) => f.id ===
 /** Imports a flow file: one flow row, one questionnaire per entry, each as a published version 1 (or a new draft when it exists). */
 export async function importFlow(file: FlowFile, flowKey: string, publish: boolean) {
   const { document, questionnaires } = splitFlow(file);
-  const existing = await ok(supabase.from("questionnaire_flows").select("id").eq("key", flowKey).maybeSingle());
+  const existing = (await supabase.from("questionnaire_flows").select("id").eq("key", flowKey).maybeSingle()).data;
   let flowId = existing?.id;
   if (flowId) await ok(supabase.from("questionnaire_flows").update({ document: document as Json }).eq("id", flowId));
   else flowId = (await ok(supabase.from("questionnaire_flows").insert({ key: flowKey, document: document as Json }).select("id").single())).id;
   for (const [i, q] of questionnaires.entries()) {
-    const row = await ok(supabase.from("questionnaires").select("id").eq("key", q.id).maybeSingle());
+    const row = (await supabase.from("questionnaires").select("id").eq("key", q.id).maybeSingle()).data;
     const qid = row?.id ?? (await ok(supabase.from("questionnaires").insert({ flow_id: flowId, key: q.id, name: q.name, moment: q.moment, sort: i }).select("id").single())).id;
     if (row) await ok(supabase.from("questionnaires").update({ name: q.name, moment: q.moment, sort: i, flow_id: flowId }).eq("id", qid));
     const versions = await ok(supabase.from("questionnaire_versions").select("id, version_no, status").eq("questionnaire_id", qid).order("version_no", { ascending: false }));
@@ -103,6 +103,6 @@ export async function linkTreatments(key: string, moment: string, treatmentIds: 
   for (const t of allTreatments) {
     const has = t[col] === key;
     const want = treatmentIds.includes(t.id);
-    if (has !== want) await ok(supabase.from("treatments").update({ [col]: want ? key : null }).eq("id", t.id));
+    if (has !== want) await ok(supabase.from("treatments").update(col === "post_questionnaire_key" ? { post_questionnaire_key: want ? key : null } : { pre_questionnaire_key: want ? key : null }).eq("id", t.id));
   }
 }

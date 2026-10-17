@@ -33,6 +33,7 @@ import { Route as AuthenticatedOrganisatieBehandelingenIndexRouteImport } from '
 import { Route as AuthenticatedOrganisatieBehandelingenIdRouteImport } from './routes/_authenticated/organisatie.behandelingen.$id'
 import { Route as AuthenticatedOrganisatieLocatiesIndexRouteImport } from './routes/_authenticated/organisatie.locaties.index'
 import { Route as AuthenticatedOrganisatieLocatiesIdRouteImport } from './routes/_authenticated/organisatie.locaties.$id'
+import { Route as AuthenticatedBoekingsflowVragenlijstenIdTestRouteImport } from './routes/_authenticated/boekingsflow.vragenlijsten.$id_.test'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -171,6 +172,12 @@ const AuthenticatedOrganisatieLocatiesIdRoute =
     path: '/organisatie/locaties/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedBoekingsflowVragenlijstenIdTestRoute =
+  AuthenticatedBoekingsflowVragenlijstenIdTestRouteImport.update({
+    id: '/boekingsflow/vragenlijsten/$id_/test',
+    path: '/boekingsflow/vragenlijsten/$id/test',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -196,6 +203,7 @@ export interface FileRoutesByFullPath {
   '/organisatie/behandelaars/': typeof AuthenticatedOrganisatieBehandelaarsIndexRoute
   '/organisatie/behandelingen/': typeof AuthenticatedOrganisatieBehandelingenIndexRoute
   '/organisatie/locaties/': typeof AuthenticatedOrganisatieLocatiesIndexRoute
+  '/boekingsflow/vragenlijsten/$id/test': typeof AuthenticatedBoekingsflowVragenlijstenIdTestRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -221,6 +229,7 @@ export interface FileRoutesByTo {
   '/organisatie/behandelaars': typeof AuthenticatedOrganisatieBehandelaarsIndexRoute
   '/organisatie/behandelingen': typeof AuthenticatedOrganisatieBehandelingenIndexRoute
   '/organisatie/locaties': typeof AuthenticatedOrganisatieLocatiesIndexRoute
+  '/boekingsflow/vragenlijsten/$id/test': typeof AuthenticatedBoekingsflowVragenlijstenIdTestRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -248,6 +257,7 @@ export interface FileRoutesById {
   '/_authenticated/organisatie/behandelaars/': typeof AuthenticatedOrganisatieBehandelaarsIndexRoute
   '/_authenticated/organisatie/behandelingen/': typeof AuthenticatedOrganisatieBehandelingenIndexRoute
   '/_authenticated/organisatie/locaties/': typeof AuthenticatedOrganisatieLocatiesIndexRoute
+  '/_authenticated/boekingsflow/vragenlijsten/$id_/test': typeof AuthenticatedBoekingsflowVragenlijstenIdTestRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -275,6 +285,7 @@ export interface FileRouteTypes {
     | '/organisatie/behandelaars/'
     | '/organisatie/behandelingen/'
     | '/organisatie/locaties/'
+    | '/boekingsflow/vragenlijsten/$id/test'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -300,6 +311,7 @@ export interface FileRouteTypes {
     | '/organisatie/behandelaars'
     | '/organisatie/behandelingen'
     | '/organisatie/locaties'
+    | '/boekingsflow/vragenlijsten/$id/test'
   id:
     | '__root__'
     | '/'
@@ -326,6 +338,7 @@ export interface FileRouteTypes {
     | '/_authenticated/organisatie/behandelaars/'
     | '/_authenticated/organisatie/behandelingen/'
     | '/_authenticated/organisatie/locaties/'
+    | '/_authenticated/boekingsflow/vragenlijsten/$id_/test'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -505,6 +518,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOrganisatieLocatiesIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/boekingsflow/vragenlijsten/$id_/test': {
+      id: '/_authenticated/boekingsflow/vragenlijsten/$id_/test'
+      path: '/boekingsflow/vragenlijsten/$id/test'
+      fullPath: '/boekingsflow/vragenlijsten/$id/test'
+      preLoaderRoute: typeof AuthenticatedBoekingsflowVragenlijstenIdTestRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -529,6 +549,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedOrganisatieBehandelaarsIndexRoute: typeof AuthenticatedOrganisatieBehandelaarsIndexRoute
   AuthenticatedOrganisatieBehandelingenIndexRoute: typeof AuthenticatedOrganisatieBehandelingenIndexRoute
   AuthenticatedOrganisatieLocatiesIndexRoute: typeof AuthenticatedOrganisatieLocatiesIndexRoute
+  AuthenticatedBoekingsflowVragenlijstenIdTestRoute: typeof AuthenticatedBoekingsflowVragenlijstenIdTestRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -565,6 +586,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedOrganisatieBehandelingenIndexRoute,
   AuthenticatedOrganisatieLocatiesIndexRoute:
     AuthenticatedOrganisatieLocatiesIndexRoute,
+  AuthenticatedBoekingsflowVragenlijstenIdTestRoute:
+    AuthenticatedBoekingsflowVragenlijstenIdTestRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

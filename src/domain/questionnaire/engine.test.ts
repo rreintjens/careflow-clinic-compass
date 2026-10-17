@@ -38,9 +38,9 @@ describe("formulas", () => {
   });
   it("reduced thresholds from origin", () => {
     const c = makeCtx(flow, { origin: ["Oost- of Zuidoost-Aziatisch"], sex: "Vrouw" }, TODAY).computed;
-    expect([c.bmi_waist_from, c.bmi_direct_from, c.waist_min]).toEqual([23, 27.5, 80]);
+    expect([c["bmi_waist_from"], c["bmi_direct_from"], c["waist_min"]]).toEqual([23, 27.5, 80]);
     const d = makeCtx(flow, { origin: ["Afrikaans of Afrikaans-Caribisch"], sex: "Man" }, TODAY).computed;
-    expect([d.bmi_waist_from, d.bmi_direct_from, d.waist_min]).toEqual([23, 27.5, 102]);
+    expect([d["bmi_waist_from"], d["bmi_direct_from"], d["waist_min"]]).toEqual([23, 27.5, 102]);
   });
 });
 
@@ -109,9 +109,9 @@ describe("signals", () => {
 describe("prefill and import/export", () => {
   it("medical prefills from triage", () => {
     const p = prefillAnswers(medical, { ...ok, weight_kg: 95, weightloss_meds_now: "Nee" });
-    expect(p.sex).toBe("Vrouw");
-    expect(p.height_cm).toBe(170);
-    expect(p.conditions).toEqual(["Geen van deze"]);
+    expect(p["sex"]).toBe("Vrouw");
+    expect(p["height_cm"]).toBe(170);
+    expect(p["conditions"]).toEqual(["Geen van deze"]);
   });
   it("export equals import", () => {
     const { document, questionnaires } = splitFlow(JSON.parse(JSON.stringify(flow)));
