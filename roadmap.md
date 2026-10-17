@@ -19,7 +19,11 @@ Owner asked to continue through all phases without pausing for confirmation.
   - [x] 4d details form (PDOK address lookup), confirmation, calendar file
   - [x] 4e medical questionnaire after booking (autosave, already completed, 24h edit window) — resume screen design still to match
   - [ ] 4f manage appointment via mail link (calendar file, reschedule, cancel with reason)
+- [x] 4f manage appointment (view, reschedule, cancel + reason)
 - [ ] Phase 5 – Agenda, Mijn dag, patient card, record, consult mode
+  - [x] 5a day agenda + appointment side card
+  - [ ] 5b week view, practitioner search, treatment filter, "Afspraak maken" modal
+  - [ ] 5c Mijn dag; 5d patient list + five-tab record; 5e consult mode; 5f schedule editing
 - [ ] Phase 6 – Mails and integrations
 - [x] Medical questionnaire: 'Val je af of kom je nog aan?' had no answers in the seed; v2 adds them from the design HTML
 - [x] Questionnaire runner: pressing the button with missing/invalid answers highlights them and scrolls to the first (owner request)
