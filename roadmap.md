@@ -23,7 +23,8 @@ Owner asked to continue through all phases without pausing for confirmation.
 - [ ] Phase 5 – Agenda, Mijn dag, patient card, record, consult mode
   - [x] 5a day agenda + appointment side card
   - [x] 5b week view, practitioner/category filter, "Afspraak maken" modal (new-patient creation from modal still open)
-  - [ ] 5c Mijn dag; 5d patient list + five-tab record; 5e consult mode; 5f schedule editing
+  - [x] 5c Mijn dag; removed test-environment banner (owner request);
+  - [ ] 5d patient list + five-tab record; 5e consult mode; 5f schedule editing
 - [ ] Phase 6 – Mails and integrations
 - [x] Medical questionnaire: 'Val je af of kom je nog aan?' had no answers in the seed; v2 adds them from the design HTML
 - [x] Questionnaire runner: pressing the button with missing/invalid answers highlights them and scrolls to the first (owner request)
