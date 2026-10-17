@@ -45,3 +45,11 @@ export function weekStart(date: string): string {
   d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
   return d.toISOString().slice(0, 10);
 }
+
+/** "Nu bezig" / "Volgende" on Mijn dag: appointment running at `now`, and the first one starting after it. */
+export function nowAndNext<T extends { start: number; end: number }>(appts: readonly T[], now: number) {
+  const sorted = [...appts].sort((a, b) => a.start - b.start);
+  const current = sorted.find((a) => a.start <= now && now < a.end) ?? null;
+  const next = sorted.find((a) => a.start > now) ?? null;
+  return { current, next, minutesLeft: current ? current.end - now : null, minutesUntil: next ? next.start - now : null };
+}
