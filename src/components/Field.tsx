@@ -63,7 +63,7 @@ export function Tag({ children, tone = "teal" }: { children: ReactNode; tone?: "
         "inline-flex h-7 items-center whitespace-nowrap rounded-full px-2.5 text-xs",
         tone === "teal" && "bg-teal-light text-primary-hover",
         tone === "sand" && "bg-sand text-foreground",
-        tone === "warning" && "bg-warning-light text-warning",
+        tone === "warning" && "bg-warning-bg text-warning",
       )}
     >
       {children}
@@ -79,7 +79,7 @@ export function StatusMark({ kind }: { kind: "ok" | "warn" | "none" }) {
       className={cn(
         "inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full",
         kind === "ok" && "bg-teal-light text-primary",
-        kind === "warn" && "bg-warning-light text-warning",
+        kind === "warn" && "bg-warning-bg text-warning",
         kind === "none" && "bg-sand text-muted-foreground",
       )}
     >
