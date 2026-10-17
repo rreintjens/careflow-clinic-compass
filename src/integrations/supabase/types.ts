@@ -1222,6 +1222,167 @@ export type Database = {
         }
         Relationships: []
       }
+      questionnaire_flows: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          document: Json
+          id: string
+          key: string
+          tenant_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          document?: Json
+          id?: string
+          key: string
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          document?: Json
+          id?: string
+          key?: string
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "questionnaire_flows_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      questionnaire_versions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          definition: Json
+          id: string
+          note: string | null
+          published_at: string | null
+          published_by: string | null
+          questionnaire_id: string
+          status: string
+          tenant_id: string
+          updated_at: string
+          updated_by: string | null
+          version_no: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          definition: Json
+          id?: string
+          note?: string | null
+          published_at?: string | null
+          published_by?: string | null
+          questionnaire_id: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version_no: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          definition?: Json
+          id?: string
+          note?: string | null
+          published_at?: string | null
+          published_by?: string | null
+          questionnaire_id?: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version_no?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "questionnaire_versions_questionnaire_id_fkey"
+            columns: ["questionnaire_id"]
+            isOneToOne: false
+            referencedRelation: "questionnaires"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questionnaire_versions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      questionnaires: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          flow_id: string
+          id: string
+          key: string
+          moment: string
+          name: string
+          sort: number
+          tenant_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          flow_id: string
+          id?: string
+          key: string
+          moment: string
+          name: string
+          sort?: number
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          flow_id?: string
+          id?: string
+          key?: string
+          moment?: string
+          name?: string
+          sort?: number
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "questionnaires_flow_id_fkey"
+            columns: ["flow_id"]
+            isOneToOne: false
+            referencedRelation: "questionnaire_flows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questionnaires_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       role_permissions: {
         Row: {
           created_at: string

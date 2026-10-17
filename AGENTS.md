@@ -24,3 +24,5 @@
 - Shared group data (permissions, option_lists, languages, group_settings) is editable only by `group_admins`; storage buckets are per tenant (`<name>-<slug>`).
 - Tenancy/RLS proof: `TEST_STAFF_PASSWORD=… bunx vitest run src/test/tenancy.integration.test.ts` (run files one at a time; they share test accounts).
 - Equipment: device kind comes from `equipment_types` → `equipment_kinds`; names are generated (`src/domain/equipment.ts`), never stored as truth; availability per room/day only via `roomsForKind` — one tested rule.
+- Questionnaires: definitions are jsonb per version (`questionnaire_versions`, draft/published/archived; published frozen by trigger); flow-level settings/computed fields in `questionnaire_flows.document`; all routing/red/signal logic only in `src/domain/questionnaire/engine.ts` (tested against `src/seed/*.json`) so export stays equal to import.
+- Patient questionnaire UI is one component (`src/features/questionnaire/QuestionnaireRunner.tsx`); fixed screen texts come from option list `questionnaire_ui`.

@@ -71,6 +71,13 @@
       "when": 1792277320562,
       "tag": "0009_equipment_kind_parent",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792277758960,
+      "tag": "0010_questionnaires",
+      "breakpoints": true
     }
   ]
 }

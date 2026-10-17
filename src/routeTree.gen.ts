@@ -20,18 +20,20 @@ import { Route as AuthenticatedAgendaMijnDagRouteImport } from './routes/_authen
 import { Route as AuthenticatedAgendaRoosterRouteImport } from './routes/_authenticated/agenda.rooster'
 import { Route as AuthenticatedBoekingsflowBoekingslinksRouteImport } from './routes/_authenticated/boekingsflow.boekingslinks'
 import { Route as AuthenticatedBoekingsflowEMailsRouteImport } from './routes/_authenticated/boekingsflow.e-mails'
-import { Route as AuthenticatedBoekingsflowVragenlijstenRouteImport } from './routes/_authenticated/boekingsflow.vragenlijsten'
 import { Route as AuthenticatedInstellingenAlgemeenRouteImport } from './routes/_authenticated/instellingen.algemeen'
 import { Route as AuthenticatedInstellingenGebruikersEnRollenRouteImport } from './routes/_authenticated/instellingen.gebruikers-en-rollen'
 import { Route as AuthenticatedInstellingenKoppelingenRouteImport } from './routes/_authenticated/instellingen.koppelingen'
 import { Route as AuthenticatedInstellingenLogboekRouteImport } from './routes/_authenticated/instellingen.logboek'
 import { Route as AuthenticatedOrganisatieApparatuurRouteImport } from './routes/_authenticated/organisatie.apparatuur'
+import { Route as AuthenticatedBoekingsflowVragenlijstenIndexRouteImport } from './routes/_authenticated/boekingsflow.vragenlijsten.index'
+import { Route as AuthenticatedBoekingsflowVragenlijstenIdRouteImport } from './routes/_authenticated/boekingsflow.vragenlijsten.$id'
 import { Route as AuthenticatedOrganisatieBehandelaarsIndexRouteImport } from './routes/_authenticated/organisatie.behandelaars.index'
 import { Route as AuthenticatedOrganisatieBehandelaarsIdRouteImport } from './routes/_authenticated/organisatie.behandelaars.$id'
 import { Route as AuthenticatedOrganisatieBehandelingenIndexRouteImport } from './routes/_authenticated/organisatie.behandelingen.index'
 import { Route as AuthenticatedOrganisatieBehandelingenIdRouteImport } from './routes/_authenticated/organisatie.behandelingen.$id'
 import { Route as AuthenticatedOrganisatieLocatiesIndexRouteImport } from './routes/_authenticated/organisatie.locaties.index'
 import { Route as AuthenticatedOrganisatieLocatiesIdRouteImport } from './routes/_authenticated/organisatie.locaties.$id'
+import { Route as AuthenticatedBoekingsflowVragenlijstenIdTestRouteImport } from './routes/_authenticated/boekingsflow.vragenlijsten.$id_.test'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -92,12 +94,6 @@ const AuthenticatedBoekingsflowEMailsRoute =
     path: '/boekingsflow/e-mails',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedBoekingsflowVragenlijstenRoute =
-  AuthenticatedBoekingsflowVragenlijstenRouteImport.update({
-    id: '/boekingsflow/vragenlijsten',
-    path: '/boekingsflow/vragenlijsten',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedInstellingenAlgemeenRoute =
   AuthenticatedInstellingenAlgemeenRouteImport.update({
     id: '/instellingen/algemeen',
@@ -126,6 +122,18 @@ const AuthenticatedOrganisatieApparatuurRoute =
   AuthenticatedOrganisatieApparatuurRouteImport.update({
     id: '/organisatie/apparatuur',
     path: '/organisatie/apparatuur',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedBoekingsflowVragenlijstenIndexRoute =
+  AuthenticatedBoekingsflowVragenlijstenIndexRouteImport.update({
+    id: '/boekingsflow/vragenlijsten/',
+    path: '/boekingsflow/vragenlijsten/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedBoekingsflowVragenlijstenIdRoute =
+  AuthenticatedBoekingsflowVragenlijstenIdRouteImport.update({
+    id: '/boekingsflow/vragenlijsten/$id',
+    path: '/boekingsflow/vragenlijsten/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedOrganisatieBehandelaarsIndexRoute =
@@ -164,6 +172,12 @@ const AuthenticatedOrganisatieLocatiesIdRoute =
     path: '/organisatie/locaties/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedBoekingsflowVragenlijstenIdTestRoute =
+  AuthenticatedBoekingsflowVragenlijstenIdTestRouteImport.update({
+    id: '/boekingsflow/vragenlijsten/$id_/test',
+    path: '/boekingsflow/vragenlijsten/$id/test',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -175,19 +189,21 @@ export interface FileRoutesByFullPath {
   '/agenda/rooster': typeof AuthenticatedAgendaRoosterRoute
   '/boekingsflow/boekingslinks': typeof AuthenticatedBoekingsflowBoekingslinksRoute
   '/boekingsflow/e-mails': typeof AuthenticatedBoekingsflowEMailsRoute
-  '/boekingsflow/vragenlijsten': typeof AuthenticatedBoekingsflowVragenlijstenRoute
   '/instellingen/algemeen': typeof AuthenticatedInstellingenAlgemeenRoute
   '/instellingen/gebruikers-en-rollen': typeof AuthenticatedInstellingenGebruikersEnRollenRoute
   '/instellingen/koppelingen': typeof AuthenticatedInstellingenKoppelingenRoute
   '/instellingen/logboek': typeof AuthenticatedInstellingenLogboekRoute
   '/organisatie/apparatuur': typeof AuthenticatedOrganisatieApparatuurRoute
   '/agenda/': typeof AuthenticatedAgendaIndexRoute
+  '/boekingsflow/vragenlijsten/$id': typeof AuthenticatedBoekingsflowVragenlijstenIdRoute
   '/organisatie/behandelaars/$id': typeof AuthenticatedOrganisatieBehandelaarsIdRoute
   '/organisatie/behandelingen/$id': typeof AuthenticatedOrganisatieBehandelingenIdRoute
   '/organisatie/locaties/$id': typeof AuthenticatedOrganisatieLocatiesIdRoute
+  '/boekingsflow/vragenlijsten/': typeof AuthenticatedBoekingsflowVragenlijstenIndexRoute
   '/organisatie/behandelaars/': typeof AuthenticatedOrganisatieBehandelaarsIndexRoute
   '/organisatie/behandelingen/': typeof AuthenticatedOrganisatieBehandelingenIndexRoute
   '/organisatie/locaties/': typeof AuthenticatedOrganisatieLocatiesIndexRoute
+  '/boekingsflow/vragenlijsten/$id/test': typeof AuthenticatedBoekingsflowVragenlijstenIdTestRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -199,19 +215,21 @@ export interface FileRoutesByTo {
   '/agenda/rooster': typeof AuthenticatedAgendaRoosterRoute
   '/boekingsflow/boekingslinks': typeof AuthenticatedBoekingsflowBoekingslinksRoute
   '/boekingsflow/e-mails': typeof AuthenticatedBoekingsflowEMailsRoute
-  '/boekingsflow/vragenlijsten': typeof AuthenticatedBoekingsflowVragenlijstenRoute
   '/instellingen/algemeen': typeof AuthenticatedInstellingenAlgemeenRoute
   '/instellingen/gebruikers-en-rollen': typeof AuthenticatedInstellingenGebruikersEnRollenRoute
   '/instellingen/koppelingen': typeof AuthenticatedInstellingenKoppelingenRoute
   '/instellingen/logboek': typeof AuthenticatedInstellingenLogboekRoute
   '/organisatie/apparatuur': typeof AuthenticatedOrganisatieApparatuurRoute
   '/agenda': typeof AuthenticatedAgendaIndexRoute
+  '/boekingsflow/vragenlijsten/$id': typeof AuthenticatedBoekingsflowVragenlijstenIdRoute
   '/organisatie/behandelaars/$id': typeof AuthenticatedOrganisatieBehandelaarsIdRoute
   '/organisatie/behandelingen/$id': typeof AuthenticatedOrganisatieBehandelingenIdRoute
   '/organisatie/locaties/$id': typeof AuthenticatedOrganisatieLocatiesIdRoute
+  '/boekingsflow/vragenlijsten': typeof AuthenticatedBoekingsflowVragenlijstenIndexRoute
   '/organisatie/behandelaars': typeof AuthenticatedOrganisatieBehandelaarsIndexRoute
   '/organisatie/behandelingen': typeof AuthenticatedOrganisatieBehandelingenIndexRoute
   '/organisatie/locaties': typeof AuthenticatedOrganisatieLocatiesIndexRoute
+  '/boekingsflow/vragenlijsten/$id/test': typeof AuthenticatedBoekingsflowVragenlijstenIdTestRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -225,19 +243,21 @@ export interface FileRoutesById {
   '/_authenticated/agenda/rooster': typeof AuthenticatedAgendaRoosterRoute
   '/_authenticated/boekingsflow/boekingslinks': typeof AuthenticatedBoekingsflowBoekingslinksRoute
   '/_authenticated/boekingsflow/e-mails': typeof AuthenticatedBoekingsflowEMailsRoute
-  '/_authenticated/boekingsflow/vragenlijsten': typeof AuthenticatedBoekingsflowVragenlijstenRoute
   '/_authenticated/instellingen/algemeen': typeof AuthenticatedInstellingenAlgemeenRoute
   '/_authenticated/instellingen/gebruikers-en-rollen': typeof AuthenticatedInstellingenGebruikersEnRollenRoute
   '/_authenticated/instellingen/koppelingen': typeof AuthenticatedInstellingenKoppelingenRoute
   '/_authenticated/instellingen/logboek': typeof AuthenticatedInstellingenLogboekRoute
   '/_authenticated/organisatie/apparatuur': typeof AuthenticatedOrganisatieApparatuurRoute
   '/_authenticated/agenda/': typeof AuthenticatedAgendaIndexRoute
+  '/_authenticated/boekingsflow/vragenlijsten/$id': typeof AuthenticatedBoekingsflowVragenlijstenIdRoute
   '/_authenticated/organisatie/behandelaars/$id': typeof AuthenticatedOrganisatieBehandelaarsIdRoute
   '/_authenticated/organisatie/behandelingen/$id': typeof AuthenticatedOrganisatieBehandelingenIdRoute
   '/_authenticated/organisatie/locaties/$id': typeof AuthenticatedOrganisatieLocatiesIdRoute
+  '/_authenticated/boekingsflow/vragenlijsten/': typeof AuthenticatedBoekingsflowVragenlijstenIndexRoute
   '/_authenticated/organisatie/behandelaars/': typeof AuthenticatedOrganisatieBehandelaarsIndexRoute
   '/_authenticated/organisatie/behandelingen/': typeof AuthenticatedOrganisatieBehandelingenIndexRoute
   '/_authenticated/organisatie/locaties/': typeof AuthenticatedOrganisatieLocatiesIndexRoute
+  '/_authenticated/boekingsflow/vragenlijsten/$id_/test': typeof AuthenticatedBoekingsflowVragenlijstenIdTestRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -251,19 +271,21 @@ export interface FileRouteTypes {
     | '/agenda/rooster'
     | '/boekingsflow/boekingslinks'
     | '/boekingsflow/e-mails'
-    | '/boekingsflow/vragenlijsten'
     | '/instellingen/algemeen'
     | '/instellingen/gebruikers-en-rollen'
     | '/instellingen/koppelingen'
     | '/instellingen/logboek'
     | '/organisatie/apparatuur'
     | '/agenda/'
+    | '/boekingsflow/vragenlijsten/$id'
     | '/organisatie/behandelaars/$id'
     | '/organisatie/behandelingen/$id'
     | '/organisatie/locaties/$id'
+    | '/boekingsflow/vragenlijsten/'
     | '/organisatie/behandelaars/'
     | '/organisatie/behandelingen/'
     | '/organisatie/locaties/'
+    | '/boekingsflow/vragenlijsten/$id/test'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -275,19 +297,21 @@ export interface FileRouteTypes {
     | '/agenda/rooster'
     | '/boekingsflow/boekingslinks'
     | '/boekingsflow/e-mails'
-    | '/boekingsflow/vragenlijsten'
     | '/instellingen/algemeen'
     | '/instellingen/gebruikers-en-rollen'
     | '/instellingen/koppelingen'
     | '/instellingen/logboek'
     | '/organisatie/apparatuur'
     | '/agenda'
+    | '/boekingsflow/vragenlijsten/$id'
     | '/organisatie/behandelaars/$id'
     | '/organisatie/behandelingen/$id'
     | '/organisatie/locaties/$id'
+    | '/boekingsflow/vragenlijsten'
     | '/organisatie/behandelaars'
     | '/organisatie/behandelingen'
     | '/organisatie/locaties'
+    | '/boekingsflow/vragenlijsten/$id/test'
   id:
     | '__root__'
     | '/'
@@ -300,19 +324,21 @@ export interface FileRouteTypes {
     | '/_authenticated/agenda/rooster'
     | '/_authenticated/boekingsflow/boekingslinks'
     | '/_authenticated/boekingsflow/e-mails'
-    | '/_authenticated/boekingsflow/vragenlijsten'
     | '/_authenticated/instellingen/algemeen'
     | '/_authenticated/instellingen/gebruikers-en-rollen'
     | '/_authenticated/instellingen/koppelingen'
     | '/_authenticated/instellingen/logboek'
     | '/_authenticated/organisatie/apparatuur'
     | '/_authenticated/agenda/'
+    | '/_authenticated/boekingsflow/vragenlijsten/$id'
     | '/_authenticated/organisatie/behandelaars/$id'
     | '/_authenticated/organisatie/behandelingen/$id'
     | '/_authenticated/organisatie/locaties/$id'
+    | '/_authenticated/boekingsflow/vragenlijsten/'
     | '/_authenticated/organisatie/behandelaars/'
     | '/_authenticated/organisatie/behandelingen/'
     | '/_authenticated/organisatie/locaties/'
+    | '/_authenticated/boekingsflow/vragenlijsten/$id_/test'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -401,13 +427,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBoekingsflowEMailsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/boekingsflow/vragenlijsten': {
-      id: '/_authenticated/boekingsflow/vragenlijsten'
-      path: '/boekingsflow/vragenlijsten'
-      fullPath: '/boekingsflow/vragenlijsten'
-      preLoaderRoute: typeof AuthenticatedBoekingsflowVragenlijstenRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/instellingen/algemeen': {
       id: '/_authenticated/instellingen/algemeen'
       path: '/instellingen/algemeen'
@@ -441,6 +460,20 @@ declare module '@tanstack/react-router' {
       path: '/organisatie/apparatuur'
       fullPath: '/organisatie/apparatuur'
       preLoaderRoute: typeof AuthenticatedOrganisatieApparatuurRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/boekingsflow/vragenlijsten/': {
+      id: '/_authenticated/boekingsflow/vragenlijsten/'
+      path: '/boekingsflow/vragenlijsten'
+      fullPath: '/boekingsflow/vragenlijsten/'
+      preLoaderRoute: typeof AuthenticatedBoekingsflowVragenlijstenIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/boekingsflow/vragenlijsten/$id': {
+      id: '/_authenticated/boekingsflow/vragenlijsten/$id'
+      path: '/boekingsflow/vragenlijsten/$id'
+      fullPath: '/boekingsflow/vragenlijsten/$id'
+      preLoaderRoute: typeof AuthenticatedBoekingsflowVragenlijstenIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/organisatie/behandelaars/': {
@@ -485,6 +518,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOrganisatieLocatiesIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/boekingsflow/vragenlijsten/$id_/test': {
+      id: '/_authenticated/boekingsflow/vragenlijsten/$id_/test'
+      path: '/boekingsflow/vragenlijsten/$id/test'
+      fullPath: '/boekingsflow/vragenlijsten/$id/test'
+      preLoaderRoute: typeof AuthenticatedBoekingsflowVragenlijstenIdTestRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -495,19 +535,21 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAgendaRoosterRoute: typeof AuthenticatedAgendaRoosterRoute
   AuthenticatedBoekingsflowBoekingslinksRoute: typeof AuthenticatedBoekingsflowBoekingslinksRoute
   AuthenticatedBoekingsflowEMailsRoute: typeof AuthenticatedBoekingsflowEMailsRoute
-  AuthenticatedBoekingsflowVragenlijstenRoute: typeof AuthenticatedBoekingsflowVragenlijstenRoute
   AuthenticatedInstellingenAlgemeenRoute: typeof AuthenticatedInstellingenAlgemeenRoute
   AuthenticatedInstellingenGebruikersEnRollenRoute: typeof AuthenticatedInstellingenGebruikersEnRollenRoute
   AuthenticatedInstellingenKoppelingenRoute: typeof AuthenticatedInstellingenKoppelingenRoute
   AuthenticatedInstellingenLogboekRoute: typeof AuthenticatedInstellingenLogboekRoute
   AuthenticatedOrganisatieApparatuurRoute: typeof AuthenticatedOrganisatieApparatuurRoute
   AuthenticatedAgendaIndexRoute: typeof AuthenticatedAgendaIndexRoute
+  AuthenticatedBoekingsflowVragenlijstenIdRoute: typeof AuthenticatedBoekingsflowVragenlijstenIdRoute
   AuthenticatedOrganisatieBehandelaarsIdRoute: typeof AuthenticatedOrganisatieBehandelaarsIdRoute
   AuthenticatedOrganisatieBehandelingenIdRoute: typeof AuthenticatedOrganisatieBehandelingenIdRoute
   AuthenticatedOrganisatieLocatiesIdRoute: typeof AuthenticatedOrganisatieLocatiesIdRoute
+  AuthenticatedBoekingsflowVragenlijstenIndexRoute: typeof AuthenticatedBoekingsflowVragenlijstenIndexRoute
   AuthenticatedOrganisatieBehandelaarsIndexRoute: typeof AuthenticatedOrganisatieBehandelaarsIndexRoute
   AuthenticatedOrganisatieBehandelingenIndexRoute: typeof AuthenticatedOrganisatieBehandelingenIndexRoute
   AuthenticatedOrganisatieLocatiesIndexRoute: typeof AuthenticatedOrganisatieLocatiesIndexRoute
+  AuthenticatedBoekingsflowVragenlijstenIdTestRoute: typeof AuthenticatedBoekingsflowVragenlijstenIdTestRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -518,8 +560,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBoekingsflowBoekingslinksRoute:
     AuthenticatedBoekingsflowBoekingslinksRoute,
   AuthenticatedBoekingsflowEMailsRoute: AuthenticatedBoekingsflowEMailsRoute,
-  AuthenticatedBoekingsflowVragenlijstenRoute:
-    AuthenticatedBoekingsflowVragenlijstenRoute,
   AuthenticatedInstellingenAlgemeenRoute:
     AuthenticatedInstellingenAlgemeenRoute,
   AuthenticatedInstellingenGebruikersEnRollenRoute:
@@ -530,18 +570,24 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedOrganisatieApparatuurRoute:
     AuthenticatedOrganisatieApparatuurRoute,
   AuthenticatedAgendaIndexRoute: AuthenticatedAgendaIndexRoute,
+  AuthenticatedBoekingsflowVragenlijstenIdRoute:
+    AuthenticatedBoekingsflowVragenlijstenIdRoute,
   AuthenticatedOrganisatieBehandelaarsIdRoute:
     AuthenticatedOrganisatieBehandelaarsIdRoute,
   AuthenticatedOrganisatieBehandelingenIdRoute:
     AuthenticatedOrganisatieBehandelingenIdRoute,
   AuthenticatedOrganisatieLocatiesIdRoute:
     AuthenticatedOrganisatieLocatiesIdRoute,
+  AuthenticatedBoekingsflowVragenlijstenIndexRoute:
+    AuthenticatedBoekingsflowVragenlijstenIndexRoute,
   AuthenticatedOrganisatieBehandelaarsIndexRoute:
     AuthenticatedOrganisatieBehandelaarsIndexRoute,
   AuthenticatedOrganisatieBehandelingenIndexRoute:
     AuthenticatedOrganisatieBehandelingenIndexRoute,
   AuthenticatedOrganisatieLocatiesIndexRoute:
     AuthenticatedOrganisatieLocatiesIndexRoute,
+  AuthenticatedBoekingsflowVragenlijstenIdTestRoute:
+    AuthenticatedBoekingsflowVragenlijstenIdTestRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
