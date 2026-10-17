@@ -69,7 +69,7 @@ const cleanup: Array<() => Promise<unknown>> = [];
 
 // Expected per role, from the "Rollen en rechten" matrix.
 const matrix: Array<{ email: string; insert: boolean; delete: boolean }> = [
-  { email: "superadmin@example.test", insert: true, delete: true },
+  // superadmin is not probed: its only factor is the owner's own authenticator.
   { email: "admin@example.test", insert: true, delete: false },
   { email: "arts@example.test", insert: false, delete: false },
   { email: "therapeut@example.test", insert: false, delete: false },
@@ -106,11 +106,10 @@ describe.skipIf(!enabled)("RLS on patients (deny by default)", () => {
       // delete only removes the probe row this role inserted (or none)
       expect(r.delete).toBe(row.delete && row.insert);
       if (r.insert && !r.delete) {
-        // leave no probe rows behind: superadmin removes them at the end
+        // leave no probe rows behind: removed with the service key at the end
         cleanup.push(async () => {
-          const su = await signIn("superadmin@example.test", true);
-          await su.client.from("patients").delete().eq("email", PROBE_EMAIL);
-          if (su.factorId) await su.client.auth.mfa.unenroll({ factorId: su.factorId });
+          const svc = createClient<Database>(URL, process.env["SUPABASE_SERVICE_ROLE_KEY"] ?? "", { auth: { persistSession: false } });
+          await svc.from("patients").delete().eq("email", PROBE_EMAIL);
         });
       }
     });

@@ -61,7 +61,7 @@ function PractitionerForm({ org }: { org: Org }) {
     queryFn: async () => {
       const [prof, ur] = await Promise.all([
         supabase.from("profiles").select("email").eq("id", p.user_id as string).maybeSingle(),
-        supabase.from("user_roles").select("roles(name)").eq("user_id", p.user_id as string).maybeSingle(),
+        supabase.from("tenant_memberships").select("roles(name)").eq("user_id", p.user_id as string).eq("tenant_id", p.tenant_id).maybeSingle(),
       ]);
       const roleRow = ur.data?.roles as { name: string } | null | undefined;
       return { email: prof.data?.email ?? null, role: roleRow?.name ?? null };
