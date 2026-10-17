@@ -313,7 +313,7 @@ function PlannerStep({ c, s, step, tx, lang, go }: { c: Full; s: Search; step: E
       <div className="flex-1" />
       {chosen && (
         <div className="sticky bottom-0 -mx-5 mt-6 border-t border-line bg-background px-5 pb-2 pt-4">
-          <PillButton size="lg" className="w-full" onClick={() => go({ stap: "vasthouden" })}>
+          <PillButton size="lg" className="w-full" onClick={() => go({ stap: "vasthouden", d: selected })}>
             {tx("continue_with", { when: `${fmt(selected, { weekday: "short", day: "numeric", month: "short" })}, ${s.tijd}` })}
           </PillButton>
         </div>
