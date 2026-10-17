@@ -52,6 +52,8 @@ function Builder() {
   const computed = (doc["computed_fields"] ?? {}) as Record<string, string>;
   const [edit, setEdit] = useState<Edit | null>(null);
   const [drag, setDrag] = useState<number | null>(null);
+  const [itemDrag, setItemDrag] = useState<{ page: number; idx: number } | null>(null);
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const refresh = () => qc.invalidateQueries({ queryKey: questionnairesQuery.queryKey });
 
   const mut = useMutation({
@@ -117,13 +119,26 @@ function Builder() {
     URL.revokeObjectURL(a.href);
   };
 
+  const moveItem = (page: number, from: number, to: number) => setPages(def.pages.map((p, i) => {
+    if (i !== page) return p;
+    const items = [...(p.items ?? [])];
+    const [m] = items.splice(from, 1);
+    if (m) items.splice(to, 0, m);
+    return { ...p, items };
+  }));
+  const toggleGroup = (id: string) => setCollapsed((c) => { const x = new Set(c); if (x.has(id)) x.delete(id); else x.add(id); return x; });
+
   let n = 0;
-  const row = (label: string, title: string, sub: string, show: string | null, onEdit: () => void, extra?: { pageIdx?: number }) => {
+  const row = (label: string, title: string, sub: string, show: string | null, onEdit: () => void, extra?: { pageIdx?: number; item?: { page: number; idx: number } }) => {
     n += 1;
+    const it = extra?.item;
     return (
-      <div key={`${label}${n}`} draggable={editable && extra?.pageIdx !== undefined}
-        onDragStart={() => extra?.pageIdx !== undefined && setDrag(extra.pageIdx)} onDragOver={(e) => e.preventDefault()}
-        onDrop={() => { if (drag !== null && extra?.pageIdx !== undefined && drag !== extra.pageIdx) move(drag, extra.pageIdx); setDrag(null); }}
+      <div key={`${label}${n}`} draggable={editable && (extra?.pageIdx !== undefined || !!it)}
+        onDragStart={(e) => { e.stopPropagation(); if (it) setItemDrag(it); else if (extra?.pageIdx !== undefined) setDrag(extra.pageIdx); }} onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => {
+          if (it && itemDrag) { e.stopPropagation(); if (itemDrag.page === it.page && itemDrag.idx !== it.idx) moveItem(it.page, itemDrag.idx, it.idx); setItemDrag(null); return; }
+          if (drag !== null && extra?.pageIdx !== undefined && drag !== extra.pageIdx) move(drag, extra.pageIdx); setDrag(null);
+        }}
         className="flex items-start gap-3 rounded-[14px] border border-line bg-background px-3 py-3">
         <span className="pt-1 text-muted-foreground" aria-hidden="true">⋮⋮</span>
         <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-sand text-xs">{n}</span>
@@ -170,7 +185,7 @@ function Builder() {
         {!editable && <p className="mt-3 rounded-[12px] bg-signal px-4 py-3 text-sm">Je bekijkt de actieve versie; die patiënten nu krijgen en die daarom niet verandert. Klik rechtsboven op “Nieuwe versie maken” om te wijzigen; daarna publiceer je die versie.</p>}
       </div>
 
-      <Card title="Opbouw van de vragenlijst" description="Vragen en pagina’s in de volgorde die de patiënt ziet. Sleep om de volgorde te wijzigen. Een pijl onder een regel betekent: alleen onder een voorwaarde.">
+      <Card title="Opbouw van de vragenlijst" description="Vragen en pagina’s in de volgorde die de patiënt ziet. Sleep om de volgorde te wijzigen, ook vragen binnen een vragenpagina; klik op het pijltje om een vragenpagina in te klappen. Een pijl onder een regel betekent: alleen onder een voorwaarde.">
         <div className="flex flex-col gap-2">
           {def.pages.map((p, pi) => {
             const items = p.items ?? [];
@@ -183,15 +198,20 @@ function Builder() {
               <div key={p.id} draggable={editable} onDragStart={() => setDrag(pi)} onDragOver={(e) => e.preventDefault()} onDrop={() => { if (drag !== null && drag !== pi) move(drag, pi); setDrag(null); }}
                 className="rounded-[16px] border border-dashed border-primary/50 p-3">
                 <div className="flex items-center gap-3">
+                  {editable && <span className="cursor-grab text-muted-foreground" aria-hidden="true">⋮⋮</span>}
+                  <button type="button" onClick={() => toggleGroup(p.id)} aria-expanded={!collapsed.has(p.id)} aria-label={collapsed.has(p.id) ? "Uitklappen" : "Inklappen"} className="flex size-7 items-center justify-center rounded-full hover:bg-sand">
+                    <img src="/ui-icons/pijl-rechts.svg" alt="" className={cn("size-4 transition-transform", !collapsed.has(p.id) && "rotate-90")} />
+                  </button>
                   <span className="rounded-full bg-foreground px-3 py-1 text-xs text-background">{pageTypeLabel("question_page")}</span>
                   <span className="text-sm">{p.title ?? p.section}</span>
                   <span className="ml-auto"><TextLink onClick={() => setEdit({ kind: "page", index: pi })}>Wijzig</TextLink></span>
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">{items.length} vragen op één scherm{p.show_if ? ` · alleen als ${cond(p.show_if)}` : ""}{p.red_if ? ` · rood als ${cond(p.red_if)}` : ""}</p>
-                <div className="mt-2 flex flex-col gap-2">
-                  {items.map((i, ii) => row("Vraag", i.text, itemSummary(p, i), i.show_if ? cond(i.show_if) : null, () => setEdit({ kind: "item", page: pi, item: ii })))}
-                </div>
-                {editable && <div className="mt-2"><TextLink onClick={() => setEdit({ kind: "item", page: pi, item: null })}>Vraag aan deze pagina toevoegen</TextLink></div>}
+                {!collapsed.has(p.id) && <div className="mt-2 flex flex-col gap-2">
+                  {items.map((i, ii) => row("Vraag", i.text, itemSummary(p, i), i.show_if ? cond(i.show_if) : null, () => setEdit({ kind: "item", page: pi, item: ii }), { item: { page: pi, idx: ii } }))}
+                </div>}
+                {collapsed.has(p.id) && ((n += items.length), null)}
+                {editable && !collapsed.has(p.id) && <div className="mt-2"><TextLink onClick={() => setEdit({ kind: "item", page: pi, item: null })}>Vraag aan deze pagina toevoegen</TextLink></div>}
               </div>
             );
           })}

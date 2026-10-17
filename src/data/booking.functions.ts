@@ -7,7 +7,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import type { Slot } from "@/domain/slots";
-import { admin, computeSlots, localToUtc, resolveTenant, settingNum } from "./booking.server";
+import { admin, computeSlots, localParts, localToUtc, resolveTenant, settingNum } from "./booking.server";
 
 
 
@@ -17,7 +17,7 @@ export const getBookingCatalog = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const tenant = await resolveTenant(data.merk);
     const db = await admin();
-    const { data: ui } = await db.from("option_lists").select("list_key, value, label_nl, label_en").in("list_key", ["booking_ui", "questionnaire_ui"]);
+    const { data: ui } = await db.from("option_lists").select("list_key, value, label_nl, label_en").in("list_key", ["booking_ui", "questionnaire_ui", "salutation", "referral_source", "country", "phone_country"]).order("sort");
     if (!tenant) return { tenant: null, ui: ui ?? [] } as const;
     const tid = tenant.id;
     const [cats, links, treatments, tLocs, locs, prs, pLocs, pTreat, roles, tRoles, settings] = await Promise.all([
@@ -153,4 +153,90 @@ export const getTriage = createServerFn({ method: "GET" })
     ]);
     if (!v.data) return null;
     return { key: q.key, definition: v.data.definition, flow: f.data?.document ?? {} };
+  });
+
+/** Dutch address from postcode + house number (public PDOK locatieserver). */
+export const lookupAddress = createServerFn({ method: "POST" })
+  .inputValidator(z.object({ postcode: z.string().regex(/^\d{4}\s?[A-Za-z]{2}$/), houseNumber: z.string().regex(/^\d{1,5}$/), suffix: z.string().max(10).optional() }))
+  .handler(async ({ data }) => {
+    const pc = data.postcode.replace(/\s/g, "").toUpperCase();
+    const q = `postcode:${pc} AND huisnummer:${data.houseNumber}`;
+    try {
+      const r = await fetch(`https://api.pdok.nl/bzk/locatieserver/search/v3_1/free?fq=type:adres&rows=5&q=${encodeURIComponent(q)}`);
+      if (!r.ok) return null;
+      const j = (await r.json()) as { response?: { docs?: Array<{ straatnaam?: string; woonplaatsnaam?: string; huisletter?: string; huisnummertoevoeging?: string }> } };
+      const docs = j.response?.docs ?? [];
+      const sfx = (data.suffix ?? "").trim().toLowerCase();
+      const d = docs.find((x) => `${x.huisletter ?? ""}${x.huisnummertoevoeging ?? ""}`.toLowerCase() === sfx) ?? docs[0];
+      return d?.straatnaam ? { street: d.straatnaam, city: d.woonplaatsnaam ?? "" } : null;
+    } catch { return null; }
+  });
+
+const detailsSchema = z.object({
+  merk: z.string().max(60).optional(),
+  token: z.string().uuid(),
+  existing: z.boolean(),
+  salutation: z.string().max(40),
+  firstName: z.string().trim().min(1).max(80),
+  lastName: z.string().trim().min(1).max(120),
+  dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  email: z.string().trim().email().max(200),
+  phoneCountry: z.string().max(6),
+  phone: z.string().trim().min(6).max(20),
+  country: z.string().max(4),
+  postcode: z.string().trim().min(3).max(10),
+  houseNumber: z.string().trim().min(1).max(10),
+  suffix: z.string().trim().max(10).optional(),
+  street: z.string().trim().min(1).max(120),
+  city: z.string().trim().min(1).max(80),
+  referral: z.string().max(40).optional(),
+  note: z.string().max(1000).optional(),
+  consentPrivacy: z.literal(true),
+  consentGp: z.boolean(),
+  gpName: z.string().max(160).optional(),
+  consentLsp: z.boolean(),
+  consentMarketing: z.boolean(),
+  triageKey: z.string().max(80).optional(),
+  triageAnswers: z.record(z.string(), z.unknown()).optional(),
+});
+
+/** Turns a held slot into a booked appointment: finds or creates the patient, stores consents and the triage answers. */
+export const confirmBooking = createServerFn({ method: "POST" })
+  .inputValidator(detailsSchema)
+  .handler(async ({ data }) => {
+    const tenant = await resolveTenant(data.merk);
+    if (!tenant) return { ok: false as const, reason: "failed" };
+    const db = await admin();
+    const appt = (await db.from("appointments").select("id, status, hold_expires_at, manage_token").eq("tenant_id", tenant.id).eq("hold_token", data.token).maybeSingle()).data;
+    if (!appt || appt.status !== "held" || !appt.hold_expires_at || Date.parse(appt.hold_expires_at) <= Date.now()) return { ok: false as const, reason: "expired" };
+    const today = localParts(new Date(), tenant.time_zone).date;
+    const [ty, tm, td] = today.split("-").map(Number) as [number, number, number];
+    const [by, bm, bd] = data.dateOfBirth.split("-").map(Number) as [number, number, number];
+    const age = ty - by - (tm < bm || (tm === bm && td < bd) ? 1 : 0);
+    if (age < 18) return { ok: false as const, reason: "young" };
+
+    const email = data.email.toLowerCase();
+    const fields = {
+      salutation: data.salutation, first_name: data.firstName, last_name: data.lastName, date_of_birth: data.dateOfBirth, email,
+      phone_country: data.phoneCountry, phone: data.phone, country: data.country, postcode: data.postcode.toUpperCase(), house_number: data.houseNumber,
+      house_suffix: data.suffix || null, street: data.street, city: data.city, gp_name: data.consentGp ? data.gpName || null : null,
+    };
+    const match = (await db.from("patients").select("id").eq("tenant_id", tenant.id).ilike("email", email).eq("date_of_birth", data.dateOfBirth).is("deleted_at", null).limit(1)).data?.[0];
+    let patientId = match?.id;
+    if (!patientId) {
+      const ins = await db.from("patients").insert({ tenant_id: tenant.id, ...fields }).select("id").single();
+      if (ins.error || !ins.data) return { ok: false as const, reason: "failed" };
+      patientId = ins.data.id;
+    }
+    const upd = await db.from("appointments").update({
+      status: "booked", patient_id: patientId, hold_expires_at: null, referral_source: data.referral || null, patient_note: data.note || null, new_patient: !match,
+    }).eq("id", appt.id).eq("status", "held").select("id");
+    if (!upd.data?.length) return { ok: false as const, reason: "expired" };
+    await db.from("patient_consents").insert([
+      { kind: "privacy", granted: true }, { kind: "gp", granted: data.consentGp }, { kind: "lsp", granted: data.consentLsp }, { kind: "marketing", granted: data.consentMarketing },
+    ].map((c) => ({ ...c, tenant_id: tenant.id, patient_id: patientId, appointment_id: appt.id })));
+    if (data.triageKey && data.triageAnswers) {
+      await db.from("answer_sets").insert({ tenant_id: tenant.id, patient_id: patientId, appointment_id: appt.id, questionnaire_key: data.triageKey, answers: data.triageAnswers as never, status: "completed", completed_at: new Date().toISOString() });
+    }
+    return { ok: true as const, manageToken: appt.manage_token };
   });

@@ -24,3 +24,4 @@ Owner asked to continue through all phases without pausing for confirmation.
 - [x] Medical questionnaire: 'Val je af of kom je nog aan?' had no answers in the seed; v2 adds them from the design HTML
 - [x] Questionnaire runner: pressing the button with missing/invalid answers highlights them and scrolls to the first (owner request)
 - [x] Vragenlijst: volgende pagina begint bovenaan
+- [x] Vragenlijstbouwer: vragenpagina (groep) verslepen en inklappen

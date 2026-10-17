@@ -9,8 +9,10 @@ import { PillButton } from "@/components/PillButton";
 import { dayPart, nextStep, sortLocations, type Catalog } from "@/domain/booking";
 import { fmtTime, type Slot } from "@/domain/slots";
 import { cn } from "@/lib/utils";
-import { getBookingCatalog, getBookingSlots, getTriage, holdSlot, releaseHold } from "@/data/booking.functions";
-import { QuestionnaireRunner } from "@/features/questionnaire/QuestionnaireRunner";
+import { confirmBooking, getBookingCatalog, getBookingSlots, getTriage, holdSlot, lookupAddress, releaseHold } from "@/data/booking.functions";
+import { DobField, QuestionnaireRunner } from "@/features/questionnaire/QuestionnaireRunner";
+import { Select } from "@/components/Select";
+import { TextArea, TextField } from "@/components/Field";
 import type { Answers, FlowFile, QuestionnaireDef } from "@/domain/questionnaire/engine";
 
 const search = z.object({
@@ -334,10 +336,13 @@ function HoldStep({ c, s, treatmentId, locationId, practitionerId, tx, lang, go 
   const treatment = c.treatments.find((x) => x.id === treatmentId);
   const triageKey = treatment?.pre_questionnaire_key ?? null;
   const triage = useQuery({ queryKey: ["booking-triage", s.merk ?? "", triageKey], queryFn: () => triageFn({ data: { merk: s.merk, key: triageKey ?? "" } }), enabled: !!triageKey, staleTime: 60_000 });
-  const [state, setState] = useState<{ kind: "loading" } | { kind: "taken" } | { kind: "held"; token: string; expiresAt: number; minutes: number } | { kind: "expired"; minutes: number } | { kind: "done" }>({ kind: "loading" });
+  const [state, setState] = useState<{ kind: "loading" } | { kind: "taken" } | { kind: "held"; token: string; expiresAt: number; minutes: number; practitionerId: string } | { kind: "expired"; minutes: number }>({ kind: "loading" });
   const [initial, setInitial] = useState<Answers | null>(null);
+  const [phase, setPhase] = useState<"triage" | "details" | "confirmed">("triage");
+  const [confirmed, setConfirmed] = useState<string | null>(null);
   const started = useRef(false);
   const rejected = useRef(false);
+  const confirmedRef = useRef(false);
 
   useEffect(() => {
     if (started.current) return;
@@ -347,13 +352,13 @@ function HoldStep({ c, s, treatmentId, locationId, practitionerId, tx, lang, go 
     hold({ data: { merk: s.merk, treatmentId, locationId, practitionerId, date: s.d ?? "", time: s.tijd ?? "", language: lang === "en" ? "en" : "nl", source: s.bron, replaceToken: prev?.token } }).then((r) => {
       if (!r.ok) { setState({ kind: "taken" }); return; }
       sessionStorage.setItem(HOLD_KEY, JSON.stringify({ token: r.token, expiresAt: r.expiresAt }));
-      setState({ kind: "held", token: r.token, expiresAt: Date.parse(r.expiresAt), minutes: r.holdMinutes });
+      setState({ kind: "held", token: r.token, expiresAt: Date.parse(r.expiresAt), minutes: r.holdMinutes, practitionerId: r.practitionerId });
     }, () => setState({ kind: "taken" }));
   }, [hold, s, treatmentId, locationId, practitionerId, lang]);
 
   useEffect(() => {
     if (state.kind !== "held") return;
-    const id = window.setInterval(() => { if (!rejected.current && Date.now() >= state.expiresAt) setState({ kind: "expired", minutes: state.minutes }); }, 1000);
+    const id = window.setInterval(() => { if (!rejected.current && !confirmedRef.current && Date.now() >= state.expiresAt) setState({ kind: "expired", minutes: state.minutes }); }, 1000);
     return () => window.clearInterval(id);
   }, [state]);
 
@@ -378,18 +383,254 @@ function HoldStep({ c, s, treatmentId, locationId, practitionerId, tx, lang, go 
       </div>
     </Shell>
   );
-  if (state.kind === "loading" || initial === null || (triageKey && triage.isLoading)) return <Shell lang={lang} progress={0.5}><div className="h-40 animate-pulse rounded-[16px] bg-sand" /></Shell>;
-  if (state.kind === "done" || !triageKey || !triage.data) return (
-    // Details form and confirmation follow in the next build step.
-    <Shell lang={lang} progress={0.7} onBack={again}><Title>{tx("step_details")}</Title></Shell>
+  if (state.kind === "loading" || initial === null || (triageKey && triage.isLoading && phase === "triage")) return <Shell lang={lang} progress={0.5}><div className="h-40 animate-pulse rounded-[16px] bg-sand" /></Shell>;
+  if (phase === "confirmed" && confirmed) return <ConfirmedStep c={c} s={s} treatmentId={treatmentId} locationId={locationId} practitionerId={state.kind === "held" ? state.practitionerId : practitionerId} manageToken={confirmed} tx={tx} lang={lang} />;
+  if (state.kind === "held" && (phase === "details" || !triageKey || !triage.data)) return (
+    <DetailsStep c={c} s={s} token={state.token} treatmentId={treatmentId} locationId={locationId} practitionerId={state.practitionerId} tx={tx} lang={lang} again={again}
+      triageKey={triageKey} triageAnswers={readJson<Answers>(ANSWERS_KEY) ?? undefined}
+      onExpired={() => setState({ kind: "expired", minutes: state.minutes })}
+      onDone={(m) => { confirmedRef.current = true; sessionStorage.removeItem(ANSWERS_KEY); sessionStorage.removeItem(HOLD_KEY); setConfirmed(m); setPhase("confirmed"); }} />
   );
+  if (state.kind !== "held" || !triage.data) return null;
   const ui = Object.fromEntries(c.ui.filter((u) => u.list_key === "questionnaire_ui").map((u) => [u.value, (lang === "en" && u.label_en) || u.label_nl]));
   const p = c.practitioners.find((x) => x.id === practitionerId);
   return (
     <QuestionnaireRunner fullScreen flow={triage.data.flow as unknown as FlowFile} def={triage.data.definition as unknown as QuestionnaireDef} ui={ui} today={todayLocal()} initial={initial}
       vars={{ dag: fmt(s.d ?? ""), tijd: s.tijd ?? "", behandelaar_voornaam: p?.first_name ?? "", voornaam: "" }}
       onAnswers={keep}
-      onRed={(red) => { rejected.current = true; sessionStorage.removeItem(ANSWERS_KEY); sessionStorage.removeItem(HOLD_KEY); void release({ data: { merk: s.merk, token: state.token, questionnaire: triageKey, reason: red.reason } }); }}
-      onFinish={(a) => { keep(a); setState({ kind: "done" }); }} />
+      onRed={(red) => { rejected.current = true; sessionStorage.removeItem(ANSWERS_KEY); sessionStorage.removeItem(HOLD_KEY); void release({ data: { merk: s.merk, token: state.token, questionnaire: triageKey ?? undefined, reason: red.reason } }); }}
+      onFinish={(a) => { keep(a); setPhase("details"); }} />
+  );
+}
+
+const opt = (c: Full, list: string, lang: string) => c.ui.filter((u) => u.list_key === list).map((u) => ({ value: u.value, label: (lang === "en" && u.label_en) || u.label_nl }));
+const fmtLong = (d: string, lang: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString(lang === "en" ? "en-GB" : "nl-NL", { timeZone: "UTC", weekday: "long", day: "numeric", month: "long" });
+
+function AppointmentSummary({ c, s, treatmentId, locationId, practitionerId, tx, lang, onChange }: { c: Full; s: Search; treatmentId: string; locationId: string; practitionerId: string; tx: Tx; lang: string; onChange?: () => void }) {
+  const t = c.treatments.find((x) => x.id === treatmentId);
+  const l = c.locations.find((x) => x.id === locationId);
+  const p = c.practitioners.find((x) => x.id === practitionerId);
+  const tName = t ? ((lang === "en" && t.name_en) || t.name_nl) : "";
+  return (
+    <div className="rounded-[18px] bg-teal-light p-4">
+      <p className="text-[12px] text-primary">{tx("d_your_appt")}</p>
+      <p className="mt-1 text-[16px] font-semibold first-letter:uppercase">{fmtLong(s.d ?? "", lang)}, {s.tijd}</p>
+      <p className="mt-1 text-[14px]">{tName}, {tx("c_minutes", { min: t?.duration_min ?? 0 })}</p>
+      <p className="text-[14px]">{[l?.kind === "online" ? tx("d_online_meet") : l?.name, p ? `${p.first_name} ${p.last_name}` : ""].filter(Boolean).join(" · ")}</p>
+      {onChange && <button type="button" onClick={onChange} className="mt-2 text-[13px] text-primary underline">{tx("d_change")}</button>}
+    </div>
+  );
+}
+
+function Check({ checked, onChange, children }: { checked: boolean; onChange: (v: boolean) => void; children: React.ReactNode }) {
+  return (
+    <label className="flex cursor-pointer items-start gap-3 text-[14px] leading-[1.5]">
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="peer sr-only" />
+      <span className={cn("mt-0.5 flex size-[22px] shrink-0 items-center justify-center rounded-[6px] border peer-focus-visible:ring-2 peer-focus-visible:ring-ring", checked ? "border-primary bg-primary" : "border-muted-foreground/60 bg-background")}>
+        {checked && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="text-primary-foreground" aria-hidden="true"><path d="M5 12l5 5 9-10" /></svg>}
+      </span>
+      <span>{children}</span>
+    </label>
+  );
+}
+
+function SectionTitle({ children }: { children: React.ReactNode }) { return <h2 className="mb-3 mt-8 text-[17px] font-semibold">{children}</h2>; }
+
+/** "Je gegevens": one form for new and existing patients; date of birth comes from the triage when asked there. */
+function DetailsStep({ c, s, token, treatmentId, locationId, practitionerId, tx, lang, again, triageKey, triageAnswers, onExpired, onDone }: {
+  c: Full; s: Search; token: string; treatmentId: string; locationId: string; practitionerId: string; tx: Tx; lang: string; again: () => void;
+  triageKey: string | null; triageAnswers: Answers | undefined; onExpired: () => void; onDone: (manageToken: string) => void;
+}) {
+  const confirm = useServerFn(confirmBooking);
+  const lookup = useServerFn(lookupAddress);
+  const dobFromTriage = typeof triageAnswers?.["date_of_birth"] === "string" ? (triageAnswers["date_of_birth"] as string) : "";
+  const [existing, setExisting] = useState(false);
+  const [f, setF] = useState({ salutation: opt(c, "salutation", lang)[0]?.value ?? "", firstName: "", lastName: "", dateOfBirth: dobFromTriage, email: "", phoneCountry: opt(c, "phone_country", lang)[0]?.value ?? "", phone: "", country: opt(c, "country", lang)[0]?.value ?? "NL", postcode: "", houseNumber: "", suffix: "", street: "", city: "", referral: "", note: "" });
+  const [cons, setCons] = useState({ privacy: false, gp: false, gpName: "", lsp: false, marketing: false });
+  const [manual, setManual] = useState(false);
+  const [found, setFound] = useState<{ street: string; city: string } | null>(null);
+  const [show, setShow] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const set = (k: keyof typeof f, v: string) => setF((x) => ({ ...x, [k]: v }));
+  const nl = f.country === "NL";
+
+  useEffect(() => {
+    if (!nl || manual || !/^\d{4}\s?[A-Za-z]{2}$/.test(f.postcode.trim()) || !/^\d{1,5}$/.test(f.houseNumber.trim())) { setFound(null); return; }
+    const id = window.setTimeout(() => {
+      lookup({ data: { postcode: f.postcode.trim(), houseNumber: f.houseNumber.trim(), suffix: f.suffix || undefined } }).then((r) => {
+        setFound(r);
+        if (r) setF((x) => ({ ...x, street: r.street, city: r.city }));
+        else setManual(true);
+      }, () => setManual(true));
+    }, 400);
+    return () => window.clearTimeout(id);
+  }, [f.postcode, f.houseNumber, f.suffix, nl, manual, lookup]);
+
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim());
+  const errs: Record<string, string> = {};
+  for (const k of ["firstName", "lastName", "phone", "postcode", "houseNumber", "street", "city"] as const) if (!f[k].trim()) errs[k] = tx("d_required");
+  if (!f.dateOfBirth) errs["dateOfBirth"] = tx("d_required");
+  if (!f.email.trim()) errs["email"] = tx("d_required"); else if (!emailOk) errs["email"] = tx("d_email_invalid");
+  if (!cons.privacy) errs["privacy"] = tx("d_privacy_required");
+  const err = (k: string) => (show && errs[k] ? <p role="alert" className="mt-1 text-[13px] text-warning">{errs[k]}</p> : null);
+
+  const submit = async () => {
+    setShow(true);
+    const first = Object.keys(errs)[0];
+    if (first) { document.getElementById(`d-${first}`)?.scrollIntoView({ behavior: "smooth", block: "center" }); return; }
+    setBusy(true); setError("");
+    try {
+      const r = await confirm({ data: {
+        merk: s.merk, token, existing, salutation: f.salutation, firstName: f.firstName, lastName: f.lastName, dateOfBirth: f.dateOfBirth, email: f.email, phoneCountry: f.phoneCountry, phone: f.phone,
+        country: f.country, postcode: f.postcode, houseNumber: f.houseNumber, suffix: f.suffix || undefined, street: f.street, city: f.city,
+        referral: existing ? undefined : f.referral || undefined, note: f.note || undefined, consentPrivacy: true, consentGp: cons.gp, gpName: cons.gpName || undefined, consentLsp: cons.lsp, consentMarketing: cons.marketing,
+        triageKey: triageKey ?? undefined, triageAnswers,
+      } });
+      if (r.ok) onDone(r.manageToken);
+      else if (r.reason === "expired") onExpired();
+      else setError(r.reason === "young" ? tx("d_dob_young") : tx("d_failed"));
+    } catch { setError(tx("d_failed")); } finally { setBusy(false); }
+  };
+  const privacy = tx("d_c_privacy", { link: "\u0000" }).split("\u0000");
+
+  return (
+    <Shell lang={lang} progress={0.85} onBack={again} footer={<>{error && <p role="alert" className="mb-3 text-center text-[14px] text-warning">{error}</p>}<PillButton size="lg" className="w-full" disabled={busy} onClick={() => void submit()}>{tx("d_submit")}</PillButton></>}>
+      <Title sub={!existing ? tx("d_sub") : undefined}>{tx("d_title")}</Title>
+      <p className="-mt-2 mb-3 text-[15px]">{tx("d_been_before")}</p>
+      <div className="flex gap-2">
+        {[false, true].map((v) => (
+          <button key={String(v)} type="button" onClick={() => setExisting(v)} className={cn("h-11 whitespace-nowrap rounded-full px-5 text-[15px]", existing === v ? "border border-primary bg-teal-light" : "border border-transparent bg-sand")}>{v ? tx("d_existing") : tx("d_new")}</button>
+        ))}
+      </div>
+      {existing && <p className="mt-4 text-[14px] leading-[1.6] text-muted-foreground">{tx("d_existing_help")}</p>}
+
+      <SectionTitle>{tx("d_about")}</SectionTitle>
+      <div className="flex flex-col gap-4">
+        <Select label={tx("d_salutation")} value={f.salutation} onChange={(v) => set("salutation", v)} options={opt(c, "salutation", lang)} />
+        <div id="d-firstName"><TextField label={tx("d_first")} value={f.firstName} onChange={(e) => set("firstName", e.target.value)} autoComplete="given-name" />{err("firstName")}</div>
+        <div id="d-lastName"><TextField label={tx("d_last")} value={f.lastName} onChange={(e) => set("lastName", e.target.value)} autoComplete="family-name" />{err("lastName")}</div>
+        <div id="d-dateOfBirth">
+          <p className="mb-2 text-[13px] font-medium">{tx("d_dob")}</p>
+          <DobField value={f.dateOfBirth} onChange={(v) => set("dateOfBirth", v)} t={tx} today={todayLocal()} />
+          <p className="mt-2 text-xs text-muted-foreground">{tx("d_dob_help")}</p>
+          {err("dateOfBirth")}
+        </div>
+      </div>
+
+      <SectionTitle>{tx("d_contact")}</SectionTitle>
+      <div className="flex flex-col gap-4">
+        <div id="d-email"><TextField label={tx("d_email")} type="email" inputMode="email" autoComplete="email" value={f.email} onChange={(e) => set("email", e.target.value)} />{err("email")}</div>
+        <div id="d-phone">
+          <p className="mb-2 whitespace-nowrap text-[13px] font-medium">{tx("d_mobile")}</p>
+          <div className="grid grid-cols-[96px_1fr] items-end gap-2 [&_label:empty]:hidden">
+            <Select label="" value={f.phoneCountry} onChange={(v) => set("phoneCountry", v)} options={opt(c, "phone_country", lang)} />
+            <TextField label="" aria-label={tx("d_mobile")} type="tel" inputMode="tel" autoComplete="tel-national" value={f.phone} onChange={(e) => set("phone", e.target.value)} />
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">{tx("d_mobile_help")}</p>
+          {err("phone")}
+        </div>
+      </div>
+
+      <SectionTitle>{tx("d_address")}</SectionTitle>
+      <div className="flex flex-col gap-4">
+        <Select label={tx("d_country")} value={f.country} onChange={(v) => { set("country", v); setManual(v !== "NL"); }} options={opt(c, "country", lang)} />
+        <div className="grid grid-cols-[1fr_84px_90px] items-end gap-2">
+          <div id="d-postcode"><TextField label={tx("d_postcode")} value={f.postcode} onChange={(e) => set("postcode", e.target.value)} autoComplete="postal-code" /></div>
+          <div id="d-houseNumber"><TextField label={tx("d_house_number")} inputMode="numeric" value={f.houseNumber} onChange={(e) => set("houseNumber", e.target.value)} /></div>
+          <TextField label={`${tx("d_suffix")} ${tx("optional")}`} value={f.suffix} onChange={(e) => set("suffix", e.target.value)} />
+        </div>
+        {(err("postcode") ?? err("houseNumber"))}
+        {found && !manual && (
+          <div className="flex items-center gap-3 rounded-[14px] border border-line px-4 py-3">
+            <img src="/ui-icons/locatie.svg" alt="" className="size-4" />
+            <span className="flex-1 text-[14px]"><span className="block font-semibold">{found.street} {f.houseNumber}{f.suffix ? ` ${f.suffix}` : ""}</span><span className="block text-muted-foreground">{f.postcode.toUpperCase()} {found.city}</span></span>
+            <button type="button" onClick={() => setManual(true)} className="text-[13px] text-primary underline">{tx("d_not_right")}</button>
+          </div>
+        )}
+        {manual && <>
+          <div id="d-street"><TextField label={tx("d_street")} value={f.street} onChange={(e) => set("street", e.target.value)} autoComplete="address-line1" />{err("street")}</div>
+          <div id="d-city"><TextField label={tx("d_city")} value={f.city} onChange={(e) => set("city", e.target.value)} autoComplete="address-level2" />{err("city")}</div>
+        </>}
+        {!manual && !found && (err("street"))}
+      </div>
+
+      <SectionTitle>{tx("d_two_things")}</SectionTitle>
+      <div className="flex flex-col gap-4">
+        {!existing && <Select label={`${tx("d_found_us")} ${tx("optional")}`} value={f.referral} onChange={(v) => set("referral", v)} options={opt(c, "referral_source", lang)} />}
+        <TextArea label={`${tx("d_note")} ${tx("optional")}`} placeholder={tx("d_note_ph")} value={f.note} onChange={(e) => set("note", e.target.value)} />
+      </div>
+
+      <div className="mt-6"><AppointmentSummary c={c} s={s} treatmentId={treatmentId} locationId={locationId} practitionerId={practitionerId} tx={tx} lang={lang} onChange={again} /></div>
+
+      <SectionTitle>{tx("d_consents")}</SectionTitle>
+      <div className="flex flex-col gap-4">
+        <div id="d-privacy">
+          <Check checked={cons.privacy} onChange={(v) => setCons((x) => ({ ...x, privacy: v }))}>{privacy[0]}<a href="https://www.bodyclinic.nl/privacy" target="_blank" rel="noreferrer" className="text-primary underline">{tx("d_privacy_link")}</a>{privacy[1]}</Check>
+          {err("privacy")}
+        </div>
+        <Check checked={cons.gp} onChange={(v) => setCons((x) => ({ ...x, gp: v }))}>{tx("d_c_gp")}</Check>
+        {cons.gp && <div className="border-l-2 border-line pl-3"><TextField label={tx("d_gp_name")} value={cons.gpName} onChange={(e) => setCons((x) => ({ ...x, gpName: e.target.value }))} /></div>}
+        <div>
+          <Check checked={cons.lsp} onChange={(v) => setCons((x) => ({ ...x, lsp: v }))}>{tx("d_c_lsp")}</Check>
+          <p className="mt-2 text-xs leading-[1.5] text-muted-foreground">{tx("d_c_lsp_help")}</p>
+        </div>
+        <Check checked={cons.marketing} onChange={(v) => setCons((x) => ({ ...x, marketing: v }))}>{tx("d_c_marketing", { merk: c.tenant.name })}</Check>
+      </div>
+    </Shell>
+  );
+}
+
+const icsDate = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+
+/** "Je afspraak staat gepland" with calendar file and the start of the medical questionnaire. */
+function ConfirmedStep({ c, s, treatmentId, locationId, practitionerId, manageToken, tx, lang }: { c: Full; s: Search; treatmentId: string; locationId: string; practitionerId: string; manageToken: string; tx: Tx; lang: string }) {
+  const navigate = useNavigate();
+  const t = c.treatments.find((x) => x.id === treatmentId);
+  const l = c.locations.find((x) => x.id === locationId);
+  const p = c.practitioners.find((x) => x.id === practitionerId);
+  const hasQ = !!t?.post_questionnaire_key;
+  const [left, setLeft] = useState(5);
+  const start = () => void navigate({ to: "/vragenlijst/$token", params: { token: manageToken }, search: { merk: s.merk, lang: s.lang } });
+  useEffect(() => {
+    if (!hasQ) return;
+    if (left <= 0) { start(); return; }
+    const id = window.setTimeout(() => setLeft((n) => n - 1), 1000);
+    return () => window.clearTimeout(id);
+  });
+  const tName = t ? ((lang === "en" && t.name_en) || t.name_nl) : "";
+  const ics = () => {
+    const [h, m] = (s.tijd ?? "00:00").split(":").map(Number) as [number, number];
+    const startD = new Date(`${s.d}T${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`);
+    const end = new Date(startD.getTime() + (t?.duration_min ?? 30) * 60_000);
+    const body = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//The Body Clinic//Booking//NL", "BEGIN:VEVENT", `UID:${manageToken}`, `DTSTAMP:${icsDate(new Date())}`, `DTSTART:${icsDate(startD)}`, `DTEND:${icsDate(end)}`, `SUMMARY:${tName} · ${c.tenant.name}`, `LOCATION:${l?.kind === "online" ? tx("d_online_meet") : `${l?.name ?? ""}, ${l?.address ?? ""}`}`, "END:VEVENT", "END:VCALENDAR"].join("\r\n");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([body], { type: "text/calendar" }));
+    a.download = "afspraak.ics";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+  return (
+    <Shell lang={lang} progress={1} onClose={() => navigate({ to: "/boeken", search: { merk: s.merk, lang: s.lang } })} footer={hasQ ? <p className="text-center text-[13px] text-muted-foreground">{tx("c_later")}</p> : null}>
+      <span className="mb-6 flex size-[52px] items-center justify-center rounded-full bg-teal-light"><img src="/ui-icons/vinkje.svg" alt="" className="size-5" /></span>
+      <Title>{tx("c_title")}</Title>
+      <div className="rounded-[18px] bg-sand p-5">
+        <div className="flex items-center gap-4">
+          <Avatar src={p?.photo ?? null} size={64} />
+          <p className="text-[16px] leading-[1.5]">{tx("c_expects", { naam: p ? `${p.first_name} ${p.last_name}` : c.tenant.name, dag: fmtLong(s.d ?? "", lang), tijd: s.tijd ?? "" })}</p>
+        </div>
+        <p className="mt-4 flex items-center gap-3 text-[14px]"><img src={l?.kind === "online" ? "/ui-icons/videogesprek.svg" : "/ui-icons/locatie.svg"} alt="" className="size-4" />{l?.kind === "online" ? tx("d_online_meet") : `${l?.name ?? ""}, ${l?.address ?? ""}`}</p>
+        <p className="mt-2 flex items-center gap-3 text-[14px]"><img src="/ui-icons/klok.svg" alt="" className="size-4" />{tName}, {tx("c_minutes", { min: t?.duration_min ?? 0 })}</p>
+        <button type="button" onClick={ics} className="mt-4 text-[14px] underline">{tx("c_add_calendar")}</button>
+      </div>
+      {hasQ && (
+        <div className="mt-5 rounded-[18px] bg-teal-light p-5">
+          <p className="text-[17px] font-semibold">{tx("c_one_step")}</p>
+          <p className="mt-2 text-[14px] leading-[1.6]">{tx("c_one_step_body", { voornaam: p?.first_name ?? "" })}</p>
+          <PillButton size="lg" className="mt-5 w-full" onClick={start}>{tx("c_start")}</PillButton>
+          <p className="mt-3 text-center text-[12px]">{tx("c_auto", { n: left })}</p>
+        </div>
+      )}
+    </Shell>
   );
 }
