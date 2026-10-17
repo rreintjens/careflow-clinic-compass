@@ -108,7 +108,7 @@ export function EquipmentKindsModal({ org, onClose, onCreated }: { org: Org; onC
           <MultiSelect label="Vereist door behandelingen" value={treatments} onChange={setTreatments} options={org.treatments.map((t) => ({ value: t.id, label: t.name_nl }))} help="Zo weet de planner meteen waar die behandelingen boekbaar zijn." />
           <Select label="Hoort bij" value={parent} onChange={setParent} options={parentOptions} help="Of: hoort bij een andere soort, zoals rookafzuiging bij laser." />
         </div>
-        {blocker && <p className="mt-3 rounded-[12px] bg-warning-light px-3 py-2 text-[13px] text-warning">{blocker}</p>}
+        {blocker && <p className="mt-3 rounded-[12px] bg-warning-bg px-3 py-2 text-[13px] text-warning">{blocker}</p>}
         <div className="mt-4 flex items-center justify-between">
           {editing ? <TextLink tone="warning" onClick={tryDelete}>Soort verwijderen</TextLink> : <span />}
           <div className="flex gap-2">
