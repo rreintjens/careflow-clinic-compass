@@ -30,6 +30,7 @@ import { Route as AuthenticatedOrganisatieBehandelaarsIdRouteImport } from './ro
 import { Route as AuthenticatedOrganisatieBehandelingenIndexRouteImport } from './routes/_authenticated/organisatie.behandelingen.index'
 import { Route as AuthenticatedOrganisatieBehandelingenIdRouteImport } from './routes/_authenticated/organisatie.behandelingen.$id'
 import { Route as AuthenticatedOrganisatieLocatiesIndexRouteImport } from './routes/_authenticated/organisatie.locaties.index'
+import { Route as AuthenticatedOrganisatieLocatiesIdRouteImport } from './routes/_authenticated/organisatie.locaties.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -150,6 +151,12 @@ const AuthenticatedOrganisatieLocatiesIndexRoute =
     path: '/organisatie/locaties/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedOrganisatieLocatiesIdRoute =
+  AuthenticatedOrganisatieLocatiesIdRouteImport.update({
+    id: '/organisatie/locaties/$id',
+    path: '/organisatie/locaties/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -169,6 +176,7 @@ export interface FileRoutesByFullPath {
   '/agenda/': typeof AuthenticatedAgendaIndexRoute
   '/organisatie/behandelaars/$id': typeof AuthenticatedOrganisatieBehandelaarsIdRoute
   '/organisatie/behandelingen/$id': typeof AuthenticatedOrganisatieBehandelingenIdRoute
+  '/organisatie/locaties/$id': typeof AuthenticatedOrganisatieLocatiesIdRoute
   '/organisatie/behandelaars/': typeof AuthenticatedOrganisatieBehandelaarsIndexRoute
   '/organisatie/behandelingen/': typeof AuthenticatedOrganisatieBehandelingenIndexRoute
   '/organisatie/locaties/': typeof AuthenticatedOrganisatieLocatiesIndexRoute
@@ -191,6 +199,7 @@ export interface FileRoutesByTo {
   '/agenda': typeof AuthenticatedAgendaIndexRoute
   '/organisatie/behandelaars/$id': typeof AuthenticatedOrganisatieBehandelaarsIdRoute
   '/organisatie/behandelingen/$id': typeof AuthenticatedOrganisatieBehandelingenIdRoute
+  '/organisatie/locaties/$id': typeof AuthenticatedOrganisatieLocatiesIdRoute
   '/organisatie/behandelaars': typeof AuthenticatedOrganisatieBehandelaarsIndexRoute
   '/organisatie/behandelingen': typeof AuthenticatedOrganisatieBehandelingenIndexRoute
   '/organisatie/locaties': typeof AuthenticatedOrganisatieLocatiesIndexRoute
@@ -215,6 +224,7 @@ export interface FileRoutesById {
   '/_authenticated/agenda/': typeof AuthenticatedAgendaIndexRoute
   '/_authenticated/organisatie/behandelaars/$id': typeof AuthenticatedOrganisatieBehandelaarsIdRoute
   '/_authenticated/organisatie/behandelingen/$id': typeof AuthenticatedOrganisatieBehandelingenIdRoute
+  '/_authenticated/organisatie/locaties/$id': typeof AuthenticatedOrganisatieLocatiesIdRoute
   '/_authenticated/organisatie/behandelaars/': typeof AuthenticatedOrganisatieBehandelaarsIndexRoute
   '/_authenticated/organisatie/behandelingen/': typeof AuthenticatedOrganisatieBehandelingenIndexRoute
   '/_authenticated/organisatie/locaties/': typeof AuthenticatedOrganisatieLocatiesIndexRoute
@@ -239,6 +249,7 @@ export interface FileRouteTypes {
     | '/agenda/'
     | '/organisatie/behandelaars/$id'
     | '/organisatie/behandelingen/$id'
+    | '/organisatie/locaties/$id'
     | '/organisatie/behandelaars/'
     | '/organisatie/behandelingen/'
     | '/organisatie/locaties/'
@@ -261,6 +272,7 @@ export interface FileRouteTypes {
     | '/agenda'
     | '/organisatie/behandelaars/$id'
     | '/organisatie/behandelingen/$id'
+    | '/organisatie/locaties/$id'
     | '/organisatie/behandelaars'
     | '/organisatie/behandelingen'
     | '/organisatie/locaties'
@@ -284,6 +296,7 @@ export interface FileRouteTypes {
     | '/_authenticated/agenda/'
     | '/_authenticated/organisatie/behandelaars/$id'
     | '/_authenticated/organisatie/behandelingen/$id'
+    | '/_authenticated/organisatie/locaties/$id'
     | '/_authenticated/organisatie/behandelaars/'
     | '/_authenticated/organisatie/behandelingen/'
     | '/_authenticated/organisatie/locaties/'
@@ -445,6 +458,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOrganisatieLocatiesIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/organisatie/locaties/$id': {
+      id: '/_authenticated/organisatie/locaties/$id'
+      path: '/organisatie/locaties/$id'
+      fullPath: '/organisatie/locaties/$id'
+      preLoaderRoute: typeof AuthenticatedOrganisatieLocatiesIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -463,6 +483,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAgendaIndexRoute: typeof AuthenticatedAgendaIndexRoute
   AuthenticatedOrganisatieBehandelaarsIdRoute: typeof AuthenticatedOrganisatieBehandelaarsIdRoute
   AuthenticatedOrganisatieBehandelingenIdRoute: typeof AuthenticatedOrganisatieBehandelingenIdRoute
+  AuthenticatedOrganisatieLocatiesIdRoute: typeof AuthenticatedOrganisatieLocatiesIdRoute
   AuthenticatedOrganisatieBehandelaarsIndexRoute: typeof AuthenticatedOrganisatieBehandelaarsIndexRoute
   AuthenticatedOrganisatieBehandelingenIndexRoute: typeof AuthenticatedOrganisatieBehandelingenIndexRoute
   AuthenticatedOrganisatieLocatiesIndexRoute: typeof AuthenticatedOrganisatieLocatiesIndexRoute
@@ -491,6 +512,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedOrganisatieBehandelaarsIdRoute,
   AuthenticatedOrganisatieBehandelingenIdRoute:
     AuthenticatedOrganisatieBehandelingenIdRoute,
+  AuthenticatedOrganisatieLocatiesIdRoute:
+    AuthenticatedOrganisatieLocatiesIdRoute,
   AuthenticatedOrganisatieBehandelaarsIndexRoute:
     AuthenticatedOrganisatieBehandelaarsIndexRoute,
   AuthenticatedOrganisatieBehandelingenIndexRoute:
