@@ -2,7 +2,7 @@ import { useMemo, useRef, useState, type ReactNode } from "react";
 
 import { Logo } from "@/components/Logo";
 import {
-  flowSteps, makeCtx, pageComplete, pageProgress, redOnPage, toggleOption, visibleItems, visiblePages,
+  flowSteps, makeCtx, itemAnswered, pageProgress, redOnPage, toggleOption, visibleItems, visiblePages,
   type Answers, type FlowFile, type Item, type Page, type QuestionnaireDef, type RedOutcome,
 } from "@/domain/questionnaire/engine";
 import { yearsBetween } from "@/domain/questionnaire/expr";
@@ -29,6 +29,7 @@ export function QuestionnaireRunner({
   const [answers, setAnswers] = useState<Answers>(initial);
   const [pageId, setPageId] = useState(startPageId ?? def.pages[0]?.id ?? "");
   const [red, setRed] = useState<RedOutcome | null>(null);
+  const [showMissing, setShowMissing] = useState(false);
   const ctx = useMemo(() => makeCtx(flow, answers, today), [flow, answers, today]);
   const pages = visiblePages(def, ctx);
   const idx = Math.max(0, pages.findIndex((p) => p.id === pageId));
@@ -39,13 +40,20 @@ export function QuestionnaireRunner({
   const restart = () => { setAnswers({}); setRed(null); setPageId(def.pages[0]?.id ?? ""); };
   const next = () => {
     if (!page) return;
+    const missing = visibleItems(page, ctx).filter((i) => !i.optional && !itemAnswered(i, ctx.answers));
+    if (missing.length) {
+      setShowMissing(true);
+      document.getElementById(`q-${missing[0]?.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    setShowMissing(false);
     const r = redOnPage(def, page, ctx);
     if (r) { setRed(r); onRed?.(r); return; }
     const nextPage = pages[idx + 1];
     if (nextPage) setPageId(nextPage.id);
     else onFinish?.(answers);
   };
-  const back = () => { if (red) { setRed(null); return; } const prev = pages[idx - 1]; if (prev) setPageId(prev.id); };
+  const back = () => { setShowMissing(false); if (red) { setRed(null); return; } const prev = pages[idx - 1]; if (prev) setPageId(prev.id); };
   const progress = pages.length ? (idx + 1) / pages.length : 0;
 
   if (red) {
@@ -72,14 +80,13 @@ export function QuestionnaireRunner({
   if (!page) return null;
 
   const isQuestions = !!page.items?.length;
-  const canGo = !isQuestions || pageComplete(page, ctx);
   const prog = pageProgress(page, ctx);
   const many = (page.items?.length ?? 0) > 1;
   return (
     <Frame progress={progress} onBack={idx > 0 ? back : undefined}
       footer={<>
         {isQuestions && <p className="mb-3 flex items-center justify-center gap-2 text-xs text-muted-foreground"><LockIcon />{t("privacy")}</p>}
-        <button type="button" disabled={!canGo} onClick={next} className="h-[54px] w-full rounded-full bg-primary text-[17px] font-medium text-primary-foreground disabled:opacity-50">{fill(page.button, vars) || t("next")}</button>
+        <button type="button" onClick={next} className="h-[54px] w-full rounded-full bg-primary text-[17px] font-medium text-primary-foreground disabled:opacity-50">{fill(page.button, vars) || t("next")}</button>
       </>}>
       {(page.section || (!isQuestions && page.bullets)) && <div className="mb-2 text-[13px] text-primary">{page.section ?? t("section_intro")}</div>}
       {page.icon && <img src={`/ui-icons/${page.icon}.svg`} alt="" className="mb-4 size-12 text-primary" />}
@@ -106,7 +113,10 @@ export function QuestionnaireRunner({
       {isQuestions && (
         <div className="mt-6 flex flex-col gap-6">
           {visibleItems(page, ctx).map((i) => (
-            <ItemInput key={i.id} item={i} page={page} answers={answers} set={set} t={t} today={today} showLabel={many} all={def} />
+            <div key={i.id} id={`q-${i.id}`} className={cn(showMissing && !i.optional && !itemAnswered(i, answers) && "-mx-3 rounded-[16px] bg-warning-bg px-3 py-3")}>
+              <ItemInput item={i} page={page} answers={answers} set={set} t={t} today={today} showLabel={many} all={def} />
+              {showMissing && !i.optional && !itemAnswered(i, answers) && <p role="alert" className="mt-2 text-[13px] text-warning">{t("missing_answer")}</p>}
+            </div>
           ))}
         </div>
       )}
