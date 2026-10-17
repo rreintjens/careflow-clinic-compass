@@ -11,6 +11,7 @@ Owner asked to continue through all phases without pausing for confirmation.
 - [x] Practitioners list sorted alphabetically (owner request)
 - [x] Practitioners: removed "x van y getoond · Toon alles" line
 - [x] Phase 3 – Questionnaire builder, engine, versions, test mode, JSON import/export (seed imported)
+- [x] Builder: active version clearly explained; rows open even when read-only
 - [ ] Phase 4 – Patient booking flow
   - [ ] 4a appointments + slot holds (15 min) schema, slot calculation rule with tests
   - [ ] 4b booking link entry, category/subcategory/treatment, location (Online first), date/time, practitioner modes
