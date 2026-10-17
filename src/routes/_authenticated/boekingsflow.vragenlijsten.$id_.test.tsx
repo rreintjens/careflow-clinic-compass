@@ -42,7 +42,7 @@ function TestMode() {
         <Link to="/boekingsflow/vragenlijsten/$id" params={{ id }} className="text-[13px] text-primary">{def.name}</Link>
         <div className="mt-1 flex items-center gap-3">
           <h1 className="text-[28px] font-semibold tracking-tight">Testmodus</h1>
-          <span className="rounded-full bg-signal px-3 py-1 text-xs">{data.uiTexts.test_mode}</span>
+          <span className="rounded-full bg-signal px-3 py-1 text-xs">{data.uiTexts["test_mode"]}</span>
         </div>
       </div>
       <div className="grid grid-cols-[390px_minmax(0,1fr)] items-start gap-8">
@@ -56,10 +56,10 @@ function TestMode() {
           {result && (
             <Card title="Uitkomst">
               {result.red ? (
-                <p className="text-sm">{data.uiTexts.outcome_red}: {optLabel(org, "questionnaire_rejection", result.red.variant) || result.red.variant} (reden: {result.red.reason}). Antwoorden worden niet bewaard.</p>
+                <p className="text-sm">{data.uiTexts["outcome_red"]}: {optLabel(org, "questionnaire_rejection", result.red.variant) || result.red.variant} (reden: {result.red.reason}). Antwoorden worden niet bewaard.</p>
               ) : (
                 <div className="flex flex-col gap-2 text-sm">
-                  <p>{def.moment === "after_booking" ? "Klaar; in het echt gaan de antwoorden naar het dossier." : `${data.uiTexts.outcome_green}.`}</p>
+                  <p>{def.moment === "after_booking" ? "Klaar; in het echt gaan de antwoorden naar het dossier." : `${data.uiTexts["outcome_green"]}.`}</p>
                   {signals.length ? <ul className="list-disc pl-5">{signals.map((s) => <li key={s.item}>Signaal: {s.label}</li>)}</ul> : <p className="text-muted-foreground">Geen signalen.</p>}
                 </div>
               )}

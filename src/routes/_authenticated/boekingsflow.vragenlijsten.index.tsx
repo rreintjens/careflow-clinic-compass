@@ -35,7 +35,7 @@ function Page() {
   const imp = useMutation({
     mutationFn: async (f: File) => {
       const json = JSON.parse(await f.text()) as FlowFile;
-      const key = String((json.meta as Record<string, unknown> | undefined)?.treatment ?? f.name.replace(/\.json$/, "")).replace(/[^a-z0-9]+/gi, "_").toLowerCase();
+      const key = String((json.meta as Record<string, unknown> | undefined)?.["treatment"] ?? f.name.replace(/\.json$/, "")).replace(/[^a-z0-9]+/gi, "_").toLowerCase();
       await importFlow(json, key, false);
     },
     onSuccess: async () => { await qc.invalidateQueries({ queryKey: questionnairesQuery.queryKey }); toast.success("Geïmporteerd als concept"); },
