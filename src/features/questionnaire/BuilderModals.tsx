@@ -27,7 +27,7 @@ export interface CondCtx { fields: FieldInfo[]; ops: Opt[]; refs: Opt[] }
 
 export function PageModal({ page, pageTypes, sections, icons, ctx, onSave, onDelete, onClose }: {
   page: Page | null; pageTypes: Opt[]; sections: string[]; icons: string[]; ctx: CondCtx;
-  onSave: (p: Page) => void; onDelete?: () => void; onClose: () => void;
+  onSave: (p: Page) => void; onDelete?: (() => void) | undefined; onClose: () => void;
 }) {
   const [p, setP] = useState<Page>(page ?? { id: `p_${Date.now().toString(36)}`, type: "text", title: "" });
   const [iconOpen, setIconOpen] = useState(false);
@@ -81,8 +81,8 @@ export function IconPicker({ icons, value, onPick, onClose }: { icons: string[];
 }
 
 export function ItemModal({ item, itemTypes, sections, section, rejections, ctx, onSave, onDelete, onClose }: {
-  item: Item | null; itemTypes: Opt[]; sections: string[]; section?: string; rejections: Opt[]; ctx: CondCtx;
-  onSave: (i: Item, section: string | undefined) => void; onDelete?: () => void; onClose: () => void;
+  item: Item | null; itemTypes: Opt[]; sections: string[]; section?: string | undefined; rejections: Opt[]; ctx: CondCtx;
+  onSave: (i: Item, section: string | undefined) => void; onDelete?: (() => void) | undefined; onClose: () => void;
 }) {
   const [i, setI] = useState<Item>(item ?? { id: "", text: "", type: "single_choice", options: [] });
   const [sec, setSec] = useState(section ?? "");
@@ -158,7 +158,7 @@ export function ThresholdsModal({ settings, rows, onSave, onClose }: { settings:
   );
 }
 
-export function ComputedModal({ name, formula, sample, onSave, onDelete, onClose }: { name: string | null; formula: string; sample: (f: string) => string; onSave: (n: string, f: string) => void; onDelete?: () => void; onClose: () => void }) {
+export function ComputedModal({ name, formula, sample, onSave, onDelete, onClose }: { name: string | null; formula: string; sample: (f: string) => string; onSave: (n: string, f: string) => void; onDelete?: (() => void) | undefined; onClose: () => void }) {
   const [n, setN] = useState(name ?? "");
   const [f, setF] = useState(formula);
   let check = "";

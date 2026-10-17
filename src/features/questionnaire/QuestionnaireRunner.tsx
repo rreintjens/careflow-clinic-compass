@@ -114,7 +114,7 @@ export function QuestionnaireRunner({
   );
 }
 
-function Frame({ progress, onBack, children, footer }: { progress: number; onBack?: () => void; children: ReactNode; footer: ReactNode }) {
+function Frame({ progress, onBack, children, footer }: { progress: number; onBack?: (() => void) | undefined; children: ReactNode; footer: ReactNode }) {
   return (
     <div className="flex h-[844px] w-[390px] flex-col overflow-hidden rounded-[28px] border border-line bg-background">
       <div className="flex h-14 items-center justify-between px-5">

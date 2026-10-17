@@ -3,7 +3,7 @@ import { Select } from "@/components/Select";
 import { TextLink, inputCls } from "@/components/Field";
 import { isLeaf, type Condition, type Leaf, type Op, type QuestionnaireDef } from "@/domain/questionnaire/engine";
 
-export interface FieldInfo { value: string; label: string; options?: string[]; kind: "answer" | "computed" }
+export interface FieldInfo { value: string; label: string; options?: string[] | undefined; kind: "answer" | "computed" }
 
 /** Every field a condition can test: answers of all items plus computed fields. */
 export function fieldInfos(def: QuestionnaireDef, computed: Record<string, string>): FieldInfo[] {

@@ -48,8 +48,8 @@ function Builder() {
   const def = defOf(working);
   const flow = q ? flowOf(data, q.flow_id) : undefined;
   const doc = (flow?.document ?? {}) as Record<string, unknown>;
-  const settings = (doc.settings ?? {}) as Record<string, unknown>;
-  const computed = (doc.computed_fields ?? {}) as Record<string, string>;
+  const settings = (doc["settings"] ?? {}) as Record<string, unknown>;
+  const computed = (doc["computed_fields"] ?? {}) as Record<string, string>;
   const [edit, setEdit] = useState<Edit | null>(null);
   const [drag, setDrag] = useState<number | null>(null);
   const refresh = () => qc.invalidateQueries({ queryKey: questionnairesQuery.queryKey });
@@ -89,7 +89,7 @@ function Builder() {
   ].filter(Boolean).join(" · ");
 
   const setPages = (pages: Page[]) => writeDef({ ...def, pages });
-  const savePage = (p: Page, index: number | null) => setPages(index === null ? [...def.pages, p] : def.pages.map((x, i) => (i === index ? { ...p, items: x.items } : x)));
+  const savePage = (p: Page, index: number | null) => setPages(index === null ? [...def.pages, p] : def.pages.map((x, i) => (i === index ? ({ ...p, ...(x.items ? { items: x.items } : {}) } as Page) : x)));
   const saveItem = (item: Item, section: string | undefined, pageIdx: number | null, itemIdx: number | null) => {
     if (pageIdx === null) {
       setPages([...def.pages, { id: `p_${item.id}`, ...(section ? { section } : {}), items: [item] }]);
@@ -208,8 +208,8 @@ function Builder() {
         <div className={cn("grid grid-cols-2 gap-4", !editable && "pointer-events-none opacity-80")}>
           <Select label="Moment" value={def.moment} onChange={(v) => writeDef({ ...def, moment: v })} options={opts(org, "questionnaire_moment")} />
           <MultiSelect label="Gekoppeld aan" value={linked.map((t) => t.id)} onChange={(ids) => mut.mutate(() => linkTreatments(q.key, q.moment, ids, org.treatments))} options={org.treatments.map((t) => ({ value: t.id, label: t.name_nl }))} />
-          {Object.entries((def.outcomes ?? {}) as Record<string, string>).map(([k, v]) => (
-            <Select key={k} label={k === "red" ? "Bij rood" : k === "green" ? "Bij groen" : "Uitkomst"} value={v} onChange={(x) => writeDef({ ...def, outcomes: { ...(def.outcomes as Record<string, string>), [k]: x } })} options={opts(org, "questionnaire_outcome")} />
+          {Object.entries((def["outcomes"] ?? {}) as Record<string, string>).map(([k, v]) => (
+            <Select key={k} label={k === "red" ? "Bij rood" : k === "green" ? "Bij groen" : "Uitkomst"} value={v} onChange={(x) => writeDef({ ...def, outcomes: { ...(def["outcomes"] as Record<string, string>), [k]: x } })} options={opts(org, "questionnaire_outcome")} />
           ))}
           <Select label="Status" value={draft ? "draft" : "published"} onChange={() => undefined} disabled options={opts(org, "questionnaire_status")} help="Verandert via Publiceren." />
         </div>
