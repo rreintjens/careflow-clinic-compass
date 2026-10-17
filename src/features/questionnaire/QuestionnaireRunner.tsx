@@ -113,7 +113,7 @@ export function QuestionnaireRunner({
       {isQuestions && (
         <div className="mt-6 flex flex-col gap-6">
           {visibleItems(page, ctx).map((i) => (
-            <div key={i.id} id={`q-${i.id}`} className={cn(showMissing && !i.optional && !itemAnswered(i, answers) && "-mx-3 rounded-[16px] bg-warning-soft px-3 py-3")}>
+            <div key={i.id} id={`q-${i.id}`} className={cn(showMissing && !i.optional && !itemAnswered(i, answers) && "-mx-3 rounded-[16px] bg-warning-bg px-3 py-3")}>
               <ItemInput item={i} page={page} answers={answers} set={set} t={t} today={today} showLabel={many} all={def} />
               {showMissing && !i.optional && !itemAnswered(i, answers) && <p role="alert" className="mt-2 text-[13px] text-warning">{t("missing_answer")}</p>}
             </div>
