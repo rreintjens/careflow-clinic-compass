@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as BoekenRouteImport } from './routes/boeken'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedPatientenRouteImport } from './routes/_authenticated/patienten'
 import { Route as AuthIndexRouteImport } from './routes/auth.index'
@@ -42,6 +43,11 @@ const IndexRoute = IndexRouteImport.update({
 } as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BoekenRoute = BoekenRouteImport.update({
+  id: '/boeken',
+  path: '/boeken',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
@@ -181,6 +187,7 @@ const AuthenticatedBoekingsflowVragenlijstenIdTestRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/boeken': typeof BoekenRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/patienten': typeof AuthenticatedPatientenRoute
   '/auth/2fa': typeof Auth2faRoute
@@ -207,6 +214,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/boeken': typeof BoekenRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/patienten': typeof AuthenticatedPatientenRoute
   '/auth/2fa': typeof Auth2faRoute
@@ -235,6 +243,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/boeken': typeof BoekenRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/patienten': typeof AuthenticatedPatientenRoute
   '/auth/2fa': typeof Auth2faRoute
@@ -263,6 +272,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/boeken'
     | '/dashboard'
     | '/patienten'
     | '/auth/2fa'
@@ -289,6 +299,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/boeken'
     | '/dashboard'
     | '/patienten'
     | '/auth/2fa'
@@ -316,6 +327,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/boeken'
     | '/_authenticated/dashboard'
     | '/_authenticated/patienten'
     | '/auth/2fa'
@@ -344,6 +356,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  BoekenRoute: typeof BoekenRoute
   Auth2faRoute: typeof Auth2faRoute
   AuthIndexRoute: typeof AuthIndexRoute
 }
@@ -362,6 +375,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/boeken': {
+      id: '/boeken'
+      path: '/boeken'
+      fullPath: '/boeken'
+      preLoaderRoute: typeof BoekenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/dashboard': {
@@ -596,6 +616,7 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  BoekenRoute: BoekenRoute,
   Auth2faRoute: Auth2faRoute,
   AuthIndexRoute: AuthIndexRoute,
 }
