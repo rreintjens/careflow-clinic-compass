@@ -1,7 +1,15 @@
 import { createStart, createCsrfMiddleware, createMiddleware } from "@tanstack/react-start";
 
+import { setResponseHeaders } from "@tanstack/react-start/server";
+
 import { renderErrorPage } from "./lib/error-page";
+import { securityHeaders } from "./lib/security-headers";
 import { attachSupabaseAuth } from "@/integrations/supabase/auth-attacher";
+
+const securityHeadersMiddleware = createMiddleware().server(async ({ next }) => {
+  setResponseHeaders(new Headers(securityHeaders()));
+  return next();
+});
 
 const errorMiddleware = createMiddleware().server(async ({ next }) => {
   try {
@@ -27,5 +35,5 @@ const csrfMiddleware = createCsrfMiddleware({
 
 export const startInstance = createStart(() => ({
   functionMiddleware: [attachSupabaseAuth],
-  requestMiddleware: [errorMiddleware, csrfMiddleware],
+  requestMiddleware: [securityHeadersMiddleware, errorMiddleware, csrfMiddleware],
 }));
