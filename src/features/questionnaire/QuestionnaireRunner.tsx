@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { Logo } from "@/components/Logo";
 import {
@@ -14,7 +14,7 @@ const fill = (s: string | undefined, vars: Record<string, string>) => (s ?? "").
 
 /** Patient-facing questionnaire at 390px; used in test mode now and in the booking flow later. */
 export function QuestionnaireRunner({
-  flow, def, ui, today, vars = {}, initial = {}, startPageId, onFinish, onRed,
+  flow, def, ui, today, vars = {}, initial = {}, startPageId, onFinish, onRed, onAnswers, fullScreen = false,
 }: {
   flow: Pick<FlowFile, "settings" | "computed_fields">;
   def: QuestionnaireDef;
@@ -25,11 +25,17 @@ export function QuestionnaireRunner({
   startPageId?: string;
   onFinish?: (answers: Answers) => void;
   onRed?: (red: RedOutcome) => void;
+  onAnswers?: (answers: Answers) => void;
+  fullScreen?: boolean;
 }) {
   const [answers, setAnswers] = useState<Answers>(initial);
   const [pageId, setPageId] = useState(startPageId ?? def.pages[0]?.id ?? "");
   const [red, setRed] = useState<RedOutcome | null>(null);
   const [showMissing, setShowMissing] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  // Every new page (and the rejection screen) starts at the top.
+  useEffect(() => { scrollRef.current?.scrollTo({ top: 0 }); if (fullScreen) window.scrollTo({ top: 0 }); }, [pageId, red, fullScreen]);
+  useEffect(() => { onAnswers?.(answers); }, [answers, onAnswers]);
   const ctx = useMemo(() => makeCtx(flow, answers, today), [flow, answers, today]);
   const pages = visiblePages(def, ctx);
   const idx = Math.max(0, pages.findIndex((p) => p.id === pageId));
@@ -60,7 +66,7 @@ export function QuestionnaireRunner({
     const v = def.rejection?.variants?.[red.variant];
     const buttons = def.rejection?.buttons ?? [];
     return (
-      <Frame progress={progress} onBack={back}
+      <Frame scrollRef={scrollRef} fullScreen={fullScreen} progress={progress} onBack={back}
         footer={<>
           {buttons[0] && <button type="button" onClick={restart} className="h-[54px] w-full rounded-full bg-primary text-[17px] font-medium text-primary-foreground">{buttons[0]}</button>}
           {buttons[1] && <a href="https://www.bodyclinic.nl" target="_blank" rel="noreferrer" className="mt-4 block text-center text-[15px] text-primary">{buttons[1]}</a>}
@@ -83,7 +89,7 @@ export function QuestionnaireRunner({
   const prog = pageProgress(page, ctx);
   const many = (page.items?.length ?? 0) > 1;
   return (
-    <Frame progress={progress} onBack={idx > 0 ? back : undefined}
+    <Frame scrollRef={scrollRef} fullScreen={fullScreen} progress={progress} onBack={idx > 0 ? back : undefined}
       footer={<>
         {isQuestions && <p className="mb-3 flex items-center justify-center gap-2 text-xs text-muted-foreground"><LockIcon />{t("privacy")}</p>}
         <button type="button" onClick={next} className="h-[54px] w-full rounded-full bg-primary text-[17px] font-medium text-primary-foreground disabled:opacity-50">{fill(page.button, vars) || t("next")}</button>
@@ -124,16 +130,16 @@ export function QuestionnaireRunner({
   );
 }
 
-function Frame({ progress, onBack, children, footer }: { progress: number; onBack?: (() => void) | undefined; children: ReactNode; footer: ReactNode }) {
+function Frame({ progress, onBack, children, footer, scrollRef, fullScreen }: { progress: number; onBack?: (() => void) | undefined; children: ReactNode; footer: ReactNode; scrollRef: React.RefObject<HTMLDivElement | null>; fullScreen: boolean }) {
   return (
-    <div className="flex h-[844px] w-[390px] flex-col overflow-hidden rounded-[28px] border border-line bg-background">
+    <div className={cn("flex flex-col bg-background", fullScreen ? "mx-auto min-h-screen w-full max-w-[390px]" : "h-[844px] w-[390px] overflow-hidden rounded-[28px] border border-line")}>
       <div className="flex h-14 items-center justify-between px-5">
         <button type="button" aria-label="Terug" onClick={onBack} disabled={!onBack} className="disabled:opacity-0"><Chevron /></button>
         <Logo small />
         <span aria-hidden="true"><CloseIcon /></span>
       </div>
       <div className="h-[3px] bg-mist"><div className="h-full bg-primary transition-all" style={{ width: `${progress * 100}%` }} /></div>
-      <div className="flex-1 overflow-y-auto px-5 pt-8 pb-6">{children}</div>
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 pt-8 pb-6">{children}</div>
       <div className="px-5 pb-6">{footer}</div>
     </div>
   );
