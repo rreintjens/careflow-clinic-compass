@@ -15,7 +15,7 @@ const lines = (s: string) => s.split("\n").map((x) => x.trim()).filter(Boolean);
 const slug = (s: string) => s.toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "").slice(0, 40) || "vraag";
 
 /** Optional condition block: off = no condition. */
-function OptionalCondition({ label, value, onChange, ctx }: { label: string; value: Condition | undefined; onChange: (c: Condition | undefined) => void; ctx: CondCtx }) {
+function OptionalCondition({ label, value, onChange, ctx }: { label: string; value?: Condition | undefined; onChange: (c: Condition | undefined) => void; ctx: CondCtx }) {
   return (
     <div className="flex flex-col gap-2">
       <Checkbox label={label} checked={!!value} onChange={(on) => onChange(on ? { all: [] } : undefined)} />
@@ -32,7 +32,7 @@ export function PageModal({ page, pageTypes, sections, icons, ctx, onSave, onDel
   const [p, setP] = useState<Page>(page ?? { id: `p_${Date.now().toString(36)}`, type: "text", title: "" });
   const [iconOpen, setIconOpen] = useState(false);
   const type = (p.type ?? "question_page") as PageType;
-  const set = (patch: Partial<Page>) => setP({ ...p, ...patch });
+  const set = (patch: Record<string, unknown>) => setP({ ...p, ...patch } as Page);
   const clean = (x: Page): Page => Object.fromEntries(Object.entries(x).filter(([, v]) => v !== undefined && v !== "" && !(Array.isArray(v) && v.length === 0 && v !== x.items))) as Page;
   return (
     <>
@@ -62,7 +62,7 @@ export function PageModal({ page, pageTypes, sections, icons, ctx, onSave, onDel
   );
 }
 
-export function IconPicker({ icons, value, onPick, onClose }: { icons: string[]; value?: string; onPick: (i: string | undefined) => void; onClose: () => void }) {
+export function IconPicker({ icons, value, onPick, onClose }: { icons: string[]; value?: string | undefined; onPick: (i: string | undefined) => void; onClose: () => void }) {
   const [q, setQ] = useState("");
   const shown = icons.filter((i) => i.includes(q.toLowerCase()));
   return (
@@ -86,7 +86,7 @@ export function ItemModal({ item, itemTypes, sections, section, rejections, ctx,
 }) {
   const [i, setI] = useState<Item>(item ?? { id: "", text: "", type: "single_choice", options: [] });
   const [sec, setSec] = useState(section ?? "");
-  const set = (patch: Partial<Item>) => setI({ ...i, ...patch });
+  const set = (patch: Record<string, unknown>) => setI({ ...i, ...patch } as Item);
   const t = i.type;
   const hasOptions = t === "single_choice" || t === "multi_choice";
   const sigMode = i.signal_if === undefined ? "none" : typeof i.signal_if === "string" && i.signal_if !== "any_except_exclusive" ? "value" : i.signal_if === "any_except_exclusive" ? "any" : Array.isArray(i.signal_if) ? "values" : "condition";

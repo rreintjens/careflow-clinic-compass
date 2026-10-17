@@ -128,7 +128,7 @@ export function evaluate(src: string, env: ExprEnv): Value {
 /** Field names a formula reads ({x} and bare identifiers, without settings.*). */
 export function formulaFields(src: string): string[] {
   try {
-    return [...new Set(tokenize(src).filter((t) => t.t === "id" && !t.v.startsWith("settings.") && !FUNCS[t.v]).map((t) => t.v))];
+    return [...new Set(tokenize(src).filter((t) => t.t === "id" && !t.v.startsWith("settings.") && !FUNCS[t.v]).map((t) => String(t.v)))];
   } catch {
     return [];
   }
