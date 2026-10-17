@@ -15,6 +15,7 @@ import {
 } from "@/data/organisation";
 import { durationOptions } from "@/domain/organisation";
 import { offeredSummary, treatmentBookability } from "@/features/organisation/bookability";
+import { EquipmentKindsModal } from "@/features/organisation/EquipmentKindsModal";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/organisatie/behandelingen/")({
@@ -51,6 +52,7 @@ function TreatmentsPage() {
   const [drag, setDrag] = useState<{ list: string; index: number } | null>(null);
   const [catModal, setCatModal] = useState<Category | "new" | null>(null);
   const [newOpen, setNewOpen] = useState(false);
+  const [kindsOpen, setKindsOpen] = useState(false);
   const refresh = () => qc.invalidateQueries({ queryKey: orgQuery.queryKey });
 
   const countFor = (catId: string) => {
@@ -73,7 +75,9 @@ function TreatmentsPage() {
       <PageHeader
         title="Behandelingen"
         description="Links de categorieën met hun subcategorieën, rechts de behandelingen per subcategorie. Een behandeling kan in meer categorieën en subcategorieën staan."
+        actions={<PillButton variant="outline" onClick={() => setKindsOpen(true)}>Soorten apparatuur</PillButton>}
       />
+      {kindsOpen && <EquipmentKindsModal org={org} onClose={() => setKindsOpen(false)} />}
       <div className="grid grid-cols-[360px_minmax(0,1fr)] items-start gap-6">
         <Card>
           <div className="mb-4 flex items-center justify-between gap-3">
