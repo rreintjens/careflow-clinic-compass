@@ -278,6 +278,7 @@ export type Database = {
           id: string
           key: string
           name: string
+          parent_id: string | null
           sort: number
           tenant_id: string
           updated_at: string
@@ -289,6 +290,7 @@ export type Database = {
           id?: string
           key: string
           name: string
+          parent_id?: string | null
           sort?: number
           tenant_id?: string
           updated_at?: string
@@ -300,12 +302,20 @@ export type Database = {
           id?: string
           key?: string
           name?: string
+          parent_id?: string | null
           sort?: number
           tenant_id?: string
           updated_at?: string
           updated_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "equipment_kinds_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "equipment_kinds"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "equipment_kinds_tenant_id_fkey"
             columns: ["tenant_id"]
