@@ -1,0 +1,30 @@
+/** Day agenda: which schedule segments a practitioner has on a date (per location, with breaks). */
+import { blockOn, toMin, type SlotBlock, type SlotException } from "./slots";
+
+export interface Segment { start: number; end: number; locationId: string | null; kind: "work" | "break" }
+
+const inRange = (d: string, from: string, to: string | null) => d >= from && d <= (to ?? from);
+
+export function daySegments(practitionerId: string, date: string, blocks: readonly SlotBlock[], exceptions: readonly SlotException[]): Segment[] {
+  const ex = exceptions.filter((e) => e.practitioner_id === practitionerId && inRange(date, e.date_from, e.date_to));
+  if (ex.some((e) => e.kind === "vacation" && !e.starts)) return [];
+  let work: Segment[] = blocks.filter((b) => b.practitioner_id === practitionerId && blockOn(b, date))
+    .map((b) => ({ start: toMin(b.starts), end: toMin(b.ends), locationId: b.location_id, kind: "work" as const }));
+  for (const e of ex) if (e.kind === "extra_day" && e.starts && e.ends) work.push({ start: toMin(e.starts), end: toMin(e.ends), locationId: e.location_id ?? null, kind: "work" });
+  const breaks: Segment[] = [];
+  for (const e of ex) {
+    if ((e.kind !== "break" && e.kind !== "vacation") || !e.starts || !e.ends) continue;
+    const s = toMin(e.starts), en = toMin(e.ends);
+    work = work.flatMap((w) => (en <= w.start || s >= w.end ? [w] : [
+      ...(s > w.start ? [{ ...w, end: s }] : []), ...(en < w.end ? [{ ...w, start: en }] : []),
+    ]));
+    breaks.push({ start: s, end: en, locationId: null, kind: "break" });
+  }
+  return [...work, ...breaks].sort((a, b) => a.start - b.start);
+}
+
+/** Visible hour range for the grid: earliest segment/appointment floored, latest ceiled; default 08–17. */
+export function hourRange(minutes: readonly number[]): [number, number] {
+  if (!minutes.length) return [8, 17];
+  return [Math.min(8, Math.floor(Math.min(...minutes) / 60)), Math.max(17, Math.ceil(Math.max(...minutes) / 60))];
+}
