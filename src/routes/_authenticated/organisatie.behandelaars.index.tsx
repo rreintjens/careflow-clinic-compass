@@ -48,9 +48,6 @@ function PractitionersPage() {
         <Select label="Rol" value={roleF} onChange={setRoleF} options={[{ value: "all", label: "Alle rollen" }, ...org.roles.map((r) => ({ value: r.id, label: r.name_nl }))]} className="w-[160px] [&>label]:sr-only" />
         <Select label="Locatie" value={locF} onChange={setLocF} options={[{ value: "all", label: "Alle locaties" }, ...org.locations.map((l) => ({ value: l.id, label: l.name }))]} className="w-[200px] [&>label]:sr-only" />
         <Select label="Status" value={statusF} onChange={setStatusF} options={[{ value: "all", label: "Alle statussen" }, ...opts(org, "practitioner_status")]} className="w-[150px] [&>label]:sr-only" />
-        <span className="ml-auto whitespace-nowrap text-[13px] text-muted-foreground">
-          {filtered.length} behandelaars
-        </span>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[960px]">
