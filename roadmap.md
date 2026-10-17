@@ -21,3 +21,4 @@ Owner asked to continue through all phases without pausing for confirmation.
   - [ ] 4f manage appointment via mail link (calendar file, reschedule, cancel with reason)
 - [ ] Phase 5 – Agenda, Mijn dag, patient card, record, consult mode
 - [ ] Phase 6 – Mails and integrations
+- [x] Medical questionnaire: 'Val je af of kom je nog aan?' had no answers in the seed; v2 adds them from the design HTML
