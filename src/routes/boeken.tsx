@@ -337,6 +337,7 @@ function HoldStep({ c, s, treatmentId, locationId, practitionerId, tx, lang, go 
   const [state, setState] = useState<{ kind: "loading" } | { kind: "taken" } | { kind: "held"; token: string; expiresAt: number; minutes: number } | { kind: "expired"; minutes: number } | { kind: "done" }>({ kind: "loading" });
   const [initial, setInitial] = useState<Answers | null>(null);
   const started = useRef(false);
+  const rejected = useRef(false);
 
   useEffect(() => {
     if (started.current) return;
@@ -352,7 +353,7 @@ function HoldStep({ c, s, treatmentId, locationId, practitionerId, tx, lang, go 
 
   useEffect(() => {
     if (state.kind !== "held") return;
-    const id = window.setInterval(() => { if (Date.now() >= state.expiresAt) setState({ kind: "expired", minutes: state.minutes }); }, 1000);
+    const id = window.setInterval(() => { if (!rejected.current && Date.now() >= state.expiresAt) setState({ kind: "expired", minutes: state.minutes }); }, 1000);
     return () => window.clearInterval(id);
   }, [state]);
 
@@ -373,7 +374,7 @@ function HoldStep({ c, s, treatmentId, locationId, practitionerId, tx, lang, go 
       <div className="rounded-[18px] bg-sand p-5">
         <p className="text-[13px] text-muted-foreground">{tx("your_choice")}</p>
         <p className="mt-2 text-[15px] font-semibold first-letter:uppercase">{choice}</p>
-        <p className="mt-3 flex items-center gap-2 text-[14px]"><img src="/ui-icons/vinkje.svg" alt="" className="size-4" onError={(e) => { e.currentTarget.style.display = "none"; }} />{tx("answers_kept")}</p>
+        <p className="mt-3 flex items-center gap-2 text-[14px]"><img src="/ui-icons/vinkje.svg" alt="" className="size-4" />{tx("answers_kept")}</p>
       </div>
     </Shell>
   );
@@ -388,7 +389,7 @@ function HoldStep({ c, s, treatmentId, locationId, practitionerId, tx, lang, go 
     <QuestionnaireRunner fullScreen flow={triage.data.flow as unknown as FlowFile} def={triage.data.definition as unknown as QuestionnaireDef} ui={ui} today={todayLocal()} initial={initial}
       vars={{ dag: fmt(s.d ?? ""), tijd: s.tijd ?? "", behandelaar_voornaam: p?.first_name ?? "", voornaam: "" }}
       onAnswers={keep}
-      onRed={(red) => { sessionStorage.removeItem(ANSWERS_KEY); sessionStorage.removeItem(HOLD_KEY); void release({ data: { merk: s.merk, token: state.token, questionnaire: triageKey, reason: red.reason } }); }}
+      onRed={(red) => { rejected.current = true; sessionStorage.removeItem(ANSWERS_KEY); sessionStorage.removeItem(HOLD_KEY); void release({ data: { merk: s.merk, token: state.token, questionnaire: triageKey, reason: red.reason } }); }}
       onFinish={(a) => { keep(a); setState({ kind: "done" }); }} />
   );
 }
