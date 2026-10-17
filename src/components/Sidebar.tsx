@@ -76,7 +76,7 @@ export function Sidebar({ fullName, email, roleName, onSignOut }: SidebarProps) 
   return (
     <aside aria-label="Beheermenu" className="sticky top-0 flex h-screen w-[248px] shrink-0 flex-col gap-5 overflow-y-auto bg-sidebar px-3.5 pb-4 pt-[22px]">
       <div className="flex h-10 items-center gap-2.5 px-2.5">
-        <Logo />
+        <Logo small />
         <span className="whitespace-nowrap rounded-full bg-teal-light px-2.5 py-[3px] text-xs font-semibold text-primary-hover">Beheer</span>
       </div>
       <nav aria-label="Hoofdmenu" className="flex flex-col gap-0.5">

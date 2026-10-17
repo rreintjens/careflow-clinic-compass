@@ -31,6 +31,7 @@ function TwoFactorPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const refs = useRef<Array<HTMLInputElement | null>>([]);
+  const started = useRef(false);
 
   const goLanding = async () => {
     queryClient.removeQueries({ queryKey: staffContextQuery.queryKey });
@@ -39,6 +40,8 @@ function TwoFactorPage() {
   };
 
   useEffect(() => {
+    if (started.current) return;
+    started.current = true;
     (async () => {
       const aal = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
       if (aal.data?.currentLevel === "aal2") return goLanding();
