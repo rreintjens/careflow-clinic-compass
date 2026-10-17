@@ -9,8 +9,8 @@ import { Modal } from "@/components/Modal";
 import { PillButton } from "@/components/PillButton";
 import { Select } from "@/components/Select";
 import {
-  addLocationException, deleteRoom, fullName, optLabel, opts, orgQuery, saveHours, saveLocation, saveRoom, workLocationIds, type Org, type Room,
-, kindName, kindOpts } from "@/data/organisation";
+  addLocationException, deleteRoom, fullName, optLabel, opts, orgQuery, saveHours, saveLocation, saveRoom, workLocationIds, type Org, type Room, kindName, kindOpts,
+} from "@/data/organisation";
 import { hhmm, quarterTimes } from "@/domain/organisation";
 import { REASON_TEXT, treatmentBookability } from "@/features/organisation/bookability";
 import { supabase } from "@/integrations/supabase/client";

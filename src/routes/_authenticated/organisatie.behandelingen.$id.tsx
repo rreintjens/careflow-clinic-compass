@@ -13,8 +13,8 @@ import { Select } from "@/components/Select";
 import {
   addPractitionersToTreatment, deleteRequirement, fullName, generalDefaultsQuery, locName, mainCategories, offeredLocationIds, optLabel, opts,
   orgQuery, removePractitionerTreatment, roleName, saveRequirement, saveTreatment, setPractitionerTreatmentExclusions, subCategories,
-  treatmentMainCategoryIds, workLocationIds, type Org, type Requirement,
-, kindName, kindOpts } from "@/data/organisation";
+  treatmentMainCategoryIds, workLocationIds, type Org, type Requirement, kindName, kindOpts,
+} from "@/data/organisation";
 import { durationOptions, practitionerExcludedHere, practitionerTreatmentLocations } from "@/domain/organisation";
 import { REASON_TEXT, treatmentBookability } from "@/features/organisation/bookability";
 import { cn } from "@/lib/utils";
