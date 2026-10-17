@@ -15,7 +15,7 @@ const initials = (a: string, b: string) => `${a.charAt(0)}${b.charAt(0)}`.toUppe
 const dmy = (d: string | null) => (d ? d.split("-").reverse().join("-") : "");
 
 /** "Afspraak maken" from the agenda: choose patient, treatment, way, practitioner, location and a free moment. */
-export function NewAppointmentModal({ open, onOpenChange, ref: data, onPickInAgenda }: { open: boolean; onOpenChange: (o: boolean) => void; ref: Ref; onPickInAgenda: (practitionerId: string) => void }) {
+export function NewAppointmentModal({ open, onOpenChange, data, onPickInAgenda }: { open: boolean; onOpenChange: (o: boolean) => void; data: Ref; onPickInAgenda: (practitionerId: string) => void }) {
   const qc = useQueryClient();
   const slotsFn = useServerFn(getStaffSlots);
   const create = useServerFn(createStaffAppointment);
