@@ -405,7 +405,7 @@ function HoldStep({ c, s, treatmentId, locationId, practitionerId, tx, lang, go 
     <DetailsStep c={c} s={s} token={state.token} treatmentId={treatmentId} locationId={locationId} practitionerId={state.practitionerId} tx={tx} lang={lang} again={again}
       triageKey={triageKey} triageAnswers={readJson<Answers>(ANSWERS_KEY) ?? undefined}
       onExpired={() => setState({ kind: "expired", minutes: state.minutes })}
-      onDone={(m) => { confirmedRef.current = true; sessionStorage.removeItem(ANSWERS_KEY); sessionStorage.removeItem(HOLD_KEY); setConfirmed(m); setPhase("confirmed"); }} />
+      onDone={(m, meeting) => { confirmedRef.current = true; sessionStorage.removeItem(ANSWERS_KEY); sessionStorage.removeItem(HOLD_KEY); setConfirmed(m); setMeet(meeting ?? null); setPhase("confirmed"); }} />
   );
   if (state.kind !== "held" || !triage.data) return null;
   const ui = Object.fromEntries(c.ui.filter((u) => u.list_key === "questionnaire_ui").map((u) => [u.value, (lang === "en" && u.label_en) || u.label_nl]));
@@ -455,7 +455,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) { return <h2 
 /** "Je gegevens": one form for new and existing patients; date of birth comes from the triage when asked there. */
 function DetailsStep({ c, s, token, treatmentId, locationId, practitionerId, tx, lang, again, triageKey, triageAnswers, onExpired, onDone }: {
   c: Full; s: Search; token: string; treatmentId: string; locationId: string; practitionerId: string; tx: Tx; lang: string; again: () => void;
-  triageKey: string | null; triageAnswers: Answers | undefined; onExpired: () => void; onDone: (manageToken: string) => void;
+  triageKey: string | null; triageAnswers: Answers | undefined; onExpired: () => void; onDone: (manageToken: string, meetLink: string | null) => void;
 }) {
   const confirm = useServerFn(confirmBooking);
   const lookup = useServerFn(lookupAddress);
@@ -503,7 +503,7 @@ function DetailsStep({ c, s, token, treatmentId, locationId, practitionerId, tx,
         referral: existing ? undefined : f.referral || undefined, note: f.note || undefined, consentPrivacy: true, consentGp: cons.gp, gpName: cons.gpName || undefined, consentLsp: cons.lsp, consentMarketing: cons.marketing,
         triageKey: triageKey ?? undefined, triageAnswers,
       } });
-      if (r.ok) onDone(r.manageToken);
+      if (r.ok) onDone(r.manageToken, r.meetLink);
       else if (r.reason === "expired") onExpired();
       else setError(r.reason === "young" ? tx("d_dob_young") : tx("d_failed"));
     } catch { setError(tx("d_failed")); } finally { setBusy(false); }
@@ -600,7 +600,7 @@ function DetailsStep({ c, s, token, treatmentId, locationId, practitionerId, tx,
 const icsDate = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
 
 /** "Je afspraak staat gepland" with calendar file and the start of the medical questionnaire. */
-function ConfirmedStep({ c, s, treatmentId, locationId, practitionerId, manageToken, tx, lang }: { c: Full; s: Search; treatmentId: string; locationId: string; practitionerId: string; manageToken: string; tx: Tx; lang: string }) {
+function ConfirmedStep({ c, s, treatmentId, locationId, practitionerId, manageToken, meetLink, tx, lang }: { c: Full; s: Search; treatmentId: string; locationId: string; practitionerId: string; manageToken: string; meetLink: string | null; tx: Tx; lang: string }) {
   const navigate = useNavigate();
   const t = c.treatments.find((x) => x.id === treatmentId);
   const l = c.locations.find((x) => x.id === locationId);
