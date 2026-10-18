@@ -636,6 +636,7 @@ function ConfirmedStep({ c, s, treatmentId, locationId, practitionerId, manageTo
           <p className="text-[16px] leading-[1.5]">{tx("c_expects", { naam: p ? `${p.first_name} ${p.last_name}` : c.tenant.name, dag: fmtLong(s.d ?? "", lang), tijd: s.tijd ?? "" })}</p>
         </div>
         <p className="mt-4 flex items-center gap-3 text-[14px]"><img src={l?.kind === "online" ? "/ui-icons/videogesprek.svg" : "/ui-icons/locatie.svg"} alt="" className="size-4" />{l?.kind === "online" ? tx("d_online_meet") : `${l?.name ?? ""}, ${l?.address ?? ""}`}</p>
+        {l?.kind === "online" && meetLink && <p className="mt-2 flex items-center gap-3 text-[14px]"><img src="/ui-icons/videogesprek.svg" alt="" className="size-4 shrink-0" /><a href={meetLink} target="_blank" rel="noreferrer" className="truncate text-primary underline">{tx("m_join")}</a></p>}
         <p className="mt-2 flex items-center gap-3 text-[14px]"><img src="/ui-icons/klok.svg" alt="" className="size-4" />{tName}, {tx("c_minutes", { min: t?.duration_min ?? 0 })}</p>
         <button type="button" onClick={ics} className="mt-4 text-[14px] underline">{tx("c_add_calendar")}</button>
       </div>
