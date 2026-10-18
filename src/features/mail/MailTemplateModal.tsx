@@ -32,7 +32,7 @@ export function MailTemplateModal({ template, defaults, data, org, onClose }: { 
   const [phonePreview, setPhonePreview] = useState(false);
   const option = (key: string) => data.options.filter((o) => o.list_key === key).map((o) => ({ value: o.value, label: o.label_nl }));
   const treatment = org.treatments.find((t) => t.id === current.treatment_id) ?? org.treatments.find((t) => t.post_questionnaire_key) ?? org.treatments[0];
-  const previewData = Object.fromEntries(data.options.filter((o) => o.list_key === "mail_preview").map((o) => [o.value, o.label_nl]));
+  const previewData = Object.fromEntries(data.options.filter((o) => o.list_key === "mail_preview").map((o) => [o.value, translated(o.label_nl, o.label_en, language)]));
   const practitioner = org.practitioners.find((p) => `${p.first_name} ${p.last_name}` === (previewData['behandelaar'] ?? "").replace(/^Drs\. /, ""));
   const values = { ...previewData, behandeling: treatment ? translated(treatment.name_nl, treatment.name_en, language) : "", duur: String(treatment?.duration_min ?? ""), voorbereiding: treatment ? translated(treatment.preparation_nl, treatment.preparation_en, language) : "", nazorg: treatment ? translated(treatment.aftercare_nl, treatment.aftercare_en, language) : "" };
   const save = useMutation({ mutationFn: (input: MailInput) => saveMailTemplate({ data: input }), onSuccess: async () => { await qc.invalidateQueries({ queryKey: ["mail-templates"] }); toast.success("Sjabloon opgeslagen"); onClose(); }, onError: (e) => toast.error(e.message) });
@@ -72,8 +72,8 @@ export function MailTemplateModal({ template, defaults, data, org, onClose }: { 
           <Select label="Tonen" value={block.condition} options={option("mail_condition")} onChange={(condition) => updateBlock({ condition })} />
           {block.type !== "divider" && <TextField label="Kop" value={block[languageKey("title")]} onChange={(e) => updateBlock({ [languageKey("title")]: e.target.value })} />}
           {['image', 'signature'].includes(block.type) && <MailImagePicker path={block.image_path ?? ""} onChange={(image_path) => updateBlock({ image_path, image: "" })} />}
-          {!['divider', 'image', 'details'].includes(block.type) && <TextArea label="Tekst" value={block[languageKey("text")]} onChange={(e) => updateBlock({ [languageKey("text")]: e.target.value })} />}
-          {['button', 'card'].includes(block.type) && <><TextField label="Knop" value={block[languageKey("button")]} onChange={(e) => updateBlock({ [languageKey("button")]: e.target.value })} /><TextField label="Link" value={block.url} onChange={(e) => updateBlock({ url: e.target.value })} /></>}
+          {!['divider', 'image'].includes(block.type) && <TextArea label="Tekst" value={block[languageKey("text")]} onChange={(e) => updateBlock({ [languageKey("text")]: e.target.value })} />}
+          {['button', 'card', 'details', 'text'].includes(block.type) && <><TextField label="Knop" value={block[languageKey("button")]} onChange={(e) => updateBlock({ [languageKey("button")]: e.target.value })} /><TextField label="Link" value={block.url} onChange={(e) => updateBlock({ url: e.target.value })} /></>}
         </div>}
         {Object.values(form.formState.errors).length > 0 && <p role="alert" className="text-sm text-warning">{form.formState.errors.subject_nl?.message ?? form.formState.errors.scope?.message ?? "Vul de ontbrekende velden in."}</p>}
       </div>
