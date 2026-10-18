@@ -134,6 +134,13 @@
       "when": 1792283672439,
       "tag": "0018_mail_template_management",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1792284095932,
+      "tag": "0019_private_mail_image_access",
+      "breakpoints": true
     }
   ]
 }
