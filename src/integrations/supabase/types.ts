@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      anamnesis: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          fields: Json
+          patient_id: string
+          tenant_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          fields?: Json
+          patient_id: string
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          fields?: Json
+          patient_id?: string
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "anamnesis_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: true
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "anamnesis_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       answer_sets: {
         Row: {
           answers: Json
@@ -969,6 +1014,85 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: []
+      }
+      measurements: {
+        Row: {
+          appointment_id: string | null
+          bp_diastolic: number | null
+          bp_systolic: number | null
+          created_at: string
+          created_by: string | null
+          height_cm: number | null
+          id: string
+          measured_on: string
+          patient_id: string
+          pulse: number | null
+          source: string
+          tenant_id: string
+          updated_at: string
+          updated_by: string | null
+          waist_cm: number | null
+          weight_kg: number | null
+        }
+        Insert: {
+          appointment_id?: string | null
+          bp_diastolic?: number | null
+          bp_systolic?: number | null
+          created_at?: string
+          created_by?: string | null
+          height_cm?: number | null
+          id?: string
+          measured_on: string
+          patient_id: string
+          pulse?: number | null
+          source?: string
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          waist_cm?: number | null
+          weight_kg?: number | null
+        }
+        Update: {
+          appointment_id?: string | null
+          bp_diastolic?: number | null
+          bp_systolic?: number | null
+          created_at?: string
+          created_by?: string | null
+          height_cm?: number | null
+          id?: string
+          measured_on?: string
+          patient_id?: string
+          pulse?: number | null
+          source?: string
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          waist_cm?: number | null
+          weight_kg?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "measurements_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "measurements_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "measurements_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       option_lists: {
         Row: {
