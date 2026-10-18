@@ -13,8 +13,8 @@ export const Route = createFileRoute("/_authenticated/patienten/$id/documenten")
 const day = (s: string) => new Date(s).toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "numeric", timeZone: "Europe/Amsterdam" });
 
 async function bucket() {
-  const { data } = await supabase.rpc("current_tenant_slug" as never);
-  return `patient-documents-${data as unknown as string}`;
+  const { data } = await supabase.rpc("current_tenant_slug");
+  return `patient-documents-${data}`;
 }
 
 function Documents() {
