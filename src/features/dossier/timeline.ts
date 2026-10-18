@@ -1,5 +1,6 @@
 import type { Dossier } from "@/data/patients";
 import type { Database } from "@/integrations/supabase/types";
+import { measurementWithBmi } from "@/domain/measurements";
 
 export type TimelineKind = "appointments" | "questionnaires" | "contact" | "treatment" | "system";
 export interface TimelineEvent { at: string; kind: TimelineKind; icon: string; title: string; body: string; who: string; meet?: string | null }
@@ -7,7 +8,7 @@ export interface TimelineEvent { at: string; kind: TimelineKind; icon: string; t
 const STATUS: Record<string, string> = { booked: "", cancelled: " · geannuleerd", no_show: " · niet verschenen", completed: " · afgerond" };
 
 /** Events derived from stored rows, newest first. */
-export function buildTimeline(d: Dossier, consults: ReadonlyArray<Database["public"]["Tables"]["consult_notes"]["Row"]> = []): TimelineEvent[] {
+export function buildTimeline(d: Dossier, consults: ReadonlyArray<Database["public"]["Tables"]["consult_notes"]["Row"]> = [], measurements: ReadonlyArray<Database["public"]["Tables"]["measurements"]["Row"]> = []): TimelineEvent[] {
   const out: TimelineEvent[] = [];
   for (const a of d.appointments) {
     const online = a.location?.kind === "online";
@@ -25,6 +26,11 @@ export function buildTimeline(d: Dossier, consults: ReadonlyArray<Database["publ
   for (const n of consults) {
     if (n.status !== "final" || n.appointment_id !== null) continue;
     out.push({ at: n.occurred_at ?? n.created_at, kind: "appointments", icon: "document", title: "Consult vastgelegd", body: [n.time_and_duration, n.reason, n.subjective, n.objective, n.evaluation, n.plan].filter(Boolean).join(" · "), who: "Behandelaar" });
+  }
+  for (const m of measurements) {
+    const bmi = measurementWithBmi(m, measurements).bmi;
+    const body = [m.weight_kg !== null ? `${m.weight_kg} kg` : null, bmi !== null ? `BMI ${bmi.toFixed(1).replace(".", ",")}` : null, m.waist_cm !== null ? `Buikomvang ${m.waist_cm} cm` : null, m.bp_systolic !== null ? `Bloeddruk ${m.bp_systolic}/${m.bp_diastolic ?? "–"}` : null, m.pulse !== null ? `Pols ${m.pulse}` : null].filter(Boolean).join(" · ");
+    out.push({ at: `${m.measured_on}T${m.created_at.slice(11)}`, kind: "treatment", icon: "document", title: "Meting toegevoegd", body, who: "Medewerker" });
   }
   return out.sort((a, b) => b.at.localeCompare(a.at));
 }

@@ -1,5 +1,6 @@
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { standaloneConsultsQuery } from "@/data/consults";
+import { measurementsQuery } from "@/data/measurements";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
@@ -16,8 +17,9 @@ function Timeline() {
   const { id } = Route.useParams();
   const d = useSuspenseQuery(dossierQuery(id)).data;
   const { data: consults = [] } = useQuery(standaloneConsultsQuery(id));
+  const { data: measurements = [] } = useQuery(measurementsQuery(id));
   const [f, setF] = useState<TimelineKind | "all">("all");
-  const events = buildTimeline(d, consults).filter((e) => f === "all" || e.kind === f);
+  const events = buildTimeline(d, consults, measurements).filter((e) => f === "all" || e.kind === f);
   return (
     <section className="rounded-[20px] p-6 ring-1 ring-mist">
       <h3 className="text-[17px] font-semibold">Tijdlijn</h3>

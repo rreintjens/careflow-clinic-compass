@@ -1,5 +1,7 @@
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { standaloneConsultsQuery } from "@/data/consults";
+import { measurementsQuery } from "@/data/measurements";
+import { measurementWithBmi } from "@/domain/measurements";
 import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { dossierQuery } from "@/data/patients";
@@ -13,16 +15,21 @@ function Overview() {
   const { id } = Route.useParams();
   const d = useSuspenseQuery(dossierQuery(id)).data;
   const { data: consults = [] } = useQuery(standaloneConsultsQuery(id));
+  const { data: measurements = [] } = useQuery(measurementsQuery(id));
   if (!d.patient) return null;
   const triage = d.sets.find((s) => s.questionnaire_key === "triage");
   const medical = d.sets.find((s) => s.questionnaire_key !== "triage");
   const a = (triage?.answers ?? {}) as Record<string, unknown>;
-  const h = Number(a["height_cm"]), w = Number(a["weight_kg"]);
-  const bmi = h && w ? (w / (h / 100) ** 2).toFixed(1).replace(".", ",") : null;
+  const tri = { measured_on: triage?.created_at.slice(0, 10) ?? "", height_cm: Number(a["height_cm"]) || null, weight_kg: Number(a["weight_kg"]) || null };
+  const history = [tri, ...measurements];
+  const latest = [...history].filter((m) => m.weight_kg !== null).sort((a, b) => b.measured_on.localeCompare(a.measured_on))[0];
+  const calculated = latest ? measurementWithBmi(latest, history) : null;
+  const h = calculated?.height_cm, w = calculated?.weight_kg;
+  const bmi = calculated?.bmi?.toFixed(1).replace(".", ",");
   const when = (s?: string | null) => (s ? new Date(s).toLocaleString("nl-NL", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" }) : "");
   const signals = signalsOf(d.sets);
   const rows: Array<[string, string]> = [
-    ["BMI en gewicht", bmi ? `${bmi} · ${h} cm, ${w} kg, gemeten bij het boeken op ${when(triage?.created_at)}` : "Niet bekend"],
+    ["BMI en gewicht", w ? `${bmi ?? "BMI niet bekend"} · ${h ? `${h} cm, ` : ""}${w} kg, ${latest === tri ? "gemeten bij het boeken op" : "gemeten op"} ${when(latest?.measured_on)}` : "Niet bekend"],
     ["Triage", triage ? (triage.status === "completed" ? `Groen${signals.length ? `; signalen: ${signals.map((s) => s.label.toLowerCase()).join(", ")}` : ""}` : "Gestart, niet afgerond") : "Niet doorlopen"],
     ["Medische vragenlijst", medical?.completed_at ? `Ingevuld op ${when(medical.completed_at)}` : medical ? "Gestart, nog niet afgerond" : "Nog niet ingevuld"],
     ["Huisarts", d.patient.gp_name ?? "Niet bekend"],
@@ -37,7 +44,7 @@ function Overview() {
       )}
       <dl className="mt-5">{rows.map(([k, v]) => <div key={k} className="grid grid-cols-[220px_1fr] gap-4 border-b border-mist py-3 text-[14px]"><dt className="whitespace-nowrap text-muted-foreground">{k}</dt><dd>{v}</dd></div>)}</dl>
       <p className="mb-4 mt-6 text-[14px] font-semibold">Laatste gebeurtenissen</p>
-      <TimelineList events={buildTimeline(d, consults).slice(0, 3)} />
+      <TimelineList events={buildTimeline(d, consults, measurements).slice(0, 3)} />
       <Link to="/patienten/$id/tijdlijn" params={{ id }} className="text-[14px] text-primary underline">Volledige tijdlijn</Link>
     </section>
   );

@@ -10,8 +10,12 @@ import { dossierQuery } from "@/data/patients";
 import type { Item, QuestionnaireDef } from "@/domain/questionnaire/engine";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { useServerFn } from "@tanstack/react-start";
+import { saveMeasurement } from "@/data/measurements.functions";
+import { measurementsQuery } from "@/data/measurements";
+import { measurementSchema, measurementWithBmi } from "@/domain/measurements";
 
-export const Route = createFileRoute("/_authenticated/patienten/$id/medisch")({ component: Medical });
+export const Route = createFileRoute("/_authenticated/patienten/$id/medisch")({ head: () => ({ meta: [{ title: "Medisch · Dossier · The Body Clinic" }, { name: "description", content: "Intake, anamnese en metingen in het patiëntendossier." }, { property: "og:title", content: "Medisch dossier · The Body Clinic" }, { property: "og:description", content: "Intake, anamnese en metingen in het patiëntendossier." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { name: "robots", content: "noindex" }] }), component: Medical });
 
 type Sig = { item: string };
 const fmtDate = (s: string) => new Date(s).toLocaleDateString("nl-NL", { day: "numeric", month: "long", timeZone: "Europe/Amsterdam" });
@@ -31,9 +35,8 @@ function useMedical(id: string) {
     queryKey: ["medical", id],
     queryFn: async () => {
       const d = (await supabase.from("anamnesis").select("fields").eq("patient_id", id).maybeSingle()).data;
-      const m = (await supabase.from("measurements").select("*").eq("patient_id", id).order("measured_on")).data ?? [];
       const f = (await supabase.from("option_lists").select("value, label_nl").eq("list_key", "anamnesis_fields").order("sort")).data ?? [];
-      return { anamnesis: (d?.fields ?? {}) as Record<string, string>, measurements: m, fields: f };
+      return { anamnesis: (d?.fields ?? {}) as Record<string, string>, fields: f };
     },
   });
 }
@@ -48,6 +51,7 @@ function Medical() {
     enabled: versionIds.length > 0,
   });
   const { data: med } = useMedical(id);
+  const { data: measurements = [] } = useQuery(measurementsQuery(id));
   const [tab, setTab] = useState(0);
   const [edit, setEdit] = useState<"anamnesis" | "measure" | null>(null);
   const sections = ["intake", "anamnese", "metingen"];
@@ -56,7 +60,7 @@ function Medical() {
   const tri = d.sets.find((s) => s.questionnaire_key === "triage");
   const ta = (tri?.answers ?? {}) as Record<string, unknown>;
   const triRow = tri && ta["weight_kg"] ? [{ id: "triage", measured_on: tri.created_at, weight_kg: Number(ta["weight_kg"]), height_cm: Number(ta["height_cm"]) || null, waist_cm: Number(ta["waist_cm"]) || null, bp_systolic: null, bp_diastolic: null, pulse: null, source: "triage" }] : [];
-  const rows = [...triRow, ...(med?.measurements ?? [])];
+  const rows = [...triRow, ...measurements];
   const intake = d.sets.filter((s) => s.status === "completed").slice().reverse();
   return (
     <div className="flex flex-col gap-6">
@@ -101,8 +105,8 @@ function Medical() {
           <thead><tr className="border-b border-mist text-left text-[12px] text-muted-foreground">{["Datum", "Gewicht", "BMI", "Buikomvang", "Bloeddruk", "Pols", "Door"].map((h) => <th key={h} className="whitespace-nowrap px-2.5 py-2.5 font-normal">{h}</th>)}</tr></thead>
           <tbody>
             {rows.map((m) => {
-              const h = m.height_cm ?? rows.find((x) => x.height_cm)?.height_cm;
-              const bmi = m.weight_kg && h ? (m.weight_kg / (h / 100) ** 2).toFixed(1).replace(".", ",") : "–";
+              const calculated = measurementWithBmi(m, rows);
+              const bmi = calculated.bmi === null ? "–" : calculated.bmi.toFixed(1).replace(".", ",");
               return <tr key={m.id} className="border-b border-mist">{[new Date(m.measured_on).toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "numeric" }), m.weight_kg ? `${String(m.weight_kg).replace(".", ",")} kg` : "–", bmi, m.waist_cm ? `${m.waist_cm} cm` : "–", m.bp_systolic ? `${m.bp_systolic}/${m.bp_diastolic ?? ""}` : "–", m.pulse ?? "–", m.source === "triage" ? "Patiënt, bij het boeken" : "Medewerker"].map((v, i) => <td key={i} className="whitespace-nowrap px-2.5 py-3">{v}</td>)}</tr>;
             })}
           </tbody>
@@ -112,7 +116,7 @@ function Medical() {
       </section>
 
       {edit === "anamnesis" && med && <AnamnesisModal id={id} med={med} onClose={() => setEdit(null)} />}
-      {edit === "measure" && <MeasureModal id={id} onClose={() => setEdit(null)} />}
+      {edit === "measure" && <MeasureModal id={id} height={rows.filter((m) => m.height_cm).at(-1)?.height_cm ?? null} onClose={() => setEdit(null)} />}
     </div>
   );
 }
@@ -132,24 +136,23 @@ function AnamnesisModal({ id, med, onClose }: { id: string; med: NonNullable<Ret
   );
 }
 
-function MeasureModal({ id, onClose }: { id: string; onClose: () => void }) {
+function MeasureModal({ id, height, onClose }: { id: string; height: number | null; onClose: () => void }) {
   const qc = useQueryClient();
-  const [f, setF] = useState({ date: new Date().toISOString().slice(0, 10), weight: "", waist: "", sys: "", dia: "", pulse: "" });
-  const n = (s: string) => (s.trim() ? Number(s.replace(",", ".")) : null);
+  const saveFn = useServerFn(saveMeasurement);
+  const [f, setF] = useState({ date: new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Amsterdam" }), weight: "", height: height === null ? "" : String(height), waist: "", sys: "", dia: "", pulse: "" });
+  const [errors, setErrors] = useState<string[]>([]);
   const save = useMutation({
-    mutationFn: async () => {
-      const r = await supabase.from("measurements").insert({ patient_id: id, measured_on: f.date, weight_kg: n(f.weight), waist_cm: n(f.waist), bp_systolic: n(f.sys), bp_diastolic: n(f.dia), pulse: n(f.pulse) });
-      if (r.error) throw r.error;
-    },
-    onSuccess: async () => { await qc.invalidateQueries({ queryKey: ["medical", id] }); toast.success("Meting toegevoegd"); onClose(); },
+    mutationFn: () => saveFn({ data: measurementSchema.parse({ patientId: id, ...f }) }),
+    onSuccess: async () => { await qc.invalidateQueries({ queryKey: ["measurements", id] }); toast.success("Meting toegevoegd"); onClose(); },
     onError: () => toast.error("Opslaan is niet gelukt"),
   });
-  const fld = (k: keyof typeof f, label: string) => <TextField label={label} inputMode="decimal" value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} />;
+  const fld = (k: keyof typeof f, label: string) => <TextField label={label} inputMode="decimal" aria-invalid={errors.includes(k)} help={errors.includes(k) ? "Vul een geldig getal in" : undefined} value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} />;
+  const submit = () => { const result = measurementSchema.safeParse({ patientId: id, ...f }); if (!result.success) { setErrors(result.error.issues.map((i) => String(i.path[0]))); return; } setErrors([]); save.mutate(); };
   return (
-    <Modal open onOpenChange={(o) => !o && onClose()} title="Meting toevoegen" footer={<div className="flex gap-2"><PillButton variant="outline" onClick={onClose}>Annuleren</PillButton><PillButton disabled={save.isPending} onClick={() => save.mutate()}>Toevoegen</PillButton></div>}>
+    <Modal open onOpenChange={(o) => !o && onClose()} title="Meting toevoegen" footer={<div className="flex gap-2"><PillButton variant="outline" onClick={onClose}>Annuleren</PillButton><PillButton disabled={save.isPending} onClick={submit}>Toevoegen</PillButton></div>}>
       <div className="grid grid-cols-2 gap-4">
         <TextField label="Datum" type="date" value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} />
-        {fld("weight", "Gewicht (kg)")}{fld("waist", "Buikomvang (cm)")}{fld("pulse", "Pols")}{fld("sys", "Bloeddruk boven")}{fld("dia", "Bloeddruk onder")}
+        {fld("height", "Lengte (cm)")}{fld("weight", "Gewicht (kg)")}{fld("waist", "Buikomvang (cm)")}{fld("pulse", "Pols")}{fld("sys", "Bloeddruk boven")}{fld("dia", "Bloeddruk onder")}
       </div>
     </Modal>
   );
