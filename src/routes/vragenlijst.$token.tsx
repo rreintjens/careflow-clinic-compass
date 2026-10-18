@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { z } from "zod";
 
 import { Logo } from "@/components/Logo";
+import { PatientFrame } from "@/components/PatientFrame";
 import { PillButton } from "@/components/PillButton";
 import { getPatientQuestionnaire, savePatientQuestionnaire } from "@/data/patient-questionnaire.functions";
 import { resumeState, type Answers, type FlowFile, type QuestionnaireDef } from "@/domain/questionnaire/engine";
@@ -108,13 +109,11 @@ function PatientQuestionnaire() {
 
 function Plain({ children, footer, progress = 1 }: { children: React.ReactNode; footer?: React.ReactNode; progress?: number }) {
   return (
-    <div className="flex min-h-screen justify-center bg-background">
-      <div className="flex min-h-screen w-full max-w-[390px] flex-col">
+    <PatientFrame>
         <header className="flex h-14 items-center justify-center"><Logo small /></header>
         <div className="h-[3px] bg-mist"><div className="h-[3px] bg-primary" style={{ width: `${Math.round(progress * 100)}%` }} /></div>
         <main className="flex-1 px-5 pb-6 pt-8">{children}</main>
         {footer && <footer className="px-5 pb-6">{footer}</footer>}
-      </div>
-    </div>
+    </PatientFrame>
   );
 }

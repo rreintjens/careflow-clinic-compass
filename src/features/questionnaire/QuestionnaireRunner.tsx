@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 
 import { Logo } from "@/components/Logo";
+import { PatientFrame } from "@/components/PatientFrame";
 import {
   flowSteps, makeCtx, itemAnswered, pageProgress, redOnPage, toggleOption, visibleItems, visiblePages,
   type Answers, type FlowFile, type Item, type Page, type QuestionnaireDef, type RedOutcome,
@@ -131,8 +132,8 @@ export function QuestionnaireRunner({
 }
 
 function Frame({ progress, onBack, children, footer, scrollRef, fullScreen }: { progress: number; onBack?: (() => void) | undefined; children: ReactNode; footer: ReactNode; scrollRef: RefObject<HTMLDivElement | null>; fullScreen: boolean }) {
-  return (
-    <div className={cn("flex flex-col bg-background", fullScreen ? "mx-auto min-h-screen w-full max-w-[390px]" : "h-[844px] w-[390px] overflow-hidden rounded-[28px] border border-line")}>
+  const card = (
+    <div className={cn("flex flex-col bg-background", fullScreen ? "w-full flex-1" : "h-[844px] w-[390px] overflow-hidden rounded-[28px] border border-line")}>
       <div className="flex h-14 items-center justify-between px-5">
         <button type="button" aria-label="Terug" onClick={onBack} disabled={!onBack} className="disabled:opacity-0"><Chevron /></button>
         <Logo small />
@@ -143,6 +144,7 @@ function Frame({ progress, onBack, children, footer, scrollRef, fullScreen }: { 
       <div className="px-5 pb-6">{footer}</div>
     </div>
   );
+  return fullScreen ? <PatientFrame>{card}</PatientFrame> : card;
 }
 
 const pill = (on: boolean) => cn("flex min-h-[50px] w-full items-center gap-3 rounded-[14px] px-4 py-3 text-left text-[15px]", on ? "border border-primary bg-teal-light" : "border border-transparent bg-sand");
