@@ -69,13 +69,30 @@ function TwoFactorPage() {
     if (clean && i < 5) refs.current[i + 1]?.focus();
   };
 
+  // The factor lookup can fail silently (dropped connection right after sign-in); recover lazily
+  // so the button never stays dead with a full code.
+  const ensureFactor = async (): Promise<string | null> => {
+    if (factorId) return factorId;
+    const { data } = await supabase.auth.mfa.listFactors();
+    const verified = data?.totp.find((f) => f.status === "verified");
+    if (verified) {
+      setFactorId(verified.id);
+      return verified.id;
+    }
+    return null;
+  };
+
   const verify = async () => {
-    if (!factorId) return;
     const code = digits.join("");
     if (code.length !== 6) return setError("Vul de code van 6 cijfers in.");
     setBusy(true);
     setError(null);
-    const { error: e } = await supabase.auth.mfa.challengeAndVerify({ factorId, code });
+    const fid = await ensureFactor().catch(() => null);
+    if (!fid) {
+      setBusy(false);
+      return setError("De verbinding met de tweestapsverificatie is weggevallen. Ververs de pagina en probeer het opnieuw.");
+    }
+    const { error: e } = await supabase.auth.mfa.challengeAndVerify({ factorId: fid, code });
     if (e) {
       setBusy(false);
       setDigits(Array(6).fill(""));
@@ -126,7 +143,7 @@ function TwoFactorPage() {
           ))}
         </div>
         {error && <p role="alert" className="rounded-[14px] bg-warning-bg px-4 py-3 text-sm text-warning">{error}</p>}
-        <PillButton size="lg" block onClick={verify} disabled={busy || !factorId}>Inloggen</PillButton>
+        <PillButton size="lg" block onClick={verify} disabled={busy || digits.join("").length !== 6}>Inloggen</PillButton>
         <div className="flex justify-between text-[13px]">
           <button type="button" onClick={notInTest} className="text-primary underline underline-offset-2">Stuur een sms-code</button>
           <button type="button" onClick={notInTest} className="text-primary underline underline-offset-2">Herstelcode gebruiken</button>
