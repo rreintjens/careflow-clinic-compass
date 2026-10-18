@@ -45,11 +45,14 @@ export const getPatientQuestionnaire = createServerFn({ method: "POST" })
     const triage = sets.data?.find((r) => r.questionnaire_key === x.triageKey);
     const def = x.version.definition as unknown as QuestionnaireDef;
     const prefill = triage ? prefillAnswers(def, triage.answers as Answers) : {};
+    const start = new Date(appt.starts_at);
+    const dag = start.toLocaleDateString("nl-NL", { weekday: "long", day: "numeric", month: "long", timeZone: tenant.time_zone });
+    const tijd = start.toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: tenant.time_zone });
     return {
       found: true as const, ui,
       definition: x.version.definition, flow: x.rawFlow, status: own?.status ?? "new", completedAt: own?.completed_at ?? null, canEdit: editable(appt.starts_at),
       answers: JSON.parse(JSON.stringify({ ...prefill, ...((own?.answers ?? {}) as Answers) })) as import("@/integrations/supabase/types").Json,
-      vars: { voornaam: patient.data?.first_name ?? "", behandelaar_voornaam: pr.data?.first_name ?? "" },
+      vars: { voornaam: patient.data?.first_name ?? "", behandelaar_voornaam: pr.data?.first_name ?? "", dag, tijd },
     };
   });
 
