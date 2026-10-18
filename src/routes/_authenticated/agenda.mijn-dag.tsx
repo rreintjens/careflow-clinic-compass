@@ -4,13 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 
 import { PillButton } from "@/components/PillButton";
-import { SegmentedControl } from "@/components/SegmentedControl";
+import { PageHeader } from "@/components/PageHeader";
 import { Select } from "@/components/Select";
 import { agendaApptsQuery, agendaRefQuery } from "@/data/agenda";
 import { daySegments, hourRange, nowAndNext } from "@/domain/agenda";
 import type { SlotBlock, SlotException } from "@/domain/slots";
 import { fmtTime } from "@/domain/slots";
 import { appointmentAnswersQuery, PatientCard, signalsOf } from "@/features/agenda/PatientCard";
+import { AgendaToolbar } from "@/features/agenda/AgendaToolbar";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -77,20 +78,16 @@ function Page() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <h1 className="text-[28px] font-semibold tracking-tight">Mijn dag</h1>
-          {prac && <span className="whitespace-nowrap rounded-full bg-teal-light px-3 py-1 text-[12px] text-primary">{prac.first_name} {prac.last_name}</span>}
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          {!me && ref && <Select label="Behandelaar" className="w-[220px] [&>label]:sr-only" value={pid} onChange={(v) => go({ behandelaar: v, afspraak: undefined })} options={ref.practitioners.map((p) => ({ value: p.id, label: `${p.first_name} ${p.last_name}` }))} />}
+      <PageHeader className="min-h-11" title="Mijn dag" actions={prac && <span className="whitespace-nowrap rounded-full bg-teal-light px-3 py-1 text-[12px] text-primary">{prac.first_name} {prac.last_name}</span>} />
+      <AgendaToolbar value="mijn"
+        onChange={(v) => v !== "mijn" && void navigate({ to: "/agenda", search: { datum: s.datum, weergave: v === "week" ? "week" : undefined, behandelaar: pid } })}
+        filters={<Select label="Behandelaar" className="w-[230px] [&>label]:sr-only" value={pid} onChange={(v) => go({ behandelaar: v, afspraak: undefined })} options={(ref?.practitioners ?? []).map((p) => ({ value: p.id, label: `${p.first_name} ${p.last_name}` }))} />}
+        dateControls={<>
           <button type="button" aria-label="Vorige dag" onClick={() => go({ datum: shift(date, -1), afspraak: undefined })} className="flex size-9 items-center justify-center rounded-full bg-sand"><img src="/ui-icons/pijl-links.svg" alt="" className="size-4" /></button>
           <span className="whitespace-nowrap text-[15px] font-semibold">{label.charAt(0).toUpperCase() + label.slice(1)}</span>
           <button type="button" aria-label="Volgende dag" onClick={() => go({ datum: shift(date, 1), afspraak: undefined })} className="flex size-9 items-center justify-center rounded-full bg-sand"><img src="/ui-icons/pijl-rechts.svg" alt="" className="size-4" /></button>
-          <SegmentedControl label="Weergave" value="mijn" onChange={(v) => v !== "mijn" && void navigate({ to: "/agenda", search: { datum: s.datum, weergave: v === "week" ? "week" : undefined, behandelaar: v === "week" ? pid : undefined } })}
-            options={[{ value: "dag", label: "Dag" }, { value: "week", label: "Week" }, { value: "mijn", label: "Mijn dag" }]} />
-        </div>
-      </div>
+          {!isToday && <PillButton variant="ghost" size="sm" onClick={() => go({ datum: undefined, afspraak: undefined })}>Vandaag</PillButton>}
+        </>} />
 
       {nn && (nn.current || nn.next) && (
         <div className="grid grid-cols-2 gap-4">

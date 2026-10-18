@@ -6,13 +6,13 @@ import { z } from "zod";
 import { Avatar } from "@/components/Avatar";
 import { PageHeader } from "@/components/PageHeader";
 import { PillButton } from "@/components/PillButton";
-import { SegmentedControl } from "@/components/SegmentedControl";
 import { Select } from "@/components/Select";
 import { agendaApptsQuery, agendaRefQuery } from "@/data/agenda";
 import { daySegments, freePlaces, hourRange, weekStart, type Segment } from "@/domain/agenda";
 import type { SlotBlock, SlotException } from "@/domain/slots";
 import { fmtTime } from "@/domain/slots";
 import { PatientCard } from "@/features/agenda/PatientCard";
+import { AgendaToolbar } from "@/features/agenda/AgendaToolbar";
 import { NewAppointmentModal } from "@/features/agenda/NewAppointmentModal";
 import { cn } from "@/lib/utils";
 
@@ -97,23 +97,22 @@ function Page() {
         <Link to="/agenda/rooster"><PillButton variant="outline">Rooster bewerken</PillButton></Link>
         <PillButton onClick={() => setNewOpen(true)} disabled={!ref}><img src="/ui-icons/plus.svg" alt="" className="size-4 invert" />Afspraak maken</PillButton>
       </>} />
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
+      <AgendaToolbar value={week ? "week" : "dag"}
+        onChange={(v) => v === "mijn" ? void navigate({ to: "/agenda/mijn-dag", search: { datum: s.datum, behandelaar: practitionerId } }) : go({ weergave: v === "week" ? "week" : undefined, afspraak: undefined })}
+        dateControls={<>
           <button type="button" aria-label="Vorige" onClick={() => go({ datum: shift(date, -step), afspraak: undefined })} className="flex size-9 items-center justify-center rounded-full bg-sand"><img src="/ui-icons/pijl-links.svg" alt="" className="size-4" /></button>
           <span className="whitespace-nowrap text-[15px] font-semibold">{label}</span>
           <button type="button" aria-label="Volgende" onClick={() => go({ datum: shift(date, step), afspraak: undefined })} className="flex size-9 items-center justify-center rounded-full bg-sand"><img src="/ui-icons/pijl-rechts.svg" alt="" className="size-4" /></button>
           {!days.includes(today()) && <button type="button" onClick={() => go({ datum: undefined })} className="text-[14px] text-primary underline">Vandaag</button>}
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
+        </>}
+        filters={<>
           <Select label="Behandelaar" className="w-[230px] [&>label]:sr-only" value={practitionerId ?? "all"} onChange={(v) => go({ behandelaar: v === "all" ? undefined : v })}
             options={[...(week ? [] : [{ value: "all", label: "Alle behandelaars" }]), ...(ref?.practitioners ?? []).map((p) => ({ value: p.id, label: `${p.first_name} ${p.last_name}` }))]} />
-          <SegmentedControl label="Weergave" value={week ? "week" : "dag"} onChange={(v) => v === "mijn" ? void navigate({ to: "/agenda/mijn-dag", search: { datum: s.datum } }) : go({ weergave: v === "week" ? "week" : undefined, afspraak: undefined })} options={[{ value: "dag", label: "Dag" }, { value: "week", label: "Week" }, { value: "mijn", label: "Mijn dag" }]} />
           <Select label="Locatie" className="w-[190px] [&>label]:sr-only" value={s.locatie ?? "all"} onChange={(v) => go({ locatie: v === "all" ? undefined : v })}
             options={[{ value: "all", label: "Alle locaties" }, ...(ref?.locations ?? []).map((l) => ({ value: l.id, label: l.name }))]} />
           {!week && <Select label="Categorie" className="w-[200px] [&>label]:sr-only" value={s.categorie ?? "all"} onChange={(v) => go({ categorie: v === "all" ? undefined : v })}
             options={[{ value: "all", label: "Alle behandelingen" }, ...topCats.map((c) => ({ value: c.id, label: c.name_nl }))]} />}
-        </div>
-      </div>
+        </>} />
       <div className="flex flex-wrap gap-6 text-[13px]">
         <Legend cls="bg-teal-light" label="Online beschikbaar" /><Legend cls="bg-sand" label="In de kliniek" /><Legend cls="hatch" label={week ? "Geblokkeerd of vrij" : "Geblokkeerd"} /><Legend cls="bg-background ring-1 ring-mist" label="Afspraak" />
       </div>
@@ -132,10 +131,10 @@ function Page() {
               {view.cols.map((c) => week
                 ? <p key={c.key} className={cn("px-2 pb-3 text-[14px]", c.today && "font-semibold text-primary")}>{c.title}</p>
                 : (
-                  <div key={c.key} className="flex items-center gap-3 px-2 pb-3">
+                  <Link key={c.key} to="/agenda/mijn-dag" search={{ datum: date, behandelaar: c.key }} aria-label={`Bekijk de dag van ${c.title}`} className="flex items-center gap-3 rounded-[12px] px-2 pb-3 text-left transition-colors hover:bg-teal-light focus-visible:outline-2 focus-visible:outline-primary">
                     <Avatar path={c.photo ?? null} size={36} />
                     <div className="min-w-0"><p className="whitespace-nowrap text-[14px] font-semibold">{c.title}</p><p className="whitespace-nowrap text-[12px] text-muted-foreground">{c.sub}</p></div>
-                  </div>
+                  </Link>
                 ))}
               <div className="relative" style={{ height: (view.range[1] - view.range[0]) * HOUR }}>
                 {Array.from({ length: view.range[1] - view.range[0] + 1 }, (_, i) => <span key={i} className="absolute right-2 -translate-y-1/2 text-[12px] text-muted-foreground" style={{ top: i * HOUR }}>{fmtTime((view.range[0] + i) * 60)}</span>)}
