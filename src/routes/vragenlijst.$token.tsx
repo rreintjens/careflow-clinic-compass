@@ -61,7 +61,7 @@ function PatientQuestionnaire() {
     return (
       <Plain progress={total ? answered / total : 0} footer={<PillButton size="lg" className="w-full" onClick={() => { setStartPage(resume.nextPageId ?? undefined); setEditing(true); }}>{tx("mq_resume_button", { pagina_titel: nextTitle })}</PillButton>}>
         <p className="mb-2 text-[13px] font-medium text-primary">{tx("mq_label")}</p>
-        <h1 className="text-[26px] font-semibold leading-[1.2] tracking-[-0.02em]">{tx("mq_resume_title")}</h1>
+        <h1 className="text-[26px] font-semibold leading-[1.2] tracking-[-0.02em]">{tx("mq_resume_title", data.vars as Record<string, string>)}</h1>
         <p className="mt-2 text-[14px] leading-[1.5] text-muted-foreground">{tx("mq_resume_body", { pagina: String(resume.pageNumber), paginas: String(resume.pageCount) })}</p>
         <div className="mt-5 flex flex-col gap-2">
           {resume.pages.map((p) => {
@@ -77,7 +77,7 @@ function PatientQuestionnaire() {
             );
           })}
         </div>
-        <p className="mt-5 text-[13px] leading-[1.5] text-muted-foreground">{tx("mq_resume_consult")}</p>
+        <p className="mt-5 text-[13px] leading-[1.5] text-muted-foreground">{tx("mq_resume_consult", data.vars as Record<string, string>)}</p>
       </Plain>
     );
   }
