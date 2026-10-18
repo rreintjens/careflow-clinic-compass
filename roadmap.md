@@ -30,4 +30,4 @@ Owner asked to continue through all phases without pausing for confirmation.
 - [x] Questionnaire runner: pressing the button with missing/invalid answers highlights them and scrolls to the first (owner request)
 - [x] Vragenlijst: volgende pagina begint bovenaan
 - [x] Vragenlijstbouwer: vragenpagina (groep) verslepen en inklappen
-- [ ] Behandelingen afvinken in scherm uit screenshot 02.02.57
+- [x] Behandelingen afvinken in behandelaar-modal
