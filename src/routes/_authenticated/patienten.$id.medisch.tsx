@@ -1,7 +1,152 @@
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { toast } from "sonner";
 
-export const Route = createFileRoute("/_authenticated/patienten/$id/medisch")({ component: Tab });
+import { TextArea, TextField } from "@/components/Field";
+import { Modal } from "@/components/Modal";
+import { PillButton } from "@/components/PillButton";
+import { dossierQuery } from "@/data/patients";
+import type { Item, QuestionnaireDef } from "@/domain/questionnaire/engine";
+import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 
-function Tab() {
-  return <section className="rounded-[20px] bg-sand p-6 text-[14px] text-muted-foreground">Medisch: volgt in de volgende stap.</section>;
+export const Route = createFileRoute("/_authenticated/patienten/$id/medisch")({ component: Medical });
+
+type Sig = { item: string };
+const fmtDate = (s: string) => new Date(s).toLocaleDateString("nl-NL", { day: "numeric", month: "long", timeZone: "Europe/Amsterdam" });
+
+/** Display value of one stored answer, following the item type. */
+function show(it: Item, v: unknown): string {
+  if (v === undefined || v === null || v === "") return "";
+  if (Array.isArray(v)) return v.join(", ");
+  if (typeof v === "boolean") return v ? "Ja" : "Nee";
+  if (typeof v === "object") return Object.entries(v as Record<string, unknown>).map(([k, x]) => `${x}${it.fields?.[k] ? ` ${k.replace(/^.*_/, "")}` : ""}`).join(", ");
+  if (it.type === "date_segmented" && typeof v === "string") return v.split("-").reverse().join("-");
+  return `${String(v)}${it.unit ? ` ${it.unit}` : ""}`;
+}
+
+function useMedical(id: string) {
+  return useQuery({
+    queryKey: ["medical", id],
+    queryFn: async () => {
+      const d = (await supabase.from("anamnesis").select("fields").eq("patient_id", id).maybeSingle()).data;
+      const m = (await supabase.from("measurements").select("*").eq("patient_id", id).order("measured_on")).data ?? [];
+      const f = (await supabase.from("option_lists").select("value, label_nl").eq("list_key", "anamnesis_fields").order("sort")).data ?? [];
+      return { anamnesis: (d?.fields ?? {}) as Record<string, string>, measurements: m, fields: f };
+    },
+  });
+}
+
+function Medical() {
+  const { id } = Route.useParams();
+  const d = useSuspenseQuery(dossierQuery(id)).data;
+  const versionIds = [...new Set(d.sets.map((s) => s.version_id).filter(Boolean))] as string[];
+  const { data: defs = {} } = useQuery({
+    queryKey: ["qdefs", versionIds],
+    queryFn: async () => Object.fromEntries(((await supabase.from("questionnaire_versions").select("id, definition").in("id", versionIds)).data ?? []).map((v) => [v.id, v.definition as unknown as QuestionnaireDef])),
+    enabled: versionIds.length > 0,
+  });
+  const { data: med } = useMedical(id);
+  const [tab, setTab] = useState(0);
+  const [edit, setEdit] = useState<"anamnesis" | "measure" | null>(null);
+  const sections = ["intake", "anamnese", "metingen"];
+  const go = (i: number) => { setTab(i); document.getElementById(sections[i] ?? "")?.scrollIntoView({ behavior: "smooth" }); };
+
+  const intake = d.sets.filter((s) => s.status === "completed").slice().reverse();
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex gap-2">{["1 Intake: wat de patiënt invulde", "2 Anamnese: aanvullen", "3 Metingen"].map((l, i) => <button key={l} type="button" onClick={() => go(i)} className={cn("whitespace-nowrap rounded-full px-3.5 py-2 text-[13px]", tab === i ? "bg-primary text-primary-foreground" : "bg-sand")}>{l}</button>)}</div>
+
+      <section id="intake" className="rounded-[20px] p-6 ring-1 ring-mist">
+        <h3 className="text-[17px] font-semibold">Intake: triage en medische vragenlijst</h3>
+        <p className="text-[13px] text-muted-foreground">Alle antwoorden zoals de patiënt ze gaf; signalen zijn gemarkeerd</p>
+        {intake.length === 0 && <p className="mt-4 text-[14px] text-muted-foreground">Nog geen ingevulde vragenlijst.</p>}
+        {intake.map((s) => {
+          const def = s.version_id ? defs[s.version_id] : undefined;
+          const ans = (s.answers ?? {}) as Record<string, unknown>;
+          const sig = new Set((Array.isArray(s.signals) ? (s.signals as Sig[]) : []).map((x) => x.item));
+          const items = (def?.pages ?? []).flatMap((p) => p.items ?? []).filter((it) => it.type !== "answer_summary" && it.type !== "checkbox_required" && show(it, ans[it.id]) !== "");
+          return (
+            <div key={s.id} className="mt-5">
+              <p className="mb-2 text-[14px] font-semibold">{def?.name ?? s.questionnaire_key}, {fmtDate(s.completed_at ?? s.created_at)}</p>
+              <dl className="grid grid-cols-2 gap-x-6">
+                {items.map((it) => (
+                  <div key={it.id} className="grid grid-cols-[200px_1fr] gap-4 border-b border-mist py-2.5 text-[13px]">
+                    <dt className="text-muted-foreground">{it.text}</dt>
+                    <dd>{show(it, ans[it.id])}{sig.has(it.id) && <span className="ml-2 whitespace-nowrap rounded-full bg-signal px-2.5 py-0.5 text-[11px] ring-1 ring-signal-border">signaal</span>}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          );
+        })}
+      </section>
+
+      <section id="anamnese" className="rounded-[20px] p-6 ring-1 ring-mist">
+        <div className="flex items-start justify-between"><div><h3 className="text-[17px] font-semibold">Anamnese</h3><p className="text-[13px] text-muted-foreground">Vaste velden: vult de arts in of aan tijdens het consult</p></div><PillButton variant="outline" onClick={() => setEdit("anamnesis")}>Wijzig</PillButton></div>
+        <div className="mt-5 grid grid-cols-2 gap-4">
+          {med?.fields.map((f) => <div key={f.value}><p className="mb-1.5 text-[13px] font-medium">{f.label_nl}</p><div className="min-h-[60px] whitespace-pre-wrap rounded-[14px] bg-sand p-3.5 text-[14px]">{med.anamnesis[f.value] ?? ""}</div></div>)}
+        </div>
+      </section>
+
+      <section id="metingen" className="rounded-[20px] p-6 ring-1 ring-mist">
+        <h3 className="text-[17px] font-semibold">Metingen en lichamelijk onderzoek</h3>
+        <p className="text-[13px] text-muted-foreground">Per consult; de eerste rij komt uit de triage</p>
+        <table className="mt-4 w-full text-[13px]">
+          <thead><tr className="border-b border-mist text-left text-[12px] text-muted-foreground">{["Datum", "Gewicht", "BMI", "Buikomvang", "Bloeddruk", "Pols", "Door"].map((h) => <th key={h} className="whitespace-nowrap px-2.5 py-2.5 font-normal">{h}</th>)}</tr></thead>
+          <tbody>
+            {(med?.measurements ?? []).map((m) => {
+              const h = m.height_cm ?? med?.measurements.find((x) => x.height_cm)?.height_cm;
+              const bmi = m.weight_kg && h ? (m.weight_kg / (h / 100) ** 2).toFixed(1).replace(".", ",") : "–";
+              return <tr key={m.id} className="border-b border-mist">{[new Date(m.measured_on).toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "numeric" }), m.weight_kg ? `${String(m.weight_kg).replace(".", ",")} kg` : "–", bmi, m.waist_cm ? `${m.waist_cm} cm` : "–", m.bp_systolic ? `${m.bp_systolic}/${m.bp_diastolic ?? ""}` : "–", m.pulse ?? "–", m.source === "triage" ? "Patiënt, bij het boeken" : "Medewerker"].map((v, i) => <td key={i} className="whitespace-nowrap px-2.5 py-3">{v}</td>)}</tr>;
+            })}
+          </tbody>
+        </table>
+        <PillButton variant="outline" className="mt-4" onClick={() => setEdit("measure")}>Meting toevoegen</PillButton>
+        {(med?.measurements.length ?? 0) < 2 && <p className="mt-2 text-[12px] text-muted-foreground">Hier komt de grafiek van het gewichtsverloop zodra er twee metingen zijn.</p>}
+      </section>
+
+      {edit === "anamnesis" && med && <AnamnesisModal id={id} med={med} onClose={() => setEdit(null)} />}
+      {edit === "measure" && <MeasureModal id={id} onClose={() => setEdit(null)} />}
+    </div>
+  );
+}
+
+function AnamnesisModal({ id, med, onClose }: { id: string; med: NonNullable<ReturnType<typeof useMedical>["data"]>; onClose: () => void }) {
+  const qc = useQueryClient();
+  const [v, setV] = useState(med.anamnesis);
+  const save = useMutation({
+    mutationFn: async () => { const r = await supabase.from("anamnesis").upsert({ patient_id: id, fields: v }); if (r.error) throw r.error; },
+    onSuccess: async () => { await qc.invalidateQueries({ queryKey: ["medical", id] }); toast.success("Opgeslagen"); onClose(); },
+    onError: () => toast.error("Opslaan is niet gelukt"),
+  });
+  return (
+    <Modal open width="lg" onOpenChange={(o) => !o && onClose()} title="Anamnese wijzigen" footer={<div className="flex gap-2"><PillButton variant="outline" onClick={onClose}>Annuleren</PillButton><PillButton disabled={save.isPending} onClick={() => save.mutate()}>Opslaan</PillButton></div>}>
+      <div className="grid grid-cols-2 gap-4">{med.fields.map((f) => <TextArea key={f.value} label={f.label_nl} value={v[f.value] ?? ""} onChange={(e) => setV({ ...v, [f.value]: e.target.value })} />)}</div>
+    </Modal>
+  );
+}
+
+function MeasureModal({ id, onClose }: { id: string; onClose: () => void }) {
+  const qc = useQueryClient();
+  const [f, setF] = useState({ date: new Date().toISOString().slice(0, 10), weight: "", waist: "", sys: "", dia: "", pulse: "" });
+  const n = (s: string) => (s.trim() ? Number(s.replace(",", ".")) : null);
+  const save = useMutation({
+    mutationFn: async () => {
+      const r = await supabase.from("measurements").insert({ patient_id: id, measured_on: f.date, weight_kg: n(f.weight), waist_cm: n(f.waist), bp_systolic: n(f.sys), bp_diastolic: n(f.dia), pulse: n(f.pulse) });
+      if (r.error) throw r.error;
+    },
+    onSuccess: async () => { await qc.invalidateQueries({ queryKey: ["medical", id] }); toast.success("Meting toegevoegd"); onClose(); },
+    onError: () => toast.error("Opslaan is niet gelukt"),
+  });
+  const fld = (k: keyof typeof f, label: string) => <TextField label={label} inputMode="decimal" value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} />;
+  return (
+    <Modal open onOpenChange={(o) => !o && onClose()} title="Meting toevoegen" footer={<div className="flex gap-2"><PillButton variant="outline" onClick={onClose}>Annuleren</PillButton><PillButton disabled={save.isPending} onClick={() => save.mutate()}>Toevoegen</PillButton></div>}>
+      <div className="grid grid-cols-2 gap-4">
+        <TextField label="Datum" type="date" value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} />
+        {fld("weight", "Gewicht (kg)")}{fld("waist", "Buikomvang (cm)")}{fld("pulse", "Pols")}{fld("sys", "Bloeddruk boven")}{fld("dia", "Bloeddruk onder")}
+      </div>
+    </Modal>
+  );
 }
