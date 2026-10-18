@@ -1119,6 +1119,88 @@ export type Database = {
         }
         Relationships: []
       }
+      mail_templates: {
+        Row: {
+          blocks: Json
+          category_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string
+          id: string
+          moment: string
+          name: string
+          scope: string
+          sort: number
+          status: string
+          subject_en: string
+          subject_nl: string
+          tenant_id: string
+          treatment_id: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          blocks?: Json
+          category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          id?: string
+          moment: string
+          name: string
+          scope?: string
+          sort?: number
+          status?: string
+          subject_en?: string
+          subject_nl?: string
+          tenant_id?: string
+          treatment_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          blocks?: Json
+          category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          id?: string
+          moment?: string
+          name?: string
+          scope?: string
+          sort?: number
+          status?: string
+          subject_en?: string
+          subject_nl?: string
+          tenant_id?: string
+          treatment_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mail_templates_tenant_id_category_id_fkey"
+            columns: ["tenant_id", "category_id"]
+            isOneToOne: false
+            referencedRelation: "treatment_categories"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "mail_templates_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mail_templates_tenant_id_treatment_id_fkey"
+            columns: ["tenant_id", "treatment_id"]
+            isOneToOne: false
+            referencedRelation: "treatments"
+            referencedColumns: ["tenant_id", "id"]
+          },
+        ]
+      }
       measurements: {
         Row: {
           appointment_id: string | null

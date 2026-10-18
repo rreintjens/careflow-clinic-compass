@@ -127,6 +127,13 @@
       "when": 1792282898872,
       "tag": "0017_standalone_consult_details",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1792283672439,
+      "tag": "0018_mail_template_management",
+      "breakpoints": true
     }
   ]
 }
