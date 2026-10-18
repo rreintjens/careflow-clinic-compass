@@ -34,7 +34,7 @@ export function renderMailDocument(input: MailDocumentInput) {
     const inIntro = index < introEnd;
     let style = panel ? `padding:22px 24px;background:${theme.panel};color:${ink};border-radius:20px` : inIntro ? `padding:0 0 18px;color:${ink}` : block.type === "text" ? `padding:0 10px 18px;color:${theme.muted};font-size:11px` : `padding:26px 24px;background:${theme.surface};color:${ink};border-radius:20px`;
     if (block.type === "image") {
-      if (!imageUrl) return "";
+      if (!imageUrl) return { block, row: "" };
       content = `<img src="${imageUrl}" alt="${escapeMailHtml(interpolate(translated(block.title_nl, block.title_en, language), values))}" width="568" style="display:block;width:100%;height:auto;max-height:240px;object-fit:cover;border-radius:20px 20px 0 0">`;
       style = "padding:0";
     } else if (block.type === "divider") {
