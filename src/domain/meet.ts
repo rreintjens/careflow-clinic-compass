@@ -48,7 +48,7 @@ export function meetCode(seed: string): string {
   for (let i = 0; i < 10; i++) {
     h = Math.imul(h ^ (h >>> 13), 0x5bd1e995) >>> 0;
     h = (h ^ (h >>> 15)) >>> 0;
-    out.push(LETTERS[h % LETTERS.length]);
+    out.push(LETTERS.charAt(h % LETTERS.length));
   }
   return `${out.slice(0, 3).join("")}-${out.slice(3, 7).join("")}-${out.slice(7, 10).join("")}`;
 }
