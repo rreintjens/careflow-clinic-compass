@@ -6,6 +6,7 @@ import { Modal } from "@/components/Modal";
 import { PillButton } from "@/components/PillButton";
 import { Select } from "@/components/Select";
 import { patientSearchQuery, type AgendaRef } from "@/data/agenda";
+import type { Dossier } from "@/data/patients";
 import { createStaffAppointment, getStaffSlots } from "@/data/agenda.functions";
 import { fmtTime } from "@/domain/slots";
 import { cn } from "@/lib/utils";
@@ -15,12 +16,12 @@ const initials = (a: string, b: string) => `${a.charAt(0)}${b.charAt(0)}`.toUppe
 const dmy = (d: string | null) => (d ? d.split("-").reverse().join("-") : "");
 
 /** "Afspraak maken" from the agenda: choose patient, treatment, way, practitioner, location and a free moment. */
-export function NewAppointmentModal({ open, onOpenChange, data, onPickInAgenda }: { open: boolean; onOpenChange: (o: boolean) => void; data: Ref; onPickInAgenda: (practitionerId: string) => void }) {
+export function NewAppointmentModal({ open, onOpenChange, data, onPickInAgenda, fixedPatient }: { open: boolean; onOpenChange: (o: boolean) => void; data: Ref; onPickInAgenda: (practitionerId: string) => void; fixedPatient?: NonNullable<Dossier["patient"]> }) {
   const qc = useQueryClient();
   const slotsFn = useServerFn(getStaffSlots);
   const create = useServerFn(createStaffAppointment);
   const [q, setQ] = useState("");
-  const [patient, setPatient] = useState<string | null>(null);
+  const [patient, setPatient] = useState<string | null>(fixedPatient?.id ?? null);
   const [treatment, setTreatment] = useState("");
   const [how, setHow] = useState<"online" | "clinic">("online");
   const [prac, setPrac] = useState("");
@@ -30,7 +31,7 @@ export function NewAppointmentModal({ open, onOpenChange, data, onPickInAgenda }
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const { data: hits = [] } = useQuery(patientSearchQuery(q));
+  const { data: hits = [] } = useQuery({ ...patientSearchQuery(q), enabled: !fixedPatient && q.trim().length >= 2 });
 
   const locKind = (id: string) => data.locations.find((l) => l.id === id)?.kind;
   const treatLocs = useMemo(() => new Set(data.treatLoc.filter((x) => x.treatment_id === treatment).map((x) => x.location_id)), [data, treatment]);
@@ -49,14 +50,14 @@ export function NewAppointmentModal({ open, onOpenChange, data, onPickInAgenda }
   });
   useEffect(() => setSlot(slots[0] ?? null), [slots]);
 
-  const reset = () => { setQ(""); setPatient(null); setTreatment(""); setSlot(null); setReason(""); setError(null); };
+  const reset = () => { setQ(""); setPatient(fixedPatient?.id ?? null); setTreatment(""); setSlot(null); setReason(""); setError(null); };
   const submit = async () => {
     if (!patient || !treatment || !loc || !prac || !slot) { setError("Kies een patiënt, behandeling, behandelaar en moment."); return; }
     setBusy(true);
     const r = await create({ data: { patientId: patient, treatmentId: treatment, locationId: loc, practitionerId: prac, date: slot.date, start: slot.start, notify, reason: reason || null } });
     setBusy(false);
     if (!r.ok) { setError(r.reason === "taken" ? "Dit moment is net bezet. Kies een ander moment." : "Inplannen is niet gelukt."); void qc.invalidateQueries({ queryKey: ["staff-slots"] }); return; }
-    await qc.invalidateQueries({ queryKey: ["agenda-appts"] });
+    await Promise.all([qc.invalidateQueries({ queryKey: ["agenda-appts"] }), qc.invalidateQueries({ queryKey: ["dossier", patient] }), qc.invalidateQueries({ queryKey: ["patient-list"] })]);
     reset();
     onOpenChange(false);
   };
@@ -69,10 +70,10 @@ export function NewAppointmentModal({ open, onOpenChange, data, onPickInAgenda }
   const chosen = hits.find((h) => h.id === patient);
 
   return (
-    <Modal open={open} onOpenChange={(o) => { if (!o) reset(); onOpenChange(o); }} title="Afspraak maken" description="Door customer care, vanuit de agenda" width="lg"
+    <Modal open={open} onOpenChange={(o) => { if (!o) reset(); onOpenChange(o); }} title={fixedPatient ? "Afspraak inplannen" : "Afspraak maken"} width="lg"
       footer={<><PillButton variant="outline" onClick={() => onOpenChange(false)}>Annuleren</PillButton><PillButton onClick={() => void submit()} disabled={busy}>Afspraak inplannen</PillButton></>}>
       <div className="flex flex-col gap-5">
-        <div className="flex flex-col gap-2">
+        {fixedPatient ? <p className="text-[14px] font-medium">{fixedPatient.first_name} {fixedPatient.last_name} · {fixedPatient.patient_number}</p> : <div className="flex flex-col gap-2">
           <label htmlFor="who" className="text-[13px] font-medium">Voor wie</label>
           <div className="flex h-11 items-center gap-3 rounded-full bg-sand px-4">
             <img src="/ui-icons/zoeken.svg" alt="" className="size-4" />
@@ -85,7 +86,7 @@ export function NewAppointmentModal({ open, onOpenChange, data, onPickInAgenda }
               {patient === h.id && <span className="text-[12px] text-primary">Gekozen</span>}
             </button>
           ))}
-        </div>
+        </div>}
         <div className="grid grid-cols-2 gap-4">
           <Select label="Behandeling" value={treatment} onChange={setTreatment} options={data.treatments.map((t) => ({ value: t.id, label: `${t.name_nl}, ${t.duration_min} min` }))} />
           <Select label="Hoe" value={how} onChange={(v) => setHow(v as "online" | "clinic")} disabled={!treatment}
