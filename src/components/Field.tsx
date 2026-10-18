@@ -112,15 +112,14 @@ export function Checkbox({ checked, onChange, label, disabled }: { checked: bool
       type="button"
       role="checkbox"
       aria-checked={checked}
-      aria-label={label}
       disabled={disabled}
       onClick={() => onChange(!checked)}
-      className={cn(
-        "inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors disabled:opacity-50",
-        checked ? "border-primary bg-primary text-primary-foreground" : "border-mist bg-background",
-      )}
+      className="inline-flex items-center gap-2.5 text-left text-[14px] transition-colors disabled:opacity-50"
     >
-      {checked && <CheckIcon size={12} />}
+      <span className={cn("flex h-5 w-5 shrink-0 items-center justify-center rounded-md border", checked ? "border-primary bg-primary text-primary-foreground" : "border-mist bg-background")}>
+        {checked && <CheckIcon size={12} />}
+      </span>
+      {label}
     </button>
   );
 }

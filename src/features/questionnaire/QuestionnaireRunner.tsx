@@ -96,7 +96,19 @@ export function QuestionnaireRunner({
         <button type="button" onClick={next} className="h-[54px] w-full rounded-full bg-primary text-[17px] font-medium text-primary-foreground disabled:opacity-50">{fill(page.button, vars) || t("next")}</button>
       </>}>
       {(page.section || (!isQuestions && page.bullets)) && <div className="mb-2 text-[13px] text-primary">{page.section ?? t("section_intro")}</div>}
-      {page.icon && <img src={`/ui-icons/${page.icon}.svg`} alt="" className="mb-4 size-12 text-primary" />}
+      {page.icon && (
+        <div className="mb-5 flex size-16 items-center justify-center rounded-full bg-teal-light">
+          <span
+            aria-hidden="true"
+            className="size-8 bg-primary"
+            style={{
+              WebkitMaskImage: `url(/ui-icons/${page.icon}.svg)`, maskImage: `url(/ui-icons/${page.icon}.svg)`,
+              WebkitMaskSize: "contain", maskSize: "contain", WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat",
+              WebkitMaskPosition: "center", maskPosition: "center",
+            }}
+          />
+        </div>
+      )}
       {(page.title || !many) && <h1 className="text-[28px] font-semibold leading-tight">{fill(page.title ?? page.items?.[0]?.text, vars)}</h1>}
       {page.body && <p className="mt-3 text-[15px] leading-[1.6] text-muted-foreground">{fill(page.body, vars)}</p>}
       {!page.title && !many && page.items?.[0]?.help && <p className="mt-3 text-[15px] leading-[1.6] text-muted-foreground">{page.items[0].help}</p>}
