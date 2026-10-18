@@ -52,3 +52,5 @@ Owner asked to continue through all phases without pausing for confirmation.
 - [x] Behandelingen afvinken in behandelaar-modal
 - [x] UTM bij boekingslinks (owner bevestigd: automatisch vullen uit linkgegevens, geen aparte velden): kopieerbare link met utm_source (rapportagebron, anders linknaam) en utm_campaign (linknaam); boekingsflow bewaart utm_source als bron zonder link; 12 domaintests groen
 - [x] Instellingen > Algemeen: kaart Merk met tenantgegevens (naam, land, tijdzone, boekingsdomeinen, testmodus); bewerken alleen voor groepsbeheerders (RLS), overigen alleen-lezen. Talen/e-mail waren al tenant-scoped instellingen. Browsercheck open: aal2 nodig
+
+- [x] Login boven de organisaties (groepsbeheerder zonder lidmaatschap, alle merken in wisselaar, superadmin-rechten overall).
