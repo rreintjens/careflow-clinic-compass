@@ -15,7 +15,7 @@ function Overview() {
   const triage = d.sets.find((s) => s.questionnaire_key === "triage");
   const medical = d.sets.find((s) => s.questionnaire_key !== "triage");
   const a = (triage?.answers ?? {}) as Record<string, unknown>;
-  const h = Number(a.height_cm), w = Number(a.weight_kg);
+  const h = Number(a["height_cm"]), w = Number(a["weight_kg"]);
   const bmi = h && w ? (w / (h / 100) ** 2).toFixed(1).replace(".", ",") : null;
   const when = (s?: string | null) => (s ? new Date(s).toLocaleString("nl-NL", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" }) : "");
   const signals = signalsOf(d.sets);
