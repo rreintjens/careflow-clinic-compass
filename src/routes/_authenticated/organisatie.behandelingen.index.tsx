@@ -16,6 +16,7 @@ import {
 import { durationOptions } from "@/domain/organisation";
 import { offeredSummary, treatmentBookability } from "@/features/organisation/bookability";
 import { EquipmentKindsModal } from "@/features/organisation/EquipmentKindsModal";
+import { MailImagePicker } from "@/features/mail/MailImagePicker";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/organisatie/behandelingen/")({
