@@ -13,7 +13,6 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as BoekenRouteImport } from './routes/boeken'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
-import { Route as AuthenticatedPatientenRouteImport } from './routes/_authenticated/patienten'
 import { Route as AfspraakTokenRouteImport } from './routes/afspraak.$token'
 import { Route as AuthIndexRouteImport } from './routes/auth.index'
 import { Route as Auth2faRouteImport } from './routes/auth.2fa'
@@ -28,6 +27,8 @@ import { Route as AuthenticatedInstellingenGebruikersEnRollenRouteImport } from 
 import { Route as AuthenticatedInstellingenKoppelingenRouteImport } from './routes/_authenticated/instellingen.koppelingen'
 import { Route as AuthenticatedInstellingenLogboekRouteImport } from './routes/_authenticated/instellingen.logboek'
 import { Route as AuthenticatedOrganisatieApparatuurRouteImport } from './routes/_authenticated/organisatie.apparatuur'
+import { Route as AuthenticatedPatientenIndexRouteImport } from './routes/_authenticated/patienten.index'
+import { Route as AuthenticatedPatientenIdRouteImport } from './routes/_authenticated/patienten.$id'
 import { Route as AuthenticatedBoekingsflowVragenlijstenIndexRouteImport } from './routes/_authenticated/boekingsflow.vragenlijsten.index'
 import { Route as AuthenticatedBoekingsflowVragenlijstenIdRouteImport } from './routes/_authenticated/boekingsflow.vragenlijsten.$id'
 import { Route as AuthenticatedOrganisatieBehandelaarsIndexRouteImport } from './routes/_authenticated/organisatie.behandelaars.index'
@@ -36,6 +37,11 @@ import { Route as AuthenticatedOrganisatieBehandelingenIndexRouteImport } from '
 import { Route as AuthenticatedOrganisatieBehandelingenIdRouteImport } from './routes/_authenticated/organisatie.behandelingen.$id'
 import { Route as AuthenticatedOrganisatieLocatiesIndexRouteImport } from './routes/_authenticated/organisatie.locaties.index'
 import { Route as AuthenticatedOrganisatieLocatiesIdRouteImport } from './routes/_authenticated/organisatie.locaties.$id'
+import { Route as AuthenticatedPatientenIdIndexRouteImport } from './routes/_authenticated/patienten.$id.index'
+import { Route as AuthenticatedPatientenIdBehandelingRouteImport } from './routes/_authenticated/patienten.$id.behandeling'
+import { Route as AuthenticatedPatientenIdDocumentenRouteImport } from './routes/_authenticated/patienten.$id.documenten'
+import { Route as AuthenticatedPatientenIdMedischRouteImport } from './routes/_authenticated/patienten.$id.medisch'
+import { Route as AuthenticatedPatientenIdTijdlijnRouteImport } from './routes/_authenticated/patienten.$id.tijdlijn'
 import { Route as AuthenticatedBoekingsflowVragenlijstenIdTestRouteImport } from './routes/_authenticated/boekingsflow.vragenlijsten.$id_.test'
 
 const IndexRoute = IndexRouteImport.update({
@@ -55,11 +61,6 @@ const BoekenRoute = BoekenRouteImport.update({
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedPatientenRoute = AuthenticatedPatientenRouteImport.update({
-  id: '/patienten',
-  path: '/patienten',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AfspraakTokenRoute = AfspraakTokenRouteImport.update({
@@ -142,6 +143,18 @@ const AuthenticatedOrganisatieApparatuurRoute =
     path: '/organisatie/apparatuur',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedPatientenIndexRoute =
+  AuthenticatedPatientenIndexRouteImport.update({
+    id: '/patienten/',
+    path: '/patienten/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPatientenIdRoute =
+  AuthenticatedPatientenIdRouteImport.update({
+    id: '/patienten/$id',
+    path: '/patienten/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedBoekingsflowVragenlijstenIndexRoute =
   AuthenticatedBoekingsflowVragenlijstenIndexRouteImport.update({
     id: '/boekingsflow/vragenlijsten/',
@@ -190,6 +203,36 @@ const AuthenticatedOrganisatieLocatiesIdRoute =
     path: '/organisatie/locaties/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedPatientenIdIndexRoute =
+  AuthenticatedPatientenIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedPatientenIdRoute,
+  } as any)
+const AuthenticatedPatientenIdBehandelingRoute =
+  AuthenticatedPatientenIdBehandelingRouteImport.update({
+    id: '/behandeling',
+    path: '/behandeling',
+    getParentRoute: () => AuthenticatedPatientenIdRoute,
+  } as any)
+const AuthenticatedPatientenIdDocumentenRoute =
+  AuthenticatedPatientenIdDocumentenRouteImport.update({
+    id: '/documenten',
+    path: '/documenten',
+    getParentRoute: () => AuthenticatedPatientenIdRoute,
+  } as any)
+const AuthenticatedPatientenIdMedischRoute =
+  AuthenticatedPatientenIdMedischRouteImport.update({
+    id: '/medisch',
+    path: '/medisch',
+    getParentRoute: () => AuthenticatedPatientenIdRoute,
+  } as any)
+const AuthenticatedPatientenIdTijdlijnRoute =
+  AuthenticatedPatientenIdTijdlijnRouteImport.update({
+    id: '/tijdlijn',
+    path: '/tijdlijn',
+    getParentRoute: () => AuthenticatedPatientenIdRoute,
+  } as any)
 const AuthenticatedBoekingsflowVragenlijstenIdTestRoute =
   AuthenticatedBoekingsflowVragenlijstenIdTestRouteImport.update({
     id: '/boekingsflow/vragenlijsten/$id_/test',
@@ -201,7 +244,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/boeken': typeof BoekenRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/patienten': typeof AuthenticatedPatientenRoute
   '/afspraak/$token': typeof AfspraakTokenRoute
   '/auth/2fa': typeof Auth2faRoute
   '/vragenlijst/$token': typeof VragenlijstTokenRoute
@@ -215,22 +257,28 @@ export interface FileRoutesByFullPath {
   '/instellingen/koppelingen': typeof AuthenticatedInstellingenKoppelingenRoute
   '/instellingen/logboek': typeof AuthenticatedInstellingenLogboekRoute
   '/organisatie/apparatuur': typeof AuthenticatedOrganisatieApparatuurRoute
+  '/patienten/$id': typeof AuthenticatedPatientenIdRouteWithChildren
   '/agenda/': typeof AuthenticatedAgendaIndexRoute
+  '/patienten/': typeof AuthenticatedPatientenIndexRoute
   '/boekingsflow/vragenlijsten/$id': typeof AuthenticatedBoekingsflowVragenlijstenIdRoute
   '/organisatie/behandelaars/$id': typeof AuthenticatedOrganisatieBehandelaarsIdRoute
   '/organisatie/behandelingen/$id': typeof AuthenticatedOrganisatieBehandelingenIdRoute
   '/organisatie/locaties/$id': typeof AuthenticatedOrganisatieLocatiesIdRoute
+  '/patienten/$id/behandeling': typeof AuthenticatedPatientenIdBehandelingRoute
+  '/patienten/$id/documenten': typeof AuthenticatedPatientenIdDocumentenRoute
+  '/patienten/$id/medisch': typeof AuthenticatedPatientenIdMedischRoute
+  '/patienten/$id/tijdlijn': typeof AuthenticatedPatientenIdTijdlijnRoute
   '/boekingsflow/vragenlijsten/': typeof AuthenticatedBoekingsflowVragenlijstenIndexRoute
   '/organisatie/behandelaars/': typeof AuthenticatedOrganisatieBehandelaarsIndexRoute
   '/organisatie/behandelingen/': typeof AuthenticatedOrganisatieBehandelingenIndexRoute
   '/organisatie/locaties/': typeof AuthenticatedOrganisatieLocatiesIndexRoute
+  '/patienten/$id/': typeof AuthenticatedPatientenIdIndexRoute
   '/boekingsflow/vragenlijsten/$id/test': typeof AuthenticatedBoekingsflowVragenlijstenIdTestRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/boeken': typeof BoekenRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/patienten': typeof AuthenticatedPatientenRoute
   '/afspraak/$token': typeof AfspraakTokenRoute
   '/auth/2fa': typeof Auth2faRoute
   '/vragenlijst/$token': typeof VragenlijstTokenRoute
@@ -245,14 +293,20 @@ export interface FileRoutesByTo {
   '/instellingen/logboek': typeof AuthenticatedInstellingenLogboekRoute
   '/organisatie/apparatuur': typeof AuthenticatedOrganisatieApparatuurRoute
   '/agenda': typeof AuthenticatedAgendaIndexRoute
+  '/patienten': typeof AuthenticatedPatientenIndexRoute
   '/boekingsflow/vragenlijsten/$id': typeof AuthenticatedBoekingsflowVragenlijstenIdRoute
   '/organisatie/behandelaars/$id': typeof AuthenticatedOrganisatieBehandelaarsIdRoute
   '/organisatie/behandelingen/$id': typeof AuthenticatedOrganisatieBehandelingenIdRoute
   '/organisatie/locaties/$id': typeof AuthenticatedOrganisatieLocatiesIdRoute
+  '/patienten/$id/behandeling': typeof AuthenticatedPatientenIdBehandelingRoute
+  '/patienten/$id/documenten': typeof AuthenticatedPatientenIdDocumentenRoute
+  '/patienten/$id/medisch': typeof AuthenticatedPatientenIdMedischRoute
+  '/patienten/$id/tijdlijn': typeof AuthenticatedPatientenIdTijdlijnRoute
   '/boekingsflow/vragenlijsten': typeof AuthenticatedBoekingsflowVragenlijstenIndexRoute
   '/organisatie/behandelaars': typeof AuthenticatedOrganisatieBehandelaarsIndexRoute
   '/organisatie/behandelingen': typeof AuthenticatedOrganisatieBehandelingenIndexRoute
   '/organisatie/locaties': typeof AuthenticatedOrganisatieLocatiesIndexRoute
+  '/patienten/$id': typeof AuthenticatedPatientenIdIndexRoute
   '/boekingsflow/vragenlijsten/$id/test': typeof AuthenticatedBoekingsflowVragenlijstenIdTestRoute
 }
 export interface FileRoutesById {
@@ -261,7 +315,6 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/boeken': typeof BoekenRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
-  '/_authenticated/patienten': typeof AuthenticatedPatientenRoute
   '/afspraak/$token': typeof AfspraakTokenRoute
   '/auth/2fa': typeof Auth2faRoute
   '/vragenlijst/$token': typeof VragenlijstTokenRoute
@@ -275,15 +328,22 @@ export interface FileRoutesById {
   '/_authenticated/instellingen/koppelingen': typeof AuthenticatedInstellingenKoppelingenRoute
   '/_authenticated/instellingen/logboek': typeof AuthenticatedInstellingenLogboekRoute
   '/_authenticated/organisatie/apparatuur': typeof AuthenticatedOrganisatieApparatuurRoute
+  '/_authenticated/patienten/$id': typeof AuthenticatedPatientenIdRouteWithChildren
   '/_authenticated/agenda/': typeof AuthenticatedAgendaIndexRoute
+  '/_authenticated/patienten/': typeof AuthenticatedPatientenIndexRoute
   '/_authenticated/boekingsflow/vragenlijsten/$id': typeof AuthenticatedBoekingsflowVragenlijstenIdRoute
   '/_authenticated/organisatie/behandelaars/$id': typeof AuthenticatedOrganisatieBehandelaarsIdRoute
   '/_authenticated/organisatie/behandelingen/$id': typeof AuthenticatedOrganisatieBehandelingenIdRoute
   '/_authenticated/organisatie/locaties/$id': typeof AuthenticatedOrganisatieLocatiesIdRoute
+  '/_authenticated/patienten/$id/behandeling': typeof AuthenticatedPatientenIdBehandelingRoute
+  '/_authenticated/patienten/$id/documenten': typeof AuthenticatedPatientenIdDocumentenRoute
+  '/_authenticated/patienten/$id/medisch': typeof AuthenticatedPatientenIdMedischRoute
+  '/_authenticated/patienten/$id/tijdlijn': typeof AuthenticatedPatientenIdTijdlijnRoute
   '/_authenticated/boekingsflow/vragenlijsten/': typeof AuthenticatedBoekingsflowVragenlijstenIndexRoute
   '/_authenticated/organisatie/behandelaars/': typeof AuthenticatedOrganisatieBehandelaarsIndexRoute
   '/_authenticated/organisatie/behandelingen/': typeof AuthenticatedOrganisatieBehandelingenIndexRoute
   '/_authenticated/organisatie/locaties/': typeof AuthenticatedOrganisatieLocatiesIndexRoute
+  '/_authenticated/patienten/$id/': typeof AuthenticatedPatientenIdIndexRoute
   '/_authenticated/boekingsflow/vragenlijsten/$id_/test': typeof AuthenticatedBoekingsflowVragenlijstenIdTestRoute
 }
 export interface FileRouteTypes {
@@ -292,7 +352,6 @@ export interface FileRouteTypes {
     | '/'
     | '/boeken'
     | '/dashboard'
-    | '/patienten'
     | '/afspraak/$token'
     | '/auth/2fa'
     | '/vragenlijst/$token'
@@ -306,22 +365,28 @@ export interface FileRouteTypes {
     | '/instellingen/koppelingen'
     | '/instellingen/logboek'
     | '/organisatie/apparatuur'
+    | '/patienten/$id'
     | '/agenda/'
+    | '/patienten/'
     | '/boekingsflow/vragenlijsten/$id'
     | '/organisatie/behandelaars/$id'
     | '/organisatie/behandelingen/$id'
     | '/organisatie/locaties/$id'
+    | '/patienten/$id/behandeling'
+    | '/patienten/$id/documenten'
+    | '/patienten/$id/medisch'
+    | '/patienten/$id/tijdlijn'
     | '/boekingsflow/vragenlijsten/'
     | '/organisatie/behandelaars/'
     | '/organisatie/behandelingen/'
     | '/organisatie/locaties/'
+    | '/patienten/$id/'
     | '/boekingsflow/vragenlijsten/$id/test'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/boeken'
     | '/dashboard'
-    | '/patienten'
     | '/afspraak/$token'
     | '/auth/2fa'
     | '/vragenlijst/$token'
@@ -336,14 +401,20 @@ export interface FileRouteTypes {
     | '/instellingen/logboek'
     | '/organisatie/apparatuur'
     | '/agenda'
+    | '/patienten'
     | '/boekingsflow/vragenlijsten/$id'
     | '/organisatie/behandelaars/$id'
     | '/organisatie/behandelingen/$id'
     | '/organisatie/locaties/$id'
+    | '/patienten/$id/behandeling'
+    | '/patienten/$id/documenten'
+    | '/patienten/$id/medisch'
+    | '/patienten/$id/tijdlijn'
     | '/boekingsflow/vragenlijsten'
     | '/organisatie/behandelaars'
     | '/organisatie/behandelingen'
     | '/organisatie/locaties'
+    | '/patienten/$id'
     | '/boekingsflow/vragenlijsten/$id/test'
   id:
     | '__root__'
@@ -351,7 +422,6 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/boeken'
     | '/_authenticated/dashboard'
-    | '/_authenticated/patienten'
     | '/afspraak/$token'
     | '/auth/2fa'
     | '/vragenlijst/$token'
@@ -365,15 +435,22 @@ export interface FileRouteTypes {
     | '/_authenticated/instellingen/koppelingen'
     | '/_authenticated/instellingen/logboek'
     | '/_authenticated/organisatie/apparatuur'
+    | '/_authenticated/patienten/$id'
     | '/_authenticated/agenda/'
+    | '/_authenticated/patienten/'
     | '/_authenticated/boekingsflow/vragenlijsten/$id'
     | '/_authenticated/organisatie/behandelaars/$id'
     | '/_authenticated/organisatie/behandelingen/$id'
     | '/_authenticated/organisatie/locaties/$id'
+    | '/_authenticated/patienten/$id/behandeling'
+    | '/_authenticated/patienten/$id/documenten'
+    | '/_authenticated/patienten/$id/medisch'
+    | '/_authenticated/patienten/$id/tijdlijn'
     | '/_authenticated/boekingsflow/vragenlijsten/'
     | '/_authenticated/organisatie/behandelaars/'
     | '/_authenticated/organisatie/behandelingen/'
     | '/_authenticated/organisatie/locaties/'
+    | '/_authenticated/patienten/$id/'
     | '/_authenticated/boekingsflow/vragenlijsten/$id_/test'
   fileRoutesById: FileRoutesById
 }
@@ -415,13 +492,6 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/patienten': {
-      id: '/_authenticated/patienten'
-      path: '/patienten'
-      fullPath: '/patienten'
-      preLoaderRoute: typeof AuthenticatedPatientenRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/afspraak/$token': {
@@ -522,6 +592,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOrganisatieApparatuurRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/patienten/': {
+      id: '/_authenticated/patienten/'
+      path: '/patienten'
+      fullPath: '/patienten/'
+      preLoaderRoute: typeof AuthenticatedPatientenIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/patienten/$id': {
+      id: '/_authenticated/patienten/$id'
+      path: '/patienten/$id'
+      fullPath: '/patienten/$id'
+      preLoaderRoute: typeof AuthenticatedPatientenIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/boekingsflow/vragenlijsten/': {
       id: '/_authenticated/boekingsflow/vragenlijsten/'
       path: '/boekingsflow/vragenlijsten'
@@ -578,6 +662,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOrganisatieLocatiesIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/patienten/$id/': {
+      id: '/_authenticated/patienten/$id/'
+      path: '/'
+      fullPath: '/patienten/$id/'
+      preLoaderRoute: typeof AuthenticatedPatientenIdIndexRouteImport
+      parentRoute: typeof AuthenticatedPatientenIdRoute
+    }
+    '/_authenticated/patienten/$id/behandeling': {
+      id: '/_authenticated/patienten/$id/behandeling'
+      path: '/behandeling'
+      fullPath: '/patienten/$id/behandeling'
+      preLoaderRoute: typeof AuthenticatedPatientenIdBehandelingRouteImport
+      parentRoute: typeof AuthenticatedPatientenIdRoute
+    }
+    '/_authenticated/patienten/$id/documenten': {
+      id: '/_authenticated/patienten/$id/documenten'
+      path: '/documenten'
+      fullPath: '/patienten/$id/documenten'
+      preLoaderRoute: typeof AuthenticatedPatientenIdDocumentenRouteImport
+      parentRoute: typeof AuthenticatedPatientenIdRoute
+    }
+    '/_authenticated/patienten/$id/medisch': {
+      id: '/_authenticated/patienten/$id/medisch'
+      path: '/medisch'
+      fullPath: '/patienten/$id/medisch'
+      preLoaderRoute: typeof AuthenticatedPatientenIdMedischRouteImport
+      parentRoute: typeof AuthenticatedPatientenIdRoute
+    }
+    '/_authenticated/patienten/$id/tijdlijn': {
+      id: '/_authenticated/patienten/$id/tijdlijn'
+      path: '/tijdlijn'
+      fullPath: '/patienten/$id/tijdlijn'
+      preLoaderRoute: typeof AuthenticatedPatientenIdTijdlijnRouteImport
+      parentRoute: typeof AuthenticatedPatientenIdRoute
+    }
     '/_authenticated/boekingsflow/vragenlijsten/$id_/test': {
       id: '/_authenticated/boekingsflow/vragenlijsten/$id_/test'
       path: '/boekingsflow/vragenlijsten/$id/test'
@@ -588,9 +707,33 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedPatientenIdRouteChildren {
+  AuthenticatedPatientenIdBehandelingRoute: typeof AuthenticatedPatientenIdBehandelingRoute
+  AuthenticatedPatientenIdDocumentenRoute: typeof AuthenticatedPatientenIdDocumentenRoute
+  AuthenticatedPatientenIdMedischRoute: typeof AuthenticatedPatientenIdMedischRoute
+  AuthenticatedPatientenIdTijdlijnRoute: typeof AuthenticatedPatientenIdTijdlijnRoute
+  AuthenticatedPatientenIdIndexRoute: typeof AuthenticatedPatientenIdIndexRoute
+}
+
+const AuthenticatedPatientenIdRouteChildren: AuthenticatedPatientenIdRouteChildren =
+  {
+    AuthenticatedPatientenIdBehandelingRoute:
+      AuthenticatedPatientenIdBehandelingRoute,
+    AuthenticatedPatientenIdDocumentenRoute:
+      AuthenticatedPatientenIdDocumentenRoute,
+    AuthenticatedPatientenIdMedischRoute: AuthenticatedPatientenIdMedischRoute,
+    AuthenticatedPatientenIdTijdlijnRoute:
+      AuthenticatedPatientenIdTijdlijnRoute,
+    AuthenticatedPatientenIdIndexRoute: AuthenticatedPatientenIdIndexRoute,
+  }
+
+const AuthenticatedPatientenIdRouteWithChildren =
+  AuthenticatedPatientenIdRoute._addFileChildren(
+    AuthenticatedPatientenIdRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
-  AuthenticatedPatientenRoute: typeof AuthenticatedPatientenRoute
   AuthenticatedAgendaMijnDagRoute: typeof AuthenticatedAgendaMijnDagRoute
   AuthenticatedAgendaRoosterRoute: typeof AuthenticatedAgendaRoosterRoute
   AuthenticatedBoekingsflowBoekingslinksRoute: typeof AuthenticatedBoekingsflowBoekingslinksRoute
@@ -600,7 +743,9 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedInstellingenKoppelingenRoute: typeof AuthenticatedInstellingenKoppelingenRoute
   AuthenticatedInstellingenLogboekRoute: typeof AuthenticatedInstellingenLogboekRoute
   AuthenticatedOrganisatieApparatuurRoute: typeof AuthenticatedOrganisatieApparatuurRoute
+  AuthenticatedPatientenIdRoute: typeof AuthenticatedPatientenIdRouteWithChildren
   AuthenticatedAgendaIndexRoute: typeof AuthenticatedAgendaIndexRoute
+  AuthenticatedPatientenIndexRoute: typeof AuthenticatedPatientenIndexRoute
   AuthenticatedBoekingsflowVragenlijstenIdRoute: typeof AuthenticatedBoekingsflowVragenlijstenIdRoute
   AuthenticatedOrganisatieBehandelaarsIdRoute: typeof AuthenticatedOrganisatieBehandelaarsIdRoute
   AuthenticatedOrganisatieBehandelingenIdRoute: typeof AuthenticatedOrganisatieBehandelingenIdRoute
@@ -614,7 +759,6 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
-  AuthenticatedPatientenRoute: AuthenticatedPatientenRoute,
   AuthenticatedAgendaMijnDagRoute: AuthenticatedAgendaMijnDagRoute,
   AuthenticatedAgendaRoosterRoute: AuthenticatedAgendaRoosterRoute,
   AuthenticatedBoekingsflowBoekingslinksRoute:
@@ -629,7 +773,9 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedInstellingenLogboekRoute: AuthenticatedInstellingenLogboekRoute,
   AuthenticatedOrganisatieApparatuurRoute:
     AuthenticatedOrganisatieApparatuurRoute,
+  AuthenticatedPatientenIdRoute: AuthenticatedPatientenIdRouteWithChildren,
   AuthenticatedAgendaIndexRoute: AuthenticatedAgendaIndexRoute,
+  AuthenticatedPatientenIndexRoute: AuthenticatedPatientenIndexRoute,
   AuthenticatedBoekingsflowVragenlijstenIdRoute:
     AuthenticatedBoekingsflowVragenlijstenIdRoute,
   AuthenticatedOrganisatieBehandelaarsIdRoute:

@@ -43,7 +43,7 @@ export function PatientCard({ a, treatment, online, onClose, framed = false }: {
         {onClose ? <button type="button" aria-label="Sluiten" onClick={onClose} className="flex size-9 shrink-0 items-center justify-center rounded-full bg-sand"><img src="/ui-icons/kruis.svg" alt="" className="size-4" /></button>
           : a.new_patient ? <span className="rounded-full bg-teal-light px-3 py-1 text-[12px] text-primary">Nieuw</span> : null}
       </div>
-      <Link to="/patienten"><PillButton size="lg" className="w-full">Open dossier</PillButton></Link>
+      <Link to="/patienten/$id" params={{ id: p?.id ?? "" }} disabled={!p}><PillButton size="lg" className="w-full">Open dossier</PillButton></Link>
       {online && (
         <div className="flex items-center gap-4 rounded-[14px] bg-sand p-4">
           {a.meet_link

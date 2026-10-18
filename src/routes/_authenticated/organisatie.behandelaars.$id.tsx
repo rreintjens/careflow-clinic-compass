@@ -230,7 +230,7 @@ function AddTreatmentsModal({ org, practitionerId, onClose, onSaved }: { org: Or
   const done = new Set(org.practitionerTreatments.filter((x) => x.practitioner_id === practitionerId).map((x) => x.treatment_id));
   const roleTreatments = new Set(org.treatmentRoles.filter((r) => r.role_id === p?.role_id).map((r) => r.treatment_id));
   const [q, setQ] = useState("");
-  const [picked, setPicked] = useState<string[]>([]);
+  const [picked, setPicked] = useState<string[]>(() => [...done]);
   const groups = mainCategories(org)
     .map((c) => {
       const ids = new Set([c.id, ...subCategories(org, c.id).map((s) => s.id)]);
@@ -242,10 +242,16 @@ function AddTreatmentsModal({ org, practitionerId, onClose, onSaved }: { org: Or
     })
     .filter((g) => g.items.length);
   const add = useMutation({
-    mutationFn: () => addTreatmentsToPractitioner(practitionerId, picked),
-    onSuccess: async () => { await onSaved(); toast.success("Behandelingen toegevoegd"); onClose(); },
+    mutationFn: async () => {
+      await addTreatmentsToPractitioner(practitionerId, adds);
+      for (const t of removes) await removePractitionerTreatment(practitionerId, t);
+    },
+    onSuccess: async () => { await onSaved(); toast.success("Behandelingen opgeslagen"); onClose(); },
     onError: () => toast.error("Toevoegen is niet gelukt"),
   });
+  const adds = picked.filter((x) => !done.has(x));
+  const removes = [...done].filter((x) => !picked.includes(x));
+  const changes = adds.length + removes.length;
   if (!p) return null;
   const toggle = (id: string, v: boolean) => setPicked(v ? [...new Set([...picked, id])] : picked.filter((x) => x !== id));
   return (
@@ -257,15 +263,15 @@ function AddTreatmentsModal({ org, practitionerId, onClose, onSaved }: { org: Or
       description={`Vink een hele categorie aan, of losse behandelingen. Je ziet de behandelingen die bij de rol ${roleName(org, p.role_id).toLowerCase()} horen.`}
       footer={
         <div className="flex w-full items-center justify-between">
-          <span className="flex items-center gap-3 text-sm">{picked.length} behandelingen geselecteerd <TextLink onClick={() => setPicked([])}>Wis selectie</TextLink></span>
-          <div className="flex gap-2"><PillButton variant="outline" onClick={onClose}>Annuleren</PillButton><PillButton disabled={!picked.length || add.isPending} onClick={() => add.mutate()}>Toevoegen ({picked.length})</PillButton></div>
+          <span className="flex items-center gap-3 text-sm">{picked.length} behandelingen geselecteerd{removes.length ? ` · ${removes.length} uitgevinkt` : ""} <TextLink onClick={() => setPicked([])}>Wis selectie</TextLink></span>
+          <div className="flex gap-2"><PillButton variant="outline" onClick={onClose}>Annuleren</PillButton><PillButton disabled={!changes || add.isPending} onClick={() => add.mutate()}>{removes.length ? `Opslaan (${changes})` : `Toevoegen (${adds.length})`}</PillButton></div>
         </div>
       }
     >
       <SearchField placeholder="Zoek een behandeling" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Zoek een behandeling" />
       <div className="mt-4 flex flex-col gap-5">
         {groups.map(({ c, items }) => {
-          const open = items.filter((t) => !done.has(t.id));
+          const open = items;
           const all = open.length > 0 && open.every((t) => picked.includes(t.id));
           return (
             <div key={c.id}>
@@ -281,10 +287,10 @@ function AddTreatmentsModal({ org, practitionerId, onClose, onSaved }: { org: Or
                   const already = done.has(t.id);
                   const on = picked.includes(t.id);
                   return (
-                    <li key={t.id} className={cn("flex items-center gap-3 rounded-[14px] px-3.5 py-3", already ? "bg-sand text-muted-foreground" : on ? "border border-primary bg-teal-light" : "border border-line")}>
-                      <Checkbox checked={already || on} disabled={already} label={t.name_nl} onChange={(v) => toggle(t.id, v)} />
+                    <li key={t.id} className={cn("flex items-center gap-3 rounded-[14px] px-3.5 py-3", on ? "border border-primary bg-teal-light" : "border border-line")}>
+                      <Checkbox checked={on} label={t.name_nl} onChange={(v) => toggle(t.id, v)} />
                       <span className="flex-1 text-sm">{t.name_nl}</span>
-                      <span className="text-xs text-muted-foreground">{already ? "Al toegevoegd" : `${t.duration_min} min`}</span>
+                      <span className="text-xs text-muted-foreground">{already && !on ? "Wordt verwijderd" : already ? "Al toegevoegd" : `${t.duration_min} min`}</span>
                     </li>
                   );
                 })}
