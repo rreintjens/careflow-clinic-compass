@@ -117,7 +117,7 @@ function Shell({ children, footer, progress = 0, onBack, onClose, onLang, lang }
         <header className="grid h-14 grid-cols-[48px_1fr_48px] items-center px-2">
           {onLang ? <button type="button" onClick={onLang} className="text-[13px] font-semibold text-primary">{lang === "nl" ? "EN" : "NL"}</button>
             : onBack ? <button type="button" onClick={onBack} aria-label="Terug" className="flex justify-center"><img src="/ui-icons/pijl-links.svg" alt="" className="size-5" /></button> : <span />}
-          <span className="flex justify-center"><Logo small /></span>
+          <span className="flex justify-center"><span className="sm:hidden"><Logo small /></span><span className="hidden sm:inline-flex"><Logo mark /></span></span>
           {onClose ? <button type="button" onClick={onClose} aria-label="Sluiten" className="flex justify-center"><img src="/ui-icons/kruis.svg" alt="" className="size-5" /></button> : <span />}
         </header>
         <div className="h-[3px] bg-muted"><div className="h-full bg-primary transition-all" style={{ width: `${Math.round(progress * 100)}%` }} /></div>

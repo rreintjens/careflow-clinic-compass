@@ -110,7 +110,7 @@ function PatientQuestionnaire() {
 function Plain({ children, footer, progress = 1 }: { children: React.ReactNode; footer?: React.ReactNode; progress?: number }) {
   return (
     <PatientFrame>
-        <header className="flex h-14 items-center justify-center"><Logo small /></header>
+        <header className="flex h-14 items-center justify-center"><span className="sm:hidden"><Logo small /></span><span className="hidden sm:inline-flex"><Logo mark /></span></header>
         <div className="h-[3px] bg-mist"><div className="h-[3px] bg-primary" style={{ width: `${Math.round(progress * 100)}%` }} /></div>
         <main className="flex-1 px-5 pb-6 pt-8">{children}</main>
         {footer && <footer className="px-5 pb-6">{footer}</footer>}
