@@ -27,6 +27,8 @@ import { Route as AuthenticatedInstellingenGebruikersEnRollenRouteImport } from 
 import { Route as AuthenticatedInstellingenKoppelingenRouteImport } from './routes/_authenticated/instellingen.koppelingen'
 import { Route as AuthenticatedInstellingenLogboekRouteImport } from './routes/_authenticated/instellingen.logboek'
 import { Route as AuthenticatedOrganisatieApparatuurRouteImport } from './routes/_authenticated/organisatie.apparatuur'
+import { Route as AuthenticatedPatientenIndexRouteImport } from './routes/_authenticated/patienten.index'
+import { Route as AuthenticatedPatientenIdRouteImport } from './routes/_authenticated/patienten.$id'
 import { Route as AuthenticatedBoekingsflowVragenlijstenIndexRouteImport } from './routes/_authenticated/boekingsflow.vragenlijsten.index'
 import { Route as AuthenticatedBoekingsflowVragenlijstenIdRouteImport } from './routes/_authenticated/boekingsflow.vragenlijsten.$id'
 import { Route as AuthenticatedOrganisatieBehandelaarsIndexRouteImport } from './routes/_authenticated/organisatie.behandelaars.index'
@@ -136,6 +138,18 @@ const AuthenticatedOrganisatieApparatuurRoute =
     path: '/organisatie/apparatuur',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedPatientenIndexRoute =
+  AuthenticatedPatientenIndexRouteImport.update({
+    id: '/patienten/',
+    path: '/patienten/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPatientenIdRoute =
+  AuthenticatedPatientenIdRouteImport.update({
+    id: '/patienten/$id',
+    path: '/patienten/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedBoekingsflowVragenlijstenIndexRoute =
   AuthenticatedBoekingsflowVragenlijstenIndexRouteImport.update({
     id: '/boekingsflow/vragenlijsten/',
@@ -208,7 +222,9 @@ export interface FileRoutesByFullPath {
   '/instellingen/koppelingen': typeof AuthenticatedInstellingenKoppelingenRoute
   '/instellingen/logboek': typeof AuthenticatedInstellingenLogboekRoute
   '/organisatie/apparatuur': typeof AuthenticatedOrganisatieApparatuurRoute
+  '/patienten/$id': typeof AuthenticatedPatientenIdRoute
   '/agenda/': typeof AuthenticatedAgendaIndexRoute
+  '/patienten/': typeof AuthenticatedPatientenIndexRoute
   '/boekingsflow/vragenlijsten/$id': typeof AuthenticatedBoekingsflowVragenlijstenIdRoute
   '/organisatie/behandelaars/$id': typeof AuthenticatedOrganisatieBehandelaarsIdRoute
   '/organisatie/behandelingen/$id': typeof AuthenticatedOrganisatieBehandelingenIdRoute
@@ -236,7 +252,9 @@ export interface FileRoutesByTo {
   '/instellingen/koppelingen': typeof AuthenticatedInstellingenKoppelingenRoute
   '/instellingen/logboek': typeof AuthenticatedInstellingenLogboekRoute
   '/organisatie/apparatuur': typeof AuthenticatedOrganisatieApparatuurRoute
+  '/patienten/$id': typeof AuthenticatedPatientenIdRoute
   '/agenda': typeof AuthenticatedAgendaIndexRoute
+  '/patienten': typeof AuthenticatedPatientenIndexRoute
   '/boekingsflow/vragenlijsten/$id': typeof AuthenticatedBoekingsflowVragenlijstenIdRoute
   '/organisatie/behandelaars/$id': typeof AuthenticatedOrganisatieBehandelaarsIdRoute
   '/organisatie/behandelingen/$id': typeof AuthenticatedOrganisatieBehandelingenIdRoute
@@ -266,7 +284,9 @@ export interface FileRoutesById {
   '/_authenticated/instellingen/koppelingen': typeof AuthenticatedInstellingenKoppelingenRoute
   '/_authenticated/instellingen/logboek': typeof AuthenticatedInstellingenLogboekRoute
   '/_authenticated/organisatie/apparatuur': typeof AuthenticatedOrganisatieApparatuurRoute
+  '/_authenticated/patienten/$id': typeof AuthenticatedPatientenIdRoute
   '/_authenticated/agenda/': typeof AuthenticatedAgendaIndexRoute
+  '/_authenticated/patienten/': typeof AuthenticatedPatientenIndexRoute
   '/_authenticated/boekingsflow/vragenlijsten/$id': typeof AuthenticatedBoekingsflowVragenlijstenIdRoute
   '/_authenticated/organisatie/behandelaars/$id': typeof AuthenticatedOrganisatieBehandelaarsIdRoute
   '/_authenticated/organisatie/behandelingen/$id': typeof AuthenticatedOrganisatieBehandelingenIdRoute
@@ -296,7 +316,9 @@ export interface FileRouteTypes {
     | '/instellingen/koppelingen'
     | '/instellingen/logboek'
     | '/organisatie/apparatuur'
+    | '/patienten/$id'
     | '/agenda/'
+    | '/patienten/'
     | '/boekingsflow/vragenlijsten/$id'
     | '/organisatie/behandelaars/$id'
     | '/organisatie/behandelingen/$id'
@@ -324,7 +346,9 @@ export interface FileRouteTypes {
     | '/instellingen/koppelingen'
     | '/instellingen/logboek'
     | '/organisatie/apparatuur'
+    | '/patienten/$id'
     | '/agenda'
+    | '/patienten'
     | '/boekingsflow/vragenlijsten/$id'
     | '/organisatie/behandelaars/$id'
     | '/organisatie/behandelingen/$id'
@@ -353,7 +377,9 @@ export interface FileRouteTypes {
     | '/_authenticated/instellingen/koppelingen'
     | '/_authenticated/instellingen/logboek'
     | '/_authenticated/organisatie/apparatuur'
+    | '/_authenticated/patienten/$id'
     | '/_authenticated/agenda/'
+    | '/_authenticated/patienten/'
     | '/_authenticated/boekingsflow/vragenlijsten/$id'
     | '/_authenticated/organisatie/behandelaars/$id'
     | '/_authenticated/organisatie/behandelingen/$id'
@@ -503,6 +529,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOrganisatieApparatuurRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/patienten/': {
+      id: '/_authenticated/patienten/'
+      path: '/patienten'
+      fullPath: '/patienten/'
+      preLoaderRoute: typeof AuthenticatedPatientenIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/patienten/$id': {
+      id: '/_authenticated/patienten/$id'
+      path: '/patienten/$id'
+      fullPath: '/patienten/$id'
+      preLoaderRoute: typeof AuthenticatedPatientenIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/boekingsflow/vragenlijsten/': {
       id: '/_authenticated/boekingsflow/vragenlijsten/'
       path: '/boekingsflow/vragenlijsten'
@@ -580,7 +620,9 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedInstellingenKoppelingenRoute: typeof AuthenticatedInstellingenKoppelingenRoute
   AuthenticatedInstellingenLogboekRoute: typeof AuthenticatedInstellingenLogboekRoute
   AuthenticatedOrganisatieApparatuurRoute: typeof AuthenticatedOrganisatieApparatuurRoute
+  AuthenticatedPatientenIdRoute: typeof AuthenticatedPatientenIdRoute
   AuthenticatedAgendaIndexRoute: typeof AuthenticatedAgendaIndexRoute
+  AuthenticatedPatientenIndexRoute: typeof AuthenticatedPatientenIndexRoute
   AuthenticatedBoekingsflowVragenlijstenIdRoute: typeof AuthenticatedBoekingsflowVragenlijstenIdRoute
   AuthenticatedOrganisatieBehandelaarsIdRoute: typeof AuthenticatedOrganisatieBehandelaarsIdRoute
   AuthenticatedOrganisatieBehandelingenIdRoute: typeof AuthenticatedOrganisatieBehandelingenIdRoute
@@ -608,7 +650,9 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedInstellingenLogboekRoute: AuthenticatedInstellingenLogboekRoute,
   AuthenticatedOrganisatieApparatuurRoute:
     AuthenticatedOrganisatieApparatuurRoute,
+  AuthenticatedPatientenIdRoute: AuthenticatedPatientenIdRoute,
   AuthenticatedAgendaIndexRoute: AuthenticatedAgendaIndexRoute,
+  AuthenticatedPatientenIndexRoute: AuthenticatedPatientenIndexRoute,
   AuthenticatedBoekingsflowVragenlijstenIdRoute:
     AuthenticatedBoekingsflowVragenlijstenIdRoute,
   AuthenticatedOrganisatieBehandelaarsIdRoute:
