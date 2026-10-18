@@ -262,6 +262,7 @@ function CategoryModal({ org, category, onClose, onSaved }: { org: Org; category
   const [icon, setIcon] = useState(category?.icon ?? "none");
   const [cancel, setCancel] = useState(category?.cancel_until_hours != null ? String(category.cancel_until_hours) : "default");
   const [fee, setFee] = useState(category?.no_show_fee_eur != null ? String(category.no_show_fee_eur) : "default");
+  const [mailImage, setMailImage] = useState(category?.mail_image_path ?? "");
   const [subs, setSubs] = useState(existingSubs.map((s) => ({ id: s.id as string | null, name_nl: s.name_nl })));
   const save = useMutation({
     mutationFn: () =>
@@ -273,6 +274,7 @@ function CategoryModal({ org, category, onClose, onSaved }: { org: Org; category
           icon: icon === "none" ? null : icon,
           cancel_until_hours: cancel === "default" ? null : Number(cancel),
           no_show_fee_eur: fee === "default" ? null : Number(fee),
+          mail_image_path: mailImage || null,
           sort: category?.sort ?? mainCategories(org).length,
         },
         subs.filter((s) => s.name_nl.trim()),
@@ -296,6 +298,11 @@ function CategoryModal({ org, category, onClose, onSaved }: { org: Org; category
         <div className="flex items-end">{icon !== "none" && <img src={`/treatment-icons/${icon}.png`} alt="" className="h-12 w-12" />}</div>
         <Select label="Verzetten en annuleren tot" value={cancel} onChange={setCancel} options={[{ value: "default", label: `Standaard uit Algemeen (${defaults.cancelHours} uur)` }, ...opts(org, "cancel_until_hours")]} />
         <Select label="No-showbedrag" value={fee} onChange={setFee} options={[{ value: "default", label: `Standaard uit Algemeen (${defaults.noShowCents ? `€${defaults.noShowCents / 100}` : "geen"})` }, ...opts(org, "no_show_fee_eur")]} />
+      </div>
+      <div className="mt-4">
+        <span className="text-[13px] font-medium">Afbeelding voor de mails</span>
+        <p className="mb-2 mt-1 text-[12px] leading-[1.5] text-muted-foreground">Bovenaan de bevestigingsmail van deze categorie. Leeg: de standaardafbeelding uit het sjabloon.</p>
+        <MailImagePicker path={mailImage} onChange={setMailImage} />
       </div>
       <div className="mt-5 flex flex-col gap-2">
         <span className="text-[13px] font-medium">Subcategorieën</span>
