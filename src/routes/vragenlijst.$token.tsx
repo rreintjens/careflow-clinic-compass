@@ -100,7 +100,7 @@ function PatientQuestionnaire() {
   }
   return (
     <QuestionnaireRunner fullScreen flow={data.flow as unknown as FlowFile} def={data.definition as unknown as QuestionnaireDef} ui={ui}
-      today={new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Amsterdam" })} initial={data.answers as Answers} vars={data.vars} startPageId={startPage}
+      today={new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Amsterdam" })} initial={data.answers as Answers} vars={data.vars} startPageId={startPage ?? (data.definition as unknown as QuestionnaireDef).pages[0]?.id ?? ""}
       onAnswers={autosave}
       onFinish={(a) => { window.clearTimeout(timer.current); void save({ data: { token, merk: s.merk, answers: a, complete: true } }); }} />
   );

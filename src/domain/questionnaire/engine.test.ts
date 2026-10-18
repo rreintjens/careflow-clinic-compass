@@ -145,7 +145,7 @@ describe("resume screen", () => {
     const ctx = makeCtx(flow, ctxAnswers, TODAY);
     for (const p of visiblePages(medical, ctx)) for (const i of p.items ?? []) {
       if (i.optional || i.type === "answer_summary") continue;
-      if (i.type === "height_weight") { ctxAnswers.height_cm = 170; ctxAnswers.weight_kg = 80; }
+      if (i.type === "height_weight") { ctxAnswers["height_cm"] = 170; ctxAnswers["weight_kg"] = 80; }
       else if (i.type === "checkbox_required") ctxAnswers[i.id] = true;
       else ctxAnswers[i.id] = "x";
     }
