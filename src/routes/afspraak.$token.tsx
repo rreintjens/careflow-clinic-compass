@@ -44,8 +44,7 @@ function Shell({ children, footer, onBack }: { children: React.ReactNode; footer
         <div className="h-[3px] bg-primary" />
         <main className="flex flex-1 flex-col px-5 pb-6 pt-8">{children}</main>
         {footer && <footer className="px-5 pb-6">{footer}</footer>}
-      </div>
-    </div>
+    </PatientFrame>
   );
 }
 

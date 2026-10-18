@@ -123,8 +123,7 @@ function Shell({ children, footer, progress = 0, onBack, onClose, onLang, lang }
         <div className="h-[3px] bg-muted"><div className="h-full bg-primary transition-all" style={{ width: `${Math.round(progress * 100)}%` }} /></div>
         <main className="flex flex-1 flex-col px-5 pb-6 pt-8">{children}</main>
         {footer && <footer className="px-5 pb-6">{footer}</footer>}
-      </div>
-    </div>
+    </PatientFrame>
   );
 }
 

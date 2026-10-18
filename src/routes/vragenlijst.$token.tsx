@@ -114,7 +114,6 @@ function Plain({ children, footer, progress = 1 }: { children: React.ReactNode; 
         <div className="h-[3px] bg-mist"><div className="h-[3px] bg-primary" style={{ width: `${Math.round(progress * 100)}%` }} /></div>
         <main className="flex-1 px-5 pb-6 pt-8">{children}</main>
         {footer && <footer className="px-5 pb-6">{footer}</footer>}
-      </div>
-    </div>
+    </PatientFrame>
   );
 }
