@@ -76,6 +76,20 @@ export function absoluteBookingLink(slug: string, host: string | null) {
   return `${base}${bookingLinkPath(slug)}`;
 }
 
+/**
+ * The same link as a UTM-tagged URL for the clinic's own analytics: utm_source follows the
+ * reporting source (or the slug when empty), utm_campaign is the link itself. Our own source
+ * tracking already rides on ?link=; these parameters are for tools like Google Analytics.
+ */
+export function bookingLinkUtm(slug: string, source: string): string {
+  const utmSource = slugify(source) === "link" || !source.trim() ? slug : slugify(source);
+  return `${bookingLinkPath(slug)}&utm_source=${encodeURIComponent(utmSource)}&utm_campaign=${encodeURIComponent(slug)}`;
+}
+export function absoluteBookingLinkUtm(slug: string, source: string, host: string | null) {
+  const base = host ? `https://${host}` : "";
+  return `${base}${bookingLinkUtm(slug, source)}`;
+}
+
 const slugify = (name: string) => {
   const base = name
     .normalize("NFD")

@@ -19,6 +19,7 @@ import type { Answers, FlowFile, QuestionnaireDef } from "@/domain/questionnaire
 
 const search = z.object({
   merk: z.string().optional(), lang: z.enum(["nl", "en"]).optional(), bron: z.string().optional(), link: z.string().optional(),
+  utm_source: z.string().max(80).optional(), utm_medium: z.string().max(80).optional(), utm_campaign: z.string().max(80).optional(),
   cat: z.string().optional(), sub: z.string().optional(), t: z.string().optional(), l: z.string().optional(),
   p: z.string().optional(), d: z.string().optional(), tijd: z.string().optional(), stap: z.string().optional(),
 });
@@ -75,7 +76,10 @@ function Booking() {
   const locationsFor = (tid: string) => c.treatmentLocations.filter((x) => x.treatment_id === tid && c.locations.some((l) => l.id === x.location_id) && (!allowed || allowed.has(x.location_id))).map((x) => x.location_id);
   const treatments = (link?.treatmentId ? c.treatments.filter((t) => t.id === link.treatmentId) : c.treatments).map((t) => (mode ? { ...t, practitioner_choice: mode } : t));
   const catalog: Catalog = { categories: c.categories, links: link?.treatmentId ? c.links.filter((x) => x.treatment_id === link.treatmentId) : c.links, treatments, locationsFor };
-  const eff: Search = link ? { ...s, t: s.t ?? link.treatmentId ?? undefined, p: mode === "fixed" ? link.practitionerId ?? undefined : s.p, bron: s.bron ?? (link.source || undefined) } : s;
+  // Bron: een eigen ?bron= wint, dan de bron van de boekingslink, dan de utm-bron uit het webadres.
+  const eff: Search = link
+    ? { ...s, t: s.t ?? link.treatmentId ?? undefined, p: mode === "fixed" ? link.practitionerId ?? undefined : s.p, bron: s.bron ?? (link.source || undefined) ?? s.utm_source }
+    : { ...s, bron: s.bron ?? s.utm_source };
   const step = nextStep(catalog, eff);
   const progress = { category: 0.1, subcategory: 0.15, treatment: 0.2, location: 0.3, practitioner: 0.4, planner: 0.45, none: 0 }[step.kind];
   const back = step.kind === "category" ? undefined : () => window.history.back();

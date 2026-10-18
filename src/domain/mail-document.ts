@@ -3,7 +3,7 @@ import { blockVisible, interpolate, safeMailUrl, translated, type MailBlock, typ
 export type MailTheme = { background: string; surface: string; heading: string; text: string; muted: string; panel: string; button: string; onPanel: string; link: string };
 export type MailDocumentInput = {
   blocks: MailBlock[]; language: string; values: Record<string, string>; situation: MailSituation;
-  images: Record<string, string>; practitionerPhoto?: string | null; theme: MailTheme;
+  images: Record<string, string>; practitionerPhoto?: string | null; categoryImage?: string | null; theme: MailTheme;
 };
 export function escapeMailHtml(value: string) {
   return value.replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char] ?? char);
@@ -14,14 +14,16 @@ export function renderMailDocument(input: MailDocumentInput) {
   const { language, values, situation, theme } = input;
   const text = (nl: string, en: string) => escapeMailHtml(interpolate(translated(nl, en, language), values)).replace(/\n/g, "<br>");
   const visible = input.blocks.filter((block) => blockVisible(block.condition, situation));
-  const firstText = visible.find((block) => block.type !== "image" && block.type !== "divider");
+  const firstText = visible.find((block) => block.type !== "image" && block.type !== "category_image" && block.type !== "divider");
   const firstCard = visible.findIndex((block) => block.type === "card");
   const introEnd = firstCard < 0 ? visible.length : firstCard;
   const rendered = visible.map((block, index) => {
     const title = text(block.title_nl, block.title_en);
     const body = text(block.text_nl, block.text_en);
-    const image = block.image_path ? input.images[block.image_path] : block.image;
-    const imageUrl = image && safeMailUrl(image)?.startsWith("https:") ? escapeMailHtml(image) : null;
+    const own = block.image_path ? input.images[block.image_path] : block.image;
+    const categoryUrl = input.categoryImage && safeMailUrl(input.categoryImage)?.startsWith("https:") ? input.categoryImage : null;
+    const chosen = block.type === "category_image" ? categoryUrl ?? own : own;
+    const imageUrl = chosen && safeMailUrl(chosen)?.startsWith("https:") ? escapeMailHtml(chosen) : null;
     const url = safeMailUrl(interpolate(block.url, values));
     const panel = block.type === "details" || block.type === "button";
     const ink = panel ? theme.onPanel : theme.text;
@@ -33,7 +35,7 @@ export function renderMailDocument(input: MailDocumentInput) {
     let content = `${heading}${dots}<div style="white-space:normal;overflow-wrap:anywhere">${body}</div>${button}`;
     const inIntro = index < introEnd;
     let style = panel ? `padding:22px 24px;background:${theme.panel};color:${ink};border-radius:20px` : inIntro ? `padding:0 0 18px;color:${ink}` : block.type === "text" ? `padding:0 10px 18px;color:${theme.muted};font-size:11px` : `padding:26px 24px;background:${theme.surface};color:${ink};border-radius:20px`;
-    if (block.type === "image") {
+    if (block.type === "image" || block.type === "category_image") {
       if (!imageUrl) return { block, row: "" };
       content = `<img src="${imageUrl}" alt="${escapeMailHtml(interpolate(translated(block.title_nl, block.title_en, language), values))}" width="568" style="display:block;width:100%;height:auto;max-height:240px;object-fit:cover;border-radius:20px 20px 0 0">`;
       style = "padding:0";

@@ -2752,6 +2752,7 @@ export type Database = {
           created_by: string | null
           icon: string | null
           id: string
+          mail_image_path: string | null
           name_en: string | null
           name_nl: string
           no_show_fee_eur: number | null
@@ -2767,6 +2768,7 @@ export type Database = {
           created_by?: string | null
           icon?: string | null
           id?: string
+          mail_image_path?: string | null
           name_en?: string | null
           name_nl: string
           no_show_fee_eur?: number | null
@@ -2782,6 +2784,7 @@ export type Database = {
           created_by?: string | null
           icon?: string | null
           id?: string
+          mail_image_path?: string | null
           name_en?: string | null
           name_nl?: string
           no_show_fee_eur?: number | null

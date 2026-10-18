@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Modal } from "@/components/Modal";
 import { PillButton } from "@/components/PillButton";
@@ -10,8 +10,9 @@ import { Select } from "@/components/Select";
 import { SegmentedControl } from "@/components/SegmentedControl";
 import { saveMailTemplate } from "@/data/mail.functions";
 import type { MailData } from "@/data/mail";
-import type { Org } from "@/data/organisation";
-import { blocksOf, mailBlockSchema, mailTemplateSchema, translated, type MailBlock, type MailInput, type MailTemplate } from "@/domain/mail";
+import { generalDefaultsQuery, type Org } from "@/data/organisation";
+import { mailImageUrlQuery } from "@/data/mail-images";
+import { blocksOf, cancelPolicy, cancelPolicyValues, mailBlockSchema, mailTemplateSchema, translated, type MailBlock, type MailInput, type MailTemplate } from "@/domain/mail";
 import { MailPreview } from "./MailPreview";
 import { MailImagePicker } from "./MailImagePicker";
 
@@ -34,7 +35,20 @@ export function MailTemplateModal({ template, defaults, data, org, onClose }: { 
   const treatment = org.treatments.find((t) => t.id === current.treatment_id) ?? org.treatments.find((t) => t.post_questionnaire_key) ?? org.treatments[0];
   const previewData = Object.fromEntries(data.options.filter((o) => o.list_key === "mail_preview").map((o) => [o.value, translated(o.label_nl, o.label_en, language)]));
   const practitioner = org.practitioners.find((p) => `${p.first_name} ${p.last_name}` === (previewData['behandelaar'] ?? "").replace(/^Drs\. /, ""));
-  const values = { ...previewData, behandeling: treatment ? translated(treatment.name_nl, treatment.name_en, language) : "", duur: String(treatment?.duration_min ?? ""), voorbereiding: treatment ? translated(treatment.preparation_nl, treatment.preparation_en, language) : "", nazorg: treatment ? translated(treatment.aftercare_nl, treatment.aftercare_en, language) : "" };
+  // Annulering en no-show: behandeling wint van de categorie, de categorie wint van Algemeen.
+  const { data: generalDefaults } = useQuery(generalDefaultsQuery);
+  const mainCategory = (treatmentId: string) => {
+    const linked = org.categoryLinks.filter((l) => l.treatment_id === treatmentId).map((l) => org.categories.find((c) => c.id === l.category_id)).filter((c): c is NonNullable<typeof c> => !!c);
+    const mains = linked.map((c) => (c.parent_id ? org.categories.find((p) => p.id === c.parent_id) : c)).filter((c): c is NonNullable<typeof c> => !!c);
+    return mains.find((m) => m.cancel_until_hours != null || m.no_show_fee_eur != null) ?? mains[0] ?? null;
+  };
+  const category = current.scope === "category" ? org.categories.find((c) => c.id === current.category_id) ?? null : treatment ? mainCategory(treatment.id) : null;
+  const policy = cancelPolicy(treatment ?? null, category, generalDefaults ?? { cancelHours: 24, noShowCents: 0 });
+  const noShowRow = data.options.find((o) => o.list_key === "mail_ui" && o.value === "no_show_zin");
+  const noShowSentence = noShowRow ? translated(noShowRow.label_nl, noShowRow.label_en, language) : "";
+  const categoryImagePath = category?.mail_image_path ?? "";
+  const { data: categoryImage } = useQuery({ ...mailImageUrlQuery(categoryImagePath), enabled: !!categoryImagePath });
+  const values = { ...previewData, behandeling: treatment ? translated(treatment.name_nl, treatment.name_en, language) : "", duur: String(treatment?.duration_min ?? ""), voorbereiding: treatment ? translated(treatment.preparation_nl, treatment.preparation_en, language) : "", nazorg: treatment ? translated(treatment.aftercare_nl, treatment.aftercare_en, language) : "", behandeling_omschrijving: treatment ? translated(treatment.description_nl, treatment.description_en, language) : "", ...cancelPolicyValues(policy, noShowSentence) };
   const save = useMutation({ mutationFn: (input: MailInput) => saveMailTemplate({ data: input }), onSuccess: async () => { await qc.invalidateQueries({ queryKey: ["mail-templates"] }); toast.success("Sjabloon opgeslagen"); onClose(); }, onError: (e) => toast.error(e.message) });
   const updateBlocks = (blocks: MailBlock[]) => form.setValue("blocks", blocks, { shouldDirty: true });
   const updateBlock = (patch: Partial<MailBlock>) => updateBlocks(current.blocks.map((b) => b.id === selected ? { ...b, ...patch } : b));
@@ -71,8 +85,9 @@ export function MailTemplateModal({ template, defaults, data, org, onClose }: { 
         {block && <div className="flex flex-col gap-3 rounded-[14px] bg-sand p-4">
           <Select label="Tonen" value={block.condition} options={option("mail_condition")} onChange={(condition) => updateBlock({ condition })} />
           {block.type !== "divider" && <TextField label="Kop" value={block[languageKey("title")]} onChange={(e) => updateBlock({ [languageKey("title")]: e.target.value })} />}
-          {['image', 'signature'].includes(block.type) && <MailImagePicker path={block.image_path ?? ""} onChange={(image_path) => updateBlock({ image_path, image: "" })} />}
-          {!['divider', 'image'].includes(block.type) && <TextArea label="Tekst" value={block[languageKey("text")]} onChange={(e) => updateBlock({ [languageKey("text")]: e.target.value })} />}
+          {['image', 'category_image', 'signature'].includes(block.type) && <MailImagePicker path={block.image_path ?? ""} onChange={(image_path) => updateBlock({ image_path, image: "" })} />}
+          {block.type === 'category_image' && <p className="text-[12px] leading-[1.5] text-muted-foreground">Toont de afbeelding van de categorie; de gekozen afbeelding is de standaard als de categorie er geen heeft.</p>}
+          {!['divider', 'image', 'category_image'].includes(block.type) && <TextArea label="Tekst" value={block[languageKey("text")]} onChange={(e) => updateBlock({ [languageKey("text")]: e.target.value })} />}
           {['button', 'card', 'details', 'text'].includes(block.type) && <><TextField label="Knop" value={block[languageKey("button")]} onChange={(e) => updateBlock({ [languageKey("button")]: e.target.value })} /><TextField label="Link" value={block.url} onChange={(e) => updateBlock({ url: e.target.value })} /></>}
         </div>}
         {Object.values(form.formState.errors).length > 0 && <p role="alert" className="text-sm text-warning">{form.formState.errors.subject_nl?.message ?? form.formState.errors.scope?.message ?? "Vul de ontbrekende velden in."}</p>}
@@ -80,7 +95,7 @@ export function MailTemplateModal({ template, defaults, data, org, onClose }: { 
       <div className="min-w-0">
         <div className="mb-3 flex flex-wrap gap-2"><SegmentedControl label="Afspraak" value={online} onChange={setOnline} options={[{ value: "online", label: "Online" }, { value: "clinic", label: "Kliniek" }]} /><SegmentedControl label="Patiënt" value={patientType} onChange={setPatientType} options={[{ value: "new", label: "Nieuwe patiënt" }, { value: "existing", label: "Bestaande patiënt" }]} /></div>
         <div className={phonePreview ? "mx-auto w-full max-w-[390px]" : "w-full"}>
-          <MailPreview blocks={current.blocks} language={language} values={values} practitionerPhoto={practitioner?.photo_path} situation={{ online: online === "online", existingPatient: patientType === "existing", questionnaire: !!treatment?.post_questionnaire_key, preparation: !!values.voorbereiding }} />
+          <MailPreview blocks={current.blocks} language={language} values={values} practitionerPhoto={practitioner?.photo_path} categoryImage={categoryImage ?? null} situation={{ online: online === "online", existingPatient: patientType === "existing", questionnaire: !!treatment?.post_questionnaire_key, preparation: !!values.voorbereiding }} />
         </div>
         <PillButton variant="outline" size="sm" className="mt-3" aria-pressed={phonePreview} onClick={() => setPhonePreview(!phonePreview)}>Bekijk op telefoonformaat</PillButton>
       </div>

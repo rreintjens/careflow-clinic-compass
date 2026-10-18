@@ -35,7 +35,7 @@ Owner asked to continue through all phases without pausing for confirmation.
   - [x] Shared escaped table-based mail document and preview: supplied mail palette, local Open Sans, four dots and detail cards; authenticated online/clinic and phone previews verified without overflow; 34 mail tests passed
   - [x] Private image upload/library, practitioner signature preview and phone-format toggle; upload, save/reload and library selection verified as admin with MFA; 31 domain tests passed
   - [x] Template management foundation: moment and treatment views, category/treatment overrides, ordered conditional blocks, Dutch/English fallback; authenticated save and reload verified; 22 domain tests passed
-  - [ ] Complete mail designs: injectables variant and exact hero/support-card/footer details remain; standalone hero/logo assets absent from package. Medical-weight-loss copy, introduction grouping, shared responsive HTML, private image library and practitioner photo preview completed
+  - [x] Injectables mail mechanics: base confirmation now has the nine blocks from the supplied designs (category image with template fallback, clinic/online intro and details variants, preparation, Vragen with omschrijving, Verhinderd with {annuleringstermijn} and conditional no-show sentence); cancel policy resolves treatment > category > Algemeen and also drives the manage window; injectables categories set to 48h/EUR60; category mail image editable on the category; 31 domain tests green. Standalone hero/logo assets remain absent from the package
   - [ ] Test and automatic mails: blocked on verified sender setup; no outbound mail wired yet
   - [x] Google Meet interface/mock, eKis export stub, statistics API, booking links with sources
     - [x] Booking links: list with usage, five-step create/edit modal (treatment, locations, practitioner choice, language, name/source), preview of what the patient sees, short link + copy; `?merk=` only for test brands
@@ -50,3 +50,4 @@ Owner asked to continue through all phases without pausing for confirmation.
 - [x] Vragenlijst: volgende pagina begint bovenaan
 - [x] Vragenlijstbouwer: vragenpagina (groep) verslepen en inklappen
 - [x] Behandelingen afvinken in behandelaar-modal
+- [x] UTM bij boekingslinks (owner bevestigd: automatisch vullen uit linkgegevens, geen aparte velden): kopieerbare link met utm_source (rapportagebron, anders linknaam) en utm_campaign (linknaam); boekingsflow bewaart utm_source als bron zonder link; 12 domaintests groen

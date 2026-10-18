@@ -7,7 +7,7 @@ import { photoUrl } from "@/data/organisation";
 import openSans from "@fontsource/open-sans/files/open-sans-latin-400-normal.woff2?url";
 import openSansBold from "@fontsource/open-sans/files/open-sans-latin-700-normal.woff2?url";
 
-export function MailPreview({ blocks, language, values, situation, practitionerPhoto }: { blocks: MailBlock[]; language: string; values: Record<string, string>; situation: MailSituation; practitionerPhoto?: string | null | undefined }) {
+export function MailPreview({ blocks, language, values, situation, practitionerPhoto, categoryImage }: { blocks: MailBlock[]; language: string; values: Record<string, string>; situation: MailSituation; practitionerPhoto?: string | null | undefined; categoryImage?: string | null | undefined }) {
   const [theme, setTheme] = useState<MailTheme | null>(null);
   const [height, setHeight] = useState(900);
   const paths = [...new Set(blocks.map((block) => block.image_path).filter((path): path is string => !!path))];
@@ -20,7 +20,7 @@ export function MailPreview({ blocks, language, values, situation, practitionerP
   }, []);
   if (!theme) return null;
   const images = Object.fromEntries(paths.flatMap((path, index) => { const url = urls[index]?.data; return url ? [[path, url]] : []; }));
-  const html = renderMailDocument({ blocks, language, values, situation, images, practitionerPhoto: photo ?? null, theme });
+  const html = renderMailDocument({ blocks, language, values, situation, images, practitionerPhoto: photo ?? null, categoryImage: categoryImage ?? null, theme });
   const fonts = `<style>@font-face{font-family:'Open Sans';font-style:normal;font-weight:400;font-display:swap;src:url('${openSans}') format('woff2')}@font-face{font-family:'Open Sans';font-style:normal;font-weight:700;font-display:swap;src:url('${openSansBold}') format('woff2')}</style>`;
   return <iframe title="Voorbeeld van de e-mail" sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox" className="mx-auto block w-full max-w-[600px] border-0 bg-background" height={height} srcDoc={html.replace("</head>", `${fonts}</head>`)} onLoad={(event) => {
     const frame = event.currentTarget;

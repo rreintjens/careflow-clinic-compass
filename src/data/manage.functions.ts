@@ -6,6 +6,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { canChangeOnline, manageable } from "@/domain/manage";
+import { cancelPolicy } from "@/domain/mail";
 import { admin, computeSlots, localParts, localToUtc, resolveTenant } from "./booking.server";
 
 const base = z.object({ merk: z.string().max(60).optional(), token: z.string().uuid() });
@@ -19,7 +20,18 @@ async function load(merk: string | undefined, token: string) {
   if (!appt) return null;
   const st = ((await db.from("settings").select("key, value").eq("tenant_id", tenant.id)).data ?? []) as Array<{ key: string; value: unknown }>;
   const v = (k: string) => st.find((r) => r.key === k)?.value;
-  const hours = Number(v("cancel_until_hours")) > 0 ? Number(v("cancel_until_hours")) : 24;
+  const defaultHours = Number(v("cancel_until_hours")) > 0 ? Number(v("cancel_until_hours")) : 24;
+  // Verzetten/annuleren volgt de behandeling, dan de categorie, dan Algemeen.
+  const [treat, links] = await Promise.all([
+    db.from("treatments").select("cancel_until_hours, no_show_fee_eur").eq("id", appt.treatment_id).maybeSingle(),
+    db.from("treatment_category_links").select("category_id").eq("treatment_id", appt.treatment_id),
+  ]);
+  const catIds = (links.data ?? []).map((x) => x.category_id);
+  const cats = catIds.length ? ((await db.from("treatment_categories").select("id, parent_id, cancel_until_hours, no_show_fee_eur").in("id", catIds)).data ?? []) : [];
+  const mainIds = [...new Set(cats.map((c) => c.parent_id ?? c.id))];
+  const mains = mainIds.length ? ((await db.from("treatment_categories").select("id, parent_id, cancel_until_hours, no_show_fee_eur").in("id", mainIds)).data ?? []) : [];
+  const category = mains.find((m) => m.cancel_until_hours != null) ?? mains[0] ?? null;
+  const hours = cancelPolicy(treat.data, category, { cancelHours: defaultHours, noShowCents: 0 }).hours;
   const phone = typeof v("mail_phone") === "string" ? (v("mail_phone") as string) : null;
   return { tenant, db, appt, hours, phone };
 }
