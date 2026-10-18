@@ -197,6 +197,13 @@
       "when": 1792286790460,
       "tag": "0027_drop_duplicate_mq_not_found",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1792287341697,
+      "tag": "0028_group_admin_login_above_tenants",
+      "breakpoints": true
     }
   ]
 }
