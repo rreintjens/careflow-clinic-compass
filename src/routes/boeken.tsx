@@ -355,6 +355,7 @@ function HoldStep({ c, s, treatmentId, locationId, practitionerId, tx, lang, go 
   const [initial, setInitial] = useState<Answers | null>(null);
   const [phase, setPhase] = useState<"triage" | "details" | "confirmed">("triage");
   const [confirmed, setConfirmed] = useState<string | null>(null);
+  const [meet, setMeet] = useState<string | null>(null);
   const started = useRef(false);
   const rejected = useRef(false);
   const confirmedRef = useRef(false);
@@ -364,7 +365,7 @@ function HoldStep({ c, s, treatmentId, locationId, practitionerId, tx, lang, go 
     started.current = true;
     setInitial(readJson<Answers>(ANSWERS_KEY) ?? {});
     const prev = readJson<{ token: string }>(HOLD_KEY);
-    hold({ data: { merk: s.merk, treatmentId, locationId, practitionerId, date: s.d ?? "", time: s.tijd ?? "", language: lang === "en" ? "en" : "nl", source: s.bron, replaceToken: prev?.token } }).then((r) => {
+    hold({ data: { merk: s.merk, treatmentId, locationId, practitionerId, date: s.d ?? "", time: s.tijd ?? "", language: lang === "en" ? "en" : "nl", source: s.bron, link: s.link, replaceToken: prev?.token } }).then((r) => {
       if (!r.ok) { setState({ kind: "taken" }); return; }
       sessionStorage.setItem(HOLD_KEY, JSON.stringify({ token: r.token, expiresAt: r.expiresAt }));
       setState({ kind: "held", token: r.token, expiresAt: Date.parse(r.expiresAt), minutes: r.holdMinutes, practitionerId: r.practitionerId });
@@ -399,7 +400,7 @@ function HoldStep({ c, s, treatmentId, locationId, practitionerId, tx, lang, go 
     </Shell>
   );
   if (state.kind === "loading" || initial === null || (triageKey && triage.isLoading && phase === "triage")) return <Shell lang={lang} progress={0.5}><div className="h-40 animate-pulse rounded-[16px] bg-sand" /></Shell>;
-  if (phase === "confirmed" && confirmed) return <ConfirmedStep c={c} s={s} treatmentId={treatmentId} locationId={locationId} practitionerId={state.kind === "held" ? state.practitionerId : practitionerId} manageToken={confirmed} tx={tx} lang={lang} />;
+  if (phase === "confirmed" && confirmed) return <ConfirmedStep c={c} s={s} treatmentId={treatmentId} locationId={locationId} practitionerId={state.kind === "held" ? state.practitionerId : practitionerId} manageToken={confirmed} meetLink={meet} tx={tx} lang={lang} />;
   if (state.kind === "held" && (phase === "details" || !triageKey || !triage.data)) return (
     <DetailsStep c={c} s={s} token={state.token} treatmentId={treatmentId} locationId={locationId} practitionerId={state.practitionerId} tx={tx} lang={lang} again={again}
       triageKey={triageKey} triageAnswers={readJson<Answers>(ANSWERS_KEY) ?? undefined}
