@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { admin, computeSlots, localParts, localToUtc } from "./booking.server";
+import { attachMeeting } from "./meeting.server";
 
 type Ctx = { supabase: import("@supabase/supabase-js").SupabaseClient; claims: unknown };
 
@@ -13,7 +14,7 @@ async function staffTenant(context: Ctx) {
   const { data: ok } = await context.supabase.rpc("has_permission", { _perm: "agenda.appointments" });
   if (!ok) return null;
   const db = await admin();
-  const t = (await db.from("tenants").select("id, slug, display_name, time_zone, default_language, extra_languages, test_mode, booking_domains").eq("id", claims.app_metadata.active_tenant).single()).data;
+  const t = (await db.from("tenants").select("id, slug, display_name, time_zone, default_language, extra_languages, test_mode, booking_domains, google_meet_account, mail_sender, mail_sender_verified, ekis_export_enabled, stats_key_hash").eq("id", claims.app_metadata.active_tenant).single()).data;
   return t;
 }
 
@@ -49,5 +50,6 @@ export const createStaffAppointment = createServerFn({ method: "POST" })
       status: "booked", source: "agenda", notify: data.notify, booking_reason: data.reason, new_patient: false,
     }).select("id").single();
     if (ins.error) return { ok: false as const, reason: "failed" };
+    await attachMeeting(db, tenant, (ins.data as { id: string }).id);
     return { ok: true as const, id: (ins.data as { id: string }).id };
   });

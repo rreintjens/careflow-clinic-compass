@@ -131,6 +131,7 @@ export type Database = {
       }
       appointments: {
         Row: {
+          booking_link_id: string | null
           booking_reason: string | null
           cancel_reason: string | null
           created_at: string
@@ -143,6 +144,7 @@ export type Database = {
           location_id: string
           manage_token: string
           meet_link: string | null
+          meet_link_created_at: string | null
           new_patient: boolean | null
           notify: string
           patient_id: string | null
@@ -159,6 +161,7 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          booking_link_id?: string | null
           booking_reason?: string | null
           cancel_reason?: string | null
           created_at?: string
@@ -171,6 +174,7 @@ export type Database = {
           location_id: string
           manage_token?: string
           meet_link?: string | null
+          meet_link_created_at?: string | null
           new_patient?: boolean | null
           notify?: string
           patient_id?: string | null
@@ -187,6 +191,7 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          booking_link_id?: string | null
           booking_reason?: string | null
           cancel_reason?: string | null
           created_at?: string
@@ -199,6 +204,7 @@ export type Database = {
           location_id?: string
           manage_token?: string
           meet_link?: string | null
+          meet_link_created_at?: string | null
           new_patient?: boolean | null
           notify?: string
           patient_id?: string | null
@@ -215,6 +221,13 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "appointments_booking_link"
+            columns: ["tenant_id", "booking_link_id"]
+            isOneToOne: false
+            referencedRelation: "booking_links"
+            referencedColumns: ["tenant_id", "id"]
+          },
           {
             foreignKeyName: "appointments_location_id_fkey"
             columns: ["location_id"]
@@ -305,6 +318,85 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "tenants"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      booking_links: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          language: string
+          location_ids: string[]
+          name: string
+          practitioner_id: string | null
+          practitioner_mode: string | null
+          slug: string
+          sort: number
+          source: string
+          status: string
+          tenant_id: string
+          treatment_id: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          language?: string
+          location_ids?: string[]
+          name: string
+          practitioner_id?: string | null
+          practitioner_mode?: string | null
+          slug: string
+          sort?: number
+          source?: string
+          status?: string
+          tenant_id?: string
+          treatment_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          language?: string
+          location_ids?: string[]
+          name?: string
+          practitioner_id?: string | null
+          practitioner_mode?: string | null
+          slug?: string
+          sort?: number
+          source?: string
+          status?: string
+          tenant_id?: string
+          treatment_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_links_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_links_tenant_id_practitioner_id_fkey"
+            columns: ["tenant_id", "practitioner_id"]
+            isOneToOne: false
+            referencedRelation: "practitioners"
+            referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "booking_links_tenant_id_treatment_id_fkey"
+            columns: ["tenant_id", "treatment_id"]
+            isOneToOne: false
+            referencedRelation: "treatments"
+            referencedColumns: ["tenant_id", "id"]
           },
         ]
       }
@@ -405,6 +497,62 @@ export type Database = {
           },
           {
             foreignKeyName: "consult_notes_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ekis_exports: {
+        Row: {
+          answer_sets: number
+          created_at: string
+          created_by: string | null
+          document: Json
+          error: string
+          id: string
+          patients: number
+          ran_at: string
+          status: string
+          tenant_id: string
+          trigger_kind: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          answer_sets?: number
+          created_at?: string
+          created_by?: string | null
+          document?: Json
+          error?: string
+          id?: string
+          patients?: number
+          ran_at?: string
+          status?: string
+          tenant_id?: string
+          trigger_kind?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          answer_sets?: number
+          created_at?: string
+          created_by?: string | null
+          document?: Json
+          error?: string
+          id?: string
+          patients?: number
+          ran_at?: string
+          status?: string
+          tenant_id?: string
+          trigger_kind?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ekis_exports_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -2414,6 +2562,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stats_requests: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          endpoint: string
+          id: string
+          ok: boolean
+          requested_at: string
+          tenant_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          endpoint?: string
+          id?: string
+          ok?: boolean
+          requested_at?: string
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          endpoint?: string
+          id?: string
+          ok?: boolean
+          requested_at?: string
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stats_requests_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"

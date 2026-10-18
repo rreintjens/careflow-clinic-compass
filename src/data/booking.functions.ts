@@ -8,6 +8,7 @@ import { z } from "zod";
 
 import type { Slot } from "@/domain/slots";
 import { admin, computeSlots, localParts, localToUtc, resolveTenant, settingNum } from "./booking.server";
+import { attachMeeting } from "./meeting.server";
 
 
 
@@ -90,12 +91,17 @@ export const holdSlot = createServerFn({ method: "POST" })
     time: z.string().regex(/^\d{2}:\d{2}$/),
     language: z.enum(["nl", "en"]),
     source: z.string().max(80).optional(),
+    link: z.string().max(60).optional(),
     replaceToken: z.string().uuid().optional(),
   }))
   .handler(async ({ data }) => {
     const tenant = await resolveTenant(data.merk);
     if (!tenant) return { ok: false as const };
     const db = await admin();
+    const linkRow = data.link
+      ? (await db.from("booking_links").select("id, source").eq("tenant_id", tenant.id).eq("slug", data.link).eq("status", "active").maybeSingle()).data
+      : null;
+    if (data.link && !linkRow) return { ok: false as const };
     if (data.replaceToken) await db.from("appointments").update({ status: "released" }).eq("tenant_id", tenant.id).eq("hold_token", data.replaceToken).eq("status", "held");
     const minute = Number(data.time.slice(0, 2)) * 60 + Number(data.time.slice(3));
     const slots = await computeSlots(tenant, { treatmentId: data.treatmentId, locationId: data.locationId, practitionerIds: data.practitionerId === "any" ? [] : [data.practitionerId], from: data.date, days: 1 });
@@ -113,7 +119,7 @@ export const holdSlot = createServerFn({ method: "POST" })
     const ins = await db.from("appointments").insert({
       tenant_id: tenant.id, treatment_id: data.treatmentId, location_id: data.locationId, practitioner_id: pick.practitioner_id,
       starts_at: startsAt.toISOString(), ends_at: endsAt.toISOString(), status: "held", hold_expires_at: expires.toISOString(),
-      language: data.language, source: data.source ?? null,
+      language: data.language, source: data.source ?? linkRow?.source ?? null, booking_link_id: linkRow?.id ?? null,
     }).select("hold_token").single();
     if (ins.error || !ins.data?.hold_token) return { ok: false as const };
     // Lost a race: another hold for the same practitioner overlaps and was created first.
@@ -235,8 +241,9 @@ export const confirmBooking = createServerFn({ method: "POST" })
     await db.from("patient_consents").insert([
       { kind: "privacy", granted: true }, { kind: "gp", granted: data.consentGp }, { kind: "lsp", granted: data.consentLsp }, { kind: "marketing", granted: data.consentMarketing },
     ].map((c) => ({ ...c, tenant_id: tenant.id, patient_id: patientId, appointment_id: appt.id })));
+    const meeting = await attachMeeting(db, tenant, appt.id);
     if (data.triageKey && data.triageAnswers) {
       await db.from("answer_sets").insert({ tenant_id: tenant.id, patient_id: patientId, appointment_id: appt.id, questionnaire_key: data.triageKey, answers: data.triageAnswers as never, status: "completed", completed_at: new Date().toISOString() });
     }
-    return { ok: true as const, manageToken: appt.manage_token };
+    return { ok: true as const, manageToken: appt.manage_token, meetLink: meeting?.link ?? null };
   });

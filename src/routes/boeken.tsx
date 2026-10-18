@@ -10,24 +10,33 @@ import { dayPart, nextStep, sortLocations, type Catalog } from "@/domain/booking
 import { fmtTime, type Slot } from "@/domain/slots";
 import { cn } from "@/lib/utils";
 import { confirmBooking, getBookingCatalog, getBookingSlots, getTriage, holdSlot, lookupAddress, releaseHold } from "@/data/booking.functions";
+import { getBookingLink } from "@/data/booking-links.functions";
+import type { ChoiceMode } from "@/domain/booking";
 import { DobField, QuestionnaireRunner } from "@/features/questionnaire/QuestionnaireRunner";
 import { Select } from "@/components/Select";
 import { TextArea, TextField } from "@/components/Field";
 import type { Answers, FlowFile, QuestionnaireDef } from "@/domain/questionnaire/engine";
 
 const search = z.object({
-  merk: z.string().optional(), lang: z.enum(["nl", "en"]).optional(), bron: z.string().optional(),
+  merk: z.string().optional(), lang: z.enum(["nl", "en"]).optional(), bron: z.string().optional(), link: z.string().optional(),
   cat: z.string().optional(), sub: z.string().optional(), t: z.string().optional(), l: z.string().optional(),
   p: z.string().optional(), d: z.string().optional(), tijd: z.string().optional(), stap: z.string().optional(),
 });
 type Search = z.infer<typeof search>;
 
+const MODES = new Set<string>(["assigned", "optional", "required", "fixed"]);
+
 const catalogQuery = (merk: string | undefined) => queryOptions({ queryKey: ["booking-catalog", merk ?? ""], queryFn: () => getBookingCatalog({ data: { merk } }), staleTime: 60_000 });
+
+/** A booking link (boekingslink) answers part of the flow in advance; only fetched when ?link= is present. */
+const linkQuery = (merk: string | undefined, link: string | undefined) =>
+  queryOptions({ queryKey: ["booking-link", merk ?? "", link ?? ""], enabled: !!link, queryFn: () => getBookingLink({ data: { merk, link: link ?? "" } }), staleTime: 60_000 });
 
 export const Route = createFileRoute("/boeken")({
   validateSearch: search,
-  loaderDeps: ({ search: s }) => ({ merk: s.merk }),
-  loader: ({ context, deps }) => context.queryClient.ensureQueryData(catalogQuery(deps.merk)),
+  loaderDeps: ({ search: s }) => ({ merk: s.merk, link: s.link }),
+  loader: ({ context, deps }) =>
+    context.queryClient.ensureQueryData(catalogQuery(deps.merk)).then(() => (deps.link ? context.queryClient.ensureQueryData(linkQuery(deps.merk, deps.link)) : undefined)),
   head: () => ({
     meta: [
       { title: "Afspraak maken · The Body Clinic" },
@@ -48,7 +57,9 @@ function Booking() {
   const s = Route.useSearch();
   const navigate = useNavigate({ from: "/boeken" });
   const { data } = useSuspenseQuery(catalogQuery(s.merk));
-  const lang = s.lang ?? "nl";
+  const linkRes = useQuery(linkQuery(s.merk, s.link));
+  const link = linkRes.data && "found" in linkRes.data && linkRes.data.found ? linkRes.data.link : null;
+  const lang = s.lang ?? link?.language ?? "nl";
   const tx = (key: string, vars: Record<string, string | number> = {}) => {
     const r = data.ui.find((u) => (u.list_key === "booking_ui" || u.list_key === "questionnaire_ui") && u.value === key);
     const base = (lang === "en" && r?.label_en) || r?.label_nl || "";
@@ -59,16 +70,20 @@ function Booking() {
   if (!("categories" in data) || !data.tenant) return <Shell lang={lang} onLang={() => go({ lang: lang === "nl" ? "en" : "nl" })}><p className="pt-10 text-[15px]">{tx("unknown_brand")}</p></Shell>;
   const c = data as Full;
   const name = (x: { name_nl: string; name_en: string | null }) => (lang === "en" && x.name_en) || x.name_nl;
-  const locationsFor = (tid: string) => c.treatmentLocations.filter((x) => x.treatment_id === tid && c.locations.some((l) => l.id === x.location_id)).map((x) => x.location_id);
-  const catalog: Catalog = { categories: c.categories, links: c.links, treatments: c.treatments, locationsFor };
-  const step = nextStep(catalog, s);
+  const allowed = link ? new Set(link.locationIds) : null;
+  const mode = link?.practitionerMode && MODES.has(link.practitionerMode) ? (link.practitionerMode as ChoiceMode) : null;
+  const locationsFor = (tid: string) => c.treatmentLocations.filter((x) => x.treatment_id === tid && c.locations.some((l) => l.id === x.location_id) && (!allowed || allowed.has(x.location_id))).map((x) => x.location_id);
+  const treatments = (link?.treatmentId ? c.treatments.filter((t) => t.id === link.treatmentId) : c.treatments).map((t) => (mode ? { ...t, practitioner_choice: mode } : t));
+  const catalog: Catalog = { categories: c.categories, links: link?.treatmentId ? c.links.filter((x) => x.treatment_id === link.treatmentId) : c.links, treatments, locationsFor };
+  const eff: Search = link ? { ...s, t: s.t ?? link.treatmentId ?? undefined, p: mode === "fixed" ? link.practitionerId ?? undefined : s.p, bron: s.bron ?? (link.source || undefined) } : s;
+  const step = nextStep(catalog, eff);
   const progress = { category: 0.1, subcategory: 0.15, treatment: 0.2, location: 0.3, practitioner: 0.4, planner: 0.45, none: 0 }[step.kind];
   const back = step.kind === "category" ? undefined : () => window.history.back();
   const close = () => navigate({ search: { merk: s.merk, lang: s.lang, bron: s.bron } });
   const phone = c.tenant.phone;
 
   if (step.kind === "planner" && s.stap === "vasthouden" && s.d && s.tijd) {
-    return <HoldStep c={c} s={s} treatmentId={step.treatment} locationId={step.location} practitionerId={step.practitioner ?? "any"} tx={tx} lang={lang} go={go} />;
+    return <HoldStep c={c} s={eff} treatmentId={step.treatment} locationId={step.location} practitionerId={step.practitioner ?? "any"} tx={tx} lang={lang} go={go} />;
   }
 
   return (
@@ -340,6 +355,7 @@ function HoldStep({ c, s, treatmentId, locationId, practitionerId, tx, lang, go 
   const [initial, setInitial] = useState<Answers | null>(null);
   const [phase, setPhase] = useState<"triage" | "details" | "confirmed">("triage");
   const [confirmed, setConfirmed] = useState<string | null>(null);
+  const [meet, setMeet] = useState<string | null>(null);
   const started = useRef(false);
   const rejected = useRef(false);
   const confirmedRef = useRef(false);
@@ -349,7 +365,7 @@ function HoldStep({ c, s, treatmentId, locationId, practitionerId, tx, lang, go 
     started.current = true;
     setInitial(readJson<Answers>(ANSWERS_KEY) ?? {});
     const prev = readJson<{ token: string }>(HOLD_KEY);
-    hold({ data: { merk: s.merk, treatmentId, locationId, practitionerId, date: s.d ?? "", time: s.tijd ?? "", language: lang === "en" ? "en" : "nl", source: s.bron, replaceToken: prev?.token } }).then((r) => {
+    hold({ data: { merk: s.merk, treatmentId, locationId, practitionerId, date: s.d ?? "", time: s.tijd ?? "", language: lang === "en" ? "en" : "nl", source: s.bron, link: s.link, replaceToken: prev?.token } }).then((r) => {
       if (!r.ok) { setState({ kind: "taken" }); return; }
       sessionStorage.setItem(HOLD_KEY, JSON.stringify({ token: r.token, expiresAt: r.expiresAt }));
       setState({ kind: "held", token: r.token, expiresAt: Date.parse(r.expiresAt), minutes: r.holdMinutes, practitionerId: r.practitionerId });
@@ -384,12 +400,12 @@ function HoldStep({ c, s, treatmentId, locationId, practitionerId, tx, lang, go 
     </Shell>
   );
   if (state.kind === "loading" || initial === null || (triageKey && triage.isLoading && phase === "triage")) return <Shell lang={lang} progress={0.5}><div className="h-40 animate-pulse rounded-[16px] bg-sand" /></Shell>;
-  if (phase === "confirmed" && confirmed) return <ConfirmedStep c={c} s={s} treatmentId={treatmentId} locationId={locationId} practitionerId={state.kind === "held" ? state.practitionerId : practitionerId} manageToken={confirmed} tx={tx} lang={lang} />;
+  if (phase === "confirmed" && confirmed) return <ConfirmedStep c={c} s={s} treatmentId={treatmentId} locationId={locationId} practitionerId={state.kind === "held" ? state.practitionerId : practitionerId} manageToken={confirmed} meetLink={meet} tx={tx} lang={lang} />;
   if (state.kind === "held" && (phase === "details" || !triageKey || !triage.data)) return (
     <DetailsStep c={c} s={s} token={state.token} treatmentId={treatmentId} locationId={locationId} practitionerId={state.practitionerId} tx={tx} lang={lang} again={again}
       triageKey={triageKey} triageAnswers={readJson<Answers>(ANSWERS_KEY) ?? undefined}
       onExpired={() => setState({ kind: "expired", minutes: state.minutes })}
-      onDone={(m) => { confirmedRef.current = true; sessionStorage.removeItem(ANSWERS_KEY); sessionStorage.removeItem(HOLD_KEY); setConfirmed(m); setPhase("confirmed"); }} />
+      onDone={(m, meeting) => { confirmedRef.current = true; sessionStorage.removeItem(ANSWERS_KEY); sessionStorage.removeItem(HOLD_KEY); setConfirmed(m); setMeet(meeting ?? null); setPhase("confirmed"); }} />
   );
   if (state.kind !== "held" || !triage.data) return null;
   const ui = Object.fromEntries(c.ui.filter((u) => u.list_key === "questionnaire_ui").map((u) => [u.value, (lang === "en" && u.label_en) || u.label_nl]));
@@ -439,7 +455,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) { return <h2 
 /** "Je gegevens": one form for new and existing patients; date of birth comes from the triage when asked there. */
 function DetailsStep({ c, s, token, treatmentId, locationId, practitionerId, tx, lang, again, triageKey, triageAnswers, onExpired, onDone }: {
   c: Full; s: Search; token: string; treatmentId: string; locationId: string; practitionerId: string; tx: Tx; lang: string; again: () => void;
-  triageKey: string | null; triageAnswers: Answers | undefined; onExpired: () => void; onDone: (manageToken: string) => void;
+  triageKey: string | null; triageAnswers: Answers | undefined; onExpired: () => void; onDone: (manageToken: string, meetLink: string | null) => void;
 }) {
   const confirm = useServerFn(confirmBooking);
   const lookup = useServerFn(lookupAddress);
@@ -487,7 +503,7 @@ function DetailsStep({ c, s, token, treatmentId, locationId, practitionerId, tx,
         referral: existing ? undefined : f.referral || undefined, note: f.note || undefined, consentPrivacy: true, consentGp: cons.gp, gpName: cons.gpName || undefined, consentLsp: cons.lsp, consentMarketing: cons.marketing,
         triageKey: triageKey ?? undefined, triageAnswers,
       } });
-      if (r.ok) onDone(r.manageToken);
+      if (r.ok) onDone(r.manageToken, r.meetLink);
       else if (r.reason === "expired") onExpired();
       else setError(r.reason === "young" ? tx("d_dob_young") : tx("d_failed"));
     } catch { setError(tx("d_failed")); } finally { setBusy(false); }
@@ -584,7 +600,7 @@ function DetailsStep({ c, s, token, treatmentId, locationId, practitionerId, tx,
 const icsDate = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
 
 /** "Je afspraak staat gepland" with calendar file and the start of the medical questionnaire. */
-function ConfirmedStep({ c, s, treatmentId, locationId, practitionerId, manageToken, tx, lang }: { c: Full; s: Search; treatmentId: string; locationId: string; practitionerId: string; manageToken: string; tx: Tx; lang: string }) {
+function ConfirmedStep({ c, s, treatmentId, locationId, practitionerId, manageToken, meetLink, tx, lang }: { c: Full; s: Search; treatmentId: string; locationId: string; practitionerId: string; manageToken: string; meetLink: string | null; tx: Tx; lang: string }) {
   const navigate = useNavigate();
   const t = c.treatments.find((x) => x.id === treatmentId);
   const l = c.locations.find((x) => x.id === locationId);
@@ -620,6 +636,7 @@ function ConfirmedStep({ c, s, treatmentId, locationId, practitionerId, manageTo
           <p className="text-[16px] leading-[1.5]">{tx("c_expects", { naam: p ? `${p.first_name} ${p.last_name}` : c.tenant.name, dag: fmtLong(s.d ?? "", lang), tijd: s.tijd ?? "" })}</p>
         </div>
         <p className="mt-4 flex items-center gap-3 text-[14px]"><img src={l?.kind === "online" ? "/ui-icons/videogesprek.svg" : "/ui-icons/locatie.svg"} alt="" className="size-4" />{l?.kind === "online" ? tx("d_online_meet") : `${l?.name ?? ""}, ${l?.address ?? ""}`}</p>
+        {l?.kind === "online" && meetLink && <p className="mt-2 flex items-center gap-3 text-[14px]"><img src="/ui-icons/videogesprek.svg" alt="" className="size-4 shrink-0" /><a href={meetLink} target="_blank" rel="noreferrer" className="truncate text-primary underline">{tx("m_join")}</a></p>}
         <p className="mt-2 flex items-center gap-3 text-[14px]"><img src="/ui-icons/klok.svg" alt="" className="size-4" />{tName}, {tx("c_minutes", { min: t?.duration_min ?? 0 })}</p>
         <button type="button" onClick={ics} className="mt-4 text-[14px] underline">{tx("c_add_calendar")}</button>
       </div>

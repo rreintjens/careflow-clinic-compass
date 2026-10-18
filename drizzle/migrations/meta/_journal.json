@@ -141,6 +141,13 @@
       "when": 1792284095932,
       "tag": "0019_private_mail_image_access",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1792284982176,
+      "tag": "0020_phase6_booking_links_and_integrations",
+      "breakpoints": true
     }
   ]
 }

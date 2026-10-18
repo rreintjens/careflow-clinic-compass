@@ -11,7 +11,7 @@ export async function admin() {
 export async function resolveTenant(slug: string | undefined) {
   const db = await admin();
   const host = normalizeHost(getRequestHeader("x-forwarded-host") ?? getRequestHeader("host"));
-  const { data } = await db.from("tenants").select("id, slug, display_name, time_zone, default_language, extra_languages, test_mode, booking_domains");
+  const { data } = await db.from("tenants").select("id, slug, display_name, time_zone, default_language, extra_languages, test_mode, booking_domains, google_meet_account, mail_sender, mail_sender_verified, ekis_export_enabled, stats_key_hash");
   const rows = data ?? [];
   const byHost = rows.find((t) => host && t.booking_domains.includes(host));
   if (byHost) return byHost;
