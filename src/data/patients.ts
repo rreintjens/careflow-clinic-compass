@@ -44,16 +44,17 @@ export async function searchPatients(q: string) {
 }
 
 /** Everything the record header and its five tabs need. */
-export const dossierQuery = (id: string) =>
-  queryOptions({
-    queryKey: ["dossier", id],
-    queryFn: async () => {
+async function loadDossier(id: string) {
+  {
+    {
       const [p, appts, sets] = await Promise.all([
         supabase.from("patients").select("*").eq("id", id).maybeSingle(),
         supabase.from("appointments").select(APPT).eq("patient_id", id).neq("status", "hold").order("starts_at", { ascending: false }),
         supabase.from("answer_sets").select("id, appointment_id, questionnaire_key, status, completed_at, created_at, updated_at, signals, answers").eq("patient_id", id).order("created_at", { ascending: false }),
       ]);
       return { patient: must(p), appointments: must(appts), sets: must(sets) };
-    },
-  });
-export type Dossier = Awaited<ReturnType<ReturnType<typeof dossierQuery>["queryFn"] & object>>;
+    }
+  }
+}
+export type Dossier = Awaited<ReturnType<typeof loadDossier>>;
+export const dossierQuery = (id: string) => queryOptions({ queryKey: ["dossier", id], queryFn: () => loadDossier(id) });
