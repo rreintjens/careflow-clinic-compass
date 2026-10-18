@@ -99,7 +99,7 @@ export function ConsultMode({ patient, appt }: { patient: { id: string; first_na
               )) : (
                 <div className="rounded-[14px] bg-background p-3">
                   <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Stappen van dit consult</p>
-                  {steps.map((s, i) => <div key={s.value} className="flex items-center gap-3 py-1.5"><Checkbox checked={!!v.checklist?.[s.value]} label={`${i + 1}. ${s.label_nl}`} onChange={(c) => patch({ checklist: { ...v.checklist, [s.value]: c } })} /><span className="text-[13px]">{i + 1}. {s.label_nl}</span></div>)}
+                  {steps.map((s, i) => <div key={s.value} className="py-1.5"><Checkbox checked={!!v.checklist?.[s.value]} label={`${i + 1}. ${s.label_nl}`} onChange={(c) => patch({ checklist: { ...v.checklist, [s.value]: c } })} /></div>)}
                 </div>
               )}
             </div>
