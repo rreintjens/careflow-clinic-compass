@@ -53,6 +53,10 @@ function Medical() {
   const sections = ["intake", "anamnese", "metingen"];
   const go = (i: number) => { setTab(i); document.getElementById(sections[i] ?? "")?.scrollIntoView({ behavior: "smooth" }); };
 
+  const tri = d.sets.find((s) => s.questionnaire_key === "triage");
+  const ta = (tri?.answers ?? {}) as Record<string, unknown>;
+  const triRow = tri && ta["weight_kg"] ? [{ id: "triage", measured_on: tri.created_at, weight_kg: Number(ta["weight_kg"]), height_cm: Number(ta["height_cm"]) || null, waist_cm: Number(ta["waist_cm"]) || null, bp_systolic: null, bp_diastolic: null, pulse: null, source: "triage" }] : [];
+  const rows = [...triRow, ...(med?.measurements ?? [])];
   const intake = d.sets.filter((s) => s.status === "completed").slice().reverse();
   return (
     <div className="flex flex-col gap-6">
@@ -96,15 +100,15 @@ function Medical() {
         <table className="mt-4 w-full text-[13px]">
           <thead><tr className="border-b border-mist text-left text-[12px] text-muted-foreground">{["Datum", "Gewicht", "BMI", "Buikomvang", "Bloeddruk", "Pols", "Door"].map((h) => <th key={h} className="whitespace-nowrap px-2.5 py-2.5 font-normal">{h}</th>)}</tr></thead>
           <tbody>
-            {(med?.measurements ?? []).map((m) => {
-              const h = m.height_cm ?? med?.measurements.find((x) => x.height_cm)?.height_cm;
+            {rows.map((m) => {
+              const h = m.height_cm ?? rows.find((x) => x.height_cm)?.height_cm;
               const bmi = m.weight_kg && h ? (m.weight_kg / (h / 100) ** 2).toFixed(1).replace(".", ",") : "–";
               return <tr key={m.id} className="border-b border-mist">{[new Date(m.measured_on).toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "numeric" }), m.weight_kg ? `${String(m.weight_kg).replace(".", ",")} kg` : "–", bmi, m.waist_cm ? `${m.waist_cm} cm` : "–", m.bp_systolic ? `${m.bp_systolic}/${m.bp_diastolic ?? ""}` : "–", m.pulse ?? "–", m.source === "triage" ? "Patiënt, bij het boeken" : "Medewerker"].map((v, i) => <td key={i} className="whitespace-nowrap px-2.5 py-3">{v}</td>)}</tr>;
             })}
           </tbody>
         </table>
         <PillButton variant="outline" className="mt-4" onClick={() => setEdit("measure")}>Meting toevoegen</PillButton>
-        {(med?.measurements.length ?? 0) < 2 && <p className="mt-2 text-[12px] text-muted-foreground">Hier komt de grafiek van het gewichtsverloop zodra er twee metingen zijn.</p>}
+        {rows.length < 2 && <p className="mt-2 text-[12px] text-muted-foreground">Hier komt de grafiek van het gewichtsverloop zodra er twee metingen zijn.</p>}
       </section>
 
       {edit === "anamnesis" && med && <AnamnesisModal id={id} med={med} onClose={() => setEdit(null)} />}
