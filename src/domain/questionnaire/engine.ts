@@ -23,7 +23,6 @@ export interface Item {
   allow_unknown?: string;
   fields?: Record<string, { min?: number; max?: number }>;
   show_bmi_after_digits?: number;
-  show_list?: boolean;
   show_if?: Condition;
   red_if?: Condition;
   red_variant?: string;
@@ -147,9 +146,6 @@ export const isQuestionPage = (p: Page) => !!p.items?.length;
 
 export const visiblePages = (q: QuestionnaireDef, ctx: Ctx) => q.pages.filter((p) => evalCondition(p.show_if, ctx));
 export const visibleItems = (p: Page, ctx: Ctx) => (p.items ?? []).filter((i) => evalCondition(i.show_if, ctx));
-
-/** Whether an answer summary shows the list of earlier answers. Only off when the editor says so. */
-export const showsAnswerList = (i: Item) => i.type !== "answer_summary" || i.show_list !== false;
 
 /** Fields an item writes (height_weight writes two). */
 export const itemFields = (i: Item) => (i.type === "height_weight" ? Object.keys(i.fields ?? { height_cm: {}, weight_kg: {} }) : i.type === "answer_summary" ? [] : [i.id]);
