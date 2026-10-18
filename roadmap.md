@@ -31,6 +31,7 @@ Owner asked to continue through all phases without pausing for confirmation.
   - [x] Owner report: BMI from saved weight/height in Medisch and Overzicht; measurements visible in timeline; verified signed in, saved and reloaded
   - [x] Owner report: dossier tabs showed old placeholder — code and served modules verified current; stale preview tab (needs hard reload)
 - [ ] Phase 6 – Mails and integrations
+  - [ ] Shared delivery-ready mail document and preview matching supplied email layout; verify authenticated online/clinic and phone previews
   - [x] Private image upload/library, practitioner signature preview and phone-format toggle; upload, save/reload and library selection verified as admin with MFA; 31 domain tests passed
   - [x] Template management foundation: moment and treatment views, category/treatment overrides, ordered conditional blocks, Dutch/English fallback; authenticated save and reload verified; 22 domain tests passed
   - [ ] Complete mail designs: full supplied copy, exact mail layout and delivery-ready responsive HTML remain; private image library/upload and practitioner photo preview completed
