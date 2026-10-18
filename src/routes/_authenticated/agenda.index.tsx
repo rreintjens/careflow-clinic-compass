@@ -8,10 +8,11 @@ import { PageHeader } from "@/components/PageHeader";
 import { PillButton } from "@/components/PillButton";
 import { SegmentedControl } from "@/components/SegmentedControl";
 import { Select } from "@/components/Select";
-import { agendaApptsQuery, agendaRefQuery, type AgendaAppt } from "@/data/agenda";
+import { agendaApptsQuery, agendaRefQuery } from "@/data/agenda";
 import { daySegments, freePlaces, hourRange, weekStart, type Segment } from "@/domain/agenda";
 import type { SlotBlock, SlotException } from "@/domain/slots";
 import { fmtTime } from "@/domain/slots";
+import { PatientCard } from "@/features/agenda/PatientCard";
 import { NewAppointmentModal } from "@/features/agenda/NewAppointmentModal";
 import { cn } from "@/lib/utils";
 
@@ -22,7 +23,6 @@ const local = (iso: string) => {
 };
 const today = () => local(new Date().toISOString()).date;
 const shift = (d: string, n: number) => { const x = new Date(`${d}T12:00:00Z`); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
-const ageOf = (dob: string, on: string) => { const [y, m, d] = dob.split("-").map(Number) as [number, number, number]; const [Y, M, D] = on.split("-").map(Number) as [number, number, number]; return Y - y - (M < m || (M === m && D < d) ? 1 : 0); };
 const isoWeek = (date: string) => { const d = new Date(`${date}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + 3 - ((d.getUTCDay() + 6) % 7)); const y = new Date(Date.UTC(d.getUTCFullYear(), 0, 4)); return 1 + Math.round(((d.getTime() - y.getTime()) / 864e5 - 3 + ((y.getUTCDay() + 6) % 7)) / 7); };
 const fmt = (d: string, o: Intl.DateTimeFormatOptions) => new Date(`${d}T12:00:00Z`).toLocaleDateString("nl-NL", { ...o, timeZone: "UTC" });
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -107,7 +107,7 @@ function Page() {
         <div className="flex flex-wrap items-center gap-3">
           <Select label="Behandelaar" className="w-[230px] [&>label]:sr-only" value={practitionerId ?? "all"} onChange={(v) => go({ behandelaar: v === "all" ? undefined : v })}
             options={[...(week ? [] : [{ value: "all", label: "Alle behandelaars" }]), ...(ref?.practitioners ?? []).map((p) => ({ value: p.id, label: `${p.first_name} ${p.last_name}` }))]} />
-          <SegmentedControl label="Weergave" value={week ? "week" : "dag"} onChange={(v) => go({ weergave: v === "week" ? "week" : undefined, afspraak: undefined })} options={[{ value: "dag", label: "Dag" }, { value: "week", label: "Week" }]} />
+          <SegmentedControl label="Weergave" value={week ? "week" : "dag"} onChange={(v) => v === "mijn" ? void navigate({ to: "/agenda/mijn-dag", search: { datum: s.datum } }) : go({ weergave: v === "week" ? "week" : undefined, afspraak: undefined })} options={[{ value: "dag", label: "Dag" }, { value: "week", label: "Week" }, { value: "mijn", label: "Mijn dag" }]} />
           <Select label="Locatie" className="w-[190px] [&>label]:sr-only" value={s.locatie ?? "all"} onChange={(v) => go({ locatie: v === "all" ? undefined : v })}
             options={[{ value: "all", label: "Alle locaties" }, ...(ref?.locations ?? []).map((l) => ({ value: l.id, label: l.name }))]} />
           {!week && <Select label="Categorie" className="w-[200px] [&>label]:sr-only" value={s.categorie ?? "all"} onChange={(v) => go({ categorie: v === "all" ? undefined : v })}
@@ -163,7 +163,7 @@ function Page() {
           </div>
         </>
       )}
-      {selected && ref && <AppointmentPanel a={selected} treatment={ref.treatments.find((t) => t.id === selected.treatment_id)?.name_nl ?? ""} online={view?.locs.get(selected.location_id)?.kind === "online"} onClose={() => go({ afspraak: undefined })} />}
+      {selected && ref && <aside className="fixed inset-y-0 right-0 z-30 w-[420px] overflow-y-auto bg-background shadow-[0_8px_24px_rgba(57,51,46,0.10)]"><PatientCard a={selected} treatment={ref.treatments.find((t) => t.id === selected.treatment_id)?.name_nl ?? ""} online={view?.locs.get(selected.location_id)?.kind === "online"} onClose={() => go({ afspraak: undefined })} /></aside>}
       {ref && <NewAppointmentModal open={newOpen} onOpenChange={setNewOpen} data={ref} onPickInAgenda={(p) => go({ weergave: "week", behandelaar: p })} />}
     </div>
   );
@@ -182,36 +182,3 @@ function SegBox({ g, top0, name, online }: { g: Segment; top0: number; name: str
   );
 }
 
-type Appt = AgendaAppt & { s: { date: string; minute: number }; e: { minute: number } };
-
-/** The single patient card (short form); the full record opens via "Open dossier". */
-function AppointmentPanel({ a, treatment, online, onClose }: { a: Appt; treatment: string; online: boolean; onClose: () => void }) {
-  const p = a.patient;
-  const day = cap(fmt(a.s.date, { weekday: "long", day: "numeric", month: "long" }));
-  const facts: Array<[string, string]> = [["Telefoon", p?.phone ?? ""], ["Geboekt via", a.referral_source ?? a.source ?? ""]];
-  return (
-    <aside className="fixed inset-y-0 right-0 z-30 flex w-[420px] flex-col gap-5 overflow-y-auto bg-background p-6 shadow-[0_8px_24px_rgba(57,51,46,0.10)]">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-[12px] text-muted-foreground">{day} · {fmtTime(a.s.minute)} tot {fmtTime(a.e.minute)}{online ? " · online" : ""}</p>
-          <h2 className="mt-1 text-[22px] font-semibold">{p ? `${p.first_name} ${p.last_name}` : ""}</h2>
-          <p className="text-[13px] text-muted-foreground">{[p?.patient_number, p?.date_of_birth ? `${ageOf(p.date_of_birth, a.s.date)} jaar` : null, `${a.new_patient ? "eerste " : ""}${treatment.toLowerCase()}`].filter(Boolean).join(" · ")}</p>
-        </div>
-        <button type="button" aria-label="Sluiten" onClick={onClose} className="flex size-9 items-center justify-center rounded-full bg-sand"><img src="/ui-icons/kruis.svg" alt="" className="size-4" /></button>
-      </div>
-      <Link to="/patienten"><PillButton size="lg" className="w-full">Open dossier</PillButton></Link>
-      {online && (
-        <div className="flex items-center gap-4 rounded-[14px] bg-sand p-4">
-          {a.meet_link
-            ? <a href={a.meet_link} target="_blank" rel="noreferrer"><PillButton variant="outline"><img src="/ui-icons/videogesprek.svg" alt="" className="size-4" />Start Google Meet</PillButton></a>
-            : <PillButton variant="outline" disabled><img src="/ui-icons/videogesprek.svg" alt="" className="size-4" />Start Google Meet</PillButton>}
-          <p className="text-[12px] text-muted-foreground">Dezelfde link als in je Google Agenda en in de mail van de patiënt.</p>
-        </div>
-      )}
-      <dl className="flex flex-col">
-        {facts.map(([k, v]) => <div key={k} className="flex justify-between gap-4 border-b border-mist py-2.5 text-[13px]"><dt className="text-muted-foreground">{k}</dt><dd className="whitespace-nowrap">{v}</dd></div>)}
-      </dl>
-      <p className="text-[12px] text-muted-foreground">Deze kaart is overal hetzelfde: in de agenda, in Mijn dag en in de patiëntenlijst. Het volledige dossier open je met de knop bovenaan.</p>
-    </aside>
-  );
-}

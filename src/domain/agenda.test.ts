@@ -30,3 +30,11 @@ describe("freePlaces", () => {
 describe("weekStart", () => {
   it.each([["2026-10-20", "2026-10-19"], ["2026-10-19", "2026-10-19"], ["2026-10-25", "2026-10-19"]])("%s → %s", (d, w) => expect(weekStart(d)).toBe(w));
 });
+
+import { nowAndNext } from "./agenda";
+describe("nowAndNext", () => {
+  const a = [{ start: 600, end: 630 }, { start: 570, end: 600 }, { start: 690, end: 720 }];
+  it("during 09:30–10:00 at 09:52", () => expect(nowAndNext(a, 592)).toEqual({ current: a[1], next: a[0], minutesLeft: 8, minutesUntil: 8 }));
+  it("between appointments", () => expect(nowAndNext(a, 650)).toEqual({ current: null, next: a[2], minutesLeft: null, minutesUntil: 40 }));
+  it("after the last", () => expect(nowAndNext(a, 800)).toEqual({ current: null, next: null, minutesLeft: null, minutesUntil: null }));
+});
