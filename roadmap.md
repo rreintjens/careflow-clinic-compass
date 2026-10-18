@@ -37,7 +37,14 @@ Owner asked to continue through all phases without pausing for confirmation.
   - [x] Template management foundation: moment and treatment views, category/treatment overrides, ordered conditional blocks, Dutch/English fallback; authenticated save and reload verified; 22 domain tests passed
   - [ ] Complete mail designs: injectables variant and exact hero/support-card/footer details remain; standalone hero/logo assets absent from package. Medical-weight-loss copy, introduction grouping, shared responsive HTML, private image library and practitioner photo preview completed
   - [ ] Test and automatic mails: blocked on verified sender setup; no outbound mail wired yet
-  - [ ] Google Meet interface/mock, eKis export stub, statistics API, booking links with sources
+  - [x] Google Meet interface/mock, eKis export stub, statistics API, booking links with sources
+    - [x] Booking links: list with usage, five-step create/edit modal (treatment, locations, practitioner choice, language, name/source), preview of what the patient sees, short link + copy; `?merk=` only for test brands
+    - [x] eKis: daily 06:00 export per brand behind an interface with a mock file (new patients, patient number, answers, since last run), manual "Nu exporteren", download of the made file, cron endpoint refuses callers without the schedule token
+    - [x] Statistics API: totals only (arrivals, appointments, no-shows, occupancy, triage reasons, per source), own key per brand, every pull logged, refuses unknown keys with "ongeldige sleutel"
+    - [x] Google Meet: provider interface + mock (link kept when moving, same link on repeat), account shown and editable on Koppelingen, link visible in agenda, Mijn dag and the record
+    - [x] Koppelingen and Dashboard screens built from the design reference; fixed texts read from option lists `koppelingen_ui` / `dashboard_ui`
+    - [x] Links verified from the patient side: a link with a fixed treatment opens straight at the time choice (practitioner "Geen voorkeur"), a link without one starts at the category choice narrowed to what the link's location offers, an unknown link falls back to the normal entry; the statistics and export endpoints refuse callers without a key or token
+    - [ ] Staff screens (Boekingslinks, Koppelingen, Dashboard) not yet opened in a browser: they need a second-factor session and the test staff password is not available in this environment
 - [x] Medical questionnaire: 'Val je af of kom je nog aan?' had no answers in the seed; v2 adds them from the design HTML
 - [x] Questionnaire runner: pressing the button with missing/invalid answers highlights them and scrolls to the first (owner request)
 - [x] Vragenlijst: volgende pagina begint bovenaan
