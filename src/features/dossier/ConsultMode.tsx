@@ -99,7 +99,7 @@ export function ConsultMode({ patient, appt }: { patient: { id: string; first_na
               )) : (
                 <div className="rounded-[14px] bg-background p-3">
                   <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Stappen van dit consult</p>
-                  {steps.map((s, i) => <div key={s.value} className="py-1.5"><Checkbox checked={!!v.checklist?.[s.value]} label={`${i + 1}. ${s.label_nl}`} onChange={(c) => patch({ checklist: { ...v.checklist, [s.value]: c } })} /><span className="ml-8 -mt-5 block text-[13px]">{i + 1}. {s.label_nl}</span></div>)}
+                  {steps.map((s, i) => <div key={s.value} className="flex items-center gap-3 py-1.5"><Checkbox checked={!!v.checklist?.[s.value]} label={`${i + 1}. ${s.label_nl}`} onChange={(c) => patch({ checklist: { ...v.checklist, [s.value]: c } })} /><span className="text-[13px]">{i + 1}. {s.label_nl}</span></div>)}
                 </div>
               )}
             </div>
@@ -123,7 +123,7 @@ function FinishModal({ note, patient, appt, steps, onClose, onDone }: { note: No
   });
   const row = (ok: boolean, title: string, sub: string, link?: React.ReactNode) => (
     <div className="flex items-center gap-3 rounded-[14px] p-3.5 ring-1 ring-mist">
-      <span className={cn("flex size-7 items-center justify-center rounded-full", ok ? "bg-teal-light" : "bg-warning-light")}><img src={ok ? "/ui-icons/vinkje.svg" : "/ui-icons/waarschuwing.svg"} alt="" className="size-3.5" /></span>
+      <span className={cn("flex size-7 items-center justify-center rounded-full", ok ? "bg-teal-light" : "bg-warning-bg")}><img src={ok ? "/ui-icons/vinkje.svg" : "/ui-icons/waarschuwing.svg"} alt="" className="size-3.5" /></span>
       <div className="flex-1"><p className="text-[14px]">{title}</p><p className="text-[12px] text-muted-foreground">{sub}</p></div>{link}
     </div>
   );
