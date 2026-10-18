@@ -54,3 +54,5 @@ Owner asked to continue through all phases without pausing for confirmation.
 - [x] Instellingen > Algemeen: kaart Merk met tenantgegevens (naam, land, tijdzone, boekingsdomeinen, testmodus); bewerken alleen voor groepsbeheerders (RLS), overigen alleen-lezen. Talen/e-mail waren al tenant-scoped instellingen. Browsercheck open: aal2 nodig
 
 - [x] Login boven de organisaties (groepsbeheerder zonder lidmaatschap, alle merken in wisselaar, superadmin-rechten overall).
+- [ ] BUG: na wisselen naar merk zonder lidmaatschap laadt de site niet meer — current_tenant() geeft null voor groepsbeheerder zonder lidmaatschap; fix: claim honoreren voor groepsbeheerders.
+- [ ] Testdata gebruikerslijst opruimen (Grappen-namen → echte teamnamen uit team.csv); superadmin@example.test = alleen superadmin tbc-nl (geen groepsbeheer, geen tbc-de) zodat niet elke superadmin kan wisselen; groepsbeheer blijft op group-admin@example.test.
