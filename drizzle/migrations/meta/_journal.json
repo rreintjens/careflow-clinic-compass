@@ -225,6 +225,13 @@
       "when": 1792339107432,
       "tag": "0031_mfa_required_no_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1792339136020,
+      "tag": "0032_mfa_required_from_claim",
+      "breakpoints": true
     }
   ]
 }
