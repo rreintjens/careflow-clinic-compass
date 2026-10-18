@@ -13,7 +13,6 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as BoekenRouteImport } from './routes/boeken'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
-import { Route as AuthenticatedPatientenRouteImport } from './routes/_authenticated/patienten'
 import { Route as AfspraakTokenRouteImport } from './routes/afspraak.$token'
 import { Route as AuthIndexRouteImport } from './routes/auth.index'
 import { Route as Auth2faRouteImport } from './routes/auth.2fa'
@@ -55,11 +54,6 @@ const BoekenRoute = BoekenRouteImport.update({
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedPatientenRoute = AuthenticatedPatientenRouteImport.update({
-  id: '/patienten',
-  path: '/patienten',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AfspraakTokenRoute = AfspraakTokenRouteImport.update({
@@ -201,7 +195,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/boeken': typeof BoekenRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/patienten': typeof AuthenticatedPatientenRoute
   '/afspraak/$token': typeof AfspraakTokenRoute
   '/auth/2fa': typeof Auth2faRoute
   '/vragenlijst/$token': typeof VragenlijstTokenRoute
@@ -230,7 +223,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/boeken': typeof BoekenRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/patienten': typeof AuthenticatedPatientenRoute
   '/afspraak/$token': typeof AfspraakTokenRoute
   '/auth/2fa': typeof Auth2faRoute
   '/vragenlijst/$token': typeof VragenlijstTokenRoute
@@ -261,7 +253,6 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/boeken': typeof BoekenRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
-  '/_authenticated/patienten': typeof AuthenticatedPatientenRoute
   '/afspraak/$token': typeof AfspraakTokenRoute
   '/auth/2fa': typeof Auth2faRoute
   '/vragenlijst/$token': typeof VragenlijstTokenRoute
@@ -292,7 +283,6 @@ export interface FileRouteTypes {
     | '/'
     | '/boeken'
     | '/dashboard'
-    | '/patienten'
     | '/afspraak/$token'
     | '/auth/2fa'
     | '/vragenlijst/$token'
@@ -321,7 +311,6 @@ export interface FileRouteTypes {
     | '/'
     | '/boeken'
     | '/dashboard'
-    | '/patienten'
     | '/afspraak/$token'
     | '/auth/2fa'
     | '/vragenlijst/$token'
@@ -351,7 +340,6 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/boeken'
     | '/_authenticated/dashboard'
-    | '/_authenticated/patienten'
     | '/afspraak/$token'
     | '/auth/2fa'
     | '/vragenlijst/$token'
@@ -415,13 +403,6 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/patienten': {
-      id: '/_authenticated/patienten'
-      path: '/patienten'
-      fullPath: '/patienten'
-      preLoaderRoute: typeof AuthenticatedPatientenRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/afspraak/$token': {
@@ -590,7 +571,6 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
-  AuthenticatedPatientenRoute: typeof AuthenticatedPatientenRoute
   AuthenticatedAgendaMijnDagRoute: typeof AuthenticatedAgendaMijnDagRoute
   AuthenticatedAgendaRoosterRoute: typeof AuthenticatedAgendaRoosterRoute
   AuthenticatedBoekingsflowBoekingslinksRoute: typeof AuthenticatedBoekingsflowBoekingslinksRoute
@@ -614,7 +594,6 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
-  AuthenticatedPatientenRoute: AuthenticatedPatientenRoute,
   AuthenticatedAgendaMijnDagRoute: AuthenticatedAgendaMijnDagRoute,
   AuthenticatedAgendaRoosterRoute: AuthenticatedAgendaRoosterRoute,
   AuthenticatedBoekingsflowBoekingslinksRoute:
