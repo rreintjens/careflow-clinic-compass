@@ -16,7 +16,11 @@ export const Route = createFileRoute("/_authenticated")({
     const { data } = await supabase.auth.getUser();
     if (!data.user) throw redirect({ to: "/auth" });
     const aal = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    if (aal.data?.currentLevel !== "aal2") throw redirect({ to: "/auth/2fa" });
+    if (aal.data?.currentLevel !== "aal2") {
+      // The per-tenant setting decides whether the second step is required (also enforced in RLS via is_aal2).
+      const { data: required } = await supabase.rpc("mfa_required");
+      if (required !== false) throw redirect({ to: "/auth/2fa" });
+    }
     const staff = await context.queryClient.ensureQueryData(staffContextQuery);
     await context.queryClient.ensureQueryData(myTenantsQuery);
     if (!staff) {

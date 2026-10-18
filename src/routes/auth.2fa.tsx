@@ -46,6 +46,8 @@ function TwoFactorPage() {
       try {
         const aal = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
         if (aal.data?.currentLevel === "aal2") return goLanding();
+        const { data: required } = await supabase.rpc("mfa_required");
+        if (required === false) return goLanding();
         const { data } = await supabase.auth.mfa.listFactors();
         const verified = data?.totp.find((f) => f.status === "verified");
         if (verified) return setFactorId(verified.id);
