@@ -125,7 +125,7 @@ describe("resume screen", () => {
     const s = resumeState(medical, flow, {}, TODAY);
     expect(s.pageCount).toBeGreaterThan(1);
     expect(s.pageNumber).toBe(1);
-    expect(s.nextPageId).toBe(s.pages[0].id);
+    expect(s.nextPageId).toBe(s.pages[0]!.id);
     expect(s.pages.every((p) => p.answered === 0 && !p.complete)).toBe(true);
   });
   it("continues at the first incomplete page and keeps earlier answers", () => {

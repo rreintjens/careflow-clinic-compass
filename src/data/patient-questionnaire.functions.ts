@@ -35,7 +35,7 @@ export const getPatientQuestionnaire = createServerFn({ method: "POST" })
     const x = await load(data.merk, data.token);
     const ui = ((await (await admin()).from("option_lists").select("list_key, value, label_nl, label_en").in("list_key", ["booking_ui", "questionnaire_ui"])).data ?? []);
     if (!x) return { found: false as const, ui };
-    const { db, appt, q } = x;
+    const { db, appt, q, tenant } = x;
     const [sets, patient, pr] = await Promise.all([
       db.from("answer_sets").select("questionnaire_key, answers, status, completed_at").eq("appointment_id", appt.id),
       db.from("patients").select("first_name").eq("id", appt.patient_id ?? "").single(),
