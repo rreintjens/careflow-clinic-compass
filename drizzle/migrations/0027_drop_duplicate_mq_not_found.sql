@@ -1,0 +1,2 @@
+-- mq_not_found already existed under booking_ui with the supplied copy; remove the duplicate questionnaire_ui row.
+delete from public.option_lists where list_key = 'questionnaire_ui' and value = 'mq_not_found';
