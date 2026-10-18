@@ -208,7 +208,7 @@ export async function saveTreatmentOrder(categoryId: string, treatmentIds: strin
 
 export async function saveCategory(
   id: string | null,
-  row: { name_nl: string; name_en: string | null; icon: string | null; cancel_until_hours: number | null; no_show_fee_eur: number | null; sort: number },
+  row: { name_nl: string; name_en: string | null; icon: string | null; cancel_until_hours: number | null; no_show_fee_eur: number | null; mail_image_path: string | null; sort: number },
   subs: Array<{ id: string | null; name_nl: string }>,
   existingSubIds: string[],
 ) {
