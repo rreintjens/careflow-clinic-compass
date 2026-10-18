@@ -9,6 +9,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { PillButton } from "@/components/PillButton";
 import { Select } from "@/components/Select";
 import { addHoliday, parseOptions, settingsQuery, updateSettings } from "@/data/settings";
+import { currentTenantQuery, saveTenant } from "@/data/tenant";
 import type { Json } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/instellingen/algemeen")({
@@ -59,6 +60,7 @@ function SettingsPage() {
         description="Regels die voor het hele systeem gelden. Alles wat hier staat, mag de bouw nooit hardcoderen."
         actions={<PillButton onClick={() => save.mutate()} disabled={changes.length === 0 || save.isPending}>Opslaan</PillButton>}
       />
+      <TenantCard />
       {data.sections.map((sec) => {
         const items = data.settings.filter((s) => s.section === sec.key);
         return (
