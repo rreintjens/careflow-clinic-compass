@@ -103,6 +103,52 @@ function SettingsPage() {
   );
 }
 
+/** The active tenant's own details; editable for group admins, read-only for everyone else. */
+function TenantCard() {
+  const { data: tenant } = useSuspenseQuery(currentTenantQuery);
+  const qc = useQueryClient();
+  const [name, setName] = useState(tenant.display_name);
+  const [country, setCountry] = useState(tenant.country);
+  const [tz, setTz] = useState(tenant.time_zone);
+  const [domains, setDomains] = useState(tenant.booking_domains.join(", "));
+  const [testMode, setTestMode] = useState(tenant.test_mode ? "1" : "0");
+  const dirty = name !== tenant.display_name || country !== tenant.country || tz !== tenant.time_zone
+    || domains !== tenant.booking_domains.join(", ") || testMode !== (tenant.test_mode ? "1" : "0");
+  const save = useMutation({
+    mutationFn: () => saveTenant(tenant.id, {
+      display_name: name.trim(), country, time_zone: tz,
+      booking_domains: domains.split(",").map((d) => d.trim().toLowerCase()).filter(Boolean),
+      test_mode: testMode === "1",
+    }),
+    onSuccess: async () => { await qc.invalidateQueries({ queryKey: currentTenantQuery.queryKey }); toast.success("Opgeslagen"); },
+    onError: () => toast.error("Opslaan is niet gelukt"),
+  });
+  const ro = !tenant.canEdit;
+  return (
+    <Card title="Merk" description={`Gegevens van deze omgeving (${tenant.slug}). Alleen een groepsbeheerder kan ze aanpassen.`}>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-5">
+        <div className="flex min-w-0 flex-col gap-2">
+          <label htmlFor="t-name" className="text-[13px] font-medium">Naam</label>
+          <input id="t-name" type="text" className={inputCls} value={name} onChange={(e) => setName(e.target.value)} readOnly={ro} maxLength={80} />
+        </div>
+        <Select label="Land" value={country} onChange={setCountry} disabled={ro} options={[{ value: "NL", label: "Nederland" }, { value: "DE", label: "Duitsland" }]} />
+        <Select label="Tijdzone" value={tz} onChange={setTz} disabled={ro} options={[{ value: "Europe/Amsterdam", label: "Amsterdam" }, { value: "Europe/Berlin", label: "Berlijn" }]} />
+        <Select label="Testmodus" value={testMode} onChange={setTestMode} disabled={ro} help="In testmodus werkt ?merk= in het webadres en gaan mails niet echt weg." options={[{ value: "1", label: "Aan" }, { value: "0", label: "Uit" }]} />
+        <div className="col-span-2 flex min-w-0 flex-col gap-2">
+          <label htmlFor="t-domains" className="text-[13px] font-medium">Boekingsdomeinen</label>
+          <input id="t-domains" type="text" className={inputCls} value={domains} onChange={(e) => setDomains(e.target.value)} readOnly={ro} placeholder="bijv. bodyclinic.nl, www.bodyclinic.nl" />
+          <span className="text-xs text-muted-foreground">Met komma's ertussen. De boekingspagina herkent het merk aan deze domeinen.</span>
+        </div>
+      </div>
+      {tenant.canEdit && (
+        <div className="mt-5 flex justify-end">
+          <PillButton onClick={() => save.mutate()} disabled={!dirty || !name.trim() || save.isPending}>Merk opslaan</PillButton>
+        </div>
+      )}
+    </Card>
+  );
+}
+
 function HolidayTable({ rows, onAdd }: { rows: Array<{ id: string; name: string; dates: string[]; applies_to: string }>; onAdd: () => void }) {
   return (
     <div className="flex flex-col gap-4">
