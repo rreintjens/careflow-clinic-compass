@@ -28,6 +28,8 @@ import { Route as AuthenticatedInstellingenLogboekRouteImport } from './routes/_
 import { Route as AuthenticatedOrganisatieApparatuurRouteImport } from './routes/_authenticated/organisatie.apparatuur'
 import { Route as AuthenticatedPatientenIndexRouteImport } from './routes/_authenticated/patienten.index'
 import { Route as AuthenticatedPatientenIdRouteImport } from './routes/_authenticated/patienten.$id'
+import { Route as ApiPublicEkisExportRouteImport } from './routes/api/public/ekis-export'
+import { Route as ApiPublicStatsRouteImport } from './routes/api/public/stats'
 import { Route as AuthenticatedBoekingsflowEMailsIndexRouteImport } from './routes/_authenticated/boekingsflow.e-mails.index'
 import { Route as AuthenticatedBoekingsflowEMailsBehandelingRouteImport } from './routes/_authenticated/boekingsflow.e-mails.behandeling'
 import { Route as AuthenticatedBoekingsflowVragenlijstenIndexRouteImport } from './routes/_authenticated/boekingsflow.vragenlijsten.index'
@@ -150,6 +152,16 @@ const AuthenticatedPatientenIdRoute =
     path: '/patienten/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicEkisExportRoute = ApiPublicEkisExportRouteImport.update({
+  id: '/api/public/ekis-export',
+  path: '/api/public/ekis-export',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicStatsRoute = ApiPublicStatsRouteImport.update({
+  id: '/api/public/stats',
+  path: '/api/public/stats',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedBoekingsflowEMailsIndexRoute =
   AuthenticatedBoekingsflowEMailsIndexRouteImport.update({
     id: '/boekingsflow/e-mails/',
@@ -264,6 +276,8 @@ export interface FileRoutesByFullPath {
   '/instellingen/logboek': typeof AuthenticatedInstellingenLogboekRoute
   '/organisatie/apparatuur': typeof AuthenticatedOrganisatieApparatuurRoute
   '/patienten/$id': typeof AuthenticatedPatientenIdRouteWithChildren
+  '/api/public/ekis-export': typeof ApiPublicEkisExportRoute
+  '/api/public/stats': typeof ApiPublicStatsRoute
   '/agenda/': typeof AuthenticatedAgendaIndexRoute
   '/patienten/': typeof AuthenticatedPatientenIndexRoute
   '/boekingsflow/e-mails/behandeling': typeof AuthenticatedBoekingsflowEMailsBehandelingRoute
@@ -299,6 +313,8 @@ export interface FileRoutesByTo {
   '/instellingen/koppelingen': typeof AuthenticatedInstellingenKoppelingenRoute
   '/instellingen/logboek': typeof AuthenticatedInstellingenLogboekRoute
   '/organisatie/apparatuur': typeof AuthenticatedOrganisatieApparatuurRoute
+  '/api/public/ekis-export': typeof ApiPublicEkisExportRoute
+  '/api/public/stats': typeof ApiPublicStatsRoute
   '/agenda': typeof AuthenticatedAgendaIndexRoute
   '/patienten': typeof AuthenticatedPatientenIndexRoute
   '/boekingsflow/e-mails/behandeling': typeof AuthenticatedBoekingsflowEMailsBehandelingRoute
@@ -337,6 +353,8 @@ export interface FileRoutesById {
   '/_authenticated/instellingen/logboek': typeof AuthenticatedInstellingenLogboekRoute
   '/_authenticated/organisatie/apparatuur': typeof AuthenticatedOrganisatieApparatuurRoute
   '/_authenticated/patienten/$id': typeof AuthenticatedPatientenIdRouteWithChildren
+  '/api/public/ekis-export': typeof ApiPublicEkisExportRoute
+  '/api/public/stats': typeof ApiPublicStatsRoute
   '/_authenticated/agenda/': typeof AuthenticatedAgendaIndexRoute
   '/_authenticated/patienten/': typeof AuthenticatedPatientenIndexRoute
   '/_authenticated/boekingsflow/e-mails/behandeling': typeof AuthenticatedBoekingsflowEMailsBehandelingRoute
@@ -375,6 +393,8 @@ export interface FileRouteTypes {
     | '/instellingen/logboek'
     | '/organisatie/apparatuur'
     | '/patienten/$id'
+    | '/api/public/ekis-export'
+    | '/api/public/stats'
     | '/agenda/'
     | '/patienten/'
     | '/boekingsflow/e-mails/behandeling'
@@ -410,6 +430,8 @@ export interface FileRouteTypes {
     | '/instellingen/koppelingen'
     | '/instellingen/logboek'
     | '/organisatie/apparatuur'
+    | '/api/public/ekis-export'
+    | '/api/public/stats'
     | '/agenda'
     | '/patienten'
     | '/boekingsflow/e-mails/behandeling'
@@ -447,6 +469,8 @@ export interface FileRouteTypes {
     | '/_authenticated/instellingen/logboek'
     | '/_authenticated/organisatie/apparatuur'
     | '/_authenticated/patienten/$id'
+    | '/api/public/ekis-export'
+    | '/api/public/stats'
     | '/_authenticated/agenda/'
     | '/_authenticated/patienten/'
     | '/_authenticated/boekingsflow/e-mails/behandeling'
@@ -475,6 +499,8 @@ export interface RootRouteChildren {
   Auth2faRoute: typeof Auth2faRoute
   VragenlijstTokenRoute: typeof VragenlijstTokenRoute
   AuthIndexRoute: typeof AuthIndexRoute
+  ApiPublicEkisExportRoute: typeof ApiPublicEkisExportRoute
+  ApiPublicStatsRoute: typeof ApiPublicStatsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -611,6 +637,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/patienten/$id'
       preLoaderRoute: typeof AuthenticatedPatientenIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/public/ekis-export': {
+      id: '/api/public/ekis-export'
+      path: '/api/public/ekis-export'
+      fullPath: '/api/public/ekis-export'
+      preLoaderRoute: typeof ApiPublicEkisExportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/stats': {
+      id: '/api/public/stats'
+      path: '/api/public/stats'
+      fullPath: '/api/public/stats'
+      preLoaderRoute: typeof ApiPublicStatsRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/boekingsflow/e-mails/': {
       id: '/_authenticated/boekingsflow/e-mails/'
@@ -831,6 +871,8 @@ const rootRouteChildren: RootRouteChildren = {
   Auth2faRoute: Auth2faRoute,
   VragenlijstTokenRoute: VragenlijstTokenRoute,
   AuthIndexRoute: AuthIndexRoute,
+  ApiPublicEkisExportRoute: ApiPublicEkisExportRoute,
+  ApiPublicStatsRoute: ApiPublicStatsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
