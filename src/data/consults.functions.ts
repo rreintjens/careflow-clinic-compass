@@ -7,7 +7,7 @@ export const saveStandaloneConsult = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => standaloneConsultSchema.parse(input))
   .handler(async ({ data, context }) => {
     const claims = context.claims as { aal?: string };
-    if (claims.aal !== "aal2") throw new Error("Forbidden");
+    if (!(await context.supabase.rpc("is_aal2")).data) throw new Error("Forbidden");
     const { data: allowed, error: permissionError } = await context.supabase.rpc("has_permission", { _perm: "patients.medical" });
     if (permissionError || !allowed) throw new Error("Forbidden");
     const [patient, practitioner, options] = await Promise.all([

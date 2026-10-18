@@ -10,7 +10,7 @@ type Ctx = { supabase: import("@supabase/supabase-js").SupabaseClient; claims: u
 
 async function staffTenant(context: Ctx) {
   const claims = context.claims as { aal?: string; app_metadata?: { active_tenant?: string } };
-  if (claims.aal !== "aal2" || !claims.app_metadata?.active_tenant) return null;
+  if (!(await context.supabase.rpc("is_aal2")).data || !claims.app_metadata?.active_tenant) return null;
   const { data: ok } = await context.supabase.rpc("has_permission", { _perm: "agenda.appointments" });
   if (!ok) return null;
   const db = await admin();

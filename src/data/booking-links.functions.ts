@@ -55,7 +55,7 @@ export const saveBookingLink = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => bookingLinkSchema.parse(input))
   .handler(async ({ data, context }) => {
     const ctx = context as unknown as Ctx;
-    if ((ctx.claims as { aal?: string }).aal !== "aal2") throw new Error("Forbidden");
+    if (!(await ctx.supabase.rpc("is_aal2")).data) throw new Error("Forbidden");
     const { data: allowed, error: permissionError } = await ctx.supabase.rpc("has_permission", { _perm: "booking_links.manage" });
     if (permissionError || !allowed) throw new Error("Forbidden");
 

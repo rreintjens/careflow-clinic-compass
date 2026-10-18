@@ -37,7 +37,7 @@ export const getKoppelingen = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const ctx = context as unknown as Ctx;
-    if (ctx.claims.aal !== "aal2") throw new Error("Forbidden");
+    if (!(await ctx.supabase.rpc("is_aal2")).data) throw new Error("Forbidden");
     await allowed(ctx, "settings.view");
     const tenant = await activeTenant(ctx);
     const db = await admin();
@@ -68,7 +68,7 @@ export const getDashboard = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const ctx = context as unknown as Ctx;
-    if (ctx.claims.aal !== "aal2") throw new Error("Forbidden");
+    if (!(await ctx.supabase.rpc("is_aal2")).data) throw new Error("Forbidden");
     await allowed(ctx, "settings.view");
     const tenant = await activeTenant(ctx);
     const db = await admin();
@@ -140,7 +140,7 @@ export const runEkisNow = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const ctx = context as unknown as Ctx;
-    if (ctx.claims.aal !== "aal2") throw new Error("Forbidden");
+    if (!(await ctx.supabase.rpc("is_aal2")).data) throw new Error("Forbidden");
     await allowed(ctx, "settings.edit");
     const tenant = await activeTenant(ctx);
     const run = await runEkisExport(tenant.id, "manual", ctx.claims.sub ?? null);
@@ -153,7 +153,7 @@ export const setMeetAccount = createServerFn({ method: "POST" })
   .inputValidator(z.object({ account: z.string().trim().email("Vul een geldig e-mailadres in.").max(160) }))
   .handler(async ({ data, context }) => {
     const ctx = context as unknown as Ctx;
-    if (ctx.claims.aal !== "aal2") throw new Error("Forbidden");
+    if (!(await ctx.supabase.rpc("is_aal2")).data) throw new Error("Forbidden");
     await allowed(ctx, "settings.edit");
     const { data: isGroup, error } = await ctx.supabase.rpc("is_group_admin");
     if (error || !isGroup) throw new Error("Alleen een groepsbeheerder kan het gekoppelde account wijzigen.");
@@ -169,7 +169,7 @@ export const downloadEkisFile = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const ctx = context as unknown as Ctx;
-    if (ctx.claims.aal !== "aal2") throw new Error("Forbidden");
+    if (!(await ctx.supabase.rpc("is_aal2")).data) throw new Error("Forbidden");
     await allowed(ctx, "settings.view");
     const tenant = await activeTenant(ctx);
     const db = await admin();
@@ -183,7 +183,7 @@ export const rotateStatsKey = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const ctx = context as unknown as Ctx;
-    if (ctx.claims.aal !== "aal2") throw new Error("Forbidden");
+    if (!(await ctx.supabase.rpc("is_aal2")).data) throw new Error("Forbidden");
     await allowed(ctx, "settings.edit");
     const { data: isGroup, error } = await ctx.supabase.rpc("is_group_admin");
     if (error || !isGroup) throw new Error("Alleen een groepsbeheerder kan de sleutel vernieuwen.");
