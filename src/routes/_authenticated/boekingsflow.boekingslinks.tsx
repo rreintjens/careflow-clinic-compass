@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { Card } from "@/components/Card";
-import { Chip, PlusIcon, StatusMark, TextField, tdCls, thCls } from "@/components/Field";
+import { Chip, PlusIcon, StatusMark, TextField } from "@/components/Field";
 import { Modal } from "@/components/Modal";
 import { PageHeader } from "@/components/PageHeader";
 import { PillButton } from "@/components/PillButton";
@@ -16,7 +16,7 @@ import { saveBookingLink } from "@/data/booking-links.functions";
 import { bookingLinkPath, linkLocations, linkPractitioners, linkProblem, uniqueSlug, type LinkCatalog, type LinkDraft } from "@/domain/booking-links";
 import type { Tables } from "@/integrations/supabase/types";
 
-export const Route = createFileRoute("/_authenticated/boekingsflow/boekingslinks/")({
+export const Route = createFileRoute("/_authenticated/boekingsflow/boekingslinks")({
   head: () => ({ meta: [{ title: "Boekingslinks · Beheer · The Body Clinic" }, { name: "robots", content: "noindex" }] }),
   loader: ({ context }) => Promise.all([context.queryClient.ensureQueryData(bookingLinksQuery), context.queryClient.ensureQueryData(bookingLinkUsageQuery)]),
   component: BookingLinksPage,
