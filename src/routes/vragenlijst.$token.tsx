@@ -111,7 +111,7 @@ function Plain({ children, footer, progress = 1 }: { children: React.ReactNode; 
     <div className="flex min-h-screen justify-center bg-background">
       <div className="flex min-h-screen w-full max-w-[390px] flex-col">
         <header className="flex h-14 items-center justify-center"><Logo small /></header>
-        <div className="h-[3px] bg-[#EEF1F2]"><div className="h-[3px] bg-primary" style={{ width: `${Math.round(progress * 100)}%` }} /></div>
+        <div className="h-[3px] bg-mist"><div className="h-[3px] bg-primary" style={{ width: `${Math.round(progress * 100)}%` }} /></div>
         <main className="flex-1 px-5 pb-6 pt-8">{children}</main>
         {footer && <footer className="px-5 pb-6">{footer}</footer>}
       </div>
