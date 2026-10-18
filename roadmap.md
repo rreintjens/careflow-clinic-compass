@@ -59,3 +59,4 @@ Owner asked to continue through all phases without pausing for confirmation.
 - [x] 2FA-knop bleef inactief als de factor-lookup na inloggen wegviel: knop nu actief bij 6 cijfers, factor wordt luie opgehaald, laadfouten tonen een melding i.p.v. een dood scherm.
 - [x] Desktop-kader voor patiëntschermen (Salonized-stijl): gedeelde PatientFrame (gecentreerde witte kaart, rounded 24, mist-border, zachte schaduw op sand) rond boeken, vragenlijst (incl. runner) en afspraak-beheer; mobiel ongewijzigd. Desktop + mobiel geverifieerd in browser, tsgo clean.
 - [x] Desktop-kader: bollen verder vergroot (16px)
+- [ ] Uitzoeken: "lege bolletje" in bovenbalk (Rob vraagt waar het voor dient)
