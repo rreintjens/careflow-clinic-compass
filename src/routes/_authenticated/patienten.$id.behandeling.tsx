@@ -9,8 +9,9 @@ import { PillButton } from "@/components/PillButton";
 import { dossierQuery } from "@/data/patients";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { StandaloneConsultModal } from "@/features/dossier/StandaloneConsultModal";
 
-export const Route = createFileRoute("/_authenticated/patienten/$id/behandeling")({ component: Treatment });
+export const Route = createFileRoute("/_authenticated/patienten/$id/behandeling")({ head: () => ({ meta: [{ title: "Behandeling · Dossier · The Body Clinic" }, { name: "description", content: "Consultverslagen, behandelplan en afspraken in het patiëntendossier." }, { property: "og:title", content: "Behandeling · The Body Clinic" }, { property: "og:description", content: "Consultverslagen, behandelplan en afspraken in het patiëntendossier." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { name: "robots", content: "noindex" }] }), component: Treatment });
 
 const TZ = "Europe/Amsterdam";
 const SOEP = [["subjective", "Subjectief: wat de patiënt vertelt"], ["objective", "Objectief: metingen en bevindingen"], ["evaluation", "Evaluatie: beoordeling en indicatie"], ["plan", "Plan: behandeling, medicatie, afspraken"]] as const;
@@ -35,6 +36,7 @@ function Treatment() {
   });
   const [tab, setTab] = useState(0);
   const [planOpen, setPlanOpen] = useState(false);
+  const [standaloneOpen, setStandaloneOpen] = useState(false);
   const go = (i: number) => { setTab(i); document.getElementById(["consulten", "plan", "afspraken"][i] ?? "")?.scrollIntoView({ behavior: "smooth" }); };
 
   // The consult in progress: the earliest booked appointment that has not ended long ago and has no final note.
@@ -45,7 +47,8 @@ function Treatment() {
   const val = (k: SoepKey) => soep[k] ?? draft?.[k] ?? "";
   const save = useMutation({
     mutationFn: async () => {
-      const row = { patient_id: id, appointment_id: current!.id, ...Object.fromEntries(SOEP.map(([k]) => [k, val(k)])) };
+      if (!current) throw new Error("No current appointment");
+      const row = { patient_id: id, appointment_id: current.id, ...Object.fromEntries(SOEP.map(([k]) => [k, val(k)])) };
       const r = draft ? await supabase.from("consult_notes").update(row).eq("id", draft.id) : await supabase.from("consult_notes").insert(row);
       if (r.error) throw r.error;
     },
@@ -68,10 +71,12 @@ function Treatment() {
             <div className="mt-4 flex gap-2"><PillButton disabled={save.isPending} onClick={() => save.mutate()}>Opslaan</PillButton><PillButton variant="outline" disabled={save.isPending} onClick={() => save.mutate(undefined, { onSuccess: () => setPlanOpen(true) })}>Opslaan en behandelplan maken</PillButton></div>
           </div>
         ) : <p className="mt-4 text-[14px] text-muted-foreground">Er is nu geen consult gepland.</p>}
+        <PillButton variant="outline" className="mt-4" onClick={() => setStandaloneOpen(true)}>Telefonisch of tussentijds consult vastleggen</PillButton>
         <p className="mt-4 text-[13px] text-muted-foreground">Eerdere consulten: {earlier.length ? "" : "geen."}</p>
         {earlier.map((n) => (
           <div key={n.id} className="mt-3 rounded-[14px] bg-sand p-4 text-[13px]">
-            <p className="font-semibold">{n.finished_at ? when(n.finished_at) : ""}</p>
+            <p className="font-semibold">{when(n.occurred_at ?? n.finished_at ?? n.created_at)}{n.appointment_id === null && ` · ${n.time_and_duration}`}</p>
+            {n.reason && <p className="mt-1"><span className="text-muted-foreground">Aanleiding: </span>{n.reason}</p>}
             {SOEP.map(([k, l]) => n[k] ? <p key={k} className="mt-1"><span className="text-muted-foreground">{l.split(":")[0]}: </span>{n[k]}</p> : null)}
           </div>
         ))}
@@ -100,6 +105,7 @@ function Treatment() {
       </section>
 
       {planOpen && data && <PlanModal id={id} fields={data.fields} plan={data.plan} onClose={() => setPlanOpen(false)} />}
+      {standaloneOpen && <StandaloneConsultModal patientId={id} practitionerId={current?.practitioner_id ?? d.appointments[0]?.practitioner_id ?? undefined} onClose={() => setStandaloneOpen(false)} />}
     </div>
   );
 }

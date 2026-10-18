@@ -1,4 +1,5 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { standaloneConsultsQuery } from "@/data/consults";
 import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { dossierQuery } from "@/data/patients";
@@ -6,11 +7,12 @@ import { signalsOf } from "@/features/agenda/PatientCard";
 import { buildTimeline } from "@/features/dossier/timeline";
 import { TimelineList } from "@/features/dossier/TimelineList";
 
-export const Route = createFileRoute("/_authenticated/patienten/$id/")({ component: Overview });
+export const Route = createFileRoute("/_authenticated/patienten/$id/")({ head: () => ({ meta: [{ title: "Overzicht · Dossier · The Body Clinic" }, { name: "description", content: "Patiëntoverzicht en laatste gebeurtenissen in het dossier." }, { property: "og:title", content: "Dossieroverzicht · The Body Clinic" }, { property: "og:description", content: "Patiëntoverzicht en laatste gebeurtenissen in het dossier." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { name: "robots", content: "noindex" }] }), component: Overview });
 
 function Overview() {
   const { id } = Route.useParams();
   const d = useSuspenseQuery(dossierQuery(id)).data;
+  const { data: consults = [] } = useQuery(standaloneConsultsQuery(id));
   if (!d.patient) return null;
   const triage = d.sets.find((s) => s.questionnaire_key === "triage");
   const medical = d.sets.find((s) => s.questionnaire_key !== "triage");
@@ -35,7 +37,7 @@ function Overview() {
       )}
       <dl className="mt-5">{rows.map(([k, v]) => <div key={k} className="grid grid-cols-[220px_1fr] gap-4 border-b border-mist py-3 text-[14px]"><dt className="whitespace-nowrap text-muted-foreground">{k}</dt><dd>{v}</dd></div>)}</dl>
       <p className="mb-4 mt-6 text-[14px] font-semibold">Laatste gebeurtenissen</p>
-      <TimelineList events={buildTimeline(d).slice(0, 3)} />
+      <TimelineList events={buildTimeline(d, consults).slice(0, 3)} />
       <Link to="/patienten/$id/tijdlijn" params={{ id }} className="text-[14px] text-primary underline">Volledige tijdlijn</Link>
     </section>
   );
