@@ -3,7 +3,10 @@ import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
 
 import { PillButton } from "@/components/PillButton";
 import { dossierQuery } from "@/data/patients";
+import { useQuery } from "@tanstack/react-query";
+
 import { signalsOf } from "@/features/agenda/PatientCard";
+import { ConsultMode, consultNoteQuery, useStartConsult } from "@/features/dossier/ConsultMode";
 
 export const Route = createFileRoute("/_authenticated/patienten/$id")({
   head: () => ({ meta: [{ title: "Dossier · Beheer · The Body Clinic" }, { name: "robots", content: "noindex" }] }),
@@ -18,6 +21,9 @@ const TABS = [["/patienten/$id", "Overzicht"], ["/patienten/$id/tijdlijn", "Tijd
 function Layout() {
   const { id } = Route.useParams();
   const { patient: p, appointments, sets } = useSuspenseQuery(dossierQuery(id)).data;
+  const consultAppt = [...appointments].reverse().find((a) => a.status === "booked" && new Date(a.ends_at).getTime() > Date.now() - 12 * 3600_000);
+  const { data: note } = useQuery({ ...consultNoteQuery(consultAppt?.id ?? ""), enabled: !!consultAppt });
+  const startConsult = useStartConsult(id, consultAppt);
   if (!p) return <p className="text-muted-foreground">Dit dossier bestaat niet of je hebt er geen toegang toe.</p>;
   const now = Date.now();
   const next = [...appointments].reverse().find((a) => a.status === "booked" && new Date(a.ends_at).getTime() > now);
@@ -27,9 +33,11 @@ function Layout() {
   const nextDay = next && new Date(next.starts_at).toLocaleString("nl-NL", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", timeZone: TZ }).replace(" om ", ", ");
   return (
     <div className="flex flex-col gap-6">
+      {consultAppt && note?.status === "draft" && <ConsultMode patient={p} appt={consultAppt} />}
       <div className="flex items-end justify-between gap-4">
         <div><Link to="/patienten" className="text-[13px] text-primary">Patiënten</Link><h1 className="text-[28px] font-semibold tracking-tight">Dossier</h1></div>
         <div className="flex gap-2">
+          {consultAppt && !note && <PillButton variant="outline" disabled={startConsult.isPending} onClick={() => startConsult.mutate()}>Start consult</PillButton>}
           <PillButton disabled><img src="/ui-icons/plus.svg" alt="" className="size-4 invert" />Toevoegen</PillButton>
           <PillButton variant="outline" onClick={() => window.print()}>Afdrukken</PillButton>
           <PillButton variant="outline" disabled>Exporteren</PillButton>
