@@ -118,7 +118,7 @@ export const holdSlot = createServerFn({ method: "POST" })
     const ins = await db.from("appointments").insert({
       tenant_id: tenant.id, treatment_id: data.treatmentId, location_id: data.locationId, practitioner_id: pick.practitioner_id,
       starts_at: startsAt.toISOString(), ends_at: endsAt.toISOString(), status: "held", hold_expires_at: expires.toISOString(),
-      language: data.language, source: data.source ?? null,
+      language: data.language, source: data.source ?? linkRow?.source ?? null, booking_link_id: linkRow?.id ?? null,
     }).select("hold_token").single();
     if (ins.error || !ins.data?.hold_token) return { ok: false as const };
     // Lost a race: another hold for the same practitioner overlaps and was created first.
@@ -240,6 +240,7 @@ export const confirmBooking = createServerFn({ method: "POST" })
     await db.from("patient_consents").insert([
       { kind: "privacy", granted: true }, { kind: "gp", granted: data.consentGp }, { kind: "lsp", granted: data.consentLsp }, { kind: "marketing", granted: data.consentMarketing },
     ].map((c) => ({ ...c, tenant_id: tenant.id, patient_id: patientId, appointment_id: appt.id })));
+    await attachMeeting(db, tenant, appt.id);
     if (data.triageKey && data.triageAnswers) {
       await db.from("answer_sets").insert({ tenant_id: tenant.id, patient_id: patientId, appointment_id: appt.id, questionnaire_key: data.triageKey, answers: data.triageAnswers as never, status: "completed", completed_at: new Date().toISOString() });
     }
