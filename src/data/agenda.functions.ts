@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { admin, computeSlots, localParts, localToUtc } from "./booking.server";
+import { attachMeeting } from "./meeting.server";
 
 type Ctx = { supabase: import("@supabase/supabase-js").SupabaseClient; claims: unknown };
 
