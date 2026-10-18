@@ -74,3 +74,18 @@ describe("uniqueSlug", () => {
     expect(uniqueSlug(["a"], "Réflexologie ─┤")).toBe("reflexologie");
   });
 });
+
+describe("bookingLinkUtm", () => {
+  it("tags the link with the reporting source and the slug as campaign", () => {
+    expect(bookingLinkUtm("instagram-oktober", "Instagram oktober")).toBe("/boeken?link=instagram-oktober&utm_source=instagram-oktober&utm_campaign=instagram-oktober");
+    expect(bookingLinkUtm("zomer-2026", "Google Ads")).toBe("/boeken?link=zomer-2026&utm_source=google-ads&utm_campaign=zomer-2026");
+  });
+  it("falls back to the slug when there is no source", () => {
+    expect(bookingLinkUtm("ziekenhuis-flyer", "")).toBe("/boeken?link=ziekenhuis-flyer&utm_source=ziekenhuis-flyer&utm_campaign=ziekenhuis-flyer");
+    expect(bookingLinkUtm("ziekenhuis-flyer", "  ")).toBe("/boeken?link=ziekenhuis-flyer&utm_source=ziekenhuis-flyer&utm_campaign=ziekenhuis-flyer");
+  });
+  it("builds an absolute UTM link for a host", () => {
+    expect(absoluteBookingLinkUtm("x1", "Radio", "boek.bodyclinic.nl")).toBe("https://boek.bodyclinic.nl/boeken?link=x1&utm_source=radio&utm_campaign=x1");
+    expect(absoluteBookingLinkUtm("x1", "", null)).toBe("/boeken?link=x1&utm_source=x1&utm_campaign=x1");
+  });
+});
