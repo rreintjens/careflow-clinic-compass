@@ -30,7 +30,8 @@ export function MailTemplateModal({ template, defaults, data, org, onClose }: { 
   const [dragged, setDragged] = useState<string | null>(null);
   const option = (key: string) => data.options.filter((o) => o.list_key === key).map((o) => ({ value: o.value, label: o.label_nl }));
   const treatment = org.treatments.find((t) => t.id === current.treatment_id) ?? org.treatments.find((t) => t.post_questionnaire_key) ?? org.treatments[0];
-  const values = { voornaam: "", dag: "", tijd: "", behandeling: treatment ? translated(treatment.name_nl, treatment.name_en, language) : "", duur: String(treatment?.duration_min ?? ""), behandelaar: "", behandelaar_voornaam: "", locatie: "", adres: "", voorbereiding: treatment ? translated(treatment.preparation_nl, treatment.preparation_en, language) : "", nazorg: treatment ? translated(treatment.aftercare_nl, treatment.aftercare_en, language) : "" };
+  const previewData = Object.fromEntries(data.options.filter((o) => o.list_key === "mail_preview").map((o) => [o.value, o.label_nl]));
+  const values = { ...previewData, behandeling: treatment ? translated(treatment.name_nl, treatment.name_en, language) : "", duur: String(treatment?.duration_min ?? ""), voorbereiding: treatment ? translated(treatment.preparation_nl, treatment.preparation_en, language) : "", nazorg: treatment ? translated(treatment.aftercare_nl, treatment.aftercare_en, language) : "" };
   const save = useMutation({ mutationFn: (input: MailInput) => saveMailTemplate({ data: input }), onSuccess: async () => { await qc.invalidateQueries({ queryKey: ["mail-templates"] }); toast.success("Sjabloon opgeslagen"); onClose(); }, onError: (e) => toast.error(e.message) });
   const updateBlocks = (blocks: MailBlock[]) => form.setValue("blocks", blocks, { shouldDirty: true });
   const updateBlock = (patch: Partial<MailBlock>) => updateBlocks(current.blocks.map((b) => b.id === selected ? { ...b, ...patch } : b));

@@ -31,7 +31,10 @@ Owner asked to continue through all phases without pausing for confirmation.
   - [x] Owner report: BMI from saved weight/height in Medisch and Overzicht; measurements visible in timeline; verified signed in, saved and reloaded
   - [x] Owner report: dossier tabs showed old placeholder — code and served modules verified current; stale preview tab (needs hard reload)
 - [ ] Phase 6 – Mails and integrations
-  - [ ] Template management: moments, treatment/category overrides, conditional blocks, language fallback and preview; sending waits on verified sender
+  - [x] Template management foundation: moment and treatment views, category/treatment overrides, ordered conditional blocks, Dutch/English fallback; authenticated save and reload verified; 22 domain tests passed
+  - [ ] Complete mail designs: image library/upload, practitioner signature images, full supplied copy and responsive email rendering
+  - [ ] Test and automatic mails: blocked on verified sender setup; no outbound mail wired yet
+  - [ ] Google Meet interface/mock, eKis export stub, statistics API, booking links with sources
 - [x] Medical questionnaire: 'Val je af of kom je nog aan?' had no answers in the seed; v2 adds them from the design HTML
 - [x] Questionnaire runner: pressing the button with missing/invalid answers highlights them and scrolls to the first (owner request)
 - [x] Vragenlijst: volgende pagina begint bovenaan
