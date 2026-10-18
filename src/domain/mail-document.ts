@@ -13,7 +13,9 @@ export function escapeMailHtml(value: string) {
 export function renderMailDocument(input: MailDocumentInput) {
   const { language, values, situation, theme } = input;
   const text = (nl: string, en: string) => escapeMailHtml(interpolate(translated(nl, en, language), values)).replace(/\n/g, "<br>");
-  const rows = input.blocks.filter((block) => blockVisible(block.condition, situation)).map((block) => {
+  const visible = input.blocks.filter((block) => blockVisible(block.condition, situation));
+  const firstText = visible.find((block) => block.type !== "image" && block.type !== "divider");
+  const rows = visible.map((block) => {
     const title = text(block.title_nl, block.title_en);
     const body = text(block.text_nl, block.text_en);
     const image = block.image_path ? input.images[block.image_path] : block.image;
@@ -24,7 +26,8 @@ export function renderMailDocument(input: MailDocumentInput) {
     const heading = title ? `<h2 style="margin:0 0 12px;font-size:${block.type === "signature" ? 18 : 22}px;line-height:1.3;color:${panel ? theme.onPanel : theme.heading}">${title}</h2>` : "";
     const buttonLabel = text(block.button_nl, block.button_en);
     const button = buttonLabel ? `<div style="margin-top:16px">${url ? `<a href="${escapeMailHtml(url)}" target="_blank" rel="noreferrer"` : "<span"} style="display:block;text-align:center;background:${theme.button};color:${theme.onPanel};padding:14px 16px;border-radius:8px;text-decoration:none;font-size:15px">${buttonLabel}${url ? "</a>" : "</span>"}</div>` : "";
-    let content = `${heading}<div style="white-space:normal;overflow-wrap:anywhere">${body}</div>${button}`;
+    const dots = block === firstText && title ? `<table role="presentation" cellspacing="0" cellpadding="0" style="margin:0 0 18px"><tr>${Array.from({ length: 4 }, () => `<td style="padding-right:6px"><div style="width:8px;height:8px;border-radius:50%;background:${theme.button}"></div></td>`).join("")}</tr></table>` : "";
+    let content = `${heading}${dots}<div style="white-space:normal;overflow-wrap:anywhere">${body}</div>${button}`;
     let style = `padding:26px 24px;background:${panel ? theme.panel : theme.surface};color:${ink};border-radius:20px`;
     if (block.type === "image") {
       if (!imageUrl) return "";
@@ -38,7 +41,7 @@ export function renderMailDocument(input: MailDocumentInput) {
       content = `<table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>${photo ? `<td width="110" style="vertical-align:middle"><img src="${photo}" alt="" width="92" height="92" style="display:block;border-radius:50%;object-fit:cover"></td>` : ""}<td style="vertical-align:middle;overflow-wrap:anywhere">${body}</td></tr></table><div style="margin-top:16px">${heading}</div>`;
     } else if (block.type === "details") {
       // The supplied detail card uses the same appointment values for both variants.
-      const details = [values['behandeling'], values['duur'] ? `${values['duur']} ${values['duur_eenheid'] ?? ""}`.trim() : "", `${values['dag'] ?? ""} ${values['tijd'] ?? ""}`.trim(), values['behandelaar'], situation.online ? values['meet_link'] : values['adres']].filter((value): value is string => !!value);
+      const details = [values['behandeling'], values['duur'] && values['duur_eenheid'] ? `${values['duur']} ${values['duur_eenheid']}` : "", `${values['dag'] ?? ""} ${values['tijd'] ?? ""}`.trim(), values['behandelaar'], situation.online ? values['meet_link'] : values['adres']].filter((value): value is string => !!value);
       content = `${heading}<div>${details.map(escapeMailHtml).join("<br>")}</div>${body ? `<div style="margin-top:14px">${body}</div>` : ""}${button}`;
     }
     return `<tr><td style="${style}">${content}</td></tr><tr aria-hidden="true"><td height="18"></td></tr>`;
