@@ -97,6 +97,13 @@ export const signInStaff = createServerFn({ method: "POST" })
         sort: (m.tenants as { sort: number } | null)?.sort ?? 0,
         roleKey: (m.roles as { key: string } | null)?.key ?? "",
       }));
+      // A group admin sits above the organisations: no membership needed, every tenant is reachable.
+      const { data: ga } = await db.from("group_admins").select("user_id").eq("user_id", auth.user.id).maybeSingle();
+      if (ga) {
+        const { data: all } = await db.from("tenants").select("id, sort");
+        const known = new Set(memberships.map((m) => m.tenantId));
+        for (const t of all ?? []) if (!known.has(t.id)) memberships.push({ tenantId: t.id, sort: t.sort, roleKey: "superadmin" });
+      }
       blocked = !profile || profile.blocked || memberships.length === 0;
     }
 
