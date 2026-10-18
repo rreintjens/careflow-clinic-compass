@@ -18,13 +18,17 @@ import { TextArea, TextField } from "@/components/Field";
 import type { Answers, FlowFile, QuestionnaireDef } from "@/domain/questionnaire/engine";
 
 const search = z.object({
-  merk: z.string().optional(), lang: z.enum(["nl", "en"]).optional(), bron: z.string().optional(),
+  merk: z.string().optional(), lang: z.enum(["nl", "en"]).optional(), bron: z.string().optional(), link: z.string().optional(),
   cat: z.string().optional(), sub: z.string().optional(), t: z.string().optional(), l: z.string().optional(),
   p: z.string().optional(), d: z.string().optional(), tijd: z.string().optional(), stap: z.string().optional(),
 });
 type Search = z.infer<typeof search>;
 
 const catalogQuery = (merk: string | undefined) => queryOptions({ queryKey: ["booking-catalog", merk ?? ""], queryFn: () => getBookingCatalog({ data: { merk } }), staleTime: 60_000 });
+
+/** A booking link (boekingslink) answers part of the flow in advance; only fetched when ?link= is present. */
+const linkQuery = (merk: string | undefined, link: string | undefined) =>
+  queryOptions({ queryKey: ["booking-link", merk ?? "", link ?? ""], enabled: !!link, queryFn: () => getBookingLink({ data: { merk, link: link ?? "" } }), staleTime: 60_000 });
 
 export const Route = createFileRoute("/boeken")({
   validateSearch: search,

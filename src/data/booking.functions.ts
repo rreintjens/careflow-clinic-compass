@@ -241,9 +241,9 @@ export const confirmBooking = createServerFn({ method: "POST" })
     await db.from("patient_consents").insert([
       { kind: "privacy", granted: true }, { kind: "gp", granted: data.consentGp }, { kind: "lsp", granted: data.consentLsp }, { kind: "marketing", granted: data.consentMarketing },
     ].map((c) => ({ ...c, tenant_id: tenant.id, patient_id: patientId, appointment_id: appt.id })));
-    await attachMeeting(db, tenant, appt.id);
+    const meeting = await attachMeeting(db, tenant, appt.id);
     if (data.triageKey && data.triageAnswers) {
       await db.from("answer_sets").insert({ tenant_id: tenant.id, patient_id: patientId, appointment_id: appt.id, questionnaire_key: data.triageKey, answers: data.triageAnswers as never, status: "completed", completed_at: new Date().toISOString() });
     }
-    return { ok: true as const, manageToken: appt.manage_token };
+    return { ok: true as const, manageToken: appt.manage_token, meetLink: meeting?.link ?? null };
   });
