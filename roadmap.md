@@ -59,6 +59,7 @@ Owner asked to continue through all phases without pausing for confirmation.
 - [x] 2FA-knop bleef inactief als de factor-lookup na inloggen wegviel: knop nu actief bij 6 cijfers, factor wordt luie opgehaald, laadfouten tonen een melding i.p.v. een dood scherm.
 - [x] Desktop-kader voor patiëntschermen (Salonized-stijl): gedeelde PatientFrame (gecentreerde witte kaart, rounded 24, mist-border, zachte schaduw op sand) rond boeken, vragenlijst (incl. runner) en afspraak-beheer; mobiel ongewijzigd. Desktop + mobiel geverifieerd in browser, tsgo clean.
 - [x] Desktop-kader: bollen verder vergroot (16px)
-- [ ] Uitzoeken: "lege bolletje" in bovenbalk (Rob vraagt waar het voor dient)
+- [x] Uitzoeken: "lege bolletje" in bovenbalk (Rob vraagt waar het voor dient) — was het checkbox-vinkvakje zonder zichtbaar label.
 - [x] Leeg bolletje in Pagina wijzigen = checkbox met onzichtbaar label: Checkbox toont nu het label; dubbel label in consultchecklist weggehaald.
 - [x] Uitslagpagina-verfraaiing builder-gestuurd houden: icoon-badge in de runner stijlt alleen het icoon dat de pagina-config kiest, geen hardcoded icoon.
+- [x] Triage-uitslagpagina: icoon-badge gecentreerd en groter (72px cirkel met 34px teken) zoals het ontwerp ma-10-goed-nieuws.dc.html; alleen die icoonpagina in de flow heeft een icoon.
