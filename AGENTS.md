@@ -30,4 +30,5 @@
 - Measurements share one query across record views; BMI derives from source weight and previously known height through domain functions, and measurement writes use shared server/client validation.
 - Dossier add actions reuse the agenda appointment modal and shared consultation, measurement and document modals; a fixed patient cannot be changed in the appointment modal to prevent cross-record mistakes.
 - Email templates store tenant-scoped content and ordered blocks in the database; shared domain resolution selects treatment before category before base, and authenticated saves validate configured options to keep preview and delivery rules consistent.
+- Mail artwork uses tenant-private storage with server-sniffed uploads and UUID paths in template blocks; signed preview URLs expire after ten minutes to avoid persisting temporary access links.
 - Public booking (`/boeken`) reads via `src/data/booking.functions.ts` server functions with the admin client after resolving the brand from the host (`?merk=` only for brands in test mode); they return display data only. Step order lives in `src/domain/booking.ts`, free times in `src/domain/slots.ts` — both tested.
