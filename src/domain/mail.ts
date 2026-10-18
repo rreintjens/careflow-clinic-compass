@@ -53,3 +53,19 @@ export function blockVisible(condition: string, situation: MailSituation) {
 export function safeMailUrl(value: string) {
   try { const url = new URL(value); return ["https:", "mailto:", "tel:"].includes(url.protocol) ? value : null; } catch { return null; }
 }
+
+/** Cancellation/no-show rule: a treatment overrides its category, the category overrides Algemeen. */
+export interface CancelRule { cancel_until_hours: number | null; no_show_fee_eur: number | null }
+export interface CancelDefaults { cancelHours: number; noShowCents: number }
+export function cancelPolicy(treatment: CancelRule | null | undefined, category: CancelRule | null | undefined, defaults: CancelDefaults) {
+  const hours = treatment?.cancel_until_hours ?? category?.cancel_until_hours ?? defaults.cancelHours;
+  const feeCents = treatment?.no_show_fee_eur != null ? treatment.no_show_fee_eur * 100 : category?.no_show_fee_eur != null ? category.no_show_fee_eur * 100 : defaults.noShowCents;
+  return { hours, feeCents };
+}
+const euro = (cents: number) => (cents % 100 === 0 ? `€${cents / 100}` : `€${(cents / 100).toFixed(2).replace(".", ",")}`);
+/** Placeholder values for the Verhinderd block; the fee sentence stays empty when there is no fee. */
+export function cancelPolicyValues(policy: { hours: number; feeCents: number }, noShowSentence: string) {
+  const annuleringstermijn = `${policy.hours} uur`;
+  const no_show_bedrag = policy.feeCents > 0 ? euro(policy.feeCents) : "";
+  return { annuleringstermijn, no_show_bedrag, no_show_zin: policy.feeCents > 0 ? interpolate(noShowSentence, { annuleringstermijn, no_show_bedrag }) : "" };
+}

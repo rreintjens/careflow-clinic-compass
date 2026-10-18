@@ -3,7 +3,7 @@ import { blockVisible, interpolate, safeMailUrl, translated, type MailBlock, typ
 export type MailTheme = { background: string; surface: string; heading: string; text: string; muted: string; panel: string; button: string; onPanel: string; link: string };
 export type MailDocumentInput = {
   blocks: MailBlock[]; language: string; values: Record<string, string>; situation: MailSituation;
-  images: Record<string, string>; practitionerPhoto?: string | null; theme: MailTheme;
+  images: Record<string, string>; practitionerPhoto?: string | null; categoryImage?: string | null; theme: MailTheme;
 };
 export function escapeMailHtml(value: string) {
   return value.replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char] ?? char);
