@@ -204,6 +204,13 @@
       "when": 1792287341697,
       "tag": "0028_group_admin_login_above_tenants",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1792287593686,
+      "tag": "0029_current_tenant_group_admin_claim",
+      "breakpoints": true
     }
   ]
 }
