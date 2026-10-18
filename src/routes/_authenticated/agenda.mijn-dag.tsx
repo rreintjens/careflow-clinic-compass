@@ -25,7 +25,7 @@ const HOUR = 114;
 
 export const Route = createFileRoute("/_authenticated/agenda/mijn-dag")({
   validateSearch: z.object({ datum: z.string().optional(), behandelaar: z.string().optional(), afspraak: z.string().optional() }),
-  head: () => ({ meta: [{ title: "Mijn dag · Beheer · The Body Clinic" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Mijn dag · Beheer · The Body Clinic" }, { name: "description", content: "Dagagenda en patiëntafspraken per behandelaar van The Body Clinic." }, { property: "og:title", content: "Mijn dag · The Body Clinic" }, { property: "og:description", content: "Dagagenda en patiëntafspraken per behandelaar van The Body Clinic." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { name: "robots", content: "noindex" }] }),
   component: Page,
 });
 
@@ -78,7 +78,7 @@ function Page() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader className="min-h-11" title="Mijn dag" actions={prac && <span className="whitespace-nowrap rounded-full bg-teal-light px-3 py-1 text-[12px] text-primary">{prac.first_name} {prac.last_name}</span>} />
+      <div className="min-h-11"><PageHeader title="Mijn dag" actions={prac && <span className="whitespace-nowrap rounded-full bg-teal-light px-3 py-1 text-[12px] text-primary">{prac.first_name} {prac.last_name}</span>} /></div>
       <AgendaToolbar value="mijn"
         onChange={(v) => v !== "mijn" && void navigate({ to: "/agenda", search: { datum: s.datum, weergave: v === "week" ? "week" : undefined, behandelaar: pid } })}
         filters={<Select label="Behandelaar" className="w-[230px] [&>label]:sr-only" value={pid} onChange={(v) => go({ behandelaar: v, afspraak: undefined })} options={(ref?.practitioners ?? []).map((p) => ({ value: p.id, label: `${p.first_name} ${p.last_name}` }))} />}

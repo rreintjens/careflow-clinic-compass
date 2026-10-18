@@ -32,7 +32,7 @@ export const Route = createFileRoute("/_authenticated/agenda/")({
     datum: z.string().optional(), weergave: z.enum(["dag", "week"]).optional(), locatie: z.string().optional(),
     behandelaar: z.string().optional(), categorie: z.string().optional(), afspraak: z.string().optional(),
   }),
-  head: () => ({ meta: [{ title: "Agenda · Beheer · The Body Clinic" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Agenda · Beheer · The Body Clinic" }, { name: "description", content: "Dag- en weekagenda met afspraken en beschikbaarheid van The Body Clinic." }, { property: "og:title", content: "Agenda · The Body Clinic" }, { property: "og:description", content: "Dag- en weekagenda met afspraken en beschikbaarheid van The Body Clinic." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { name: "robots", content: "noindex" }] }),
   component: Page,
 });
 
