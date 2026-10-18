@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
+import { mailImagePathSchema } from "./mail-images";
 
 export type MailTemplate = Database["public"]["Tables"]["mail_templates"]["Row"];
 export const mailBlockSchema = z.object({
@@ -7,7 +8,7 @@ export const mailBlockSchema = z.object({
   title_nl: z.string(), title_en: z.string(),
   text_nl: z.string(), text_en: z.string(),
   button_nl: z.string(), button_en: z.string(),
-  url: z.string(), image: z.string(),
+  url: z.string(), image: z.string(), image_path: mailImagePathSchema.or(z.literal("")).optional(),
 }).refine((b) => !b.image || /^https:\/\//.test(b.image), { path: ["image"], message: "Gebruik een beveiligde afbeeldingslink." });
 export type MailBlock = z.infer<typeof mailBlockSchema>;
 export const mailTemplateSchema = z.object({
