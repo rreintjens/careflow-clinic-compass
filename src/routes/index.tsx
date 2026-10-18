@@ -8,6 +8,8 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "Agenda en dossier voor medewerkers van The Body Clinic." },
       { property: "og:title", content: "The Body Clinic · Agenda en dossier" },
       { property: "og:description", content: "Agenda en dossier voor medewerkers van The Body Clinic." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   beforeLoad: () => {

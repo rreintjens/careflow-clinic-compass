@@ -11,7 +11,7 @@ import { standaloneConsultOptionsQuery } from "@/data/consults";
 import { saveStandaloneConsult } from "@/data/consults.functions";
 import { standaloneConsultSchema, type StandaloneConsultInput } from "@/domain/consult";
 
-export function StandaloneConsultModal({ patientId, practitionerId, onClose }: { patientId: string; practitionerId?: string; onClose: () => void }) {
+export function StandaloneConsultModal({ patientId, practitionerId, onClose }: { patientId: string; practitionerId?: string | undefined; onClose: () => void }) {
   const { data, isError } = useQuery(standaloneConsultOptionsQuery);
   const saveFn = useServerFn(saveStandaloneConsult);
   const qc = useQueryClient();
