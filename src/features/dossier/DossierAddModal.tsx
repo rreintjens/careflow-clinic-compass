@@ -18,7 +18,7 @@ export function DossierAddModal({ patient, onClose }: { patient: NonNullable<Dos
   const navigate = useNavigate();
   const { data: staff } = useQuery(staffContextQuery);
   const { data: agenda, isError } = useQuery({ ...agendaRefQuery, enabled: action === "appointment" });
-  const { data: measurements = [] } = useQuery({ ...measurementsQuery(patient.id), enabled: action === "measurement" });
+  const { data: measurements } = useQuery({ ...measurementsQuery(patient.id), enabled: action === "measurement" });
   const { data: choices = [] } = useQuery({
     queryKey: ["dossier-add-options"],
     queryFn: async () => {
@@ -28,11 +28,11 @@ export function DossierAddModal({ patient, onClose }: { patient: NonNullable<Dos
     },
   });
   const permitted = (value: string) => {
-    const permission = value === "appointment" ? "agenda.write" : "patients.medical";
+    const permission = value === "appointment" ? "agenda.appointments" : value === "document" ? "patients.edit" : "patients.medical";
     return staff?.permissions?.includes(permission) ?? false;
   };
   if (action === "consult") return <StandaloneConsultModal patientId={patient.id} onClose={onClose} />;
-  if (action === "measurement") return <MeasurementModal id={patient.id} height={measurements.filter((m) => m.height_cm !== null).at(-1)?.height_cm ?? null} onClose={onClose} />;
+  if (action === "measurement" && measurements) return <MeasurementModal id={patient.id} height={measurements.filter((m) => m.height_cm !== null).at(-1)?.height_cm ?? null} onClose={onClose} />;
   if (action === "document") return <DocumentModal id={patient.id} onClose={onClose} />;
   if (action === "appointment" && agenda) return <NewAppointmentModal open onOpenChange={(open) => !open && onClose()} data={agenda} fixedPatient={patient} onPickInAgenda={() => { onClose(); void navigate({ to: "/agenda" }); }} />;
   return <Modal open width="lg" title={`Toevoegen aan het dossier van ${patient.first_name} ${patient.last_name}`} onOpenChange={(open) => !open && onClose()}
