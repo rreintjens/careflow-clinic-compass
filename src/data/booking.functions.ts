@@ -7,7 +7,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import type { Slot } from "@/domain/slots";
-import { admin, attachMeeting, computeSlots, localParts, localToUtc, resolveTenant, settingNum } from "./booking.server";
+import { admin, computeSlots, localParts, localToUtc, resolveTenant, settingNum } from "./booking.server";
+import { attachMeeting } from "./meeting.server";
 
 
 
