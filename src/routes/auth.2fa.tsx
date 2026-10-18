@@ -43,16 +43,20 @@ function TwoFactorPage() {
     if (started.current) return;
     started.current = true;
     (async () => {
-      const aal = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-      if (aal.data?.currentLevel === "aal2") return goLanding();
-      const { data } = await supabase.auth.mfa.listFactors();
-      const verified = data?.totp.find((f) => f.status === "verified");
-      if (verified) return setFactorId(verified.id);
-      for (const f of data?.all ?? []) if (f.status === "unverified") await supabase.auth.mfa.unenroll({ factorId: f.id });
-      const res = await supabase.auth.mfa.enroll({ factorType: "totp", friendlyName: "Authenticator" });
-      if (res.error) return setError("Tweestapsverificatie instellen is niet gelukt.");
-      setFactorId(res.data.id);
-      setEnroll({ factorId: res.data.id, qr: res.data.totp.qr_code, secret: res.data.totp.secret });
+      try {
+        const aal = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+        if (aal.data?.currentLevel === "aal2") return goLanding();
+        const { data } = await supabase.auth.mfa.listFactors();
+        const verified = data?.totp.find((f) => f.status === "verified");
+        if (verified) return setFactorId(verified.id);
+        for (const f of data?.all ?? []) if (f.status === "unverified") await supabase.auth.mfa.unenroll({ factorId: f.id });
+        const res = await supabase.auth.mfa.enroll({ factorType: "totp", friendlyName: "Authenticator" });
+        if (res.error) return setError("Tweestapsverificatie instellen is niet gelukt. Ververs de pagina en probeer het opnieuw.");
+        setFactorId(res.data.id);
+        setEnroll({ factorId: res.data.id, qr: res.data.totp.qr_code, secret: res.data.totp.secret });
+      } catch {
+        setError("De tweestapsverificatie kon niet worden geladen. Ververs de pagina en probeer het opnieuw.");
+      }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
