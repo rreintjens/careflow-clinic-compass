@@ -11,7 +11,7 @@ export function MailPreview({ blocks, language, values, situation }: { blocks: M
       const url = safeMailUrl(interpolate(b.url, values));
       return <div key={b.id} className={b.type === "card" || b.type === "details" ? "rounded-[14px] bg-teal-light p-4" : ""}>
         {b.title_nl && <h3 className="mb-2 text-[17px] font-semibold text-primary-hover">{text(b.title_nl, b.title_en)}</h3>}
-        {b.type === "details" ? <div className="whitespace-pre-line">{[values.behandeling, `${values.dag ?? ""} ${values.tijd ?? ""}`, values.behandelaar, situation.online ? values.meet_link : values.adres].filter(Boolean).join("\n")}</div> : <div className="whitespace-pre-line">{text(b.text_nl, b.text_en)}</div>}
+        {b.type === "details" ? <div className="whitespace-pre-line">{[values['behandeling'], `${values['dag'] ?? ""} ${values['tijd'] ?? ""}`, values['behandelaar'], situation.online ? values['meet_link'] : values['adres']].filter(Boolean).join("\n")}</div> : <div className="whitespace-pre-line">{text(b.text_nl, b.text_en)}</div>}
         {b.button_nl && (url ? <a href={url} target="_blank" rel="noreferrer" className="mt-3 block rounded-full bg-primary px-5 py-3 text-center font-medium text-primary-foreground">{text(b.button_nl, b.button_en)}</a> : <span className="mt-3 block rounded-full bg-primary px-5 py-3 text-center font-medium text-primary-foreground">{text(b.button_nl, b.button_en)}</span>)}
       </div>;
     })}

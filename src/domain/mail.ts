@@ -4,10 +4,10 @@ import type { Database } from "@/integrations/supabase/types";
 export type MailTemplate = Database["public"]["Tables"]["mail_templates"]["Row"];
 export const mailBlockSchema = z.object({
   id: z.string().min(1), type: z.string().min(1), condition: z.string().min(1),
-  title_nl: z.string().default(""), title_en: z.string().default(""),
-  text_nl: z.string().default(""), text_en: z.string().default(""),
-  button_nl: z.string().default(""), button_en: z.string().default(""),
-  url: z.string().default(""), image: z.string().default(""),
+  title_nl: z.string(), title_en: z.string(),
+  text_nl: z.string(), text_en: z.string(),
+  button_nl: z.string(), button_en: z.string(),
+  url: z.string(), image: z.string(),
 }).refine((b) => !b.image || /^https:\/\//.test(b.image), { path: ["image"], message: "Gebruik een beveiligde afbeeldingslink." });
 export type MailBlock = z.infer<typeof mailBlockSchema>;
 export const mailTemplateSchema = z.object({
@@ -22,7 +22,8 @@ export const mailTemplateSchema = z.object({
 });
 export type MailInput = z.infer<typeof mailTemplateSchema>;
 export function blocksOf(template: Pick<MailTemplate, "blocks">): MailBlock[] {
-  const result = z.array(mailBlockSchema).safeParse(template.blocks);
+  const raw = Array.isArray(template.blocks) ? template.blocks.map((b) => ({ title_nl: "", title_en: "", text_nl: "", text_en: "", button_nl: "", button_en: "", url: "", image: "", ...(b && typeof b === "object" && !Array.isArray(b) ? b : {}) })) : [];
+  const result = z.array(mailBlockSchema).safeParse(raw);
   return result.success ? result.data : [];
 }
 export function translated(nl: string | null, en: string | null, language: string) { return language === "en" && en?.trim() ? en : nl ?? ""; }

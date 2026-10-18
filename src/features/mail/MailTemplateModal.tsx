@@ -14,7 +14,7 @@ import type { Org } from "@/data/organisation";
 import { blocksOf, mailBlockSchema, mailTemplateSchema, translated, type MailBlock, type MailInput, type MailTemplate } from "@/domain/mail";
 import { MailPreview } from "./MailPreview";
 
-export function MailTemplateModal({ template, defaults, data, org, onClose }: { template: MailTemplate | null; defaults?: Partial<MailInput>; data: MailData; org: Org; onClose: () => void }) {
+export function MailTemplateModal({ template, defaults, data, org, onClose }: { template: MailTemplate | null; defaults?: Partial<MailInput> | undefined; data: MailData; org: Org; onClose: () => void }) {
   const qc = useQueryClient();
   const form = useForm<MailInput>({ resolver: zodResolver(mailTemplateSchema), defaultValues: {
     id: template?.id ?? null, name: template?.name ?? "", moment: template?.moment ?? data.options.find((o) => o.list_key === "mail_moment")?.value ?? "",
@@ -63,7 +63,7 @@ export function MailTemplateModal({ template, defaults, data, org, onClose }: { 
             <PillButton size="sm" variant="ghost" aria-label="Blok verwijderen" onClick={() => updateBlocks(current.blocks.filter((x) => x.id !== b.id))}>×</PillButton>
           </div>)}
         </div>
-        <div className="flex flex-wrap gap-2">{option("mail_block_type").map((type) => <PillButton key={type.value} size="sm" variant="outline" onClick={() => { const b = mailBlockSchema.parse({ id: crypto.randomUUID(), type: type.value, condition: "always" }); updateBlocks([...current.blocks, b]); setSelected(b.id); }}><PlusIcon />{type.label}</PillButton>)}</div>
+        <div className="flex flex-wrap gap-2">{option("mail_block_type").map((type) => <PillButton key={type.value} size="sm" variant="outline" onClick={() => { const b = mailBlockSchema.parse({ id: crypto.randomUUID(), type: type.value, condition: "always", title_nl: "", title_en: "", text_nl: "", text_en: "", button_nl: "", button_en: "", url: "", image: "" }); updateBlocks([...current.blocks, b]); setSelected(b.id); }}><PlusIcon />{type.label}</PillButton>)}</div>
         {block && <div className="flex flex-col gap-3 rounded-[14px] bg-sand p-4">
           <Select label="Tonen" value={block.condition} options={option("mail_condition")} onChange={(condition) => updateBlock({ condition })} />
           {block.type !== "divider" && <TextField label="Kop" value={block[languageKey("title")]} onChange={(e) => updateBlock({ [languageKey("title")]: e.target.value })} />}
