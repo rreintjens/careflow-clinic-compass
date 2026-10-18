@@ -25,7 +25,7 @@ export function blocksOf(template: Pick<MailTemplate, "blocks">): MailBlock[] {
   const result = z.array(mailBlockSchema).safeParse(template.blocks);
   return result.success ? result.data : [];
 }
-export function translated(nl: string, en: string, language: string) { return language === "en" && en.trim() ? en : nl; }
+export function translated(nl: string | null, en: string | null, language: string) { return language === "en" && en?.trim() ? en : nl ?? ""; }
 export function interpolate(text: string, values: Record<string, string>) {
   return text.replace(/\{([^{}]+)\}/g, (original, key: string) => values[key] ?? original);
 }

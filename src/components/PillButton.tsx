@@ -3,7 +3,7 @@ import { forwardRef, type ButtonHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
 type Variant = "primary" | "outline" | "ghost";
-type Size = "md" | "lg";
+type Size = "sm" | "md" | "lg";
 
 export interface PillButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
@@ -16,7 +16,7 @@ const variants: Record<Variant, string> = {
   outline: "border border-primary bg-background text-primary hover:bg-teal-light",
   ghost: "bg-transparent text-primary hover:bg-teal-light",
 };
-const sizes: Record<Size, string> = { md: "h-11 px-5 text-sm", lg: "h-[52px] px-7 text-[15px]" };
+const sizes: Record<Size, string> = { sm: "h-8 px-3 text-xs", md: "h-11 px-5 text-sm", lg: "h-[52px] px-7 text-[15px]" };
 
 export const PillButton = forwardRef<HTMLButtonElement, PillButtonProps>(function PillButton(
   { variant = "primary", size = "md", block, className, type = "button", ...props },
