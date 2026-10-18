@@ -6,7 +6,7 @@ export const saveMailTemplate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => mailTemplateSchema.parse(input))
   .handler(async ({ data, context }) => {
-    if ((context.claims as { aal?: string }).aal !== "aal2") throw new Error("Forbidden");
+    if (!(await context.supabase.rpc("is_aal2")).data) throw new Error("Forbidden");
     const permission = await context.supabase.rpc("has_permission", { _perm: "emails.templates" });
     if (permission.error || !permission.data) throw new Error("Forbidden");
     const options = await context.supabase.from("option_lists").select("list_key,value").in("list_key", ["mail_moment", "mail_block_type", "mail_condition"]);

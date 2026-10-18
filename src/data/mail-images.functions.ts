@@ -6,7 +6,7 @@ export const uploadMailImage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => mailImageUploadSchema.parse(input))
   .handler(async ({ data, context }) => {
-    if ((context.claims as { aal?: string }).aal !== "aal2") throw new Error("Forbidden");
+    if (!(await context.supabase.rpc("is_aal2")).data) throw new Error("Forbidden");
     const permission = await context.supabase.rpc("has_permission", { _perm: "emails.templates" });
     if (permission.error || !permission.data) throw new Error("Forbidden");
     const tenant = await context.supabase.rpc("current_tenant_slug");
