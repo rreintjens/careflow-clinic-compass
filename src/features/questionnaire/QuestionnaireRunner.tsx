@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } 
 import { Logo } from "@/components/Logo";
 import { PatientFrame } from "@/components/PatientFrame";
 import {
-  flowSteps, makeCtx, itemAnswered, pageProgress, redOnPage, toggleOption, visibleItems, visiblePages,
+  flowSteps, makeCtx, itemAnswered, pageProgress, redOnPage, showsAnswerList, toggleOption, visibleItems, visiblePages,
   type Answers, type FlowFile, type Item, type Page, type QuestionnaireDef, type RedOutcome,
 } from "@/domain/questionnaire/engine";
 import { yearsBetween } from "@/domain/questionnaire/expr";
@@ -242,9 +242,11 @@ function ItemInput({ item, answers, set, t, today, showLabel, all }: { item: Ite
       const rows = all.pages.flatMap((p) => p.items ?? []).filter((i) => i.type !== "answer_summary" && i.type !== "checkbox_required" && answers[i.id] !== undefined);
       return (
         <div>{label}
-          <dl className="flex flex-col divide-y divide-line rounded-[14px] bg-sand px-4">
-            {rows.map((i) => <div key={i.id} className="py-3"><dt className="text-xs text-muted-foreground">{i.text}</dt><dd className="text-[15px]">{fmt(answers[i.id], t)}</dd></div>)}
-          </dl>
+          {showsAnswerList(item) && (
+            <dl className="flex flex-col divide-y divide-line rounded-[14px] bg-sand px-4">
+              {rows.map((i) => <div key={i.id} className="py-3"><dt className="text-xs text-muted-foreground">{i.text}</dt><dd className="text-[15px]">{fmt(answers[i.id], t)}</dd></div>)}
+            </dl>
+          )}
         </div>
       );
     }

@@ -120,6 +120,16 @@ describe("prefill and import/export", () => {
   });
 });
 
+describe("answer summary list", () => {
+  it("shows the list unless the editor turns it off", () => {
+    const base = { id: "review", text: "Klopt alles?", type: "answer_summary" as const };
+    expect(showsAnswerList(base)).toBe(true);
+    expect(showsAnswerList({ ...base, show_list: true })).toBe(true);
+    expect(showsAnswerList({ ...base, show_list: false })).toBe(false);
+    expect(showsAnswerList({ id: "sex", text: "Geslacht?", type: "yes_no" })).toBe(true);
+  });
+});
+
 describe("resume screen", () => {
   it("lists every visible question page with its counts and the first incomplete page", () => {
     const s = resumeState(medical, flow, {}, TODAY);

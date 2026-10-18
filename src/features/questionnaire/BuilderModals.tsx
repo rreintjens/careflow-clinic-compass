@@ -112,6 +112,7 @@ export function ItemModal({ item, itemTypes, sections, section, rejections, ctx,
         {(t === "number" || t === "measure_with_image") && <TextField label="Eenheid" value={i.unit ?? ""} onChange={(e) => set({ unit: e.target.value })} />}
         {t === "measure_with_image" && <TextField label="Antwoord als de patiënt het niet weet" value={i.allow_unknown ?? ""} onChange={(e) => set({ allow_unknown: e.target.value })} />}
         <div className="col-span-2"><Checkbox label="Optioneel (mag leeg blijven)" checked={!!i.optional} onChange={(v) => set({ optional: v || undefined })} /></div>
+        {t === "answer_summary" && <div className="col-span-2"><Checkbox label="Toon de opsomming van alle antwoorden" checked={i.show_list !== false} onChange={(v) => set({ show_list: v ? undefined : false })} help="Uit: de patiënt ziet alleen deze vraag en de knop." /></div>}
       </div>
       <div className="mt-5 flex flex-col gap-4">
         <OptionalCondition label="Alleen tonen onder een voorwaarde (verschijnt onder de vorige vraag)" value={i.show_if} onChange={(c) => set({ show_if: c })} ctx={ctx} />
