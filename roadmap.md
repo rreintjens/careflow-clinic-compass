@@ -63,3 +63,4 @@ Owner asked to continue through all phases without pausing for confirmation.
 - [x] Leeg bolletje in Pagina wijzigen = checkbox met onzichtbaar label: Checkbox toont nu het label; dubbel label in consultchecklist weggehaald.
 - [x] Uitslagpagina-verfraaiing builder-gestuurd houden: icoon-badge in de runner stijlt alleen het icoon dat de pagina-config kiest, geen hardcoded icoon.
 - [x] Triage-uitslagpagina: icoon-badge gecentreerd en groter (72px cirkel met 34px teken) zoals het ontwerp ma-10-goed-nieuws.dc.html; alleen die icoonpagina in de flow heeft een icoon.
+- [x] Opsomming van antwoorden op de reviewpagina tonen of verbergen: kan al door de vraag "Klopt alles?" van de pagina te halen (owner: "ow, dat kan al"); de extra editor-switch die ik daarvoor bouwde is weer weggehaald.
