@@ -129,15 +129,15 @@ describe("resume screen", () => {
     expect(s.pages.every((p) => p.answered === 0 && !p.complete)).toBe(true);
   });
   it("continues at the first incomplete page and keeps earlier answers", () => {
-    const first = resumeState(medical, flow, {}, TODAY).pages[0];
+    const first = resumeState(medical, flow, {}, TODAY).pages[0]!;
     const ctx = makeCtx(flow, {}, TODAY);
-    const items = (medical.pages.find((p) => p.id === first.id)!.items ?? []);
+    const items = medical.pages.find((p) => p.id === first.id)!.items ?? [];
     const answers: Answers = {};
     for (const i of items) answers[i.type === "height_weight" ? "height_cm" : i.id] = "x";
     const s = resumeState(medical, flow, answers, TODAY);
-    expect(s.pages[0].complete).toBe(true);
+    expect(s.pages[0]!.complete).toBe(true);
     expect(s.pageNumber).toBe(2);
-    expect(s.nextPageId).toBe(s.pages[1].id);
+    expect(s.nextPageId).toBe(s.pages[1]!.id);
     expect(ctx).toBeTruthy();
   });
   it("points at the last page when everything is answered but not yet sent", () => {
