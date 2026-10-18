@@ -1,22 +1,34 @@
-import { Logo } from "@/components/Logo";
-import { blockVisible, interpolate, safeMailUrl, translated, type MailBlock, type MailSituation } from "@/domain/mail";
-import { Avatar } from "@/components/Avatar";
-import { MailImage } from "./MailImage";
+import { useEffect, useState } from "react";
+import { useQueries, useQuery } from "@tanstack/react-query";
+import { type MailBlock, type MailSituation } from "@/domain/mail";
+import { renderMailDocument, type MailTheme } from "@/domain/mail-document";
+import { mailImageUrlQuery } from "@/data/mail-images";
+import { photoUrl } from "@/data/organisation";
+import openSans from "@fontsource/open-sans/files/open-sans-latin-400-normal.woff2?url";
+import openSansBold from "@fontsource/open-sans/files/open-sans-latin-700-normal.woff2?url";
 
 export function MailPreview({ blocks, language, values, situation, practitionerPhoto }: { blocks: MailBlock[]; language: string; values: Record<string, string>; situation: MailSituation; practitionerPhoto?: string | null | undefined }) {
-  const text = (nl: string, en: string) => interpolate(translated(nl, en, language), values);
-  return <div className="mx-auto flex max-w-[600px] flex-col gap-4 bg-background p-4 text-[13px] leading-[1.8]">
-    <div className="flex justify-center py-2"><Logo /></div>
-    {blocks.filter((b) => blockVisible(b.condition, situation)).map((b) => {
-      if (b.type === "divider") return <hr key={b.id} className="border-line" />;
-      if (b.type === "image") return b.image_path ? <MailImage key={b.id} path={b.image_path} alt={text(b.title_nl, b.title_en)} className="aspect-[5/2] w-full rounded-t-[20px] object-cover" /> : b.image && safeMailUrl(b.image)?.startsWith("https:") ? <img key={b.id} src={b.image} alt={text(b.title_nl, b.title_en)} className="aspect-[5/2] w-full rounded-t-[20px] object-cover" /> : null;
-      const url = safeMailUrl(interpolate(b.url, values));
-      if (b.type === "signature") return <div key={b.id} className="rounded-[20px] bg-sand p-5"><div className="mb-3 flex items-center gap-4">{b.image_path ? <MailImage path={b.image_path} className="h-[92px] w-[92px] shrink-0 rounded-full object-cover" /> : practitionerPhoto ? <Avatar path={practitionerPhoto} size={92} /> : null}<div className="whitespace-pre-line">{text(b.text_nl, b.text_en)}</div></div><h3 className="font-semibold text-primary-hover">{text(b.title_nl, b.title_en)}</h3></div>;
-      return <div key={b.id} className={b.type === "card" || b.type === "details" ? "rounded-[20px] bg-sand p-5" : ""}>
-        {b.title_nl && <h3 className="mb-2 text-[17px] font-semibold text-primary-hover">{text(b.title_nl, b.title_en)}</h3>}
-        {b.type === "details" ? <div className="whitespace-pre-line">{[values['behandeling'], `${values['dag'] ?? ""} ${values['tijd'] ?? ""}`, values['behandelaar'], situation.online ? values['meet_link'] : values['adres']].filter(Boolean).join("\n")}</div> : <div className="whitespace-pre-line break-words">{text(b.text_nl, b.text_en)}</div>}
-        {b.button_nl && (url ? <a href={url} target="_blank" rel="noreferrer" className="mt-3 block rounded-full bg-primary px-5 py-3 text-center font-medium text-primary-foreground">{text(b.button_nl, b.button_en)}</a> : <span className="mt-3 block rounded-full bg-primary px-5 py-3 text-center font-medium text-primary-foreground">{text(b.button_nl, b.button_en)}</span>)}
-      </div>;
-    })}
-  </div>;
+  const [theme, setTheme] = useState<MailTheme | null>(null);
+  const [height, setHeight] = useState(900);
+  const paths = [...new Set(blocks.map((block) => block.image_path).filter((path): path is string => !!path))];
+  const urls = useQueries({ queries: paths.map(mailImageUrlQuery) });
+  const { data: photo } = useQuery({ queryKey: ["photo", practitionerPhoto], queryFn: () => photoUrl(practitionerPhoto ?? null), enabled: !!practitionerPhoto, staleTime: 50 * 60 * 1000 });
+  useEffect(() => {
+    const css = getComputedStyle(document.documentElement);
+    const token = (name: string) => css.getPropertyValue(name).trim();
+    setTheme({ background: token("--background"), surface: token("--mail-surface"), heading: token("--mail-heading"), text: token("--mail-text"), muted: token("--muted-foreground"), panel: token("--mail-panel"), button: token("--mail-button"), onPanel: token("--primary-foreground"), link: token("--mail-link") });
+  }, []);
+  if (!theme) return null;
+  const images = Object.fromEntries(paths.flatMap((path, index) => { const url = urls[index]?.data; return url ? [[path, url]] : []; }));
+  const html = renderMailDocument({ blocks, language, values, situation, images, practitionerPhoto: photo ?? null, theme });
+  const fonts = `<style>@font-face{font-family:'Open Sans';font-style:normal;font-weight:400;font-display:swap;src:url('${openSans}') format('woff2')}@font-face{font-family:'Open Sans';font-style:normal;font-weight:700;font-display:swap;src:url('${openSansBold}') format('woff2')}</style>`;
+  return <iframe title="Voorbeeld van de e-mail" sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox" className="mx-auto block w-full max-w-[600px] border-0 bg-background" height={height} srcDoc={html.replace("</head>", `${fonts}</head>`)} onLoad={(event) => {
+    const frame = event.currentTarget;
+    const body = frame.contentDocument?.body;
+    if (!body) return;
+    const resize = () => setHeight(Math.max(300, body.scrollHeight));
+    resize();
+    frame.contentDocument?.fonts.ready.then(resize);
+    for (const image of Array.from(body.querySelectorAll("img"))) image.addEventListener("load", resize, { once: true });
+  }} />;
 }

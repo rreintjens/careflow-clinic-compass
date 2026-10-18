@@ -53,6 +53,12 @@
   --color-signal: var(--signal);
   --color-signal-border: var(--signal-border);
   --color-line: var(--line);
+  --color-mail-surface: var(--mail-surface);
+  --color-mail-heading: var(--mail-heading);
+  --color-mail-text: var(--mail-text);
+  --color-mail-panel: var(--mail-panel);
+  --color-mail-button: var(--mail-button);
+  --color-mail-link: var(--mail-link);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
@@ -98,6 +104,12 @@
   --signal: oklch(0.981 0.018 81.3);
   --signal-border: oklch(0.874 0.065 85.4);
   --line: oklch(0.908 0.009 52.1);
+  --mail-surface: #F6F2EE;
+  --mail-heading: #2D5565;
+  --mail-text: #3F5A62;
+  --mail-panel: #2A5666;
+  --mail-button: #4D94AE;
+  --mail-link: #3A8F86;
   --chart-1: oklch(0.53 0.075 218.9);
   --chart-2: oklch(0.426 0.057 219.3);
   --chart-3: oklch(0.513 0.132 47.6);
