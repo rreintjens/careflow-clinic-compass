@@ -10,6 +10,8 @@ import { dayPart, nextStep, sortLocations, type Catalog } from "@/domain/booking
 import { fmtTime, type Slot } from "@/domain/slots";
 import { cn } from "@/lib/utils";
 import { confirmBooking, getBookingCatalog, getBookingSlots, getTriage, holdSlot, lookupAddress, releaseHold } from "@/data/booking.functions";
+import { getBookingLink } from "@/data/booking-links.functions";
+import type { ChoiceMode } from "@/domain/booking";
 import { DobField, QuestionnaireRunner } from "@/features/questionnaire/QuestionnaireRunner";
 import { Select } from "@/components/Select";
 import { TextArea, TextField } from "@/components/Field";
