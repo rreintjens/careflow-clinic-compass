@@ -1,5 +1,14 @@
-/** Wordmark placeholder (the logo image is not in the package). */
-export function Logo({ small = false }: { small?: boolean }) {
+/** Wordmark placeholder (the logo image is not in the package). mark = only the three dots. */
+export function Logo({ small = false, mark = false }: { small?: boolean; mark?: boolean }) {
+  if (mark) {
+    return (
+      <span className="inline-flex gap-[3px]" aria-label="The Body Clinic">
+        <span className="size-[8px] rounded-full bg-primary" />
+        <span className="size-[8px] rounded-full bg-primary" />
+        <span className="size-[8px] rounded-full bg-primary/50" />
+      </span>
+    );
+  }
   return (
     <span className={`inline-flex items-center gap-1.5 whitespace-nowrap ${small ? "text-[16px]" : "text-[19px]"} font-medium tracking-tight text-primary`} aria-label="The Body Clinic">
       the body clinic

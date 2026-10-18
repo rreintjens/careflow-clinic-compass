@@ -136,7 +136,7 @@ function Frame({ progress, onBack, children, footer, scrollRef, fullScreen }: { 
     <div className={cn("flex flex-col bg-background", fullScreen ? "w-full flex-1" : "h-[844px] w-[390px] overflow-hidden rounded-[28px] border border-line")}>
       <div className="flex h-14 items-center justify-between px-5">
         <button type="button" aria-label="Terug" onClick={onBack} disabled={!onBack} className="disabled:opacity-0"><Chevron /></button>
-        <Logo small />
+        <span className="sm:hidden"><Logo small /></span><span className="hidden sm:inline-flex"><Logo mark /></span>
         <span aria-hidden="true"><CloseIcon /></span>
       </div>
       <div className="h-[3px] bg-mist"><div className="h-full bg-primary transition-all" style={{ width: `${progress * 100}%` }} /></div>

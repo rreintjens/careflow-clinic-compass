@@ -38,7 +38,7 @@ function Shell({ children, footer, onBack }: { children: React.ReactNode; footer
     <PatientFrame>
         <header className="grid h-14 grid-cols-[48px_1fr_48px] items-center px-2">
           {onBack ? <button type="button" onClick={onBack} aria-label="Terug" className="flex justify-center"><img src="/ui-icons/pijl-links.svg" alt="" className="size-5" /></button> : <span />}
-          <span className="flex justify-center"><Logo small /></span>
+          <span className="flex justify-center"><span className="sm:hidden"><Logo small /></span><span className="hidden sm:inline-flex"><Logo mark /></span></span>
           <span />
         </header>
         <div className="h-[3px] bg-primary" />
