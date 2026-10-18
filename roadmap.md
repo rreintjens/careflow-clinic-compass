@@ -43,6 +43,7 @@ Owner asked to continue through all phases without pausing for confirmation.
     - [x] Statistics API: totals only (arrivals, appointments, no-shows, occupancy, triage reasons, per source), own key per brand, every pull logged, refuses unknown keys with "ongeldige sleutel"
     - [x] Google Meet: provider interface + mock (link kept when moving, same link on repeat), account shown and editable on Koppelingen, link visible in agenda, Mijn dag and the record
     - [x] Koppelingen and Dashboard screens built from the design reference; fixed texts read from option lists `koppelingen_ui` / `dashboard_ui`
+    - [x] Links verified from the patient side: a link with a fixed treatment opens straight at the time choice (practitioner "Geen voorkeur"), a link without one starts at the category choice narrowed to what the link's location offers, an unknown link falls back to the normal entry; the statistics and export endpoints refuse callers without a key or token
     - [ ] Staff screens (Boekingslinks, Koppelingen, Dashboard) not yet opened in a browser: they need a second-factor session and the test staff password is not available in this environment
 - [x] Medical questionnaire: 'Val je af of kom je nog aan?' had no answers in the seed; v2 adds them from the design HTML
 - [x] Questionnaire runner: pressing the button with missing/invalid answers highlights them and scrolls to the first (owner request)
