@@ -120,6 +120,13 @@
       "when": 1792282180671,
       "tag": "0016_consults_plans_documents",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1792282898872,
+      "tag": "0017_standalone_consult_details",
+      "breakpoints": true
     }
   ]
 }

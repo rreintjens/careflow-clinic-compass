@@ -316,16 +316,22 @@ export type Database = {
           created_by: string | null
           evaluation: string
           finished_at: string | null
+          follow_up: string
           id: string
           kind: string
           objective: string
+          occurred_at: string | null
           patient_id: string
           plan: string
+          practitioner_id: string | null
+          reason: string
           status: string
           subjective: string
           tenant_id: string
+          time_and_duration: string
           updated_at: string
           updated_by: string | null
+          visibility: string
         }
         Insert: {
           appointment_id?: string | null
@@ -334,16 +340,22 @@ export type Database = {
           created_by?: string | null
           evaluation?: string
           finished_at?: string | null
+          follow_up?: string
           id?: string
           kind?: string
           objective?: string
+          occurred_at?: string | null
           patient_id: string
           plan?: string
+          practitioner_id?: string | null
+          reason?: string
           status?: string
           subjective?: string
           tenant_id?: string
+          time_and_duration?: string
           updated_at?: string
           updated_by?: string | null
+          visibility?: string
         }
         Update: {
           appointment_id?: string | null
@@ -352,16 +364,22 @@ export type Database = {
           created_by?: string | null
           evaluation?: string
           finished_at?: string | null
+          follow_up?: string
           id?: string
           kind?: string
           objective?: string
+          occurred_at?: string | null
           patient_id?: string
           plan?: string
+          practitioner_id?: string | null
+          reason?: string
           status?: string
           subjective?: string
           tenant_id?: string
+          time_and_duration?: string
           updated_at?: string
           updated_by?: string | null
+          visibility?: string
         }
         Relationships: [
           {
@@ -376,6 +394,13 @@ export type Database = {
             columns: ["patient_id"]
             isOneToOne: false
             referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consult_notes_practitioner_id_fkey"
+            columns: ["practitioner_id"]
+            isOneToOne: false
+            referencedRelation: "practitioners"
             referencedColumns: ["id"]
           },
           {
