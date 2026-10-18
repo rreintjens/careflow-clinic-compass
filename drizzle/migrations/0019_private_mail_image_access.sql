@@ -1,0 +1,3 @@
+CREATE POLICY "mail images read" ON storage.objects FOR SELECT TO authenticated USING (bucket_id = 'mail-images-' || public.current_tenant_slug() AND public.is_aal2() AND public.has_permission('emails.templates'));
+CREATE POLICY "mail images insert" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'mail-images-' || public.current_tenant_slug() AND public.is_aal2() AND public.has_permission('emails.templates'));
+COMMENT ON POLICY "mail images read" ON storage.objects IS 'Tenant-isolated private operational mail artwork; signed URLs only.';
