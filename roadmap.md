@@ -26,6 +26,8 @@ Owner asked to continue through all phases without pausing for confirmation.
   - [x] 5c Mijn dag; removed test-environment banner (owner request);
   - [ ] 5d patient list + five-tab record; 5e consult mode; 5f schedule editing
   - [x] Standalone telephone/interim consult: design fields, secure save, Consulten and timeline; verified with test doctor, reload and timeline
+  - [x] Dossier Toevoegen: shared appointment/consult/measurement/document modals; appointment and measurement saved from dossier and read back after reload; role permissions checked
+  - [ ] Contactmoment/notitie and aanvraag: blocked on missing exact fields/layout in supplied design package; no invented forms
   - [x] Owner report: BMI from saved weight/height in Medisch and Overzicht; measurements visible in timeline; verified signed in, saved and reloaded
   - [x] Owner report: dossier tabs showed old placeholder — code and served modules verified current; stale preview tab (needs hard reload)
 - [ ] Phase 6 – Mails and integrations

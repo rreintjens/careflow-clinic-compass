@@ -4,12 +4,14 @@ import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
 import { PillButton } from "@/components/PillButton";
 import { dossierQuery } from "@/data/patients";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { DossierAddModal } from "@/features/dossier/DossierAddModal";
 
 import { signalsOf } from "@/features/agenda/PatientCard";
 import { ConsultMode, consultNoteQuery, useStartConsult } from "@/features/dossier/ConsultMode";
 
 export const Route = createFileRoute("/_authenticated/patienten/$id")({
-  head: () => ({ meta: [{ title: "Dossier · Beheer · The Body Clinic" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Dossier · Beheer · The Body Clinic" }, { name: "description", content: "Het patiëntendossier van The Body Clinic." }, { property: "og:title", content: "Patiëntendossier · The Body Clinic" }, { property: "og:description", content: "Het patiëntendossier van The Body Clinic." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { name: "robots", content: "noindex" }] }),
   loader: ({ context, params }) => context.queryClient.ensureQueryData(dossierQuery(params.id)),
   component: Layout,
 });
@@ -20,6 +22,7 @@ const TABS = [["/patienten/$id", "Overzicht"], ["/patienten/$id/tijdlijn", "Tijd
 
 function Layout() {
   const { id } = Route.useParams();
+  const [adding, setAdding] = useState(false);
   const { patient: p, appointments, sets } = useSuspenseQuery(dossierQuery(id)).data;
   const consultAppt = [...appointments].reverse().find((a) => a.status === "booked" && new Date(a.ends_at).getTime() > Date.now() - 12 * 3600_000);
   const { data: note } = useQuery({ ...consultNoteQuery(consultAppt?.id ?? ""), enabled: !!consultAppt });
@@ -38,7 +41,7 @@ function Layout() {
         <div><Link to="/patienten" className="text-[13px] text-primary">Patiënten</Link><h1 className="text-[28px] font-semibold tracking-tight">Dossier</h1></div>
         <div className="flex gap-2">
           {consultAppt && !note && <PillButton variant="outline" disabled={startConsult.isPending} onClick={() => startConsult.mutate()}>Start consult</PillButton>}
-          <PillButton disabled><img src="/ui-icons/plus.svg" alt="" className="size-4 invert" />Toevoegen</PillButton>
+          <PillButton onClick={() => setAdding(true)}><img src="/ui-icons/plus.svg" alt="" className="size-4 invert" />Toevoegen</PillButton>
           <PillButton variant="outline" onClick={() => window.print()}>Afdrukken</PillButton>
           <PillButton variant="outline" disabled>Exporteren</PillButton>
         </div>
@@ -73,6 +76,7 @@ function Layout() {
         ))}
       </nav>
       <Outlet />
+      {adding && <DossierAddModal key={id} patient={p} onClose={() => setAdding(false)} />}
       <p className="text-[12px] text-muted-foreground">Elke weergave en wijziging staat in het technisch logboek.</p>
     </div>
   );
