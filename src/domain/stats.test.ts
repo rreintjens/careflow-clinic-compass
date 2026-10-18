@@ -22,8 +22,8 @@ describe("bySource", () => {
     const rows = [row({ booking_link_id: "l1" }), row({ booking_link_id: "l1" }), row({ booking_link_id: "l1" }), row(), row({ referral_source: "Google" })];
     expect(bySource(rows, links)).toEqual([
       { source: "Instagram oktober", count: 3, share: 60 },
-      { source: "Website", count: 1, share: 20 },
       { source: "Google", count: 1, share: 20 },
+      { source: "Website", count: 1, share: 20 },
     ]);
   });
   it("an empty range has no sources and no division", () => {

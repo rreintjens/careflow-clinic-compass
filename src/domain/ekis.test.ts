@@ -67,18 +67,20 @@ describe("buildEkisDocument", () => {
   });
 });
 
+const utc = (d: Date) => d.toISOString().replace(".000Z", "Z");
+
 describe("nextExportAt", () => {
   it("is today at 06:00 while it has not run yet", () => {
     const now = new Date("2026-10-18T03:00:00Z"); // 05:00 in Amsterdam
-    expect(nextExportAt(now, "Europe/Amsterdam").toISOString()).toBe("2026-10-18T04:00:00Z");
+    expect(utc(nextExportAt(now, "Europe/Amsterdam"))).toBe("2026-10-18T04:00:00Z");
   });
   it("is tomorrow at 06:00 just after a run", () => {
     const now = new Date("2026-10-18T04:00:30Z");
-    expect(nextExportAt(now, "Europe/Amsterdam").toISOString()).toBe("2026-10-19T04:00:00Z");
+    expect(utc(nextExportAt(now, "Europe/Amsterdam"))).toBe("2026-10-19T04:00:00Z");
   });
   it("keeps 06:00 local across the summer/winter change", () => {
-    expect(nextExportAt(new Date("2026-03-29T03:00:00Z"), "Europe/Amsterdam").toISOString()).toBe("2026-03-29T04:00:00Z"); // 06:00 CEST
-    expect(nextExportAt(new Date("2026-10-25T04:00:00Z"), "Europe/Amsterdam").toISOString()).toBe("2026-10-25T05:00:00Z"); // 06:00 CET
+    expect(utc(nextExportAt(new Date("2026-03-29T03:00:00Z"), "Europe/Amsterdam"))).toBe("2026-03-29T04:00:00Z"); // 06:00 CEST
+    expect(utc(nextExportAt(new Date("2026-10-25T04:00:00Z"), "Europe/Amsterdam"))).toBe("2026-10-25T05:00:00Z"); // 06:00 CET
   });
 });
 
