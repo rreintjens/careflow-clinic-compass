@@ -97,10 +97,10 @@ export function QuestionnaireRunner({
       </>}>
       {(page.section || (!isQuestions && page.bullets)) && <div className="mb-2 text-[13px] text-primary">{page.section ?? t("section_intro")}</div>}
       {page.icon && (
-        <div className="mb-5 flex size-16 items-center justify-center rounded-full bg-teal-light">
+        <div className="mx-auto mb-5 flex size-[72px] items-center justify-center rounded-full bg-teal-light">
           <span
             aria-hidden="true"
-            className="size-8 bg-primary"
+            className="size-[34px] bg-primary"
             style={{
               WebkitMaskImage: `url(/ui-icons/${page.icon}.svg)`, maskImage: `url(/ui-icons/${page.icon}.svg)`,
               WebkitMaskSize: "contain", maskSize: "contain", WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat",
