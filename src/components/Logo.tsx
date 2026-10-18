@@ -2,10 +2,10 @@
 export function Logo({ small = false, mark = false }: { small?: boolean; mark?: boolean }) {
   if (mark) {
     return (
-      <span className="inline-flex gap-[3px]" aria-label="The Body Clinic">
-        <span className="size-[8px] rounded-full bg-primary" />
-        <span className="size-[8px] rounded-full bg-primary" />
-        <span className="size-[8px] rounded-full bg-primary/50" />
+      <span className="inline-flex gap-[5px]" aria-label="The Body Clinic">
+        <span className="size-[16px] rounded-full bg-primary" />
+        <span className="size-[16px] rounded-full bg-primary" />
+        <span className="size-[16px] rounded-full bg-primary/50" />
       </span>
     );
   }
