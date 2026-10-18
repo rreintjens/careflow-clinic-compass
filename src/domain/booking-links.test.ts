@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import {
   absoluteBookingLink,
+  absoluteBookingLinkUtm,
   bookingLinkPath,
+  bookingLinkUtm,
   linkLocations,
   linkPractitioners,
   linkProblem,
