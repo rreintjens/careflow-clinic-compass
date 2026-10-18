@@ -8,7 +8,7 @@ describe("private mail image validation", () => {
   ])("detects $extension from content", ({ bytes, extension, contentType }) => {
     expect(inspectMailImage(new Uint8Array(bytes))).toEqual({ extension, contentType });
   });
-  it.each([[], [60, 115, 118, 103, 62], [71, 73, 70, 56]])("rejects unsupported content %j", (bytes) => {
+  it.each([{ bytes: [] }, { bytes: [60, 115, 118, 103, 62] }, { bytes: [71, 73, 70, 56] }])("rejects unsupported content $bytes", ({ bytes }) => {
     expect(() => inspectMailImage(new Uint8Array(bytes))).toThrow();
   });
   it("rejects files larger than 5 MB", () => {
