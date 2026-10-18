@@ -24,6 +24,8 @@ const search = z.object({
 });
 type Search = z.infer<typeof search>;
 
+const MODES = new Set<string>(["assigned", "optional", "required", "fixed"]);
+
 const catalogQuery = (merk: string | undefined) => queryOptions({ queryKey: ["booking-catalog", merk ?? ""], queryFn: () => getBookingCatalog({ data: { merk } }), staleTime: 60_000 });
 
 /** A booking link (boekingslink) answers part of the flow in advance; only fetched when ?link= is present. */
@@ -68,16 +70,20 @@ function Booking() {
   if (!("categories" in data) || !data.tenant) return <Shell lang={lang} onLang={() => go({ lang: lang === "nl" ? "en" : "nl" })}><p className="pt-10 text-[15px]">{tx("unknown_brand")}</p></Shell>;
   const c = data as Full;
   const name = (x: { name_nl: string; name_en: string | null }) => (lang === "en" && x.name_en) || x.name_nl;
-  const locationsFor = (tid: string) => c.treatmentLocations.filter((x) => x.treatment_id === tid && c.locations.some((l) => l.id === x.location_id)).map((x) => x.location_id);
-  const catalog: Catalog = { categories: c.categories, links: c.links, treatments: c.treatments, locationsFor };
-  const step = nextStep(catalog, s);
+  const allowed = link ? new Set(link.locationIds) : null;
+  const mode = link?.practitionerMode && MODES.has(link.practitionerMode) ? (link.practitionerMode as ChoiceMode) : null;
+  const locationsFor = (tid: string) => c.treatmentLocations.filter((x) => x.treatment_id === tid && c.locations.some((l) => l.id === x.location_id) && (!allowed || allowed.has(x.location_id))).map((x) => x.location_id);
+  const treatments = (link?.treatmentId ? c.treatments.filter((t) => t.id === link.treatmentId) : c.treatments).map((t) => (mode ? { ...t, practitioner_choice: mode } : t));
+  const catalog: Catalog = { categories: c.categories, links: link?.treatmentId ? c.links.filter((x) => x.treatment_id === link.treatmentId) : c.links, treatments, locationsFor };
+  const eff: Search = link ? { ...s, t: s.t ?? link.treatmentId ?? undefined, p: mode === "fixed" ? link.practitionerId ?? undefined : s.p, bron: s.bron ?? (link.source || undefined) } : s;
+  const step = nextStep(catalog, eff);
   const progress = { category: 0.1, subcategory: 0.15, treatment: 0.2, location: 0.3, practitioner: 0.4, planner: 0.45, none: 0 }[step.kind];
   const back = step.kind === "category" ? undefined : () => window.history.back();
   const close = () => navigate({ search: { merk: s.merk, lang: s.lang, bron: s.bron } });
   const phone = c.tenant.phone;
 
   if (step.kind === "planner" && s.stap === "vasthouden" && s.d && s.tijd) {
-    return <HoldStep c={c} s={s} treatmentId={step.treatment} locationId={step.location} practitionerId={step.practitioner ?? "any"} tx={tx} lang={lang} go={go} />;
+    return <HoldStep c={c} s={eff} treatmentId={step.treatment} locationId={step.location} practitionerId={step.practitioner ?? "any"} tx={tx} lang={lang} go={go} />;
   }
 
   return (
