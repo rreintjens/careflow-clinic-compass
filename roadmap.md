@@ -50,3 +50,5 @@ Owner asked to continue through all phases without pausing for confirmation.
 - [x] Vragenlijst: volgende pagina begint bovenaan
 - [x] Vragenlijstbouwer: vragenpagina (groep) verslepen en inklappen
 - [x] Behandelingen afvinken in behandelaar-modal
+- [x] UTM bij boekingslinks: kopieerbare link met utm_source (rapportagebron, anders linknaam) en utm_campaign (linknaam); boekingsflow bewaart utm_source als bron zonder link; 12 domaintests groen
+- [ ] Owner overweegt eventueel aparte velden voor utm bron/medium/campagne (vraag gesteld)
