@@ -218,6 +218,13 @@
       "when": 1792339038503,
       "tag": "0030_mfa_required_setting",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1792339107432,
+      "tag": "0031_mfa_required_no_rls",
+      "breakpoints": true
     }
   ]
 }

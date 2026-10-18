@@ -1,0 +1,1 @@
+ALTER FUNCTION public.mfa_required() SET row_security = off;
