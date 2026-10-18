@@ -2,6 +2,9 @@
 
 Owner asked to continue through all phases without pausing for confirmation.
 
+- [x] Agenda: clickable practitioner headers open their personal day; shared fixed-position Dag/Week/Mijn dag controls verified after signing in as Rob, all four transitions keep x=1068/y=100; 18 relevant tests passed.
+- [x] Changed password for rob@bodyclinic.nl to the privately supplied value; verified through the normal sign-in screen.
+
 - [x] Phase 1 – Foundation
 - [ ] Phase 2 – Organisatie (treatments, practitioners, locations, equipment, schedules)
 - [x] Link uploaded team photos to practitioners; add remaining practitioners
