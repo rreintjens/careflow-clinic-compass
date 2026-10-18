@@ -51,3 +51,4 @@ Owner asked to continue through all phases without pausing for confirmation.
 - [x] Vragenlijstbouwer: vragenpagina (groep) verslepen en inklappen
 - [x] Behandelingen afvinken in behandelaar-modal
 - [x] UTM bij boekingslinks (owner bevestigd: automatisch vullen uit linkgegevens, geen aparte velden): kopieerbare link met utm_source (rapportagebron, anders linknaam) en utm_campaign (linknaam); boekingsflow bewaart utm_source als bron zonder link; 12 domaintests groen
+- [ ] Instellingen > Algemeen: merkinstellingen van de tenant (naam, tijdzone, testmodus e.d.) tonen/bewerken — afwegen tegen ontwerppakket instellingen-algemeen
