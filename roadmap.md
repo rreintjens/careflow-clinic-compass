@@ -3,6 +3,7 @@
 Owner asked to continue through all phases without pausing for confirmation.
 
 - [ ] Agenda: clickable practitioner headers and shared fixed-position Dag/Week/Mijn dag controls; verify signed-in navigation.
+- [ ] Change password for rob@bodyclinic.nl to the privately supplied value.
 
 - [x] Phase 1 – Foundation
 - [ ] Phase 2 – Organisatie (treatments, practitioners, locations, equipment, schedules)
