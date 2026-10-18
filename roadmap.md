@@ -60,3 +60,5 @@ Owner asked to continue through all phases without pausing for confirmation.
 - [x] Desktop-kader voor patiëntschermen (Salonized-stijl): gedeelde PatientFrame (gecentreerde witte kaart, rounded 24, mist-border, zachte schaduw op sand) rond boeken, vragenlijst (incl. runner) en afspraak-beheer; mobiel ongewijzigd. Desktop + mobiel geverifieerd in browser, tsgo clean.
 - [x] Desktop-kader: bollen verder vergroot (16px)
 - [ ] Uitzoeken: "lege bolletje" in bovenbalk (Rob vraagt waar het voor dient)
+- [x] Leeg bolletje in Pagina wijzigen = checkbox met onzichtbaar label: Checkbox toont nu het label; dubbel label in consultchecklist weggehaald.
+- [x] Uitslagpagina-verfraaiing builder-gestuurd houden: icoon-badge in de runner stijlt alleen het icoon dat de pagina-config kiest, geen hardcoded icoon.
