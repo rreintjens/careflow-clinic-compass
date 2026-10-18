@@ -168,6 +168,18 @@ export function pageProgress(p: Page, ctx: Ctx) {
   return { answered: items.filter((i) => itemAnswered(i, ctx.answers)).length, total: items.length };
 }
 
+/** The resume screen: progress per visible question page and where to continue. */
+export interface ResumePage { id: string; title: string; answered: number; total: number; complete: boolean }
+export function resumeState(q: QuestionnaireDef, flow: Pick<FlowFile, "settings" | "computed_fields">, answers: Answers, today: string) {
+  const ctx = makeCtx(flow, answers, today);
+  const pages = visiblePages(q, ctx).filter(isQuestionPage).map((p) => {
+    const progress = pageProgress(p, ctx);
+    return { id: p.id, title: p.title ?? p.items?.[0]?.text ?? p.id, ...progress, complete: pageComplete(p, ctx) };
+  });
+  const next = pages.find((p) => !p.complete) ?? null;
+  return { pages, nextPageId: next?.id ?? pages.at(-1)?.id ?? null, pageNumber: next ? pages.indexOf(next) + 1 : pages.length, pageCount: pages.length };
+}
+
 /** Which rejection variant a red rule shows when none is set explicitly. */
 export function defaultRedVariant(source: { field?: string | undefined; section?: string | undefined }, variants: string[]): string {
   const want = source.field === "age" ? "age" : source.field === "bmi" ? "bmi_low" : source.section === "Veiligheidscheck" ? "medical" : "weight_route";
