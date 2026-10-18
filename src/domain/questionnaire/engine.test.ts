@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import seed from "@/seed/tbc_flow_medisch_afvallen_v0.2.json";
 
-import { collectSignals, makeCtx, pageComplete, prefillAnswers, redOnPage, toggleOption, visiblePages, type Answers, type FlowFile } from "./engine";
+import { collectSignals, makeCtx, pageComplete, prefillAnswers, redOnPage, resumeState, toggleOption, visiblePages, type Answers, type FlowFile } from "./engine";
 import { evaluate, yearsBetween } from "./expr";
 import { joinFlow, sameJson, splitFlow } from "./io";
 
@@ -117,5 +117,41 @@ describe("prefill and import/export", () => {
     const { document, questionnaires } = splitFlow(JSON.parse(JSON.stringify(flow)));
     expect(sameJson(joinFlow(document, questionnaires), flow)).toBe(true);
     expect(JSON.stringify(joinFlow(document, questionnaires))).toBe(JSON.stringify(flow));
+  });
+});
+
+describe("resume screen", () => {
+  it("lists every visible question page with its counts and the first incomplete page", () => {
+    const s = resumeState(medical, flow, {}, TODAY);
+    expect(s.pageCount).toBeGreaterThan(1);
+    expect(s.pageNumber).toBe(1);
+    expect(s.nextPageId).toBe(s.pages[0]!.id);
+    expect(s.pages.every((p) => p.answered === 0 && !p.complete)).toBe(true);
+  });
+  it("continues at the first incomplete page and keeps earlier answers", () => {
+    const first = resumeState(medical, flow, {}, TODAY).pages[0]!;
+    const ctx = makeCtx(flow, {}, TODAY);
+    const items = medical.pages.find((p) => p.id === first.id)!.items ?? [];
+    const answers: Answers = {};
+    for (const i of items) answers[i.type === "height_weight" ? "height_cm" : i.id] = "x";
+    const s = resumeState(medical, flow, answers, TODAY);
+    expect(s.pages[0]!.complete).toBe(true);
+    expect(s.pageNumber).toBe(2);
+    expect(s.nextPageId).toBe(s.pages[1]!.id);
+    expect(ctx).toBeTruthy();
+  });
+  it("points at the last page when everything is answered but not yet sent", () => {
+    const ctxAnswers: Answers = {};
+    const ctx = makeCtx(flow, ctxAnswers, TODAY);
+    for (const p of visiblePages(medical, ctx)) for (const i of p.items ?? []) {
+      if (i.optional || i.type === "answer_summary") continue;
+      if (i.type === "height_weight") { ctxAnswers["height_cm"] = 170; ctxAnswers["weight_kg"] = 80; }
+      else if (i.type === "checkbox_required") ctxAnswers[i.id] = true;
+      else ctxAnswers[i.id] = "x";
+    }
+    const s = resumeState(medical, flow, ctxAnswers, TODAY);
+    expect(s.pages.every((p) => p.complete)).toBe(true);
+    expect(s.nextPageId).toBe(s.pages.at(-1)!.id);
+    expect(s.pageNumber).toBe(s.pageCount);
   });
 });

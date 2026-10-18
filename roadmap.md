@@ -17,7 +17,7 @@ Owner asked to continue through all phases without pausing for confirmation.
   - [x] 4b booking entry (/boeken), category/subcategory/treatment, location (Online first), date/time, practitioner modes — booking-link table still to add
   - [x] 4c hold timer + expiry screen, triage + rejection variants (no answers stored, anonymous reason count)
   - [x] 4d details form (PDOK address lookup), confirmation, calendar file
-  - [x] 4e medical questionnaire after booking (autosave, already completed, 24h edit window) — resume screen design still to match
+  - [x] 4e medical questionnaire after booking (autosave, already completed, 24h edit window); resume screen per design (per-page progress, continue at first incomplete page), verified as patient in browser; missing screen texts (mq_*) added to questionnaire_ui
   - [ ] 4f manage appointment via mail link (calendar file, reschedule, cancel with reason)
 - [x] 4f manage appointment (view, reschedule, cancel + reason)
 - [ ] Phase 5 – Agenda, Mijn dag, patient card, record, consult mode
@@ -51,3 +51,4 @@ Owner asked to continue through all phases without pausing for confirmation.
 - [x] Vragenlijstbouwer: vragenpagina (groep) verslepen en inklappen
 - [x] Behandelingen afvinken in behandelaar-modal
 - [x] UTM bij boekingslinks (owner bevestigd: automatisch vullen uit linkgegevens, geen aparte velden): kopieerbare link met utm_source (rapportagebron, anders linknaam) en utm_campaign (linknaam); boekingsflow bewaart utm_source als bron zonder link; 12 domaintests groen
+- [x] Instellingen > Algemeen: kaart Merk met tenantgegevens (naam, land, tijdzone, boekingsdomeinen, testmodus); bewerken alleen voor groepsbeheerders (RLS), overigen alleen-lezen. Talen/e-mail waren al tenant-scoped instellingen. Browsercheck open: aal2 nodig
