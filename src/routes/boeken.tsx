@@ -32,8 +32,9 @@ const linkQuery = (merk: string | undefined, link: string | undefined) =>
 
 export const Route = createFileRoute("/boeken")({
   validateSearch: search,
-  loaderDeps: ({ search: s }) => ({ merk: s.merk }),
-  loader: ({ context, deps }) => context.queryClient.ensureQueryData(catalogQuery(deps.merk)),
+  loaderDeps: ({ search: s }) => ({ merk: s.merk, link: s.link }),
+  loader: ({ context, deps }) =>
+    context.queryClient.ensureQueryData(catalogQuery(deps.merk)).then(() => (deps.link ? context.queryClient.ensureQueryData(linkQuery(deps.merk, deps.link)) : undefined)),
   head: () => ({
     meta: [
       { title: "Afspraak maken · The Body Clinic" },
@@ -54,7 +55,9 @@ function Booking() {
   const s = Route.useSearch();
   const navigate = useNavigate({ from: "/boeken" });
   const { data } = useSuspenseQuery(catalogQuery(s.merk));
-  const lang = s.lang ?? "nl";
+  const linkRes = useQuery(linkQuery(s.merk, s.link));
+  const link = linkRes.data && "found" in linkRes.data && linkRes.data.found ? linkRes.data.link : null;
+  const lang = s.lang ?? link?.language ?? "nl";
   const tx = (key: string, vars: Record<string, string | number> = {}) => {
     const r = data.ui.find((u) => (u.list_key === "booking_ui" || u.list_key === "questionnaire_ui") && u.value === key);
     const base = (lang === "en" && r?.label_en) || r?.label_nl || "";
