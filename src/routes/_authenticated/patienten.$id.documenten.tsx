@@ -26,7 +26,7 @@ function Documents() {
   });
   const download = async (path: string) => {
     const { data, error } = await supabase.storage.from(await bucket()).createSignedUrl(path, 60);
-    if (error || !data) return toast.error("Openen is niet gelukt");
+    if (error || !data) { toast.error("Openen is niet gelukt"); return; }
     window.open(data.signedUrl, "_blank", "noopener");
   };
   return (
