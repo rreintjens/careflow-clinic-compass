@@ -7,7 +7,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import type { Slot } from "@/domain/slots";
-import { admin, computeSlots, localParts, localToUtc, resolveTenant, settingNum } from "./booking.server";
+import { admin, attachMeeting, computeSlots, localParts, localToUtc, resolveTenant, settingNum } from "./booking.server";
 
 
 
@@ -90,12 +90,17 @@ export const holdSlot = createServerFn({ method: "POST" })
     time: z.string().regex(/^\d{2}:\d{2}$/),
     language: z.enum(["nl", "en"]),
     source: z.string().max(80).optional(),
+    link: z.string().max(60).optional(),
     replaceToken: z.string().uuid().optional(),
   }))
   .handler(async ({ data }) => {
     const tenant = await resolveTenant(data.merk);
     if (!tenant) return { ok: false as const };
     const db = await admin();
+    const linkRow = data.link
+      ? (await db.from("booking_links").select("id, source").eq("tenant_id", tenant.id).eq("slug", data.link).eq("status", "active").maybeSingle()).data
+      : null;
+    if (data.link && !linkRow) return { ok: false as const };
     if (data.replaceToken) await db.from("appointments").update({ status: "released" }).eq("tenant_id", tenant.id).eq("hold_token", data.replaceToken).eq("status", "held");
     const minute = Number(data.time.slice(0, 2)) * 60 + Number(data.time.slice(3));
     const slots = await computeSlots(tenant, { treatmentId: data.treatmentId, locationId: data.locationId, practitionerIds: data.practitionerId === "any" ? [] : [data.practitionerId], from: data.date, days: 1 });
