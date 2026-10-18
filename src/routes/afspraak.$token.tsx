@@ -5,6 +5,7 @@ import { useState } from "react";
 import { z } from "zod";
 
 import { Logo } from "@/components/Logo";
+import { PatientFrame } from "@/components/PatientFrame";
 import { PillButton } from "@/components/PillButton";
 import { cancelAppointment, getManagedAppointment, getRescheduleSlots, rescheduleAppointment, setCancelReason } from "@/data/manage.functions";
 import { fmtTime } from "@/domain/slots";
@@ -34,8 +35,7 @@ const Chevron = () => <img src="/ui-icons/pijl-rechts.svg" alt="" className="siz
 
 function Shell({ children, footer, onBack }: { children: React.ReactNode; footer?: React.ReactNode; onBack?: () => void }) {
   return (
-    <div className="flex min-h-screen justify-center bg-background">
-      <div className="flex min-h-screen w-full max-w-[390px] flex-col">
+    <PatientFrame>
         <header className="grid h-14 grid-cols-[48px_1fr_48px] items-center px-2">
           {onBack ? <button type="button" onClick={onBack} aria-label="Terug" className="flex justify-center"><img src="/ui-icons/pijl-links.svg" alt="" className="size-5" /></button> : <span />}
           <span className="flex justify-center"><Logo small /></span>

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 
 import { Logo } from "@/components/Logo";
+import { PatientFrame } from "@/components/PatientFrame";
 import { PillButton } from "@/components/PillButton";
 import { dayPart, nextStep, sortLocations, type Catalog } from "@/domain/booking";
 import { fmtTime, type Slot } from "@/domain/slots";
@@ -112,8 +113,7 @@ function Booking() {
 
 function Shell({ children, footer, progress = 0, onBack, onClose, onLang, lang }: { children: React.ReactNode; footer?: React.ReactNode; progress?: number; onBack?: (() => void) | undefined; onClose?: () => void; onLang?: (() => void) | undefined; lang: string }) {
   return (
-    <div className="flex min-h-screen justify-center bg-background">
-      <div className="flex min-h-screen w-full max-w-[390px] flex-col">
+    <PatientFrame>
         <header className="grid h-14 grid-cols-[48px_1fr_48px] items-center px-2">
           {onLang ? <button type="button" onClick={onLang} className="text-[13px] font-semibold text-primary">{lang === "nl" ? "EN" : "NL"}</button>
             : onBack ? <button type="button" onClick={onBack} aria-label="Terug" className="flex justify-center"><img src="/ui-icons/pijl-links.svg" alt="" className="size-5" /></button> : <span />}
