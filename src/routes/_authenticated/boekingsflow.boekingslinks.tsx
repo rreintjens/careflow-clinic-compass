@@ -13,7 +13,7 @@ import { SegmentedControl } from "@/components/SegmentedControl";
 import { Select } from "@/components/Select";
 import { bookingLinkUsageQuery, bookingLinksQuery, type BookingLinksData } from "@/data/booking-links";
 import { saveBookingLink } from "@/data/booking-links.functions";
-import { bookingLinkPath, linkLocations, linkPractitioners, linkProblem, uniqueSlug, type LinkCatalog, type LinkDraft } from "@/domain/booking-links";
+import { absoluteBookingLinkUtm, bookingLinkPath, linkLocations, linkPractitioners, linkProblem, uniqueSlug, type LinkCatalog, type LinkDraft } from "@/domain/booking-links";
 import type { Tables } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/boekingsflow/boekingslinks")({
@@ -138,6 +138,7 @@ function LinkModal({ d, link, onClose }: { d: BookingLinksData; link: Link | nul
   const taken = d.links.filter((x) => x.id !== link?.id).map((x) => x.slug);
   const slug = link?.slug || uniqueSlug(taken, name.trim() || "nieuw");
   const share = `${window.location.origin}${bookingLinkPath(slug)}${d.tenant?.test_mode && d.tenant.slug ? `&merk=${d.tenant.slug}` : ""}`;
+  const shareUtm = `${absoluteBookingLinkUtm(slug, source.trim(), window.location.host)}${d.tenant?.test_mode && d.tenant.slug ? `&merk=${d.tenant.slug}` : ""}`;
 
   const save = useMutation({
     mutationFn: () =>
@@ -249,6 +250,10 @@ function LinkModal({ d, link, onClose }: { d: BookingLinksData; link: Link | nul
             <p className="mt-2 truncate text-[12px] text-muted-foreground">{bookingLinkPath(slug)}</p>
             <button type="button" onClick={() => void navigator.clipboard.writeText(share).then(() => toast.success("Link gekopieerd"), () => toast.error("Kopiëren is niet gelukt"))} className="mt-2 text-[13px] text-primary underline">Link kopiëren</button>
             <p className="mt-3 break-all text-[12px] leading-[1.5] text-muted-foreground">{share}</p>
+            <p className="mt-4 text-[13px] font-semibold">Met utm voor je eigen statistieken</p>
+            <p className="mt-1 text-[12px] leading-[1.5] text-muted-foreground">De utm-bron volgt de rapportagebron{source.trim() ? "" : " (nog leeg, dus de linknaam)"}; de campagne is de link zelf.</p>
+            <button type="button" onClick={() => void navigator.clipboard.writeText(shareUtm).then(() => toast.success("Link met utm gekopieerd"), () => toast.error("Kopiëren is niet gelukt"))} className="mt-2 text-[13px] text-primary underline">Link met utm kopiëren</button>
+            <p className="mt-3 break-all text-[12px] leading-[1.5] text-muted-foreground">{shareUtm}</p>
           </div>
           {problem === "no_location" && <p className="text-[13px] leading-[1.5] text-warning">Kies eerst minstens één locatie waar deze behandelaar dit doet.</p>}
         </div>
