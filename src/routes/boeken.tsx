@@ -488,7 +488,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) { return <h2 
 /** "Je gegevens": one form for new and existing patients; date of birth comes from the triage when asked there. */
 function DetailsStep({ c, s, token, treatmentId, locationId, practitionerId, tx, lang, again, triageKey, triageVersionId, triageAnswers, onExpired, onDone }: {
   c: Full; s: Search; token: string; treatmentId: string; locationId: string; practitionerId: string; tx: Tx; lang: string; again: () => void;
-  triageKey: string | null; triageVersionId?: string; triageAnswers: Answers | undefined; onExpired: () => void; onDone: (manageToken: string, meetLink: string | null) => void;
+  triageKey: string | null; triageVersionId: string | undefined; triageAnswers: Answers | undefined; onExpired: () => void; onDone: (manageToken: string, meetLink: string | null) => void;
 }) {
   const confirm = useServerFn(confirmBooking);
   const lookup = useServerFn(lookupAddress);

@@ -272,7 +272,7 @@ export const confirmBooking = createServerFn({ method: "POST" })
     const meeting = await attachMeeting(db, tenant, appt.id);
     if (data.triageKey && data.triageAnswers) {
       const signals = triageVersion ? answerSignals(triageVersion.definition as unknown as QuestionnaireDef, triageVersion.version_config, data.triageAnswers as Answers, today) : [];
-      await db.from("answer_sets").insert({ tenant_id: tenant.id, patient_id: patientId, appointment_id: appt.id, questionnaire_key: data.triageKey, version_id: triageVersion?.id, answers: data.triageAnswers as never, signals: signals as never, status: "completed", completed_at: new Date().toISOString() });
+      await db.from("answer_sets").insert({ tenant_id: tenant.id, patient_id: patientId, appointment_id: appt.id, questionnaire_key: data.triageKey, version_id: triageVersion?.id ?? null, answers: data.triageAnswers as never, signals: signals as never, status: "completed", completed_at: new Date().toISOString() });
     }
     await safeQueue(db, appt.id, "confirmation", { dedupe: `confirmation-${appt.id}` });
     return { ok: true as const, manageToken: appt.manage_token, meetLink: meeting?.link ?? null };
