@@ -26,12 +26,12 @@ export function EntryModal({patientId,kind,contact,request,defaultDoctor,onClose
  <TextArea className="col-span-2" label={t("body")} value={f.body} onChange={e=>change("body",e.target.value)}/>
  <TextField label={t("occurred_at")} type="datetime-local" value={f.at} onChange={e=>change("at",e.target.value)}/>
  <Checkbox label={t("follow_up")} checked={f.follow} onChange={v=>change("follow",v)}/>
- {f.follow&&<><TextField className="col-span-2" label={t("what")} value={f.what} onChange={e=>change("what",e.target.value)}/><Select label={t("assigned_to")} value={f.assignee} options={[{value:"",label:t("choose")},...(data?.staff??[]).map(x=>({value:x.id,label:x.full_name}))]} onChange={v=>change("assignee",v)}/><TextField label={t("due_on")} type="date" value={f.due} onChange={e=>change("due",e.target.value)}/></>}
+ {f.follow&&<><TextField className="col-span-2" label={t("what")} value={f.what} onChange={e=>change("what",e.target.value)}/><Select label={t("assigned_to")} value={f.assignee||"none"} options={[{value:"none",label:t("choose")},...(data?.staff??[]).map(x=>({value:x.id,label:x.full_name}))]} onChange={v=>change("assignee",v==="none"?"":v)}/><TextField label={t("due_on")} type="date" value={f.due} onChange={e=>change("due",e.target.value)}/></>}
  </>:<>
  {f.kind==="package"&&<Select label={t("duration")} value={f.duration} options={opts("request_duration")} onChange={v=>change("duration",v)}/>}
  <TextArea className="col-span-2" label={t("explanation")} value={f.explanation} onChange={e=>change("explanation",e.target.value)}/>
  <Select label={t("destination")} value={f.destination} options={opts("request_destination")} onChange={v=>change("destination",v)}/>
- {f.destination==="doctor"&&<Select label={t("doctor")} value={f.doctor} options={[{value:"",label:t("choose")},...(data?.doctors??[]).map(x=>({value:x.id,label:`${x.first_name} ${x.last_name}`}))]} onChange={v=>change("doctor",v)}/>}
+ {f.destination==="doctor"&&<Select label={t("doctor")} value={f.doctor||"none"} options={[{value:"none",label:t("choose")},...(data?.doctors??[]).map(x=>({value:x.id,label:`${x.first_name} ${x.last_name}`}))]} onChange={v=>change("doctor",v==="none"?"":v)}/>}
  <Select label={t("status")} value={f.status} options={opts("request_status")} onChange={v=>change("status",v)}/>
  {request&&<p className="col-span-2 text-xs text-muted-foreground">{t("status_changed")} · {data?.staff.find(x=>x.id===request.status_changed_by)?.full_name} · {new Date(request.status_changed_at).toLocaleString("nl-NL")}</p>}
  </>}
