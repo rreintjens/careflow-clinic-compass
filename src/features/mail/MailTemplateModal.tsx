@@ -57,7 +57,7 @@ export function MailTemplateModal({ template, defaults, data, org, onClose }: { 
   const submit = form.handleSubmit((input) => save.mutate(input), () => {
     requestAnimationFrame(() => document.querySelector('[role="dialog"] [aria-invalid="true"]')?.scrollIntoView({ behavior: "smooth", block: "center" }));
   });
-  return <Modal open width="lg" title={template ? `${template.name}, ${data.options.find((o) => o.list_key === "mail_scope" && o.value === template.scope)?.label_nl ?? ""}` : "Nieuw basissjabloon"} onOpenChange={(open) => !open && onClose()} footer={<>
+  return <Modal open width="lg" title={template ? `${template.name}, ${data.options.find((o) => o.list_key === "mail_scope" && o.value === template.scope)?.label_nl ?? ""}` : current.scope === "base" ? "Nieuw basissjabloon" : "Nieuwe afwijking"} onOpenChange={(open) => !open && onClose()} footer={<>
     {template && <div className="mr-auto"><TextLink tone="warning" onClick={() => save.mutate({ ...current, status: "archived" })}>Verwijderen</TextLink></div>}
     <PillButton variant="outline" onClick={onClose}>Annuleren</PillButton><PillButton disabled={save.isPending} onClick={submit}>Opslaan</PillButton>
   </>}>
