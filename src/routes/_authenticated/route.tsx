@@ -1,4 +1,5 @@
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { ActiveConsultMode } from "@/features/dossier/ConsultMode";
 import { Outlet, createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect } from "react";
 
@@ -89,6 +90,7 @@ function StaffLayout() {
     <div className="flex min-h-screen">
       <Sidebar fullName={staff.full_name} email={staff.email} roleName={staff.role_name} onSignOut={signOut} tenants={tenants} onSwitchTenant={onSwitchTenant} />
       <main className="min-w-0 flex-1 px-10 pb-12 pt-8">
+        <ActiveConsultMode />
         <Outlet />
       </main>
     </div>
