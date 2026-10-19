@@ -52,7 +52,7 @@ function Page() {
           {hits.length > 0 && (
             <div className="absolute right-0 z-20 mt-2 w-[320px] rounded-[14px] bg-background p-2 shadow-lg ring-1 ring-mist">
               {hits.map((h) => (
-                <button key={h.id} type="button" onClick={() => navigate({ to: "/patienten/$id", params: { id: h.id } })} className="flex w-full flex-col rounded-[10px] px-3 py-2 text-left hover:bg-sand">
+                <button key={h.id} type="button" onClick={() => navigate({ to: "/patienten/$id", params: { id: String(h.patient_number ?? h.id) } })} className="flex w-full flex-col rounded-[10px] px-3 py-2 text-left hover:bg-sand">
                   <span className="text-[14px]">{h.first_name} {h.last_name}</span>
                   <span className="text-[12px] text-muted-foreground">{h.patient_number} · {h.email}</span>
                 </button>
@@ -93,7 +93,7 @@ function Page() {
               const st = questionnaireState(a.treatment?.post_questionnaire_key, data?.sets ?? [], a.id);
               return (
                 <tr key={a.id} className="border-b border-mist">
-                  <td className="whitespace-nowrap px-2.5 py-3.5">{a.patient && <Link to="/patienten/$id" params={{ id: a.patient.id }} className="font-semibold text-primary underline">{a.patient.patient_number}</Link>}</td>
+                  <td className="whitespace-nowrap px-2.5 py-3.5">{a.patient && <Link to="/patienten/$id" params={{ id: String(a.patient.patient_number ?? a.patient.id) }} className="font-semibold text-primary underline">{a.patient.patient_number}</Link>}</td>
                   <td className="whitespace-nowrap px-2.5">{a.patient ? `${a.patient.first_name} ${a.patient.last_name}` : ""}</td>
                   <td className="whitespace-nowrap px-2.5 text-muted-foreground">{hm(a.created_at)}</td>
                   <td className="whitespace-nowrap px-2.5">{a.treatment?.name_nl}</td>

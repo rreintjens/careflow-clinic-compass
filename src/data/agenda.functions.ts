@@ -5,6 +5,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { admin, computeSlots, localParts, localToUtc } from "./booking.server";
 import { attachMeeting } from "./meeting.server";
+import { safeQueue } from "./mailer.server";
 
 type Ctx = { supabase: import("@supabase/supabase-js").SupabaseClient; claims: unknown };
 
@@ -51,5 +52,40 @@ export const createStaffAppointment = createServerFn({ method: "POST" })
     }).select("id").single();
     if (ins.error) return { ok: false as const, reason: "failed" };
     await attachMeeting(db, tenant, (ins.data as { id: string }).id);
+    await safeQueue(db, (ins.data as { id: string }).id, "confirmation", { dedupe: `confirmation-${(ins.data as { id: string }).id}` });
     return { ok: true as const, id: (ins.data as { id: string }).id };
+  });
+
+const newPatientSchema = z.object({
+  firstName: z.string().trim().min(1).max(80),
+  lastName: z.string().trim().min(1).max(120),
+  dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  email: z.string().trim().toLowerCase().email().max(200),
+  phone: z.string().trim().max(30).regex(/^[+\d\s()-]*$/),
+  force: z.boolean().default(false),
+});
+
+/** "Nieuwe patiënt" inside Afspraak maken: duplicate check on name + date of birth and on e-mail, then create. */
+export const createStaffPatient = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => newPatientSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    const tenant = await staffTenant(context);
+    if (!tenant) throw new Error("Forbidden");
+    const db = await admin();
+    const cols = "id, patient_number, first_name, last_name, date_of_birth, email";
+    const [byName, byEmail] = await Promise.all([
+      db.from("patients").select(cols).eq("tenant_id", tenant.id).is("deleted_at", null).ilike("first_name", data.firstName).ilike("last_name", data.lastName).eq("date_of_birth", data.dateOfBirth).limit(5),
+      db.from("patients").select(cols).eq("tenant_id", tenant.id).is("deleted_at", null).ilike("email", data.email).limit(5),
+    ]);
+    const seen = new Map<string, NonNullable<typeof byName.data>[number]>();
+    for (const p of [...(byName.data ?? []), ...(byEmail.data ?? [])]) seen.set(p.id, p);
+    // An existing e-mail is never duplicated; a name + date-of-birth match may be overridden on purpose.
+    const emailTaken = (byEmail.data ?? []).length > 0;
+    if (seen.size && (!data.force || emailTaken)) return { ok: false as const, duplicates: [...seen.values()], emailTaken };
+    const ins = await context.supabase.from("patients")
+      .insert({ tenant_id: tenant.id, first_name: data.firstName, last_name: data.lastName, date_of_birth: data.dateOfBirth, email: data.email, phone: data.phone || null })
+      .select(cols).single();
+    if (ins.error || !ins.data) return { ok: false as const, duplicates: [], emailTaken: false, failed: true };
+    return { ok: true as const, patient: ins.data };
   });

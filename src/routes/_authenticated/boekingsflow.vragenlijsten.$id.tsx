@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { Card } from "@/components/Card";
@@ -10,15 +10,17 @@ import { PillButton } from "@/components/PillButton";
 import { Select } from "@/components/Select";
 import { opts, optLabel, orgQuery } from "@/data/organisation";
 import {
-  createDraft, defOf, discardDraft, draftOf, exportFlow, flowOf, importFlow, linkTreatments, publishVersion, publishedOf, questionnairesQuery, saveDraft, saveFlowDocument, versionsOf, workingVersion,
+  createDraft, defOf, discardDraft, draftOf, exportFlow, flowOf, importFlow, linkTreatments, publishVersion, publishedOf, questionnairesQuery, saveDraft, saveFlowDocument, staffNamesQuery, useVersionAsDraft, versionsOf, type VersionRow,
 } from "@/data/questionnaires";
 import { effectiveVisibility, questionNumbers, readFieldNames } from "@/domain/questionnaire/builder";
-import { changesSentence, describeChanges } from "@/domain/questionnaire/diff";
+import { describeChanges, insertBeforeLast, rowChange } from "@/domain/questionnaire/diff";
 import { makeCtx, type FlowFile, type Item, type ItemType, type Page, type PageType, type QuestionnaireDef } from "@/domain/questionnaire/engine";
 import { evaluate } from "@/domain/questionnaire/expr";
-import { AddChooser } from "@/features/questionnaire/AddChooser";
+import { AddList, type AddChoice } from "@/features/questionnaire/AddChooser";
+import { DiscardDialog, PublishDialog, VersionsDialog, changesCount, livePeriod, longDate, whenSaved } from "@/features/questionnaire/VersionDialogs";
+import { VersionPill } from "@/features/questionnaire/VersionPill";
 import { BoodschapModal, START, flowPositions } from "@/features/questionnaire/BoodschapModal";
-import { ComputedModal, ItemModal, PageModal, PublishModal, ThresholdsModal, type IconEntry } from "@/features/questionnaire/BuilderModals";
+import { ComputedModal, ItemModal, PageModal, ThresholdsModal, type IconEntry } from "@/features/questionnaire/BuilderModals";
 import { compactConditionText, conditionText, fieldInfos, refOptions } from "@/features/questionnaire/conditions";
 import { QuestionnaireRunner } from "@/features/questionnaire/QuestionnaireRunner";
 import { UiIcon } from "@/components/UiIcon";
@@ -42,7 +44,7 @@ const THRESHOLDS = [
   { label: "BMI onder dit getal: rood", std: "bmi.red_below", red: "bmi.red_below" },
 ];
 
-type Edit = { kind: "add" } | { kind: "page"; index: number | null; type?: PageType } | { kind: "boodschap"; index: number | null } | { kind: "item"; page: number | null; item: number | null; type?: ItemType } | { kind: "thresholds" } | { kind: "computed"; name: string | null } | { kind: "publish" };
+type Edit = { kind: "versions" } | { kind: "discard" } | { kind: "page"; index: number | null; type?: PageType } | { kind: "boodschap"; index: number | null } | { kind: "item"; page: number | null; item: number | null; type?: ItemType } | { kind: "thresholds" } | { kind: "computed"; name: string | null } | { kind: "publish" };
 
 function Builder() {
   const { id } = Route.useParams();
@@ -51,7 +53,16 @@ function Builder() {
   const qc = useQueryClient();
   const q = data.questionnaires.find((x) => x.id === id);
   const draft = q ? draftOf(data, q.id) : undefined;
-  const working = q ? workingVersion(data, q.id) : undefined;
+  const pub = q ? publishedOf(data, q.id) : undefined;
+  const versions = q ? versionsOf(data, q.id) : [];
+  const [editing, setEditing] = useState(false);
+  const [archiveId, setArchiveId] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
+  const archived = versions.find((v) => v.id === archiveId && v.status === "archived");
+  // Without a live version the concept is the only thing to work on.
+  const inEdit = !!draft && !archived && (editing || !pub);
+  const working = archived ?? (inEdit ? draft : pub ?? draft);
   const def = defOf(working);
   const flow = q ? flowOf(data, q.flow_id) : undefined;
   const doc = (flow?.document ?? {}) as Record<string, unknown>;
@@ -62,7 +73,10 @@ function Builder() {
   const [drag, setDrag] = useState<number | null>(null);
   const [itemDrag, setItemDrag] = useState<{ page: number; idx: number } | null>(null);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
-  const [sel, setSel] = useState<number | null>(null);
+  const [sel, setSel] = useState<number | null>(0);
+  const nameIds = [...new Set(versions.flatMap((v) => [v.published_by, v.updated_by]).filter((x): x is string => !!x))];
+  const { data: names_ = {} } = useQuery(staffNamesQuery(nameIds));
+  useEffect(() => { if (!draft) setEditing(false); }, [draft]);
   const { data: icons = [] } = useQuery(iconsQuery);
   const counts = useQuery({
     queryKey: ["answer-counts", id], enabled: edit?.kind === "publish",
@@ -78,14 +92,14 @@ function Builder() {
 
   const mut = useMutation({
     mutationFn: (fn: () => Promise<unknown>) => fn(),
-    onSuccess: async () => { await refresh(); await qc.invalidateQueries({ queryKey: orgQuery.queryKey }); setEdit(null); },
+    onSuccess: async () => { await refresh(); await qc.invalidateQueries({ queryKey: orgQuery.queryKey }); setEdit((e) => (e?.kind === "versions" ? e : null)); },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Opslaan is niet gelukt"),
   });
 
   if (!q || !def || !working) return <p className="text-sm">Deze vragenlijst bestaat niet.</p>;
-  const editable = !!draft;
+  const editable = inEdit;
   const writeDef = (next: QuestionnaireDef) => {
-    if (!draft) { toast.error("Maak eerst een nieuwe versie om te wijzigen"); return; }
+    if (!draft || !inEdit) { toast.error("Klik eerst op Aanpassen om te wijzigen"); return; }
     mut.mutate(() => saveDraft(draft.id, next));
   };
   const fields = fieldInfos(def, computed, names);
@@ -160,7 +174,7 @@ function Builder() {
   const toggleGroup = (id: string) => setCollapsed((c) => { const x = new Set(c); if (x.has(id)) x.delete(id); else x.add(id); return x; });
 
   let n = 0;
-  const row = (label: string, title: string, sub: string, show: string | null, onEdit: () => void, extra?: { pageIdx?: number; item?: { page: number; idx: number } }) => {
+  const row = (label: string, title: string, sub: string, show: string | null, onEdit: () => void, extra?: { pageIdx?: number; item?: { page: number; idx: number }; badge?: React.ReactNode }) => {
     n += 1;
     const it = extra?.item;
     const selIdx = extra?.pageIdx ?? it?.page;
@@ -173,22 +187,20 @@ function Builder() {
         }}
         onClick={() => { if (selIdx !== undefined) setSel(selIdx); }}
         className={cn("flex items-start gap-3 rounded-[14px] border bg-background px-3 py-3", extra?.pageIdx !== undefined && sel === extra.pageIdx ? "border-primary" : "border-line")}>
-        <span className="pt-1 text-muted-foreground" aria-hidden="true">⋮⋮</span>
+        {editable && <span className="cursor-grab pt-1 text-muted-foreground" aria-hidden="true">⋮⋮</span>}
         <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-sand text-xs">{n}</span>
         <Tag tone={label === "Vraag" ? "teal" : "sand"}>{label}</Tag>
         <div className="min-w-0 flex-1">
-          <div className="text-sm">{title}</div>
+          <div className="flex items-center gap-2 text-sm">{title}{extra?.badge}</div>
           <div className="text-xs text-muted-foreground">{sub}</div>
           {show && <div className="mt-1 flex items-center gap-1.5 text-xs text-primary"><UiIcon name="route" className="size-3.5" />Alleen als {show}</div>}
         </div>
-        <span onClick={(e) => e.stopPropagation()}><TextLink onClick={onEdit}>Wijzig</TextLink></span>
+        {editable && <span onClick={(e) => e.stopPropagation()}><TextLink onClick={onEdit}>Wijzig</TextLink></span>}
       </div>
     );
   };
   const short = (c: Parameters<typeof compactConditionText>[0]) => compactConditionText(c, ctx);
 
-  const versions = versionsOf(data, q.id);
-  const pub = publishedOf(data, q.id);
   const sample = (f: string) => {
     try {
       const vars: Record<string, unknown> = { weight_kg: 88, height_cm: 178, gewicht: 88, lengte: 178, date_of_birth: "1988-03-14", sex: "Vrouw", origin: ["Geen van deze"] };
@@ -199,14 +211,35 @@ function Builder() {
   };
 
   const today = new Date().toISOString().slice(0, 10);
-  const overview = def.pages.find((p) => p.type === "flow_overview");
-  const medical = (() => {
-    const mq = data.questionnaires.find((x) => x.flow_id === q.flow_id && x.moment === "after_booking");
-    const md = mq ? defOf(publishedOf(data, mq.id) ?? workingVersion(data, mq.id)) : null;
-    const page = md?.pages.find((p) => (p.items?.length ?? 0) > 1 && p.items?.some((i) => i.show_if)) ?? md?.pages.find((p) => (p.items?.length ?? 0) > 1);
-    return md && page ? { def: md, page } : null;
-  })();
-  const changes = draft ? describeChanges(defOf(pub), defOf(draft) as QuestionnaireDef) : [];
+  const liveDef = defOf(pub);
+  const changes = draft && pub ? describeChanges(liveDef, defOf(draft) as QuestionnaireDef) : [];
+  const nums = questionNumbers(def);
+  const selPage = sel !== null ? def.pages[sel] : undefined;
+  const previewLabel = selPage ? (selPage.items?.length === 1 && !selPage.title ? `Vraag ${nums[selPage.items[0]!.id] ?? ""} · ${selPage.items[0]!.text}` : `Pagina ${nums[selPage.id] ?? sel! + 1} · ${selPage.title ?? selPage.section ?? ""}`) : "";
+  const startEdit = () => {
+    setArchiveId(null);
+    if (draft) { setEditing(true); return; }
+    if (!pub) return;
+    mut.mutate(async () => { await createDraft(q.id, pub); setEditing(true); setNotice(`Je werkt nu aan versie ${Math.max(...versions.map((v) => v.version_no)) + 1}. Versie ${pub.version_no} blijft live tot je publiceert.`); });
+  };
+  const blank = (c: AddChoice): Page => {
+    const uid = Date.now().toString(36);
+    if (c.kind === "item") return { id: `p_q_${uid}`, items: [{ id: `q_${uid}`, type: c.type, text: "Nieuwe vraag", ...(c.type === "single_choice" || c.type === "multi_choice" ? { options: [] } : {}) }] };
+    return { id: `p_${uid}`, type: c.type, title: c.type === "question_page" ? "Nieuwe vragenpagina" : "Nieuwe pagina", ...(c.type === "question_page" ? { items: [] } : {}) };
+  };
+  const addRow = (c: AddChoice) => {
+    const r = insertBeforeLast(def.pages, blank(c));
+    setAdding(false); setSel(r.index); writeDef({ ...def, pages: r.pages });
+  };
+  const badge = (p: Page, item?: { id: string }) => {
+    if (!inEdit) return null;
+    const k = rowChange(liveDef, p, item);
+    return k ? <VersionPill tone="draft">{k === "new" ? "Nieuw" : "Gewijzigd"}</VersionPill> : null;
+  };
+  const by = (uid: string | null | undefined) => (uid && names_[uid] ? names_[uid] : "");
+  const testLink = (v: VersionRow | undefined, label: string, variant: "outline" | "link" = "outline") => (
+    <Link to="/boekingsflow/vragenlijsten/$id/test" params={{ id: q.id }} search={v ? { versie: v.id } : {}} target="_blank">{variant === "link" ? <span className="text-sm text-primary underline">{label}</span> : <PillButton variant="outline">{label}</PillButton>}</Link>
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -215,30 +248,68 @@ function Builder() {
         <div className="mt-1 flex flex-wrap items-center gap-3">
           <h1 className="text-[28px] font-semibold tracking-tight">{def.name}</h1>
           <Tag tone={q.moment === "after_booking" ? "sand" : "teal"}>{optLabel(org, "questionnaire_moment", q.moment)}</Tag>
-          <Tag tone="sand">{draft ? `Concept, versie ${draft.version_no}` : `${optLabel(org, "questionnaire_status", "published")}, versie ${working.version_no}`}</Tag>
+          {archived ? <VersionPill tone="archive">Archief · versie {archived.version_no}</VersionPill>
+            : inEdit && draft ? <VersionPill tone="draft">Concept · versie {draft.version_no}, nog niet live</VersionPill>
+            : pub ? <VersionPill tone="live">Live · versie {pub.version_no}</VersionPill> : null}
           <div className="ml-auto flex gap-2">
-            <Link to="/boekingsflow/vragenlijsten/$id/test" params={{ id: q.id }}><PillButton variant="outline">Testmodus</PillButton></Link>
-            <PillButton variant="outline" onClick={download}>Exporteren</PillButton>
-            {draft ? (
-              <PillButton onClick={() => setEdit({ kind: "publish" })}>Publiceren</PillButton>
-            ) : (
-              <PillButton onClick={() => mut.mutate(() => createDraft(q.id, working))}>Nieuwe versie maken</PillButton>
-            )}
+            {!inEdit && !archived && testLink(pub, "Test als patiënt")}
+            <PillButton variant="outline" onClick={() => setEdit({ kind: "versions" })}><UiIcon name="klok" className="size-4" />Versies</PillButton>
+            {!inEdit && !archived && pub && !draft && <PillButton onClick={startEdit} disabled={mut.isPending}>Aanpassen</PillButton>}
           </div>
         </div>
-        {!editable && <p className="mt-3 rounded-[12px] bg-signal px-4 py-3 text-sm">Je bekijkt de actieve versie; die patiënten nu krijgen en die daarom niet verandert. Klik rechtsboven op “Nieuwe versie maken” om te wijzigen; daarna publiceer je die versie.</p>}
+        <p className="mt-2 text-sm text-muted-foreground">
+          {[inEdit && draft ? (pub ? `Gebaseerd op versie ${pub.version_no}` : "Nog geen versie live") : pub ? `Live sinds ${longDate(pub.published_at)}${by(pub.published_by) ? `, gepubliceerd door ${by(pub.published_by)}` : ""}` : "",
+            linked.length ? `gekoppeld aan ${linked.map((t) => t.name_nl).join(", ")}` : "", `${def.pages.length} pagina’s`].filter(Boolean).join(" · ")}
+        </p>
       </div>
+
+      {archived && (() => { const per = livePeriod(archived, versions); return (
+        <div className="flex flex-wrap items-center gap-4 rounded-[16px] bg-sand px-5 py-4">
+          <p className="mr-auto text-sm"><b className="font-semibold">Je bekijkt versie {archived.version_no} · archief</b>{per.from ? `, live van ${per.from}${per.to ? ` tot ${per.to}` : ""}` : ""}. Niets kan hier worden gewijzigd.</p>
+          {pub && <PillButton variant="outline" onClick={() => setArchiveId(null)}>Terug naar versie {pub.version_no} (live)</PillButton>}
+          <PillButton onClick={() => { if (draft && !window.confirm(`Concept versie ${draft.version_no} wordt vervangen door een kopie van versie ${archived.version_no}. Doorgaan?`)) return; mut.mutate(async () => { await useVersionAsDraft(q.id, archived, draft); setArchiveId(null); setEditing(true); toast.success(`Versie ${archived.version_no} staat klaar als concept`); }); }}>Als concept gebruiken</PillButton>
+        </div>); })()}
+
+      {inEdit && draft && (
+        <div className="sticky top-0 z-20 flex flex-wrap items-center gap-4 rounded-[16px] bg-warning-bg px-5 py-4 ring-1 ring-warning/30">
+          <div className="mr-auto min-w-[280px] max-w-[620px] text-sm">
+            <p className="font-semibold text-warning">Je werkt aan versie {draft.version_no} · concept</p>
+            <p>{pub ? `Versie ${pub.version_no} blijft live voor patiënten tot je publiceert. ` : ""}Alles wat je wijzigt wordt meteen bewaard · {changesCount(changes.length)}{mut.isPending ? " · bezig met bewaren…" : ""}.</p>
+          </div>
+          {pub && <TextLink tone="warning" onClick={() => setEdit({ kind: "discard" })}>Concept weggooien</TextLink>}
+          {testLink(draft, "Test concept")}
+          {pub && <PillButton variant="outline" onClick={() => { setEditing(false); setNotice(`Versie ${draft.version_no} is bewaard als concept. Je kunt later verder.`); }}>Opslaan en sluiten</PillButton>}
+          <PillButton onClick={() => setEdit({ kind: "publish" })}>Publiceren</PillButton>
+        </div>
+      )}
+
+      {!inEdit && !archived && draft && pub && (
+        <div className="flex flex-wrap items-center gap-4 rounded-[16px] bg-warning-bg px-5 py-4 ring-1 ring-warning/30">
+          <div className="mr-auto text-sm">
+            <p className="font-semibold text-warning">Er ligt een concept: versie {draft.version_no}</p>
+            <p>Laatst bewaard {whenSaved(draft.updated_at)}{by(draft.updated_by) ? ` door ${by(draft.updated_by)}` : ""} · {changesCount(changes.length)} ten opzichte van versie {pub.version_no}. Versie {pub.version_no} staat nog live.</p>
+          </div>
+          <TextLink tone="warning" onClick={() => setEdit({ kind: "discard" })}>Concept weggooien</TextLink>
+          <PillButton onClick={startEdit}>Verder met versie {draft.version_no}</PillButton>
+        </div>
+      )}
+
+      {!inEdit && !archived && pub && !draft && (
+        <p className="flex items-center gap-3 rounded-[14px] bg-sand px-4 py-3 text-sm"><UiIcon name="slot" className="size-4 shrink-0" />Je bekijkt de versie die live staat. Niets kan hier worden gewijzigd of versleept. Klik op Aanpassen om versie {Math.max(0, ...versions.map((v) => v.version_no)) + 1} te maken; versie {pub.version_no} blijft live tot je publiceert.</p>
+      )}
+
+      {notice && <p className="flex items-center gap-3 rounded-[14px] bg-teal-light px-4 py-3 text-sm text-primary-hover"><UiIcon name="vinkje" className="size-4 shrink-0" /><span className="mr-auto">{notice}</span><button type="button" aria-label="Sluiten" onClick={() => setNotice(null)}><UiIcon name="kruis" className="size-4" /></button></p>}
 
       <div className="grid grid-cols-[minmax(0,1fr)_300px] items-start gap-6">
       <div className="flex min-w-0 flex-col gap-6">
-      <Card title="Opbouw van de vragenlijst" description="Vragen en pagina’s in de volgorde die de patiënt ziet. Sleep om de volgorde te wijzigen, ook vragen binnen een vragenpagina; klik op het pijltje om een vragenpagina in te klappen. Een pijl onder een regel betekent: alleen onder een voorwaarde.">
+      <Card title="Opbouw van de vragenlijst" description="Klik op een regel om rechts te zien hoe de patiënt hem ziet." action={<span className="text-[13px] text-muted-foreground">{editable ? "Sleep om de volgorde te wijzigen" : "Alleen-lezen"}</span>}>
         <div className="flex flex-col gap-2">
           {def.pages.map((p, pi) => {
             const items = p.items ?? [];
-            if (!items.length) return row("Pagina", p.title ?? "", [pageTypeLabel(p.type ?? "text"), p.body?.slice(0, 80)].filter(Boolean).join(" · "), p.show_if ? short(p.show_if) : null, () => setEdit(p.type === "boodschap" ? { kind: "boodschap", index: pi } : { kind: "page", index: pi }), { pageIdx: pi });
+            if (!items.length) return row("Pagina", p.title ?? "", [pageTypeLabel(p.type ?? "text"), p.body?.slice(0, 80)].filter(Boolean).join(" · "), p.show_if ? short(p.show_if) : null, () => setEdit(p.type === "boodschap" ? { kind: "boodschap", index: pi } : { kind: "page", index: pi }), { pageIdx: pi, badge: badge(p) });
             if (items.length === 1 && !p.title) {
               const i = items[0] as Item;
-              return row("Vraag", i.text, itemSummary(p, i), effectiveVisibility(p, i) ? short(effectiveVisibility(p, i)) : null, () => setEdit({ kind: "item", page: pi, item: 0 }), { pageIdx: pi });
+              return row("Vraag", i.text, itemSummary(p, i), effectiveVisibility(p, i) ? short(effectiveVisibility(p, i)) : null, () => setEdit({ kind: "item", page: pi, item: 0 }), { pageIdx: pi, badge: badge(p, i) });
             }
             return (
               <div key={p.id} draggable={editable} onDragStart={() => setDrag(pi)} onDragOver={(e) => e.preventDefault()} onDrop={() => { if (drag !== null && drag !== pi) move(drag, pi); setDrag(null); }}
@@ -249,12 +320,12 @@ function Builder() {
                     <img src="/ui-icons/pijl-rechts.svg" alt="" className={cn("size-4 transition-transform", !collapsed.has(p.id) && "rotate-90")} />
                   </button>
                   <span className="rounded-full bg-foreground px-3 py-1 text-xs text-background">{pageTypeLabel("question_page")}</span>
-                  <span className="text-sm">{p.title ?? p.section}</span>
-                  <span className="ml-auto"><TextLink onClick={() => setEdit({ kind: "page", index: pi })}>Wijzig</TextLink></span>
+                  <span className="text-sm">{p.title ?? p.section}</span>{badge(p)}
+                  {editable && <span className="ml-auto"><TextLink onClick={() => setEdit({ kind: "page", index: pi })}>Wijzig</TextLink></span>}
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">{items.length} vragen op één scherm{p.show_if ? ` · alleen als ${short(p.show_if)}` : ""}{p.red_if ? ` · rood als ${cond(p.red_if)}` : ""}</p>
                 {!collapsed.has(p.id) && <div className="mt-2 flex flex-col gap-2">
-                  {items.map((i, ii) => row("Vraag", i.text, itemSummary(p, i), i.show_if ? short(i.show_if) : null, () => setEdit({ kind: "item", page: pi, item: ii }), { item: { page: pi, idx: ii } }))}
+                  {items.map((i, ii) => row("Vraag", i.text, itemSummary(p, i), i.show_if ? short(i.show_if) : null, () => setEdit({ kind: "item", page: pi, item: ii }), { item: { page: pi, idx: ii }, badge: badge(p, i) }))}
                 </div>}
                 {collapsed.has(p.id) && ((n += items.length), null)}
                 {editable && !collapsed.has(p.id) && <div className="mt-2"><TextLink onClick={() => setEdit({ kind: "item", page: pi, item: null })}>Vraag aan deze pagina toevoegen</TextLink></div>}
@@ -263,7 +334,10 @@ function Builder() {
           })}
         </div>
         {editable && (
-          <div className="mt-4"><PillButton variant="outline" onClick={() => setEdit({ kind: "add" })}><PlusIcon />Vraag of pagina toevoegen</PillButton></div>
+          <div className="mt-4 flex flex-col gap-3">
+            <div><PillButton variant="outline" onClick={() => setAdding((a) => !a)} aria-expanded={adding}><PlusIcon />Vraag of pagina toevoegen</PillButton></div>
+            {adding && <AddList itemTypes={opts(org, "questionnaire_item_type")} pageTypes={opts(org, "questionnaire_page_type")} onPick={addRow} />}
+          </div>
         )}
       </Card>
 
@@ -274,7 +348,6 @@ function Builder() {
           {Object.entries((def["outcomes"] ?? {}) as Record<string, string>).map(([k, v]) => (
             <Select key={k} label={k === "red" ? "Bij rood" : k === "green" ? "Bij groen" : "Uitkomst"} value={v} onChange={(x) => writeDef({ ...def, outcomes: { ...(def["outcomes"] as Record<string, string>), [k]: x } })} options={opts(org, "questionnaire_outcome")} />
           ))}
-          <Select label="Status" value={draft ? "draft" : "published"} onChange={() => undefined} disabled options={opts(org, "questionnaire_status")} help="Verandert via Publiceren." />
         </div>
       </Card>
 
@@ -305,46 +378,21 @@ function Builder() {
         <div className="mt-4"><PillButton variant="outline" onClick={() => setEdit({ kind: "computed", name: null })}><PlusIcon />Berekend veld toevoegen</PillButton></div>
       </Card>
 
-      <Card title="Versies">
-        <table className="w-full">
-          <thead><tr className="border-b border-line"><th className={thCls}>Versie</th><th className={thCls}>Status</th><th className={thCls}>Gepubliceerd</th><th className={thCls}>Notitie</th><th className={thCls} /></tr></thead>
-          <tbody className="divide-y divide-line">
-            {versions.map((v) => (
-              <tr key={v.id}>
-                <td className={tdCls}>{v.version_no}</td>
-                <td className={tdCls}>{optLabel(org, "questionnaire_status", v.status)}</td>
-                <td className={tdCls}>{v.published_at ? new Date(v.published_at).toLocaleDateString("nl-NL") : "–"}</td>
-                <td className={tdCls}>{v.note ?? ""}</td>
-                <td className={tdCls}>{v.status === "draft" && pub && <TextLink tone="warning" onClick={() => mut.mutate(() => discardDraft(v.id))}>Concept weggooien</TextLink>}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </Card>
-
       </div>
-      <aside className="flex flex-col gap-6">
-        {overview && (
-          <PreviewCard title={`Voorbeeld: pagina ${questionNumbers(def)[overview.id] ?? ""}, ${pageTypeLabel("flow_overview").toLowerCase()}`}
-            text="De stappen komen uit de flow zelf: afspraak, de onderdelen van deze vragenlijst, gegevens en bevestiging. Alleen de titel en de tekst zijn te bewerken; zo blijft het overzicht altijd kloppen, ook als je het vaker gebruikt.">
-            <QuestionnaireRunner key={JSON.stringify(overview)} flow={{ settings, computed_fields: computed }} def={def} ui={data.uiTexts} today={today} startPageId={overview.id} />
-          </PreviewCard>
-        )}
-        {medical && (
-          <PreviewCard title="Voorbeeld: vragenpagina uit de medische vragenlijst"
-            text="Een vraag met een voorwaarde verschijnt pas als die van toepassing is; anders blijft de pagina korter. Een lange medische vragenlijst deel je zo in zoveel schermen als je zelf wilt.">
-            <QuestionnaireRunner key={medical.page.id} flow={{ settings, computed_fields: computed }} def={medical.def} ui={data.uiTexts} today={today} startPageId={medical.page.id} />
-          </PreviewCard>
-        )}
+      <aside className="sticky top-24 flex flex-col gap-6">
+        <Card title="Zo ziet de patiënt het" description={previewLabel}>
+          {selPage ? (
+            <div className="h-[560px] w-[252px] overflow-hidden rounded-[18px] ring-1 ring-line">
+              <div className="origin-top-left scale-[0.646]" style={{ width: 390 }}>
+                <QuestionnaireRunner key={`${working.id}-${selPage.id}-${JSON.stringify(selPage).length}`} flow={{ settings, computed_fields: computed }} def={def} ui={data.uiTexts} today={today} startPageId={selPage.id} />
+              </div>
+            </div>
+          ) : <p className="text-sm text-muted-foreground">Klik links op een regel.</p>}
+          <p className="mt-3 text-[13px] text-muted-foreground">{archived ? `Toont versie ${archived.version_no} (archief).` : inEdit && draft ? `Toont versie ${draft.version_no} (concept). Patiënten zien dit pas na publiceren.` : `Toont versie ${working.version_no}${pub?.id === working.id ? " (live)" : ""}.`}</p>
+        </Card>
       </aside>
       </div>
 
-      {edit?.kind === "add" && (
-        <AddChooser itemTypes={opts(org, "questionnaire_item_type")} pageTypes={opts(org, "questionnaire_page_type")}
-          afterLabel={sel === null ? "Komt onderaan de vragenlijst." : "Komt na de geselecteerde regel."}
-          onClose={() => setEdit(null)}
-          onPick={(c) => setEdit(c.kind === "item" ? { kind: "item", page: null, item: null, type: c.type } : c.type === "boodschap" ? { kind: "boodschap", index: null } : { kind: "page", index: null, type: c.type })} />
-      )}
       {edit?.kind === "boodschap" && (() => {
         const nums = questionNumbers(def);
         const current = edit.index === null ? null : (def.pages[edit.index] ?? null);
@@ -386,27 +434,22 @@ function Builder() {
           onDelete={edit.name ? () => { const c = { ...computed }, labels = { ...names.computed }; delete c[edit.name as string]; delete labels[edit.name as string]; mut.mutate(() => saveFlowDocument(flow.id, { ...doc, computed_fields: c, field_names: { ...names, computed: labels } })); } : undefined} />
       )}
       {edit?.kind === "publish" && draft && (
-        <PublishModal name={def.name} draftNo={draft.version_no} liveNo={pub?.version_no ?? null} busy={mut.isPending}
-          versions={versions.map((v) => ({ id: v.id, version_no: v.version_no, status: v.status, note: v.note, published_at: v.published_at, updated_at: v.updated_at, answers: counts.data?.[v.id]?.all ?? 0 }))}
-          running={pub ? (counts.data?.[pub.id]?.open ?? 0) : 0}
-          changes={changesSentence(changes)} changeCount={changes.length}
-          testLink={<Link to="/boekingsflow/vragenlijsten/$id/test" params={{ id: q.id }} target="_blank"><PillButton variant="outline">Eerst testen als patiënt</PillButton></Link>}
+        <PublishDialog name={def.name} moment={optLabel(org, "questionnaire_moment", q.moment)} liveNo={pub?.version_no ?? null} draftNo={draft.version_no} changes={changes} busy={mut.isPending}
+          running={pub ? (counts.data?.[pub.id]?.open ?? 0) : 0} testLink={testLink(draft, "Eerst testen als patiënt", "link")} onClose={() => setEdit(null)}
+          onPublish={() => mut.mutate(async () => { await publishVersion(q.id, draft.id); setEditing(false); setNotice(null); toast.success(`Versie ${draft.version_no} staat nu live`); })} />
+      )}
+      {edit?.kind === "discard" && draft && (
+        <DiscardDialog draftNo={draft.version_no} liveNo={pub?.version_no ?? null} changes={changes.length} busy={mut.isPending} onClose={() => setEdit(null)}
+          onConfirm={() => mut.mutate(async () => { await discardDraft(draft.id); setEditing(false); setNotice(null); toast.success(`Concept weggegooid; versie ${pub?.version_no ?? ""} blijft live`); })} />
+      )}
+      {edit?.kind === "versions" && (
+        <VersionsDialog versions={versions} names={names_} draftChanges={changes.length} onClose={() => setEdit(null)}
+          onContinue={() => { setEdit(null); setArchiveId(null); setEditing(true); }}
+          onView={(v) => { setEdit(null); setArchiveId(v.id); setSel(0); }}
+          onUse={(v) => mut.mutate(async () => { await useVersionAsDraft(q.id, v, draft); setEdit(null); setArchiveId(null); setEditing(true); toast.success(`Versie ${v.version_no} staat klaar als concept`); })}
           onExport={download}
-          onImport={(f) => mut.mutate(async () => { const json = JSON.parse(await f.text()) as FlowFile; await importFlow(json, flow?.key ?? "flow", false); toast.success("Geïmporteerd als concept"); })}
-          onDiscard={pub ? () => mut.mutate(() => discardDraft(draft.id)) : undefined}
-          onClose={() => setEdit(null)}
-          onPublish={() => mut.mutate(async () => { await publishVersion(q.id, draft.id); toast.success(`Versie ${draft.version_no} is gepubliceerd`); })} />
+          onImport={(f) => mut.mutate(async () => { const json = JSON.parse(await f.text()) as FlowFile; await importFlow(json, flow?.key ?? "flow", false); setEdit(null); setEditing(true); toast.success("Geïmporteerd als concept"); })} />
       )}
     </div>
-  );
-}
-
-function PreviewCard({ title, text, children }: { title: string; text: string; children: ReactNode }) {
-  return (
-    <Card title={title} description={text}>
-      <div className="h-[560px] w-[252px] overflow-hidden rounded-[18px]">
-        <div className="pointer-events-auto origin-top-left scale-[0.646]">{children}</div>
-      </div>
-    </Card>
   );
 }

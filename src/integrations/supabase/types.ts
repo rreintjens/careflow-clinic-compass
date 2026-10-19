@@ -1267,6 +1267,86 @@ export type Database = {
         }
         Relationships: []
       }
+      mail_outbox: {
+        Row: {
+          appointment_id: string | null
+          created_at: string
+          dedupe_key: string | null
+          error: string | null
+          html: string
+          id: string
+          moment: string
+          patient_id: string | null
+          recipient: string
+          sent_at: string | null
+          status: string
+          subject: string
+          template_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          appointment_id?: string | null
+          created_at?: string
+          dedupe_key?: string | null
+          error?: string | null
+          html: string
+          id?: string
+          moment: string
+          patient_id?: string | null
+          recipient: string
+          sent_at?: string | null
+          status?: string
+          subject: string
+          template_id?: string | null
+          tenant_id?: string
+        }
+        Update: {
+          appointment_id?: string | null
+          created_at?: string
+          dedupe_key?: string | null
+          error?: string | null
+          html?: string
+          id?: string
+          moment?: string
+          patient_id?: string | null
+          recipient?: string
+          sent_at?: string | null
+          status?: string
+          subject?: string
+          template_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mail_outbox_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mail_outbox_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mail_outbox_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "mail_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mail_outbox_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mail_templates: {
         Row: {
           blocks: Json
@@ -2618,6 +2698,7 @@ export type Database = {
       }
       tenant_memberships: {
         Row: {
+          active: boolean
           created_at: string
           created_by: string | null
           id: string
@@ -2628,6 +2709,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          active?: boolean
           created_at?: string
           created_by?: string | null
           id?: string
@@ -2638,6 +2720,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          active?: boolean
           created_at?: string
           created_by?: string | null
           id?: string
@@ -3288,6 +3371,13 @@ export type Database = {
           extra_languages: string[]
           slug: string
           theme: Json
+        }[]
+      }
+      staff_names: {
+        Args: { _ids: string[] }
+        Returns: {
+          full_name: string
+          id: string
         }[]
       }
     }

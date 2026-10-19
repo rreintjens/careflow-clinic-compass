@@ -1,8 +1,8 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, redirect } from "@tanstack/react-router";
 
 import { PillButton } from "@/components/PillButton";
-import { dossierQuery } from "@/data/patients";
+import { dossierQuery, recordKey } from "@/data/patients";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { DossierAddModal } from "@/features/dossier/DossierAddModal";
@@ -13,7 +13,12 @@ import { StartConsultButton, consultNoteQuery } from "@/features/dossier/Consult
 
 export const Route = createFileRoute("/_authenticated/patienten/$id")({
   head: () => ({ meta: [{ title: "Dossier · Beheer · The Body Clinic" }, { name: "description", content: "Het patiëntendossier van The Body Clinic." }, { property: "og:title", content: "Patiëntendossier · The Body Clinic" }, { property: "og:description", content: "Het patiëntendossier van The Body Clinic." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { name: "robots", content: "noindex" }] }),
-  loader: ({ context, params }) => context.queryClient.ensureQueryData(dossierQuery(params.id)),
+  loader: async ({ context, params, location }) => {
+    const d = await context.queryClient.ensureQueryData(dossierQuery(params.id));
+    // Old UUID links move to the patient-number form.
+    if (d.patient && !/^\d+$/.test(params.id)) throw redirect({ href: location.pathname.replace(params.id, recordKey(d.patient)), replace: true });
+    return d;
+  },
   component: Layout,
 });
 
@@ -22,9 +27,10 @@ const ageOf = (dob: string) => { const [y, m, d] = dob.split("-").map(Number) as
 const TABS = [["/patienten/$id", "Overzicht"], ["/patienten/$id/tijdlijn", "Tijdlijn"], ["/patienten/$id/medisch", "Medisch"], ["/patienten/$id/behandeling", "Behandeling"], ["/patienten/$id/documenten", "Documenten"]] as const;
 
 function Layout() {
-  const { id } = Route.useParams();
+  const { id: key } = Route.useParams();
   const [adding, setAdding] = useState(false);
-  const { patient: p, appointments, sets } = useSuspenseQuery(dossierQuery(id)).data;
+  const { patient: p, appointments, sets } = useSuspenseQuery(dossierQuery(key)).data;
+  const id = p?.id ?? "";
   // Consult candidates: booked visits from the last 12 hours onwards; the first one not yet finished is the one to consult.
   const candidates = [...appointments].reverse().filter((a) => a.status === "booked" && new Date(a.ends_at).getTime() > Date.now() - 12 * 3600_000).slice(0, 10);
   const { data: finished } = useQuery({
@@ -77,7 +83,7 @@ function Layout() {
       </div>
       <nav className="flex gap-2 border-b border-mist">
         {TABS.map(([to, l]) => (
-          <Link key={to} to={to} params={{ id }} activeOptions={{ exact: true }} className="whitespace-nowrap border-b-2 border-transparent px-4 py-3 text-[14px]" activeProps={{ className: "border-primary text-primary" }}>{l}</Link>
+          <Link key={to} to={to} params={{ id: key }} activeOptions={{ exact: true }} className="whitespace-nowrap border-b-2 border-transparent px-4 py-3 text-[14px]" activeProps={{ className: "border-primary text-primary" }}>{l}</Link>
         ))}
       </nav>
       <Outlet />

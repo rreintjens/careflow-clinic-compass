@@ -1,7 +1,9 @@
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { ActiveConsultMode } from "@/features/dossier/ConsultMode";
+import { logPageView } from "@/data/users.functions";
+import { useRouterState } from "@tanstack/react-router";
 import { Outlet, createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 import { Sidebar } from "@/components/Sidebar";
 import { landingPath, needsShortIdleTimeout } from "@/domain/auth";
@@ -84,6 +86,15 @@ function StaffLayout() {
       events.forEach((e) => window.removeEventListener(e, reset));
     };
   }, [short, idleMinutes, signOut]);
+
+  // Logbook: one 'viewed' row for every staff page and record tab.
+  const pathname = useRouterState({ select: (st) => st.location.pathname });
+  const lastLogged = useRef("");
+  useEffect(() => {
+    if (!staff || lastLogged.current === pathname) return;
+    lastLogged.current = pathname;
+    void logPageView({ data: { route: pathname } }).catch(() => undefined);
+  }, [pathname, staff]);
 
   if (!staff) return null;
   return (

@@ -69,3 +69,9 @@ export function cancelPolicyValues(policy: { hours: number; feeCents: number }, 
   const no_show_bedrag = policy.feeCents > 0 ? euro(policy.feeCents) : "";
   return { annuleringstermijn, no_show_bedrag, no_show_zin: policy.feeCents > 0 ? interpolate(noShowSentence, { annuleringstermijn, no_show_bedrag }) : "" };
 }
+/** Demo delivery: only addresses on the comma-separated allowlist setting receive a mail for real. */
+export function allowlisted(list: unknown, email: string) {
+  const items = (typeof list === "string" ? list : "").split(/[,;\s]+/).map((x) => x.trim().toLowerCase()).filter(Boolean);
+  return items.includes(email.trim().toLowerCase());
+}
+

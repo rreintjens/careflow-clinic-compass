@@ -260,6 +260,34 @@
       "when": 1792402572733,
       "tag": "0036_consult_parked_one_active",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1792403827395,
+      "tag": "0037_membership_active",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1792404415956,
+      "tag": "0038_roles_create_delete",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1792405281145,
+      "tag": "0039_mail_outbox",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1792405901965,
+      "tag": "0040_staff_names",
+      "breakpoints": true
     }
   ]
 }

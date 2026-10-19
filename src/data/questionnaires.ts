@@ -67,8 +67,21 @@ export function exportFlow(d: QData, flowId: string): FlowFile {
 
 export async function createDraft(qid: string, from: VersionRow) {
   const versions = await ok(supabase.from("questionnaire_versions").select("version_no").eq("questionnaire_id", qid).order("version_no", { ascending: false }).limit(1));
-  await ok(supabase.from("questionnaire_versions").insert({ questionnaire_id: qid, version_no: (versions[0]?.version_no ?? 0) + 1, status: "draft", definition: from.definition }));
+  await ok(supabase.from("questionnaire_versions").insert({ questionnaire_id: qid, version_no: (versions[0]?.version_no ?? 0) + 1, status: "draft", definition: from.definition, note: `Gebaseerd op versie ${from.version_no}` }));
 }
+
+/** "Als concept gebruiken": the concept becomes a copy of an older version; an existing concept is replaced. */
+export async function useVersionAsDraft(qid: string, from: VersionRow, draft: VersionRow | undefined) {
+  if (!draft) return createDraft(qid, from);
+  await ok(supabase.from("questionnaire_versions").update({ definition: from.definition, note: `Gebaseerd op versie ${from.version_no}` }).eq("id", draft.id).eq("status", "draft"));
+}
+
+/** Display names of publishers and editors (members of the active tenant only). */
+export const staffNamesQuery = (ids: string[]) => queryOptions({
+  queryKey: ["staff-names", [...ids].sort()],
+  enabled: ids.length > 0,
+  queryFn: async () => Object.fromEntries((await ok(supabase.rpc("staff_names", { _ids: ids }))).map((r) => [r.id, r.full_name])) as Record<string, string>,
+});
 
 export async function saveDraft(versionId: string, def: QuestionnaireDef) {
   await ok(supabase.from("questionnaire_versions").update({ definition: def as unknown as Json }).eq("id", versionId).eq("status", "draft"));
