@@ -19,7 +19,7 @@ Owner asked to continue through all phases without pausing for confirmation.
 
 - [x] Demo sign-in shortcut “Inloggen als Rob” sits above the login form, prefills the requested email and focuses password; existing password, lockout and MFA flow unchanged. Shortcut only shown in development preview.
 - [x] Questionnaire review implementation: effective page/item Tonen and correct save target; flow-stored editable names; Dutch situation sentences; source-answer examples and resolved thresholds; unclipped language labels. 122 targeted tests passed; build OK. Passwordless/MFA-free demo superadmin excluded by mandatory staff security.
-- [x] Questionnaire preview verification of questions 7, 8, 9 and question 8 signal: all three opened as Rob with readable conditions and patient previews; question 8 has its conditional waist signal; concept threshold saved/reloaded and concept discarded. Test-mode sign-in no longer blocked by MFA.
+- [x] Questionnaire preview verification of questions 7, 8, 9 and question 8 signal: all three opened as Rob with readable conditions and patient previews; question 8 signal name changed in concept and read back in its modal after reload, then concept discarded. Threshold changes also saved/reloaded/discarded. Test-mode sign-in no longer blocked by MFA.
 - [x] Owner follow-up investigated: existing sessions already persist; no proven update-triggered logout. No automatic login as Rob added because it would bypass required password/MFA authentication.
 
 - [x] Repair MFA enrollment recovery: identity-only preview sessions lacked session_id and cannot enroll factors; now return to password sign-in, with restart action for other failures. Browser confirmed /auth without enrollment alert; 17 tests passed; build OK.
