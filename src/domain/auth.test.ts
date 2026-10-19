@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 
-import { isLocked, landingPath, needsShortIdleTimeout, registerFailure } from "./auth";
+import { hasRegisteredAuthSession, isLocked, landingPath, needsShortIdleTimeout, registerFailure } from "./auth";
+
+describe("registered session required for factor enrollment", () => {
+  it.each([undefined, null, {}, { session_id: "" }, { session_id: "invalid" }])("rejects identity-only claims %j", (claims) => {
+    expect(hasRegisteredAuthSession(claims)).toBe(false);
+  });
+  it("accepts a registered session identifier", () => {
+    expect(hasRegisteredAuthSession({ session_id: "11111111-1111-4111-8111-111111111111" })).toBe(true);
+  });
+});
 
 describe("landing page per role", () => {
   it.each([

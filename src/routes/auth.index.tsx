@@ -18,6 +18,8 @@ export const Route = createFileRoute("/auth/")({
       { name: "description", content: "Inloggen voor medewerkers van The Body Clinic." },
       { property: "og:title", content: "Inloggen · The Body Clinic" },
       { property: "og:description", content: "Inloggen voor medewerkers van The Body Clinic." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
     ],
   }),

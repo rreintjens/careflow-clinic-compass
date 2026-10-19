@@ -16,7 +16,7 @@
 - Agenda routes share AgendaToolbar for stable controls; public and staff booking share slots domain with online-location IDs and block flags so mixed-consult conflicts cannot diverge.
 - Configuration (settings, option lists, texts, roles, permissions, landing pages) lives in DB rows; code never contains those values.
 - Staff area = `_authenticated` layout: session + aal2 + active role; RLS on every table requires `is_aal2()` + `has_permission()` — MFA enforced server-side, never bypassed.
-- Password step runs in a server function so lockout cannot be skipped; auth events are written by server functions, row changes by the `audit_row_change` trigger; `audit_log` is append-only by trigger.
+- Password sign-in enforces lockout server-side; MFA enrollment needs a registered session, not an identity-only preview token. Server functions log auth events; audit_row_change logs writes; audit_log stays append-only.
 - Identity columns only in `patients`; medical data goes in separate tables without identity columns.
 - Security headers are set in `src/start.ts` middleware (`src/lib/security-headers.ts`); `TBC_LIVE=true` switches framing to 'none'.
 - RLS proof: `TEST_STAFF_PASSWORD=… bunx vitest run src/test/rls-patients.integration.test.ts` (enrolls and removes a temporary TOTP factor per role).

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { PillButton } from "@/components/PillButton";
-import { landingPath } from "@/domain/auth";
+import { hasRegisteredAuthSession, landingPath } from "@/domain/auth";
 import { staffContextQuery } from "@/data/staff";
 import { AuthLayout } from "@/features/auth/AuthLayout";
 import { logAuthEvent } from "@/features/auth/auth.functions";
@@ -12,10 +12,16 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/auth/2fa")({
   ssr: false,
-  head: () => ({ meta: [{ title: "Tweestapsverificatie · The Body Clinic" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Tweestapsverificatie · The Body Clinic" }, { name: "description", content: "Veilig aanmelden met je authenticator bij The Body Clinic." }, { property: "og:title", content: "Tweestapsverificatie · The Body Clinic" }, { property: "og:description", content: "Veilig aanmelden met je authenticator bij The Body Clinic." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { name: "robots", content: "noindex" }] }),
   beforeLoad: async () => {
     const { data } = await supabase.auth.getUser();
     if (!data.user) throw redirect({ to: "/auth" });
+    const claims = await supabase.auth.getClaims();
+    if (claims.error || !hasRegisteredAuthSession(claims.data?.claims)) {
+      // Preview identity tokens have no registered session for factor enrollment.
+      await supabase.auth.signOut({ scope: "local" });
+      throw redirect({ to: "/auth" });
+    }
   },
   component: TwoFactorPage,
 });
@@ -48,7 +54,8 @@ function TwoFactorPage() {
         if (aal.data?.currentLevel === "aal2") return goLanding();
         const { data: required } = await supabase.rpc("mfa_required");
         if (required === false) return goLanding();
-        const { data } = await supabase.auth.mfa.listFactors();
+        const { data, error: factorError } = await supabase.auth.mfa.listFactors();
+        if (factorError) throw factorError;
         const verified = data?.totp.find((f) => f.status === "verified");
         if (verified) return setFactorId(verified.id);
         for (const f of data?.all ?? []) if (f.status === "unverified") await supabase.auth.mfa.unenroll({ factorId: f.id });
@@ -93,6 +100,7 @@ function TwoFactorPage() {
     if (code.length !== 6) return setError("Vul de code van 6 cijfers in.");
     setBusy(true);
     setError(null);
+    try {
     const fid = await ensureFactor().catch(() => null);
     if (!fid) {
       setBusy(false);
@@ -107,6 +115,11 @@ function TwoFactorPage() {
     }
     await logAuthEvent({ data: { action: "mfa_verified" } });
     await goLanding();
+    } catch {
+      setError("Aanmelden kon niet worden afgerond. Probeer opnieuw.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   const notInTest = () => toast("Niet beschikbaar in de testomgeving");
@@ -149,6 +162,11 @@ function TwoFactorPage() {
           ))}
         </div>
         {error && <p role="alert" className="rounded-[14px] bg-warning-bg px-4 py-3 text-sm text-warning">{error}</p>}
+        {error && <PillButton variant="outline" disabled={busy} onClick={async () => {
+          await supabase.auth.signOut({ scope: "local" });
+          queryClient.clear();
+          await navigate({ to: "/auth", replace: true });
+        }}>Opnieuw aanmelden</PillButton>}
         <PillButton size="lg" block onClick={verify} disabled={busy || digits.join("").length !== 6}>Inloggen</PillButton>
         <div className="flex justify-between text-[13px]">
           <button type="button" onClick={notInTest} className="text-primary underline underline-offset-2">Stuur een sms-code</button>
