@@ -173,3 +173,24 @@
 .admin-data-table table {min-width:620px;}
 .admin-data-table td:first-child {min-width:200px;}
 .admin-data-table th {white-space:nowrap;}
+
+/* Repeated group tables share tracks rather than sizing to their own rows. */
+.admin-data-table[data-column-layout] table {table-layout:fixed;}
+.admin-data-table[data-column-layout] td {white-space:normal;overflow-wrap:anywhere;}
+.admin-data-table[data-column-layout] td > div {white-space:normal;}
+.admin-data-table[data-column-layout="equipment"] table {min-width:1000px;}
+.admin-data-table[data-column-layout="equipment"] th:nth-child(1) {width:24%;}
+.admin-data-table[data-column-layout="equipment"] th:nth-child(2) {width:17%;}
+.admin-data-table[data-column-layout="equipment"] th:nth-child(3) {width:22%;}
+.admin-data-table[data-column-layout="equipment"] th:nth-child(4) {width:19%;}
+.admin-data-table[data-column-layout="equipment"] th:nth-child(5) {width:14%;}
+.admin-data-table[data-column-layout="equipment"] th:nth-child(6) {width:4%;}
+.admin-data-table[data-column-layout="mail-variants"] table {min-width:760px;}
+.admin-data-table[data-column-layout="mail-variants"] td button {white-space:normal;max-width:100%;}
+.admin-data-table[data-column-layout="mail-variants"] td:nth-child(2) > span {flex-wrap:wrap;}
+.admin-data-table[data-column-layout="mail-variants"] td:last-child button {padding:0;}
+.admin-data-table[data-column-layout="mail-variants"] th:nth-child(1) {width:38%;}
+.admin-data-table[data-column-layout="mail-variants"] th:nth-child(2) {width:20%;}
+.admin-data-table[data-column-layout="mail-variants"] th:nth-child(3) {width:16%;}
+.admin-data-table[data-column-layout="mail-variants"] th:nth-child(4) {width:20%;}
+.admin-data-table[data-column-layout="mail-variants"] th:nth-child(5) {width:6%;}

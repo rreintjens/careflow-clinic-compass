@@ -40,6 +40,5 @@
 
 - Questionnaire messages and booking start screens share MessageFields and Boodschap rendering; treatment/link configuration stays outside questionnaire versions and public booking loads link and catalogue together to avoid hydration divergence.
 
-- Patient choices use semantic states; ListPage/DataTable owns lists and row actions.
-- Answer reads share version-owned signals/formatting; booking stores the version to avoid drift.
-- Consult domain owns timing/patient keys; date-only data has no time.
+- Patient choices use semantic states; DataTable owns grouped tracks/row actions; Field rows and Modal focus share editing.
+- Answer reads use frozen versions; consult domain owns timing/patient keys; date-only data has no time.

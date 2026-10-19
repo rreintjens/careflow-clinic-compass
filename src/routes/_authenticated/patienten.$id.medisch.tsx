@@ -4,7 +4,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { TextArea } from "@/components/Field";
+import { EditableFieldRow, TextArea } from "@/components/Field";
 import { Modal } from "@/components/Modal";
 import { PillButton } from "@/components/PillButton";
 import { dossierQuery } from "@/data/patients";
@@ -46,6 +46,7 @@ function Medical() {
   const { data: measurements = [] } = useQuery(measurementsQuery(id));
   const [tab, setTab] = useState(0);
   const [edit, setEdit] = useState<"anamnesis" | "measure" | null>(null);
+  const [focusField, setFocusField] = useState<string>();
   const sections = ["intake", "anamnese", "metingen"];
   const go = (i: number) => { setTab(i); document.getElementById(sections[i] ?? "")?.scrollIntoView({ behavior: "smooth" }); };
 
@@ -84,9 +85,9 @@ function Medical() {
       </section>
 
       <section id="anamnese" className="rounded-[20px] p-6 ring-1 ring-mist">
-        <div className="flex items-start justify-between"><div><h3 className="text-[17px] font-semibold">Anamnese</h3><p className="text-[13px] text-muted-foreground">Vaste velden: vult de arts in of aan tijdens het consult</p></div><PillButton variant="outline" onClick={() => setEdit("anamnesis")}>Wijzig</PillButton></div>
-        <div className="mt-5 grid grid-cols-2 gap-4">
-          {med?.fields.map((f) => <div key={f.value}><p className="mb-1.5 text-[13px] font-medium">{f.label_nl}</p><div className="min-h-[60px] whitespace-pre-wrap rounded-[14px] bg-sand p-3.5 text-[14px]">{med.anamnesis[f.value] ?? ""}</div></div>)}
+        <div><h3 className="text-[17px] font-semibold">Anamnese</h3><p className="text-[13px] text-muted-foreground">Vaste velden: vult de arts in of aan tijdens het consult</p></div>
+        <div className="mt-5 flex flex-col">
+          {med?.fields.map((f) => <EditableFieldRow key={f.value} label={f.label_nl} value={med.anamnesis[f.value] ?? ""} onClick={() => { setFocusField(f.value); setEdit("anamnesis"); }} />)}
         </div>
       </section>
 
@@ -107,13 +108,13 @@ function Medical() {
         {rows.length < 2 && <p className="mt-2 text-[12px] text-muted-foreground">Hier komt de grafiek van het gewichtsverloop zodra er twee metingen zijn.</p>}
       </section>
 
-      {edit === "anamnesis" && med && <AnamnesisModal id={id} med={med} onClose={() => setEdit(null)} />}
+      {edit === "anamnesis" && med && <AnamnesisModal id={id} med={med} focusField={focusField} onClose={() => setEdit(null)} />}
       {edit === "measure" && <MeasurementModal id={id} height={rows.filter((m) => m.height_cm).at(-1)?.height_cm ?? null} onClose={() => setEdit(null)} />}
     </div>
   );
 }
 
-function AnamnesisModal({ id, med, onClose }: { id: string; med: NonNullable<ReturnType<typeof useMedical>["data"]>; onClose: () => void }) {
+function AnamnesisModal({ id, med, focusField, onClose }: { id: string; med: NonNullable<ReturnType<typeof useMedical>["data"]>; focusField: string | undefined; onClose: () => void }) {
   const qc = useQueryClient();
   const [v, setV] = useState(med.anamnesis);
   const save = useMutation({
@@ -122,8 +123,8 @@ function AnamnesisModal({ id, med, onClose }: { id: string; med: NonNullable<Ret
     onError: () => toast.error("Opslaan is niet gelukt"),
   });
   return (
-    <Modal open width="lg" onOpenChange={(o) => !o && onClose()} title="Anamnese wijzigen" footer={<div className="flex gap-2"><PillButton variant="outline" onClick={onClose}>Annuleren</PillButton><PillButton disabled={save.isPending} onClick={() => save.mutate()}>Opslaan</PillButton></div>}>
-      <div className="grid grid-cols-2 gap-4">{med.fields.map((f) => <TextArea key={f.value} label={f.label_nl} value={v[f.value] ?? ""} onChange={(e) => setV({ ...v, [f.value]: e.target.value })} />)}</div>
+    <Modal open width="lg" initialFocusId={`anamnesis-${focusField}`} onOpenChange={(o) => !o && onClose()} title="Anamnese wijzigen" footer={<div className="flex gap-2"><PillButton variant="outline" onClick={onClose}>Annuleren</PillButton><PillButton disabled={save.isPending} onClick={() => save.mutate()}>Opslaan</PillButton></div>}>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">{med.fields.map((f) => <TextArea key={f.value} id={`anamnesis-${f.value}`} label={f.label_nl} value={v[f.value] ?? ""} onChange={(e) => setV({ ...v, [f.value]: e.target.value })} />)}</div>
     </Modal>
   );
 }

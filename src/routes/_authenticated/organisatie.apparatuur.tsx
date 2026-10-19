@@ -86,7 +86,7 @@ function EquipmentPage() {
                 <button type="button" onClick={() => setRoomModal({ locationId: l.id, room: null })} className="ml-auto flex items-center gap-1 text-xs text-primary"><PlusIcon />Kamer</button>
               )}
             </div>
-            <DataTable>
+            <DataTable columnLayout="equipment">
               {devs.length ? (
                 <table>
                   <thead><tr><th className={thCls}>Apparaat</th><th className={thCls}>Soort</th><th className={thCls}>Kamer</th><th className={thCls}>Vast of verplaatsbaar</th><th className={thCls}>Onderhoud</th><th className={thCls} /></tr></thead>
