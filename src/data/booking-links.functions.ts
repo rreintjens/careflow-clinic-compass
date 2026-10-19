@@ -6,55 +6,20 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { bookingLinkSchema, linkProblem, uniqueSlug, type LinkCatalog } from "@/domain/booking-links";
+import { bookingLinkSchema, uniqueSlug } from "@/domain/booking-links";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+import { randomLinkHash } from "@/domain/attribution";
 import { admin, resolveTenant } from "./booking.server";
 
-type Supabase = import("@supabase/supabase-js").SupabaseClient;
-type Ctx = { supabase: Supabase; claims: unknown };
-
-/** Catalogue view for the pure rules, built from rows the caller is allowed to see. */
-async function catalogOf(supabase: Supabase): Promise<LinkCatalog> {
-  const [treatments, locations, treatLoc, pracTreat, pracLoc] = await Promise.all([
-    supabase.from("treatments").select("id").eq("status", "active"),
-    supabase.from("locations").select("id").eq("status", "open"),
-    supabase.from("treatment_locations").select("treatment_id, location_id"),
-    supabase.from("practitioner_treatments").select("practitioner_id, treatment_id, excluded_location_ids"),
-    supabase.from("practitioner_locations").select("practitioner_id, location_id"),
-  ]);
-  const open = new Set((locations.data ?? []).map((l) => l.id));
-  const offers = new Map<string, string[]>();
-  for (const row of treatLoc.data ?? []) {
-    if (!open.has(row.location_id)) continue;
-    const list = offers.get(row.treatment_id);
-    if (list) list.push(row.location_id);
-    else offers.set(row.treatment_id, [row.location_id]);
-  }
-  const at = new Map<string, string[]>();
-  for (const row of pracLoc.data ?? []) {
-    if (!open.has(row.location_id)) continue;
-    const list = at.get(row.practitioner_id);
-    if (list) list.push(row.location_id);
-    else at.set(row.practitioner_id, [row.location_id]);
-  }
-  const does = new Map<string, string[]>();
-  for (const row of pracTreat.data ?? []) {
-    const list = does.get(row.practitioner_id);
-    if (list) list.push(row.treatment_id);
-    else does.set(row.practitioner_id, [row.treatment_id]);
-  }
-  return {
-    treatments: (treatments.data ?? []).map((t) => ({ id: t.id, locations: offers.get(t.id) ?? [] })),
-    practitioners: [...at.keys()].map((id) => ({ id, treatments: does.get(id) ?? [], locations: at.get(id) ?? [] })),
-  };
-}
+import { scopeCatalog, resolveLinkScope } from "./booking-link-scope.server";
+import { scopeTreatments, scopePractitioners } from "@/domain/booking-links";
 
 export const saveBookingLink = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => bookingLinkSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const ctx = context as unknown as Ctx;
+    const ctx = context;
     if (!(await ctx.supabase.rpc("is_aal2")).data) throw new Error("Forbidden");
     const { data: allowed, error: permissionError } = await ctx.supabase.rpc("has_permission", { _perm: "booking_links.manage" });
     if (permissionError || !allowed) throw new Error("Forbidden");
@@ -64,24 +29,25 @@ export const saveBookingLink = createServerFn({ method: "POST" })
     const modes = new Set((options.data ?? []).map((o) => o.value));
     if (data.practitioner_mode && !modes.has(data.practitioner_mode)) throw new Error("Invalid selection");
 
-    const catalog = await catalogOf(ctx.supabase);
-    if (data.treatment_id && !catalog.treatments.some((t) => t.id === data.treatment_id)) throw new Error("Forbidden");
-    if (data.practitioner_id && !catalog.practitioners.some((p) => p.id === data.practitioner_id)) throw new Error("Forbidden");
-    const problem = linkProblem(catalog, data);
-    if (problem === "no_location") throw new Error("Kies eerst minstens één locatie waar deze behandeling dit doet.");
-    if (problem === "no_practitioner") throw new Error("Kies welke behandelaar de patiënt krijgt.");
-    if (problem === "practitioner_unavailable") throw new Error("Deze behandelaar doet dit niet op de gekozen locatie.");
-
-    const taken = (await ctx.supabase.from("booking_links").select("slug, id")).data ?? [];
-    const used = taken.filter((r) => r.id !== data.id).map((r) => r.slug);
-    const slug = data.slug.trim() || uniqueSlug(used, data.name);
-    if (used.includes(slug)) throw new Error("Die linknaam is al in gebruik.");
+    const tenantId = (await ctx.supabase.rpc("current_tenant")).data;
+    if (!tenantId) throw new Error("Geen merk gekozen");
+    const catalog = await scopeCatalog(ctx.supabase,tenantId);
+    if (data.treatment_ids.some(id => !catalog.treatments.some(t => t.id===id)) || data.category_ids.some(id => !catalog.categories?.some(c => c.id===id)) || data.location_ids.some(id => !catalog.treatments.some(t => t.locations.includes(id)))) throw new Error("Ongeldige selectie");
+    if (data.practitioner_scope === "selected" && (!data.practitioner_ids.length || data.practitioner_ids.some(id => !catalog.practitioners.some(p => p.id===id)))) throw new Error("Kies minstens één behandelaar");
+    if (!scopeTreatments(catalog,data).some(id => scopePractitioners(catalog,data,id).length)) throw new Error("Geen behandeling is boekbaar met deze behandelaars en locaties");
+    const [channel,place,campaign]=await Promise.all([ctx.supabase.from("booking_channels").select("*").eq("tenant_id",tenantId).eq("id",data.channel_id??"").maybeSingle(),ctx.supabase.from("booking_places").select("*").eq("tenant_id",tenantId).eq("id",data.place_id??"").maybeSingle(),ctx.supabase.from("booking_campaigns").select("*").eq("tenant_id",tenantId).eq("id",data.campaign_id??"").maybeSingle()]);
+    if(!channel.data || !place.data || place.data.channel_id!==channel.data.id || !campaign.data) throw new Error("Kies een kanaal, plek en campagne");
+    const taken=(await ctx.supabase.from("booking_links").select("slug,hash,id").eq("tenant_id",tenantId)).data??[];
+    let hash=data.id?taken.find(r=>r.id===data.id)?.hash:undefined;
+    if(!hash) { for(let attempt=0;attempt<100;attempt++){const candidate=randomLinkHash();if(!taken.some(r=>r.hash===candidate||r.slug===candidate)){hash=candidate;break;}} }
+    if(!hash) throw new Error("Een linkcode maken is niet gelukt");
+    const slug=data.id?taken.find(r=>r.id===data.id)?.slug??hash:hash;
     const { id, ...values } = data;
     const result = id
-      ? await ctx.supabase.from("booking_links").update({ ...values, slug }).eq("id", id).select("id").single()
-      : await ctx.supabase.from("booking_links").insert({ ...values, slug }).select("id").single();
+      ? await ctx.supabase.from("booking_links").update({ ...values, slug,hash,source:channel.data.name }).eq("id", id).select("id").single()
+      : await ctx.supabase.from("booking_links").insert({ ...values, slug,hash,source:channel.data.name }).select("id").single();
     if (result.error) throw new Error("Opslaan is niet gelukt.");
-    return { id: result.data.id, slug };
+    return { id: result.data.id, slug,hash };
   });
 
 /**
@@ -94,32 +60,8 @@ export const getBookingLink = createServerFn({ method: "GET" })
     const tenant = await resolveTenant(data.merk);
     if (!tenant) return { found: false as const };
     const db = await admin();
-    const row = (await db.from("booking_links").select("*").eq("tenant_id", tenant.id).eq("slug", data.link).eq("status", "active").maybeSingle()).data;
-    if (!row) return { found: false as const };
-    const [treatment, locationIds, practitioner] = await Promise.all([
-      row.treatment_id ? db.from("treatments").select("id, name_nl, name_en, practitioner_choice, status").eq("tenant_id", tenant.id).eq("id", row.treatment_id).maybeSingle() : Promise.resolve(null),
-      row.location_ids.length
-        ? db.from("locations").select("id, name, kind, status").eq("tenant_id", tenant.id).in("id", row.location_ids).eq("status", "open")
-        : Promise.resolve({ data: [] as Array<{ id: string }> }),
-      row.practitioner_id ? db.from("practitioners").select("id, first_name, last_name, status").eq("tenant_id", tenant.id).eq("id", row.practitioner_id).maybeSingle() : Promise.resolve(null),
-    ]);
-    const treatmentRow = treatment && "data" in treatment ? treatment.data : null;
-    const locations = ((locationIds && "data" in locationIds ? locationIds.data : []) ?? []) as Array<{ id: string; name: string; kind: string }>;
-    const practitionerRow = practitioner && "data" in practitioner ? practitioner.data : null;
-    if (row.treatment_id && (!treatmentRow || treatmentRow.status !== "active")) return { found: false as const };
-    if (row.practitioner_mode === "fixed" && (!practitionerRow || practitionerRow.status !== "active")) return { found: false as const };
-    const allowed = locations.map((l) => l.id);
-    return {
-      found: true as const,
-      link: {
-        slug: row.slug,
-        name: row.name,
-        source: row.source,
-        language: row.language,
-        treatmentId: row.treatment_id,
-        locationIds: allowed,
-        practitionerMode: row.practitioner_mode,
-        practitionerId: row.practitioner_mode === "fixed" ? row.practitioner_id : null,
-      },
-    };
+    const scope = await resolveLinkScope(db,tenant.id,data.link);
+    if (!scope || !scope.treatmentIds.length) return {found:false as const};
+    const row = scope.row;
+    return {found:true as const,link:{slug:row.hash,name:row.name,source:row.source,language:row.language,startScreenMode:row.start_screen_mode,startScreen:row.start_screen,treatmentId:scope.treatmentIds.length===1?scope.treatmentIds[0]??null:null,treatmentIds:scope.treatmentIds,locationIds:row.location_ids,practitionerMode:row.practitioner_mode,practitionerId:row.practitioner_scope==="selected" && row.practitioner_ids.length===1?row.practitioner_ids[0]??null:null,practitionerIds:row.practitioner_scope==="selected"?row.practitioner_ids:null}};
   });

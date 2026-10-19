@@ -13,7 +13,7 @@ import { currentTenantQuery, saveTenant } from "@/data/tenant";
 import type { Json } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/instellingen/algemeen")({
-  head: () => ({ meta: [{ title: "Algemeen · Instellingen · The Body Clinic" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Algemeen · Instellingen · The Body Clinic" }, { name: "description", content: "Algemeen bij The Body Clinic. Beheer en bekijk de bijbehorende gegevens." }, { property: "og:title", content: "Algemeen · Instellingen · The Body Clinic" }, { property: "og:description", content: "Algemeen bij The Body Clinic. Beheer en bekijk de bijbehorende gegevens." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { name: "robots", content: "noindex" }] }),
   loader: ({ context }) => context.queryClient.ensureQueryData(settingsQuery),
   component: SettingsPage,
 });

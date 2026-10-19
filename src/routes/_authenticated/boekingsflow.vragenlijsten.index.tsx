@@ -1,3 +1,4 @@
+import { ListPage,DataTable,RowChevron } from "@/components/ListPage";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useRef, useState } from "react";
@@ -45,7 +46,7 @@ function Page() {
   });
 
   return (
-    <div className="flex flex-col gap-6">
+    <ListPage>
       <PageHeader
         title="Vragenlijsten"
         description="Een vragenlijst hoort bij één of meer behandelingen, en wordt vóór het boeken (de triage) of na het boeken (de medische vragenlijst) ingevuld."
@@ -59,9 +60,10 @@ function Page() {
         <SearchField className="w-[300px]" placeholder="Zoek een vragenlijst" value={q} onChange={(e) => setQ(e.target.value)} />
         <Select label="Moment" value={moment} onChange={setMoment} options={[{ value: "all", label: "Vóór en na het boeken" }, ...opts(org, "questionnaire_moment")]} className="w-[200px] [&>label]:sr-only" />
         <Select label="Behandeling" value={treatment} onChange={setTreatment} options={[{ value: "all", label: "Alle behandelingen" }, ...org.treatments.map((t) => ({ value: t.id, label: t.name_nl }))]} className="w-[220px] [&>label]:sr-only" />
+        <span className="ml-auto text-xs text-muted-foreground">{rows.length} vragenlijsten</span>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <DataTable count={rows.length} label="vragenlijsten"><table className="w-full">
           <thead><tr className="border-b border-line">{["Vragenlijst", "Moment", "Gekoppeld aan", "Omvang", "Uitkomst", "Status", ""].map((h) => <th key={h} className={thCls}>{h}</th>)}</tr></thead>
           <tbody className="divide-y divide-line">
             {rows.map((x) => {
@@ -76,15 +78,15 @@ function Page() {
                   <td className={tdCls}>{def ? `${questionCount(def)} vragen` : ""}</td>
                   <td className={tdCls}>{x.moment === "after_booking" ? "Naar het dossier" : "Groen of rood"}</td>
                   <td className={tdCls}><span className="flex flex-wrap items-center gap-1.5">{pub && <VersionPill tone="live">Live v{pub.version_no}</VersionPill>}{draftOf(data, x.id) && <VersionPill tone="draft">Concept v{draftOf(data, x.id)?.version_no}</VersionPill>}</span></td>
-                  <td className={tdCls}><Link to="/boekingsflow/vragenlijsten/$id" params={{ id: x.id }} onClick={(e) => e.stopPropagation()} className="text-primary underline">Bekijk</Link></td>
+                  <td className={tdCls}><Link to="/boekingsflow/vragenlijsten/$id" params={{ id: x.id }} onClick={(e) => e.stopPropagation()} className="text-primary underline" aria-label="Bekijk vragenlijst"><RowChevron/></Link></td>
                 </tr>
               );
             })}
           </tbody>
-        </table>
+        </table></DataTable>
       </div>
       {newOpen && <NewModal flows={data.flows} sort={data.questionnaires.length} momentOptions={opts(org, "questionnaire_moment")} onClose={() => setNewOpen(false)} />}
-    </div>
+    </ListPage>
   );
 }
 

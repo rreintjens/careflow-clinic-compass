@@ -1,3 +1,4 @@
+import { ListPage,DataTable,RowChevron } from "@/components/ListPage";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
@@ -15,7 +16,7 @@ import { EquipmentKindsModal } from "@/features/organisation/EquipmentKindsModal
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/organisatie/apparatuur")({
-  head: () => ({ meta: [{ title: "Apparatuur · Beheer · The Body Clinic" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Apparatuur · Beheer · The Body Clinic" }, { name: "description", content: "Apparatuur bij The Body Clinic. Beheer en bekijk de bijbehorende gegevens." }, { property: "og:title", content: "Apparatuur · Beheer · The Body Clinic" }, { property: "og:description", content: "Apparatuur bij The Body Clinic. Beheer en bekijk de bijbehorende gegevens." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { name: "robots", content: "noindex" }] }),
   loader: ({ context }) => context.queryClient.ensureQueryData(orgQuery),
   component: EquipmentPage,
 });
@@ -80,21 +81,21 @@ function EquipmentPage() {
   const row = (d: Device, compact = false) => {
     const kind = kindOfType(org, d.type_id);
     return (
-      <div key={d.id} className="flex items-center gap-3 rounded-[12px] bg-sand px-3 py-2.5">
+      <div key={d.id} className="list-item flex items-center gap-3 px-3 py-3" onClick={()=>setDraft({device:d})}>
         <IconBox className="h-8 w-8"><DeviceIcon /></IconBox>
         <div className="min-w-0 flex-1">
           <div className="truncate whitespace-nowrap text-[13px]">{brandType(org, d.type_id)}</div>
           <div className="truncate whitespace-nowrap text-[11px] text-muted-foreground">{kind?.name}{d.status !== "in_use" ? ` · ${opts(org, "equipment_status").find((o) => o.value === d.status)?.label ?? ""}` : ""}</div>
         </div>
         {d.placement === "fixed_room" ? <span className="whitespace-nowrap text-xs">Vast</span> : <Tag>Verplaatsbaar</Tag>}
-        <TextLink onClick={() => setDraft({ device: d })}>Wijzig</TextLink>
+        <TextLink onClick={() => setDraft({ device: d })}><RowChevron/></TextLink>
         {compact && null}
       </div>
     );
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <ListPage>
       <PageHeader
         title="Apparatuur"
         description="Per locatie: de kamers met wat erin staat. Een apparaat heeft een soort; de soort bepaalt welke behandelingen in die kamer kunnen. Namen zijn de soort plus een nummer, je verzint ze niet zelf."
@@ -180,11 +181,11 @@ function EquipmentPage() {
           <PillButton variant="outline" onClick={() => setDraft({ device: null, placement: "travelling" })}><PlusIcon />Reizend apparaat toevoegen</PillButton>
         </div>
         <div className="mt-4 overflow-x-auto">
-          <table className="w-full">
+          <DataTable><table className="w-full">
             <thead><tr className="border-b border-line"><th className={thCls}>Apparaat</th>{DAYS.map((d) => <th key={d} className={thCls}>{d}</th>)}<th className={thCls} /></tr></thead>
             <tbody className="divide-y divide-line">
               {travelling.map((d) => (
-                <tr key={d.id}>
+                <tr key={d.id} onClick={()=>setDraft({device:d})} data-list-row>
                   <td className="px-2.5 py-3">
                     <div className="flex items-center gap-3">
                       <IconBox className="h-8 w-8"><DeviceIcon /></IconBox>
@@ -195,18 +196,18 @@ function EquipmentPage() {
                     const s = org.dayLocations.find((x) => x.equipment_id === d.id && x.weekday === i + 1);
                     return <td key={i} className="whitespace-nowrap px-2.5 py-3 text-sm">{s?.location_id ? locName(org, s.location_id) : "–"}</td>;
                   })}
-                  <td className="px-2.5 py-3"><TextLink onClick={() => setDraft({ device: d })}>Wijzig</TextLink></td>
+                  <td className="px-2.5 py-3"><TextLink onClick={() => setDraft({ device: d })}><RowChevron/></TextLink></td>
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></DataTable>
         </div>
       </section>
 
       {kindsOpen && <EquipmentKindsModal org={org} onClose={() => setKindsOpen(false)} />}
       {draft && <DeviceModal org={org} draft={draft} onClose={() => setDraft(null)} />}
       {roomModal && <RoomModal org={org} {...roomModal} onClose={() => setRoomModal(null)} />}
-    </div>
+    </ListPage>
   );
 }
 

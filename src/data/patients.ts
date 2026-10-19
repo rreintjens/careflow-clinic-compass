@@ -8,7 +8,7 @@ function must<D>(r: { data: D | null; error: unknown }): D {
   return r.data as D;
 }
 
-const APPT = "id, created_at, starts_at, ends_at, status, source, referral_source, new_patient, meet_link, practitioner_id, location_id, treatment_id, cancel_reason, treatment:treatments(name_nl, post_questionnaire_key), practitioner:practitioners(first_name, last_name), location:locations(name, kind)";
+const APPT = "id, created_at, starts_at, ends_at, status, source, booking_attribution, referral_source, new_patient, meet_link, practitioner_id, location_id, treatment_id, cancel_reason, treatment:treatments(name_nl, post_questionnaire_key), practitioner:practitioners(first_name, last_name), location:locations(name, kind)";
 
 /** Questionnaire state of one appointment: none needed, open, or filled in. */
 export function questionnaireState(postKey: string | null | undefined, sets: ReadonlyArray<{ appointment_id: string | null; questionnaire_key: string; status: string }>, apptId: string) {

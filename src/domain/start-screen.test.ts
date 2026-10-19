@@ -1,0 +1,8 @@
+import { expect,it } from "vitest";
+import { resolveStartScreen,startScreenSchema } from "./start-screen";
+const screen={enabled:true,form:"steps",title:"Je eerste consult medisch afvallen",body:"In 30 minuten bespreek je met een arts je gezondheid, je doelen en of een behandeling bij je past. Daarna beslis je zelf of je start.",button:"Kies waar en wanneer",step_items:["Kies online of een kliniek","Beantwoord een paar korte vragen","Je consult met de arts"]};
+it("only shows a start screen for a link resolving to one fixed treatment",()=>{expect(resolveStartScreen(null,screen)).toBeNull();expect(resolveStartScreen({treatmentId:null,mode:"treatment",screen:null},screen)).toBeNull();expect(resolveStartScreen({treatmentId:"consult",mode:"treatment",screen:null},screen)?.title).toBe("Je eerste consult medisch afvallen");});
+it("a link can suppress or override the treatment screen",()=>{expect(resolveStartScreen({treatmentId:"consult",mode:"none",screen:null},screen)).toBeNull();expect(resolveStartScreen({treatmentId:"consult",mode:"custom",screen:{...screen,title:"Eigen consult"}},screen)?.title).toBe("Eigen consult");});
+it("limits the introduction to 300 characters",()=>expect(startScreenSchema.safeParse({...screen,body:"x".repeat(301)}).success).toBe(false));
+it("limits bullets to four",()=>expect(startScreenSchema.safeParse({...screen,bullets:["1","2","3","4","5"]}).success).toBe(false));
+it("limits steps to four",()=>expect(startScreenSchema.safeParse({...screen,step_items:["1","2","3","4","5"]}).success).toBe(false));

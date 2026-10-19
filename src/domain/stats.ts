@@ -7,6 +7,7 @@ export type CountRow = { source: string | null; referral_source: string | null; 
 
 /** Source of an arrival: the booking link's source, otherwise the referral the patient gave, otherwise "Website". */
 export const arrivalSource = (r: CountRow, linkSources: ReadonlyMap<string, string>): string => {
+  if(r.source?.trim()) return r.source.trim();
   const viaLink = r.booking_link_id ? linkSources.get(r.booking_link_id) : undefined;
   if (viaLink?.trim()) return viaLink.trim();
   if (r.referral_source?.trim()) return r.referral_source.trim();

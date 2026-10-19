@@ -16,7 +16,7 @@ import { REASON_TEXT, treatmentBookability } from "@/features/organisation/booka
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/organisatie/locaties/$id")({
-  head: () => ({ meta: [{ title: "Locatie · Beheer · The Body Clinic" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Locatie · Beheer · The Body Clinic" }, { name: "description", content: "Locatie bij The Body Clinic. Beheer en bekijk de bijbehorende gegevens." }, { property: "og:title", content: "Locatie · Beheer · The Body Clinic" }, { property: "og:description", content: "Locatie bij The Body Clinic. Beheer en bekijk de bijbehorende gegevens." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { name: "robots", content: "noindex" }] }),
   loader: async ({ context, params }) => {
     const org = await context.queryClient.ensureQueryData(orgQuery);
     if (!org.locations.some((l) => l.id === params.id)) throw notFound();

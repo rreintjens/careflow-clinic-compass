@@ -33,3 +33,11 @@
 - Public booking (`/boeken`) reads via `src/data/booking.functions.ts` server functions with the admin client after resolving the brand from the host (`?merk=` only for brands in test mode); they return display data only. Step order lives in `src/domain/booking.ts`, free times in `src/domain/slots.ts` — both tested.
 - External busy providers read persisted tenant periods; shared slots and the appointment overlap trigger enforce exclusion independently of the agenda visibility setting.
 - Contact/request entries use shared validated authenticated saves and tenant RLS with patient view/edit permissions; follow-ups, timeline and modal editing read the same stored rows.
+
+- Select and MultiSelect delegate to SearchablePicker; option metadata and eligibility use shared pure picker rules so keyboard and group selection remain consistent throughout admin.
+
+- Booking attribution uses tenant-scoped channel/place/campaign rows and immutable in-use codes; appointments snapshot the resolved link attribution at hold creation so later configuration changes cannot rewrite history.
+
+- Questionnaire messages and booking start screens share MessageFields and Boodschap rendering; treatment/link configuration stays outside questionnaire versions and public booking loads link and catalogue together to avoid hydration divergence.
+
+- Patient choices use the patient-choice semantic state style; admin overview shells and table styling are owned by ListPage/DataTable while real links and buttons retain each row action.

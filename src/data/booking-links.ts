@@ -11,7 +11,7 @@ export const bookingLinksQuery = queryOptions({
   queryKey: ["booking-links"],
   queryFn: async () => {
     const tenantId = (await supabase.rpc("current_tenant")).data as string | null;
-    const [links, treatments, locations, practitioners, options, treatLoc, pracLoc, pracTreat, tenant] = await Promise.all([
+    const [links, treatments, locations, practitioners, options, treatLoc, pracLoc, pracTreat, tenant, categories, categoryLinks, mixed] = await Promise.all([
       supabase.from("booking_links").select("*").order("sort").order("created_at"),
       supabase.from("treatments").select("id, name_nl, name_en, duration_min, practitioner_choice, status").eq("status", "active").order("name_nl"),
       supabase.from("locations").select("id, name, kind, address, status, sort").order("sort"),
@@ -19,10 +19,13 @@ export const bookingLinksQuery = queryOptions({
       supabase.from("option_lists").select("list_key, value, label_nl, label_en").in("list_key", ["practitioner_choice"]).order("sort"),
       supabase.from("treatment_locations").select("treatment_id, location_id"),
       supabase.from("practitioner_locations").select("practitioner_id, location_id"),
-      supabase.from("practitioner_treatments").select("practitioner_id, treatment_id"),
+      supabase.from("practitioner_treatments").select("practitioner_id, treatment_id, excluded_location_ids"),
       tenantId
         ? supabase.from("tenants").select("slug, display_name, booking_domains, test_mode").eq("id", tenantId).maybeSingle()
         : Promise.resolve({ data: null, error: null }),
+      supabase.from("treatment_categories").select("id,parent_id,name_nl").order("sort"),
+      supabase.from("treatment_category_links").select("treatment_id,category_id"),
+      supabase.from("schedule_blocks").select("practitioner_id,location_id").eq("allows_online",true),
     ]);
     if (links.error) throw links.error;
     if (treatments.error) throw treatments.error;
@@ -42,6 +45,9 @@ export const bookingLinksQuery = queryOptions({
       practitionerLocations: pracLoc.data,
       practitionerTreatments: pracTreat.data,
       tenant: tenant.data,
+      categories: categories.data ?? [],
+      categoryLinks: categoryLinks.data ?? [],
+      mixed: mixed.data ?? [],
     };
   },
 });

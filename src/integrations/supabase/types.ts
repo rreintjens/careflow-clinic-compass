@@ -131,7 +131,13 @@ export type Database = {
       }
       appointments: {
         Row: {
+          booking_attribution: Json | null
+          booking_campaign_id: string | null
+          booking_channel_id: string | null
+          booking_extra: string | null
+          booking_hash: string | null
           booking_link_id: string | null
+          booking_place_id: string | null
           booking_reason: string | null
           cancel_reason: string | null
           created_at: string
@@ -161,7 +167,13 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          booking_attribution?: Json | null
+          booking_campaign_id?: string | null
+          booking_channel_id?: string | null
+          booking_extra?: string | null
+          booking_hash?: string | null
           booking_link_id?: string | null
+          booking_place_id?: string | null
           booking_reason?: string | null
           cancel_reason?: string | null
           created_at?: string
@@ -191,7 +203,13 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          booking_attribution?: Json | null
+          booking_campaign_id?: string | null
+          booking_channel_id?: string | null
+          booking_extra?: string | null
+          booking_hash?: string | null
           booking_link_id?: string | null
+          booking_place_id?: string | null
           booking_reason?: string | null
           cancel_reason?: string | null
           created_at?: string
@@ -222,11 +240,32 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "appointments_booking_campaign_id_fkey"
+            columns: ["booking_campaign_id"]
+            isOneToOne: false
+            referencedRelation: "booking_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_booking_channel_id_fkey"
+            columns: ["booking_channel_id"]
+            isOneToOne: false
+            referencedRelation: "booking_channels"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "appointments_booking_link"
             columns: ["tenant_id", "booking_link_id"]
             isOneToOne: false
             referencedRelation: "booking_links"
             referencedColumns: ["tenant_id", "id"]
+          },
+          {
+            foreignKeyName: "appointments_booking_place_id_fkey"
+            columns: ["booking_place_id"]
+            isOneToOne: false
+            referencedRelation: "booking_places"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "appointments_location_id_fkey"
@@ -321,62 +360,216 @@ export type Database = {
           },
         ]
       }
-      booking_links: {
+      booking_campaigns: {
         Row: {
+          active: boolean
+          code: string
           created_at: string
           created_by: string | null
+          ends_on: string | null
           id: string
-          language: string
-          location_ids: string[]
           name: string
-          practitioner_id: string | null
-          practitioner_mode: string | null
-          slug: string
-          sort: number
-          source: string
-          status: string
+          starts_on: string | null
           tenant_id: string
-          treatment_id: string | null
           updated_at: string
           updated_by: string | null
         }
         Insert: {
+          active?: boolean
+          code: string
           created_at?: string
           created_by?: string | null
+          ends_on?: string | null
           id?: string
-          language?: string
-          location_ids?: string[]
           name: string
-          practitioner_id?: string | null
-          practitioner_mode?: string | null
-          slug: string
-          sort?: number
-          source?: string
-          status?: string
+          starts_on?: string | null
           tenant_id?: string
-          treatment_id?: string | null
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
+          active?: boolean
+          code?: string
           created_at?: string
           created_by?: string | null
+          ends_on?: string | null
           id?: string
-          language?: string
-          location_ids?: string[]
           name?: string
-          practitioner_id?: string | null
-          practitioner_mode?: string | null
-          slug?: string
-          sort?: number
-          source?: string
-          status?: string
+          starts_on?: string | null
           tenant_id?: string
-          treatment_id?: string | null
           updated_at?: string
           updated_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "booking_campaigns_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      booking_channels: {
+        Row: {
+          active: boolean
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          sort: number
+          tenant_id: string
+          updated_at: string
+          updated_by: string | null
+          utm_medium: string
+          utm_source: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          sort?: number
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          utm_medium: string
+          utm_source: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          sort?: number
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          utm_medium?: string
+          utm_source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_channels_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      booking_links: {
+        Row: {
+          campaign_id: string | null
+          category_ids: string[]
+          channel_id: string | null
+          created_at: string
+          created_by: string | null
+          extra: string
+          hash: string
+          id: string
+          language: string
+          location_ids: string[]
+          name: string
+          place_id: string | null
+          practitioner_id: string | null
+          practitioner_ids: string[]
+          practitioner_mode: string | null
+          practitioner_scope: string
+          slug: string
+          sort: number
+          source: string
+          start_screen: Json | null
+          start_screen_mode: string
+          status: string
+          tenant_id: string
+          treatment_id: string | null
+          treatment_ids: string[]
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          category_ids?: string[]
+          channel_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          extra?: string
+          hash?: string
+          id?: string
+          language?: string
+          location_ids?: string[]
+          name: string
+          place_id?: string | null
+          practitioner_id?: string | null
+          practitioner_ids?: string[]
+          practitioner_mode?: string | null
+          practitioner_scope?: string
+          slug: string
+          sort?: number
+          source?: string
+          start_screen?: Json | null
+          start_screen_mode?: string
+          status?: string
+          tenant_id?: string
+          treatment_id?: string | null
+          treatment_ids?: string[]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          campaign_id?: string | null
+          category_ids?: string[]
+          channel_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          extra?: string
+          hash?: string
+          id?: string
+          language?: string
+          location_ids?: string[]
+          name?: string
+          place_id?: string | null
+          practitioner_id?: string | null
+          practitioner_ids?: string[]
+          practitioner_mode?: string | null
+          practitioner_scope?: string
+          slug?: string
+          sort?: number
+          source?: string
+          start_screen?: Json | null
+          start_screen_mode?: string
+          status?: string
+          tenant_id?: string
+          treatment_id?: string | null
+          treatment_ids?: string[]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_links_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "booking_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_links_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "booking_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_links_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "booking_places"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "booking_links_tenant_id_fkey"
             columns: ["tenant_id"]
@@ -397,6 +590,63 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "treatments"
             referencedColumns: ["tenant_id", "id"]
+          },
+        ]
+      }
+      booking_places: {
+        Row: {
+          active: boolean
+          channel_id: string
+          code: string
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          sort: number
+          tenant_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          active?: boolean
+          channel_id: string
+          code: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          sort?: number
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          active?: boolean
+          channel_id?: string
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          sort?: number
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_places_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "booking_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_places_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -3399,6 +3649,7 @@ export type Database = {
           preparation_nl: string | null
           questionnaire_minutes: number
           slug: string
+          start_screen: Json | null
           status: string
           tenant_id: string
           updated_at: string
@@ -3425,6 +3676,7 @@ export type Database = {
           preparation_nl?: string | null
           questionnaire_minutes?: number
           slug: string
+          start_screen?: Json | null
           status?: string
           tenant_id?: string
           updated_at?: string
@@ -3451,6 +3703,7 @@ export type Database = {
           preparation_nl?: string | null
           questionnaire_minutes?: number
           slug?: string
+          start_screen?: Json | null
           status?: string
           tenant_id?: string
           updated_at?: string

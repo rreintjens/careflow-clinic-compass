@@ -6,6 +6,7 @@ const row = (over: Partial<CountRow> = {}): CountRow => ({ source: null, referra
 const links = new Map([["l1", "Instagram oktober"], ["l2", "  "]]);
 
 describe("arrivalSource", () => {
+  it("keeps the channel recorded at booking when the link source changes",()=>expect(arrivalSource(row({source:"Instagram",booking_link_id:"l1"}),new Map([["l1","Andere bron"]]))).toBe("Instagram"));
   it("prefers the source of the booking link", () => {
     expect(arrivalSource(row({ booking_link_id: "l1", referral_source: "huisarts" }), links)).toBe("Instagram oktober");
   });

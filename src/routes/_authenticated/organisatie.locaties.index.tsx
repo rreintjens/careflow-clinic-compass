@@ -1,3 +1,4 @@
+import { ListPage,DataTable,RowChevron } from "@/components/ListPage";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
@@ -12,7 +13,7 @@ import { createLocation, opts, orgQuery } from "@/data/organisation";
 import { notBookableAt } from "@/features/organisation/bookability";
 
 export const Route = createFileRoute("/_authenticated/organisatie/locaties/")({
-  head: () => ({ meta: [{ title: "Locaties · Beheer · The Body Clinic" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Locaties · Beheer · The Body Clinic" }, { name: "description", content: "Locaties bij The Body Clinic. Beheer en bekijk de bijbehorende gegevens." }, { property: "og:title", content: "Locaties · Beheer · The Body Clinic" }, { property: "og:description", content: "Locaties bij The Body Clinic. Beheer en bekijk de bijbehorende gegevens." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { name: "robots", content: "noindex" }] }),
   loader: ({ context }) => context.queryClient.ensureQueryData(orgQuery),
   component: LocationsPage,
 });
@@ -27,7 +28,7 @@ function LocationsPage() {
     .filter((l) => statusF === "all" || l.status === statusF);
 
   return (
-    <div className="flex flex-col gap-6">
+    <ListPage>
       <PageHeader
         title="Locaties"
         description="Online staat er altijd bij als vaste locatie. Klik op een locatie voor adres, openingstijden, kamers en behandelingen."
@@ -36,9 +37,10 @@ function LocationsPage() {
       <div className="flex items-center gap-2.5">
         <SearchField placeholder="Zoek een locatie" value={q} onChange={(e) => setQ(e.target.value)} className="w-[300px]" aria-label="Zoek een locatie" />
         <Select label="Status" value={statusF} onChange={setStatusF} options={[{ value: "all", label: "Alle statussen" }, ...opts(org, "location_status")]} className="w-[200px] [&>label]:sr-only" />
+        <span className="ml-auto text-xs text-muted-foreground">{rows.length} locaties</span>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[960px]">
+        <DataTable count={rows.length} label="locaties"><table className="w-full min-w-[960px]">
           <thead>
             <tr className="border-b border-line">
               <th className={thCls}>Locatie</th><th className={thCls}>Adres</th><th className={thCls}>Status</th><th className={thCls}>Behandelingen</th><th className={thCls}>Kamers</th><th className={thCls}>Behandelaars</th><th className={thCls}>Boekbaarheid</th><th className={thCls} />
@@ -49,7 +51,7 @@ function LocationsPage() {
               const online = l.kind === "online";
               const nb = notBookableAt(org, l.id);
               return (
-                <tr key={l.id}>
+                <tr key={l.id} data-list-row>
                   <td className={tdCls}><Link to="/organisatie/locaties/$id" params={{ id: l.id }} className="whitespace-nowrap hover:text-primary">{l.name}</Link></td>
                   <td className={tdCls}>{l.address}</td>
                   <td className={tdCls}><Tag tone={online ? "teal" : "sand"}>{online ? "Vast" : l.status === "open" ? "Open" : "Gesloten"}</Tag></td>
@@ -62,15 +64,15 @@ function LocationsPage() {
                       {nb === 0 ? "Boekbaar" : `${nb} ${nb === 1 ? "behandeling" : "behandelingen"} niet boekbaar`}
                     </span>
                   </td>
-                  <td className={tdCls}><Link to="/organisatie/locaties/$id" params={{ id: l.id }} className="text-sm text-primary underline underline-offset-2">Wijzig</Link></td>
+                  <td className={tdCls}><Link to="/organisatie/locaties/$id" params={{ id: l.id }} className="text-sm text-primary underline underline-offset-2" aria-label="Openen"><RowChevron/></Link></td>
                 </tr>
               );
             })}
           </tbody>
-        </table>
+        </table></DataTable>
       </div>
       {newOpen && <NewLocationModal onClose={() => setNewOpen(false)} />}
-    </div>
+    </ListPage>
   );
 }
 

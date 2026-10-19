@@ -35,7 +35,7 @@ export const agendaRefQuery = queryOptions({ queryKey: ["agenda-ref"], queryFn: 
 /** Booked appointments between two UTC instants. */
 export async function loadAgendaAppts(from: string, to: string) {
   return must(await supabase.from("appointments")
-    .select("id, starts_at, ends_at, status, practitioner_id, location_id, treatment_id, meet_link, source, new_patient, referral_source, patient:patients(id, patient_number, first_name, last_name, date_of_birth, phone)")
+    .select("id, starts_at, ends_at, status, practitioner_id, location_id, treatment_id, meet_link, source, booking_attribution, new_patient, referral_source, patient:patients(id, patient_number, first_name, last_name, date_of_birth, phone)")
     .eq("status", "booked").gte("starts_at", from).lt("starts_at", to));
 }
 export type AgendaAppt = Awaited<ReturnType<typeof loadAgendaAppts>>[number];

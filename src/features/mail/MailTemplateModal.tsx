@@ -48,7 +48,7 @@ export function MailTemplateModal({ template, defaults, data, org, onClose }: { 
   const noShowSentence = noShowRow ? translated(noShowRow.label_nl, noShowRow.label_en, language) : "";
   const categoryImagePath = category?.mail_image_path ?? "";
   const { data: categoryImage } = useQuery({ ...mailImageUrlQuery(categoryImagePath), enabled: !!categoryImagePath });
-  const values = { ...previewData, behandeling: treatment ? translated(treatment.name_nl, treatment.name_en, language) : "", duur: String(treatment?.duration_min ?? ""), voorbereiding: treatment ? translated(treatment.preparation_nl, treatment.preparation_en, language) : "", nazorg: treatment ? translated(treatment.aftercare_nl, treatment.aftercare_en, language) : "", behandeling_omschrijving: treatment ? translated(treatment.description_nl, treatment.description_en, language) : "", ...cancelPolicyValues(policy, noShowSentence) };
+  const values = { ...previewData, vragenlijst_minuten:String(treatment?.questionnaire_minutes??8), behandeling: treatment ? translated(treatment.name_nl, treatment.name_en, language) : "", duur: String(treatment?.duration_min ?? ""), voorbereiding: treatment ? translated(treatment.preparation_nl, treatment.preparation_en, language) : "", nazorg: treatment ? translated(treatment.aftercare_nl, treatment.aftercare_en, language) : "", behandeling_omschrijving: treatment ? translated(treatment.description_nl, treatment.description_en, language) : "", ...cancelPolicyValues(policy, noShowSentence) };
   const save = useMutation({ mutationFn: (input: MailInput) => saveMailTemplate({ data: input }), onSuccess: async () => { await qc.invalidateQueries({ queryKey: ["mail-templates"] }); toast.success("Sjabloon opgeslagen"); onClose(); }, onError: (e) => toast.error(e.message) });
   const updateBlocks = (blocks: MailBlock[]) => form.setValue("blocks", blocks, { shouldDirty: true });
   const updateBlock = (patch: Partial<MailBlock>) => updateBlocks(current.blocks.map((b) => b.id === selected ? { ...b, ...patch } : b));
@@ -57,7 +57,7 @@ export function MailTemplateModal({ template, defaults, data, org, onClose }: { 
   const submit = form.handleSubmit((input) => save.mutate(input), () => {
     requestAnimationFrame(() => document.querySelector('[role="dialog"] [aria-invalid="true"]')?.scrollIntoView({ behavior: "smooth", block: "center" }));
   });
-  return <Modal open width="lg" title={template ? `${template.name}, ${data.options.find((o) => o.list_key === "mail_scope" && o.value === template.scope)?.label_nl ?? ""}` : "Nieuw basissjabloon"} onOpenChange={(open) => !open && onClose()} footer={<>
+  return <Modal open width="lg" title={template ? `${template.name}, ${data.options.find((o) => o.list_key === "mail_scope" && o.value === template.scope)?.label_nl ?? ""}` : current.scope === "base" ? "Nieuw basissjabloon" : "Nieuwe afwijking"} onOpenChange={(open) => !open && onClose()} footer={<>
     {template && <div className="mr-auto"><TextLink tone="warning" onClick={() => save.mutate({ ...current, status: "archived" })}>Verwijderen</TextLink></div>}
     <PillButton variant="outline" onClick={onClose}>Annuleren</PillButton><PillButton disabled={save.isPending} onClick={submit}>Opslaan</PillButton>
   </>}>

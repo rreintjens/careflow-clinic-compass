@@ -31,7 +31,8 @@ export function PatientCard({ a, treatment, online, onClose, framed = false }: {
   const medical = sets.find((x) => x.status === "completed" && x.completed_at && x.questionnaire_key !== sets[0]?.questionnaire_key) ?? sets.find((x) => x.status === "completed");
   const day = cap(new Date(`${a.s.date}T12:00:00Z`).toLocaleDateString("nl-NL", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" }));
   const filled = medical?.completed_at ? `Ingevuld, ${new Date(medical.completed_at).toLocaleString("nl-NL", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" })}` : sets.length ? "Nog niet afgerond" : "Nog niet ingevuld";
-  const facts: Array<[string, string]> = [["Medische vragenlijst", filled], ["Telefoon", p?.phone ?? ""], ["Geboekt via", a.referral_source ?? a.source ?? ""]];
+  const attribution=a.booking_attribution && typeof a.booking_attribution==="object" && !Array.isArray(a.booking_attribution)?a.booking_attribution:null;
+  const facts: Array<[string, string]> = [["Medische vragenlijst", filled], ["Telefoon", p?.phone ?? ""], ["Geboekt via", attribution?[attribution["channel"],attribution["place"],attribution["campaign"],attribution["hash"]].filter(Boolean).join(" · "):a.source ?? a.referral_source ?? ""]];
   return (
     <div className={cn("flex flex-col gap-5 bg-background p-6", framed ? "rounded-[20px] ring-1 ring-primary" : "")}>
       <div className="flex items-start justify-between gap-4">

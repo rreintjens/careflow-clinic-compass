@@ -309,6 +309,27 @@
       "when": 1792413170760,
       "tag": "0043_treatment_questionnaire_minutes",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1792416340816,
+      "tag": "0044_booking_link_multiple_scope",
+      "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1792416608876,
+      "tag": "0045_structured_booking_attribution",
+      "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1792417204315,
+      "tag": "0046_booking_start_screens",
+      "breakpoints": true
     }
   ]
 }

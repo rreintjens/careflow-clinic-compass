@@ -85,7 +85,7 @@ export function QuestionnaireRunner({
     return (
       <Frame scrollRef={scrollRef} fullScreen={fullScreen} progress={progress} onBack={back}
         footer={<>
-          {buttons[0] && <button type="button" onClick={restart} className="h-[54px] w-full rounded-full bg-primary text-[17px] font-medium text-primary-foreground">{buttons[0]}</button>}
+          {buttons[0] && <button type="button" onClick={restart} className="patient-choice choice-primary h-[54px] w-full rounded-full bg-primary text-[17px] font-medium text-primary-foreground">{buttons[0]}</button>}
           {buttons[1] && <a href="https://www.bodyclinic.nl" target="_blank" rel="noreferrer" className="mt-4 block text-center text-[15px] text-primary">{buttons[1]}</a>}
         </>}>
         <h1 className="text-[28px] font-semibold leading-tight">{v?.title}</h1>
@@ -121,7 +121,7 @@ export function QuestionnaireRunner({
     <Frame scrollRef={scrollRef} fullScreen={fullScreen} progress={progress} onBack={idx > 0 ? back : undefined}
       footer={<>
         {isQuestions && <p className="mb-3 flex items-center justify-center gap-2 text-xs text-muted-foreground"><LockIcon />{t("privacy")}</p>}
-        <button type="button" onClick={next} className="h-[54px] w-full rounded-full bg-primary text-[17px] font-medium text-primary-foreground disabled:opacity-50">{fill(page.button, vars) || t("next")}</button>
+        <button type="button" onClick={next} className="patient-choice choice-primary h-[54px] w-full rounded-full bg-primary text-[17px] font-medium text-primary-foreground disabled:opacity-50">{fill(page.button, vars) || t("next")}</button>
       </>}>
       {page.type === "boodschap" && page.image && <div className="-mx-5 -mt-8 mb-6 flex h-[140px] items-center justify-center bg-mist" aria-label={page.image}><span className="h-[42px] w-[70px] rounded-[8px] bg-muted-foreground/20" /></div>}
       {page.type !== "boodschap" && (page.section || (!isQuestions && page.bullets)) && <div className="mb-2 text-[13px] text-primary">{page.section ?? t("section_intro")}</div>}
@@ -167,8 +167,9 @@ export function QuestionnaireRunner({
 }
 
 /** The four forms of a Boodschap page: list, three steps, a patient story, or the booked practitioner. */
-function Boodschap({ page, vars }: { page: Page; vars: Record<string, string> }) {
+export function Boodschap({ page, vars }: { page: Page; vars: Record<string, string> }) {
   const form = (page["form"] as string | undefined) ?? "list";
+  if(form === "none") return null;
   if (form === "steps") {
     const steps = ((page["step_items"] as string[] | undefined) ?? []).filter(Boolean);
     return (
@@ -231,7 +232,7 @@ function Frame({ progress, onBack, children, footer, scrollRef, fullScreen }: { 
   return fullScreen ? <PatientFrame>{card}</PatientFrame> : card;
 }
 
-const pill = (on: boolean) => cn("flex min-h-[50px] w-full items-center gap-3 rounded-[14px] px-4 py-3 text-left text-[15px]", on ? "border border-primary bg-teal-light" : "border border-transparent bg-sand");
+const pill = (on: boolean) => cn("patient-choice flex min-h-[50px] w-full items-center gap-3 rounded-[14px] px-4 py-3 text-left text-[15px]", on ? "border border-primary bg-teal-light" : "border border-transparent bg-sand");
 const fieldCls = "h-[54px] w-full rounded-[14px] bg-sand px-4 text-[17px] outline-none focus-visible:ring-1 focus-visible:ring-primary";
 
 function ItemInput({ item, answers, set, t, today, showLabel, all, lang }: { lang: Lang; item: Item; page: Page; answers: Answers; set: (k: string, v: unknown) => void; t: (k: string, e?: Record<string, string | number>) => string; today: string; showLabel: boolean; all: QuestionnaireDef }) {
@@ -246,7 +247,7 @@ function ItemInput({ item, answers, set, t, today, showLabel, all, lang }: { lan
         <div>{label}{help}
           <div className={cn("flex gap-2", item.type === "yes_no" ? "flex-row" : "flex-col")}>
             {options.map((o) => (
-              <button key={o.value} type="button" onClick={() => set(item.id, o.value)} className={cn(pill(v === o.value), item.type === "yes_no" && "justify-center")}>
+              <button aria-pressed={v===o.value} key={o.value} type="button" onClick={() => set(item.id, o.value)} className={cn(pill(v === o.value), item.type === "yes_no" && "justify-center")}>
                 {item.type !== "yes_no" && <span className={cn("inline-flex size-5 shrink-0 items-center justify-center rounded-full border", v === o.value ? "border-primary" : "border-muted-foreground/50")}>{v === o.value && <span className="size-2.5 rounded-full bg-primary" />}</span>}
                 {o.label}
               </button>
@@ -258,7 +259,7 @@ function ItemInput({ item, answers, set, t, today, showLabel, all, lang }: { lan
     case "multi_choice": {
       const cur = Array.isArray(v) ? (v as string[]) : [];
       const box = (o: string) => (
-        <button key={o} type="button" onClick={() => set(item.id, toggleOption(cur, o, item.exclusive_option))} className={pill(cur.includes(o))}>
+        <button aria-pressed={cur.includes(o)} key={o} type="button" onClick={() => set(item.id, toggleOption(cur, o, item.exclusive_option))} className={pill(cur.includes(o))}>
           <span className={cn("inline-flex size-5 shrink-0 items-center justify-center rounded-[5px] border", cur.includes(o) ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/50")}>{cur.includes(o) && <CheckIcon small />}</span>{optionLabel(item, o, lang)}
         </button>
       );
