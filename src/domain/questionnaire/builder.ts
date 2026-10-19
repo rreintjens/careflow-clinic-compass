@@ -43,3 +43,20 @@ export function conditionExample(condition: Condition | undefined, settings: Rec
   }
   return { answers, ctx: ctx(), fields: [...new Set(rows.map((r) => r.field))], value: (field: string) => fieldValue(field, ctx()) };
 }
+/** Builder numbering: a page without questions counts once, every question counts once. */
+export function questionNumbers(def: { pages: Page[] }): Record<string, number> {
+  const out: Record<string, number> = {};
+  let n = 0;
+  for (const p of def.pages) {
+    if (!p.items?.length) { n += 1; out[p.id] = n; continue; }
+    for (const i of p.items) { n += 1; out[i.id] = n; }
+  }
+  return out;
+}
+
+/** Meaningful one-word name of a question for titles: its longest word (first wins on a tie), lower case. */
+export function shortName(text: string): string {
+  const words = text.replace(/[?!.,:;“”"()]/g, " ").split(/\s+/).filter(Boolean);
+  const best = words.reduce((a, w) => (w.length > a.length ? w : a), "");
+  return (best || text).toLowerCase();
+}

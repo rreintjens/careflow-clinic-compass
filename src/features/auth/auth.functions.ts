@@ -178,3 +178,46 @@ export const switchTenant = createServerFn({ method: "POST" })
     await audit({ userId: context.userId, tenantId: data.tenantId, action: "tenant_switched_in", category: "login", details: { to: target.slug } });
     return { ok: true, slug: target.slug };
   });
+
+/** Demo shortcut: the configured demo account, its tenant, and whether that tenant is in test mode. */
+async function demoAccount() {
+  const db = await admin();
+  const { data: s } = await db.from("group_settings").select("value").eq("key", "demo_login_email").maybeSingle();
+  const email = typeof s?.value === "string" ? s.value : null;
+  if (!email) return null;
+  const { data: profile } = await db.from("profiles").select("id, blocked").ilike("email", email).maybeSingle();
+  if (!profile || profile.blocked) return null;
+  const { data: ms } = await db.from("tenant_memberships").select("tenant_id, tenants(sort)").eq("user_id", profile.id);
+  const memberships = (ms ?? []).map((m) => ({ tenantId: m.tenant_id, sort: (m.tenants as { sort: number } | null)?.sort ?? 0 }));
+  const tenantId = pickActiveTenant(memberships, null);
+  if (!tenantId) return null;
+  const { data: tm } = await db.from("settings").select("value").eq("tenant_id", tenantId).eq("key", "test_mode").maybeSingle();
+  if (tm?.value !== true) return null;
+  return { email, userId: profile.id, tenantId };
+}
+
+/** Whether "Inloggen als Rob" may be shown: only while the demo account's tenant is in test mode. */
+export const demoLoginAvailable = createServerFn({ method: "GET" }).handler(async () => {
+  return { available: (await demoAccount()) !== null };
+});
+
+/** Passwordless demo sign-in; refused server-side unless the demo tenant is in test mode. */
+export const signInDemo = createServerFn({ method: "POST" }).handler(async () => {
+  const demo = await demoAccount();
+  if (!demo) return { ok: false as const, error: "Inloggen als demo-account is alleen beschikbaar in testmodus." };
+  const db = await admin();
+  const { data: u } = await db.auth.admin.getUserById(demo.userId);
+  const meta = (u.user?.app_metadata ?? {}) as Record<string, unknown>;
+  if (meta["active_tenant"] !== demo.tenantId) {
+    await db.auth.admin.updateUserById(demo.userId, { app_metadata: { ...meta, active_tenant: demo.tenantId } });
+  }
+  const { data: link, error: linkError } = await db.auth.admin.generateLink({ type: "magiclink", email: demo.email });
+  if (linkError || !link.properties?.hashed_token) return { ok: false as const, error: GENERIC_ERROR };
+  const client = createClient<Database>(process.env["SUPABASE_URL"]!, process.env["SUPABASE_PUBLISHABLE_KEY"]!, {
+    auth: { persistSession: false, autoRefreshToken: false, storage: undefined },
+  });
+  const { data: verified, error } = await client.auth.verifyOtp({ token_hash: link.properties.hashed_token, type: "magiclink" });
+  if (error || !verified.session) return { ok: false as const, error: GENERIC_ERROR };
+  await audit({ userId: demo.userId, tenantId: demo.tenantId, action: "login", category: "login", details: { method: "demo" } });
+  return { ok: true as const, accessToken: verified.session.access_token, refreshToken: verified.session.refresh_token };
+});

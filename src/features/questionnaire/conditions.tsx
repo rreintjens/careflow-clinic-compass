@@ -7,7 +7,7 @@ import { SegmentedControl } from "@/components/SegmentedControl";
 import { Select } from "@/components/Select";
 import { evalCondition, isLeaf, resolveValue, type Condition, type Leaf, type QuestionnaireDef } from "@/domain/questionnaire/engine";
 import { fromSituations, toSituations, type Row, type RowOp, type Situations } from "@/domain/questionnaire/situations";
-import { conditionExample, type FieldNames } from "@/domain/questionnaire/builder";
+import { conditionExample, questionNumbers, type FieldNames } from "@/domain/questionnaire/builder";
 import { cn } from "@/lib/utils";
 
 export interface FieldInfo { value: string; label: string; options?: string[] | undefined; kind: "answer" | "computed"; multi?: boolean; number?: number | undefined; unit?: string | undefined; exclusive?: string | undefined }
@@ -16,16 +16,7 @@ type Opt = { value: string; label: string };
 /** Everything a condition needs: fields, comparison labels, thresholds and the flow for the worked example. */
 export interface CondCtx { fields: FieldInfo[]; ops: Opt[]; refs: Opt[]; settings: Record<string, unknown>; computed: Record<string, string>; names?: FieldNames }
 
-/** Builder numbering: a text page counts once, every question counts once. */
-export function questionNumbers(def: QuestionnaireDef): Record<string, number> {
-  const out: Record<string, number> = {};
-  let n = 0;
-  for (const p of def.pages) {
-    if (!p.items?.length) { n += 1; out[p.id] = n; continue; }
-    for (const i of p.items) { n += 1; out[i.id] = n; }
-  }
-  return out;
-}
+export { questionNumbers };
 
 /** Every field a condition can test: answers of all items plus computed fields. */
 export function fieldInfos(def: QuestionnaireDef, computed: Record<string, string>, names?: FieldNames): FieldInfo[] {
@@ -64,6 +55,39 @@ export function conditionText(c: Condition | Leaf | undefined, fields: FieldInfo
   if (!c) return "";
   const s = toSituations(isLeaf(c) ? { all: [c] } : c);
   const parts = s.map((rows) => rows.map((r) => rowText(r, fields, ops, settings)).join(" en "));
+  return parts.length > 1 ? parts.map((p) => `(${p})`).join(" of ") : (parts[0] ?? "");
+}
+
+const SHORT_OPS: Record<string, string> = { eq: "=", not_eq: "niet", lt: "onder", lte: "maximaal", gt: "boven", gte: "vanaf", between: "tussen", contains: "bevat" };
+/** A threshold value as the design shows it: standard, with the reduced value in brackets when the field switches between two settings. */
+function thresholdPair(v: unknown, ctx: CondCtx): { std: string; red?: string } {
+  if (typeof v === "number") return { std: fmtNum(v) };
+  if (typeof v !== "string") return { std: String(v) };
+  if (v.startsWith("settings.")) return { std: fmtNum(setting(v, ctx.settings)) };
+  const m = ctx.computed[v]?.match(/^\s*\w+\s*\?\s*(settings\.[\w.]+)\s*:\s*(settings\.[\w.]+)\s*$/);
+  if (m) return { std: fmtNum(setting(m[2] as string, ctx.settings)), red: fmtNum(setting(m[1] as string, ctx.settings)) };
+  if (v in ctx.computed) return { std: ctx.names?.computed[v] || "berekend veld" };
+  return { std: answerLabel(v) };
+}
+function compactRow(r: Row, ctx: CondCtx): string {
+  const f = ctx.fields.find((x) => x.value === r.field);
+  const field = f?.number ? `vraag ${f.number}` : f?.label ?? "veld";
+  if (f?.options || Array.isArray(r.value) || typeof r.value === "boolean") {
+    const vals = (Array.isArray(r.value) ? r.value : [r.value]).map((x) => (typeof x === "boolean" ? (x ? "ja" : "nee") : answerLabel(String(x))));
+    return `${field} ${SHORT_OPS[r.op] ?? r.op} ${vals.join(" of ")}`;
+  }
+  const a = thresholdPair(r.value, ctx);
+  if (r.op === "between") {
+    const b = thresholdPair(r.value2, ctx);
+    const red = a.red || b.red ? ` (${a.red ?? a.std} en ${b.red ?? b.std})` : "";
+    return `${field} tussen ${a.std} en ${b.std}${red}`;
+  }
+  return `${field} ${SHORT_OPS[r.op] ?? r.op} ${a.std}${a.red ? ` (${a.red})` : ""}${f?.unit && /^[\d,]+$/.test(a.std) ? ` ${f.unit}` : ""}`;
+}
+/** Short line under a builder row, with the numbers filled in: "BMI tussen 25 en 30 (23 en 27,5)". */
+export function compactConditionText(c: Condition | Leaf | undefined, ctx: CondCtx): string {
+  if (!c) return "";
+  const parts = toSituations(isLeaf(c) ? { all: [c] } : c).map((rows) => rows.map((r) => compactRow(r, ctx)).join(" en "));
   return parts.length > 1 ? parts.map((p) => `(${p})`).join(" of ") : (parts[0] ?? "");
 }
 

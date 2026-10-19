@@ -415,7 +415,7 @@ function HoldStep({ c, s, treatmentId, locationId, practitionerId, tx, lang, go 
   const p = c.practitioners.find((x) => x.id === practitionerId);
   return (
     <QuestionnaireRunner fullScreen flow={triage.data.flow as unknown as FlowFile} def={triage.data.definition as unknown as QuestionnaireDef} ui={ui} today={todayLocal()} initial={initial}
-      vars={{ dag: fmt(s.d ?? ""), tijd: s.tijd ?? "", behandelaar_voornaam: p?.first_name ?? "", voornaam: "" }}
+      vars={{ dag: fmt(s.d ?? ""), tijd: s.tijd ?? "", behandelaar_voornaam: p?.first_name ?? "", behandelaar_naam: p ? `${p.first_name} ${p.last_name}` : "", behandelaar_foto: p?.photo ?? "", behandelaar_tekst: p?.bio ?? "", voornaam: "" }}
       onAnswers={keep}
       onRed={(red) => { rejected.current = true; sessionStorage.removeItem(ANSWERS_KEY); sessionStorage.removeItem(HOLD_KEY); void release({ data: { merk: s.merk, token: state.token, questionnaire: triageKey ?? undefined, reason: red.reason } }); }}
       onFinish={(a) => { keep(a); setPhase("details"); }} />

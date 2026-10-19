@@ -27,7 +27,7 @@ export const getBookingCatalog = createServerFn({ method: "GET" })
       db.from("treatments").select("id, slug, name_nl, name_en, icon, duration_min, practitioner_choice, status, pre_questionnaire_key, post_questionnaire_key").eq("tenant_id", tid).eq("status", "active"),
       db.from("treatment_locations").select("treatment_id, location_id").eq("tenant_id", tid),
       db.from("locations").select("id, slug, name, kind, address, status, show_new_label, sort").eq("tenant_id", tid).order("sort"),
-      db.from("practitioners").select("id, first_name, last_name, role_id, photo_path, status, sort").eq("tenant_id", tid).eq("status", "active"),
+      db.from("practitioners").select("id, first_name, last_name, role_id, photo_path, bio_nl, status, sort").eq("tenant_id", tid).eq("status", "active"),
       db.from("practitioner_locations").select("practitioner_id, location_id").eq("tenant_id", tid),
       db.from("practitioner_treatments").select("practitioner_id, treatment_id, excluded_location_ids").eq("tenant_id", tid),
       db.from("practitioner_roles").select("id, name_nl, name_en").eq("tenant_id", tid),
@@ -51,7 +51,7 @@ export const getBookingCatalog = createServerFn({ method: "GET" })
       treatments: treatments.data ?? [],
       treatmentLocations: tLocs.data ?? [],
       locations: (locs.data ?? []).filter((l) => l.status === "open"),
-      practitioners: (prs.data ?? []).map((p, i) => ({ id: p.id, first_name: p.first_name, last_name: p.last_name, role_id: p.role_id, photo: photos[i] ?? null, sort: p.sort })),
+      practitioners: (prs.data ?? []).map((p, i) => ({ id: p.id, first_name: p.first_name, last_name: p.last_name, role_id: p.role_id, photo: photos[i] ?? null, bio: p.bio_nl ?? "", sort: p.sort })),
       practitionerLocations: [...(pLocs.data ?? []), ...(locs.data ?? []).filter((l) => l.kind === "online").flatMap((l) =>
         (mixed.data ?? []).filter((b) => (locs.data ?? []).some((clinic) => clinic.id === b.location_id && clinic.kind === "clinic"))
           .map((b) => ({ practitioner_id: b.practitioner_id, location_id: l.id })))],

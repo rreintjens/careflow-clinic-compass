@@ -1,6 +1,6 @@
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { Card } from "@/components/Card";
@@ -10,13 +10,19 @@ import { PillButton } from "@/components/PillButton";
 import { Select } from "@/components/Select";
 import { opts, optLabel, orgQuery } from "@/data/organisation";
 import {
-  createDraft, defOf, discardDraft, draftOf, exportFlow, flowOf, linkTreatments, publishVersion, publishedOf, questionnairesQuery, saveDraft, saveFlowDocument, versionsOf, workingVersion,
+  createDraft, defOf, discardDraft, draftOf, exportFlow, flowOf, importFlow, linkTreatments, publishVersion, publishedOf, questionnairesQuery, saveDraft, saveFlowDocument, versionsOf, workingVersion,
 } from "@/data/questionnaires";
-import { effectiveVisibility, readFieldNames } from "@/domain/questionnaire/builder";
-import { makeCtx, type Item, type Page, type QuestionnaireDef } from "@/domain/questionnaire/engine";
+import { effectiveVisibility, questionNumbers, readFieldNames } from "@/domain/questionnaire/builder";
+import { changesSentence, describeChanges } from "@/domain/questionnaire/diff";
+import { makeCtx, type FlowFile, type Item, type ItemType, type Page, type PageType, type QuestionnaireDef } from "@/domain/questionnaire/engine";
 import { evaluate } from "@/domain/questionnaire/expr";
-import { ComputedModal, ItemModal, PageModal, PublishModal, ThresholdsModal } from "@/features/questionnaire/BuilderModals";
-import { conditionText, fieldInfos, questionNumbers, refOptions } from "@/features/questionnaire/conditions";
+import { AddChooser } from "@/features/questionnaire/AddChooser";
+import { BoodschapModal, START, flowPositions } from "@/features/questionnaire/BoodschapModal";
+import { ComputedModal, ItemModal, PageModal, PublishModal, ThresholdsModal, type IconEntry } from "@/features/questionnaire/BuilderModals";
+import { compactConditionText, conditionText, fieldInfos, refOptions } from "@/features/questionnaire/conditions";
+import { QuestionnaireRunner } from "@/features/questionnaire/QuestionnaireRunner";
+import { UiIcon } from "@/components/UiIcon";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/boekingsflow/vragenlijsten/$id")({
@@ -25,7 +31,7 @@ export const Route = createFileRoute("/_authenticated/boekingsflow/vragenlijsten
   component: Builder,
 });
 
-const ICONS = ["appel", "arts", "auto", "beweging", "blad", "cadeau", "chat", "document", "download", "druppel", "duim-omhoog", "e-mail", "euro", "gebouw", "grafiek", "handen", "hart", "hartslag", "herinnering", "hersenen", "huis", "info", "instellingen", "kaart-chip", "kalender", "klembord", "klok", "koffie", "kruis", "link", "locatie", "meetlint", "min", "mobiel", "oog", "persoon", "pijl-links", "pijl-rechts", "pil", "plus", "route", "schild", "slaap", "slot", "spuit", "ster", "stethoscoop", "tag", "team", "telefoon", "timer", "trofee", "vernieuwen", "videogesprek", "vinkje-cirkel", "vinkje", "vlag", "vlinder", "vraagteken", "waarschuwing", "weegschaal", "zoeken", "zon"];
+const iconsQuery = { queryKey: ["ui-icons"], queryFn: async (): Promise<IconEntry[]> => (await fetch("/ui-icons/icons.json")).json(), staleTime: Infinity };
 
 /** Threshold rows of the design: label + standard / reduced setting paths. */
 const THRESHOLDS = [
@@ -36,7 +42,7 @@ const THRESHOLDS = [
   { label: "BMI onder dit getal: rood", std: "bmi.red_below", red: "bmi.red_below" },
 ];
 
-type Edit = { kind: "page"; index: number | null } | { kind: "item"; page: number | null; item: number | null } | { kind: "thresholds" } | { kind: "computed"; name: string | null } | { kind: "publish" };
+type Edit = { kind: "add" } | { kind: "page"; index: number | null; type?: PageType } | { kind: "boodschap"; index: number | null } | { kind: "item"; page: number | null; item: number | null; type?: ItemType } | { kind: "thresholds" } | { kind: "computed"; name: string | null } | { kind: "publish" };
 
 function Builder() {
   const { id } = Route.useParams();
@@ -56,6 +62,18 @@ function Builder() {
   const [drag, setDrag] = useState<number | null>(null);
   const [itemDrag, setItemDrag] = useState<{ page: number; idx: number } | null>(null);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [sel, setSel] = useState<number | null>(null);
+  const { data: icons = [] } = useQuery(iconsQuery);
+  const counts = useQuery({
+    queryKey: ["answer-counts", id], enabled: edit?.kind === "publish",
+    queryFn: async () => {
+      const ids = (q ? versionsOf(data, q.id) : []).map((v) => v.id);
+      const { data: rows } = await supabase.from("answer_sets").select("version_id, status").in("version_id", ids);
+      const out: Record<string, { all: number; open: number }> = {};
+      for (const r of rows ?? []) { if (!r.version_id) continue; const c = (out[r.version_id] ??= { all: 0, open: 0 }); c.all += 1; if (r.status !== "completed") c.open += 1; }
+      return out;
+    },
+  });
   const refresh = () => qc.invalidateQueries({ queryKey: questionnairesQuery.queryKey });
 
   const mut = useMutation({
@@ -93,10 +111,19 @@ function Builder() {
   ].filter(Boolean).join(" · ");
 
   const setPages = (pages: Page[]) => writeDef({ ...def, pages });
-  const savePage = (p: Page, index: number | null) => setPages(index === null ? [...def.pages, p] : def.pages.map((x, i) => (i === index ? ({ ...p, ...(x.items ? { items: x.items } : {}) } as Page) : x)));
+  /** New rows land after the selected row ("Komt na de geselecteerde regel"), else at the end. */
+  const insertAt = sel === null ? def.pages.length : sel + 1;
+  const insert = (p: Page) => { const next = [...def.pages]; next.splice(insertAt, 0, p); setSel(insertAt); return next; };
+  const savePage = (p: Page, index: number | null) => setPages(index === null ? insert(p) : def.pages.map((x, i) => (i === index ? ({ ...p, ...(x.items ? { items: x.items } : {}) } as Page) : x)));
+  const saveBoodschap = (p: Page, index: number | null, after: string) => {
+    const rest = def.pages.filter((_, i) => i !== index);
+    const at = after === START ? 0 : rest.findIndex((x) => x.id === after) + 1;
+    rest.splice(at < 0 ? rest.length : at, 0, p);
+    setPages(rest);
+  };
   const saveItem = (item: Item, section: string | undefined, pageIdx: number | null, itemIdx: number | null, pageCondition?: { value: Page["show_if"] }) => {
     if (pageIdx === null) {
-      setPages([...def.pages, { id: `p_${item.id}`, ...(section ? { section } : {}), items: [item] }]);
+      setPages(insert({ id: `p_${item.id}`, ...(section ? { section } : {}), items: [item] }));
       return;
     }
     setPages(def.pages.map((p, i) => {
@@ -136,6 +163,7 @@ function Builder() {
   const row = (label: string, title: string, sub: string, show: string | null, onEdit: () => void, extra?: { pageIdx?: number; item?: { page: number; idx: number } }) => {
     n += 1;
     const it = extra?.item;
+    const selIdx = extra?.pageIdx ?? it?.page;
     return (
       <div key={`${label}${n}`} draggable={editable && (extra?.pageIdx !== undefined || !!it)}
         onDragStart={(e) => { e.stopPropagation(); if (it) setItemDrag(it); else if (extra?.pageIdx !== undefined) setDrag(extra.pageIdx); }} onDragOver={(e) => e.preventDefault()}
@@ -143,19 +171,21 @@ function Builder() {
           if (it && itemDrag) { e.stopPropagation(); if (itemDrag.page === it.page && itemDrag.idx !== it.idx) moveItem(it.page, itemDrag.idx, it.idx); setItemDrag(null); return; }
           if (drag !== null && extra?.pageIdx !== undefined && drag !== extra.pageIdx) move(drag, extra.pageIdx); setDrag(null);
         }}
-        className="flex items-start gap-3 rounded-[14px] border border-line bg-background px-3 py-3">
+        onClick={() => { if (selIdx !== undefined) setSel(selIdx); }}
+        className={cn("flex items-start gap-3 rounded-[14px] border bg-background px-3 py-3", extra?.pageIdx !== undefined && sel === extra.pageIdx ? "border-primary" : "border-line")}>
         <span className="pt-1 text-muted-foreground" aria-hidden="true">⋮⋮</span>
         <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-sand text-xs">{n}</span>
         <Tag tone={label === "Vraag" ? "teal" : "sand"}>{label}</Tag>
         <div className="min-w-0 flex-1">
           <div className="text-sm">{title}</div>
           <div className="text-xs text-muted-foreground">{sub}</div>
-          {show && <div className="mt-1 text-xs text-primary">↦ Alleen als {show}</div>}
+          {show && <div className="mt-1 flex items-center gap-1.5 text-xs text-primary"><UiIcon name="route" className="size-3.5" />Alleen als {show}</div>}
         </div>
-        <TextLink onClick={onEdit}>Wijzig</TextLink>
+        <span onClick={(e) => e.stopPropagation()}><TextLink onClick={onEdit}>Wijzig</TextLink></span>
       </div>
     );
   };
+  const short = (c: Parameters<typeof compactConditionText>[0]) => compactConditionText(c, ctx);
 
   const versions = versionsOf(data, q.id);
   const pub = publishedOf(data, q.id);
@@ -167,6 +197,16 @@ function Builder() {
       return typeof v === "number" ? (Math.round(v * 10) / 10).toString().replace(".", ",") : v === true ? "ja" : v === false ? "nee" : String(v);
     } catch { return "–"; }
   };
+
+  const today = new Date().toISOString().slice(0, 10);
+  const overview = def.pages.find((p) => p.type === "flow_overview");
+  const medical = (() => {
+    const mq = data.questionnaires.find((x) => x.flow_id === q.flow_id && x.moment === "after_booking");
+    const md = mq ? defOf(publishedOf(data, mq.id) ?? workingVersion(data, mq.id)) : null;
+    const page = md?.pages.find((p) => (p.items?.length ?? 0) > 1 && p.items?.some((i) => i.show_if)) ?? md?.pages.find((p) => (p.items?.length ?? 0) > 1);
+    return md && page ? { def: md, page } : null;
+  })();
+  const changes = draft ? describeChanges(defOf(pub), defOf(draft) as QuestionnaireDef) : [];
 
   return (
     <div className="flex flex-col gap-6">
@@ -189,18 +229,20 @@ function Builder() {
         {!editable && <p className="mt-3 rounded-[12px] bg-signal px-4 py-3 text-sm">Je bekijkt de actieve versie; die patiënten nu krijgen en die daarom niet verandert. Klik rechtsboven op “Nieuwe versie maken” om te wijzigen; daarna publiceer je die versie.</p>}
       </div>
 
+      <div className="grid grid-cols-[minmax(0,1fr)_300px] items-start gap-6">
+      <div className="flex min-w-0 flex-col gap-6">
       <Card title="Opbouw van de vragenlijst" description="Vragen en pagina’s in de volgorde die de patiënt ziet. Sleep om de volgorde te wijzigen, ook vragen binnen een vragenpagina; klik op het pijltje om een vragenpagina in te klappen. Een pijl onder een regel betekent: alleen onder een voorwaarde.">
         <div className="flex flex-col gap-2">
           {def.pages.map((p, pi) => {
             const items = p.items ?? [];
-            if (!items.length) return row("Pagina", p.title ?? "", [pageTypeLabel(p.type ?? "text"), p.body?.slice(0, 80)].filter(Boolean).join(" · "), p.show_if ? cond(p.show_if) : null, () => setEdit({ kind: "page", index: pi }), { pageIdx: pi });
+            if (!items.length) return row("Pagina", p.title ?? "", [pageTypeLabel(p.type ?? "text"), p.body?.slice(0, 80)].filter(Boolean).join(" · "), p.show_if ? short(p.show_if) : null, () => setEdit(p.type === "boodschap" ? { kind: "boodschap", index: pi } : { kind: "page", index: pi }), { pageIdx: pi });
             if (items.length === 1 && !p.title) {
               const i = items[0] as Item;
-              return row("Vraag", i.text, itemSummary(p, i), effectiveVisibility(p, i) ? cond(effectiveVisibility(p, i)) : null, () => setEdit({ kind: "item", page: pi, item: 0 }), { pageIdx: pi });
+              return row("Vraag", i.text, itemSummary(p, i), effectiveVisibility(p, i) ? short(effectiveVisibility(p, i)) : null, () => setEdit({ kind: "item", page: pi, item: 0 }), { pageIdx: pi });
             }
             return (
               <div key={p.id} draggable={editable} onDragStart={() => setDrag(pi)} onDragOver={(e) => e.preventDefault()} onDrop={() => { if (drag !== null && drag !== pi) move(drag, pi); setDrag(null); }}
-                className="rounded-[16px] border border-dashed border-primary/50 p-3">
+                onClick={() => setSel(pi)} className={cn("rounded-[16px] border border-dashed p-3", sel === pi ? "border-primary" : "border-primary/50")}>
                 <div className="flex items-center gap-3">
                   {editable && <span className="cursor-grab text-muted-foreground" aria-hidden="true">⋮⋮</span>}
                   <button type="button" onClick={() => toggleGroup(p.id)} aria-expanded={!collapsed.has(p.id)} aria-label={collapsed.has(p.id) ? "Uitklappen" : "Inklappen"} className="flex size-7 items-center justify-center rounded-full hover:bg-sand">
@@ -210,9 +252,9 @@ function Builder() {
                   <span className="text-sm">{p.title ?? p.section}</span>
                   <span className="ml-auto"><TextLink onClick={() => setEdit({ kind: "page", index: pi })}>Wijzig</TextLink></span>
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">{items.length} vragen op één scherm{p.show_if ? ` · alleen als ${cond(p.show_if)}` : ""}{p.red_if ? ` · rood als ${cond(p.red_if)}` : ""}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{items.length} vragen op één scherm{p.show_if ? ` · alleen als ${short(p.show_if)}` : ""}{p.red_if ? ` · rood als ${cond(p.red_if)}` : ""}</p>
                 {!collapsed.has(p.id) && <div className="mt-2 flex flex-col gap-2">
-                  {items.map((i, ii) => row("Vraag", i.text, itemSummary(p, i), effectiveVisibility(p, i) ? cond(effectiveVisibility(p, i)) : null, () => setEdit({ kind: "item", page: pi, item: ii }), { item: { page: pi, idx: ii } }))}
+                  {items.map((i, ii) => row("Vraag", i.text, itemSummary(p, i), i.show_if ? short(i.show_if) : null, () => setEdit({ kind: "item", page: pi, item: ii }), { item: { page: pi, idx: ii } }))}
                 </div>}
                 {collapsed.has(p.id) && ((n += items.length), null)}
                 {editable && !collapsed.has(p.id) && <div className="mt-2"><TextLink onClick={() => setEdit({ kind: "item", page: pi, item: null })}>Vraag aan deze pagina toevoegen</TextLink></div>}
@@ -221,10 +263,7 @@ function Builder() {
           })}
         </div>
         {editable && (
-          <div className="mt-4 flex gap-2">
-            <PillButton variant="outline" onClick={() => setEdit({ kind: "item", page: null, item: null })}><PlusIcon />Vraag toevoegen</PillButton>
-            <PillButton variant="outline" onClick={() => setEdit({ kind: "page", index: null })}><PlusIcon />Pagina toevoegen</PillButton>
-          </div>
+          <div className="mt-4"><PillButton variant="outline" onClick={() => setEdit({ kind: "add" })}><PlusIcon />Vraag of pagina toevoegen</PillButton></div>
         )}
       </Card>
 
@@ -283,8 +322,44 @@ function Builder() {
         </table>
       </Card>
 
+      </div>
+      <aside className="flex flex-col gap-6">
+        {overview && (
+          <PreviewCard title={`Voorbeeld: pagina ${questionNumbers(def)[overview.id] ?? ""}, ${pageTypeLabel("flow_overview").toLowerCase()}`}
+            text="De stappen komen uit de flow zelf: afspraak, de onderdelen van deze vragenlijst, gegevens en bevestiging. Alleen de titel en de tekst zijn te bewerken; zo blijft het overzicht altijd kloppen, ook als je het vaker gebruikt.">
+            <QuestionnaireRunner key={JSON.stringify(overview)} flow={{ settings, computed_fields: computed }} def={def} ui={data.uiTexts} today={today} startPageId={overview.id} />
+          </PreviewCard>
+        )}
+        {medical && (
+          <PreviewCard title="Voorbeeld: vragenpagina uit de medische vragenlijst"
+            text="Een vraag met een voorwaarde verschijnt pas als die van toepassing is; anders blijft de pagina korter. Een lange medische vragenlijst deel je zo in zoveel schermen als je zelf wilt.">
+            <QuestionnaireRunner key={medical.page.id} flow={{ settings, computed_fields: computed }} def={medical.def} ui={data.uiTexts} today={today} startPageId={medical.page.id} />
+          </PreviewCard>
+        )}
+      </aside>
+      </div>
+
+      {edit?.kind === "add" && (
+        <AddChooser itemTypes={opts(org, "questionnaire_item_type")} pageTypes={opts(org, "questionnaire_page_type")}
+          afterLabel={sel === null ? "Komt onderaan de vragenlijst." : "Komt na de geselecteerde regel."}
+          onClose={() => setEdit(null)}
+          onPick={(c) => setEdit(c.kind === "item" ? { kind: "item", page: null, item: null, type: c.type } : c.type === "boodschap" ? { kind: "boodschap", index: null } : { kind: "page", index: null, type: c.type })} />
+      )}
+      {edit?.kind === "boodschap" && (() => {
+        const nums = questionNumbers(def);
+        const current = edit.index === null ? null : (def.pages[edit.index] ?? null);
+        const prev = edit.index === null ? (sel === null ? def.pages.at(-1)?.id : def.pages[sel]?.id) : def.pages[edit.index - 1]?.id;
+        const pr = org.practitioners.find((x) => x.status === "active");
+        return (
+          <BoodschapModal page={current} after={prev ?? START} positions={flowPositions(def, nums, current?.id)} forms={opts(org, "boodschap_form")} images={opts(org, "questionnaire_image")} buttons={opts(org, "questionnaire_button")}
+            ctx={ctx} questionnaireName={def.name} def={def} flow={{ settings, computed_fields: computed }} ui={data.uiTexts}
+            practitioner={{ name: pr ? `${pr.first_name} ${pr.last_name}` : "", text: pr?.bio_nl ?? "" }}
+            onClose={() => setEdit(null)} onSave={(p, after) => saveBoodschap(p, edit.index, after)}
+            onDelete={edit.index === null ? undefined : () => setPages(def.pages.filter((_, i) => i !== edit.index))} />
+        );
+      })()}
       {edit?.kind === "page" && (
-        <PageModal page={edit.index === null ? null : (def.pages[edit.index] ?? null)} pageTypes={opts(org, "questionnaire_page_type")} sections={sections} icons={ICONS} ctx={ctx} questionnaireName={def.name}
+        <PageModal page={edit.index === null ? null : (def.pages[edit.index] ?? null)} initialType={edit.type} pageTypes={opts(org, "questionnaire_page_type").filter((o) => o.value !== "boodschap")} sections={sections} icons={icons} iconCategories={opts(org, "icon_category")} ctx={ctx} questionnaireName={def.name}
           onSave={(p) => savePage(p, edit.index)} onClose={() => setEdit(null)}
           onDelete={edit.index === null ? undefined : () => setPages(def.pages.filter((_, i) => i !== edit.index))} />
       )}
@@ -292,7 +367,7 @@ function Builder() {
         const p = edit.page === null ? undefined : def.pages[edit.page];
         const item = p && edit.item !== null ? (p.items?.[edit.item] ?? null) : null;
         return (
-          <ItemModal item={item} number={item ? (questionNumbers(def)[item.id] ?? 0) : Object.keys(questionNumbers(def)).length + 1} questionnaireName={def.name} questionnaireId={q.id} def={def} page={p}
+          <ItemModal item={item} initialType={edit.type} number={item ? (questionNumbers(def)[item.id] ?? 0) : Object.keys(questionNumbers(def)).length + 1} questionnaireName={def.name} questionnaireId={q.id} def={def} page={p}
             flow={{ settings, computed_fields: computed }} ui={data.uiTexts} images={opts(org, "questionnaire_image")} itemTypes={opts(org, "questionnaire_item_type")} sections={sections} section={p?.section} rejections={rejections} ctx={ctx}
             onSave={(i, s, pageCondition) => saveItem(i, s, edit.page, edit.item, pageCondition)} onClose={() => setEdit(null)}
             onDelete={edit.page === null || edit.item === null ? undefined : () => {
@@ -311,9 +386,27 @@ function Builder() {
           onDelete={edit.name ? () => { const c = { ...computed }, labels = { ...names.computed }; delete c[edit.name as string]; delete labels[edit.name as string]; mut.mutate(() => saveFlowDocument(flow.id, { ...doc, computed_fields: c, field_names: { ...names, computed: labels } })); } : undefined} />
       )}
       {edit?.kind === "publish" && draft && (
-        <PublishModal versionNo={draft.version_no} busy={mut.isPending} changes={pub ? `Versie ${pub.version_no} is nu actief.` : "Er is nog geen actieve versie."} onClose={() => setEdit(null)}
+        <PublishModal name={def.name} draftNo={draft.version_no} liveNo={pub?.version_no ?? null} busy={mut.isPending}
+          versions={versions.map((v) => ({ id: v.id, version_no: v.version_no, status: v.status, note: v.note, published_at: v.published_at, updated_at: v.updated_at, answers: counts.data?.[v.id]?.all ?? 0 }))}
+          running={pub ? (counts.data?.[pub.id]?.open ?? 0) : 0}
+          changes={changesSentence(changes)} changeCount={changes.length}
+          testLink={<Link to="/boekingsflow/vragenlijsten/$id/test" params={{ id: q.id }} target="_blank"><PillButton variant="outline">Eerst testen als patiënt</PillButton></Link>}
+          onExport={download}
+          onImport={(f) => mut.mutate(async () => { const json = JSON.parse(await f.text()) as FlowFile; await importFlow(json, flow?.key ?? "flow", false); toast.success("Geïmporteerd als concept"); })}
+          onDiscard={pub ? () => mut.mutate(() => discardDraft(draft.id)) : undefined}
+          onClose={() => setEdit(null)}
           onPublish={() => mut.mutate(async () => { await publishVersion(q.id, draft.id); toast.success(`Versie ${draft.version_no} is gepubliceerd`); })} />
       )}
     </div>
+  );
+}
+
+function PreviewCard({ title, text, children }: { title: string; text: string; children: ReactNode }) {
+  return (
+    <Card title={title} description={text}>
+      <div className="h-[560px] w-[252px] overflow-hidden rounded-[18px]">
+        <div className="pointer-events-auto origin-top-left scale-[0.646]">{children}</div>
+      </div>
+    </Card>
   );
 }

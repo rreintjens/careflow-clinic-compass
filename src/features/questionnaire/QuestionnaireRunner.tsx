@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } 
 
 import { Logo } from "@/components/Logo";
 import { PatientFrame } from "@/components/PatientFrame";
+import { UiIcon } from "@/components/UiIcon";
 import {
   flowSteps, makeCtx, itemAnswered, pageProgress, redOnPage, toggleOption, visibleItems, visiblePages,
   type Answers, type FlowFile, type Item, type Page, type QuestionnaireDef, type RedOutcome,
@@ -109,25 +110,19 @@ export function QuestionnaireRunner({
         {isQuestions && <p className="mb-3 flex items-center justify-center gap-2 text-xs text-muted-foreground"><LockIcon />{t("privacy")}</p>}
         <button type="button" onClick={next} className="h-[54px] w-full rounded-full bg-primary text-[17px] font-medium text-primary-foreground disabled:opacity-50">{fill(page.button, vars) || t("next")}</button>
       </>}>
-      {(page.section || (!isQuestions && page.bullets)) && <div className="mb-2 text-[13px] text-primary">{page.section ?? t("section_intro")}</div>}
+      {page.type === "boodschap" && page.image && <div className="-mx-5 -mt-8 mb-6 flex h-[140px] items-center justify-center bg-mist" aria-label={page.image}><span className="h-[42px] w-[70px] rounded-[8px] bg-muted-foreground/20" /></div>}
+      {page.type !== "boodschap" && (page.section || (!isQuestions && page.bullets)) && <div className="mb-2 text-[13px] text-primary">{page.section ?? t("section_intro")}</div>}
       {page.icon && (
-        <div className="mx-auto mb-5 flex size-[72px] items-center justify-center rounded-full bg-teal-light">
-          <span
-            aria-hidden="true"
-            className="size-[34px] bg-primary"
-            style={{
-              WebkitMaskImage: `url(/ui-icons/${page.icon}.svg)`, maskImage: `url(/ui-icons/${page.icon}.svg)`,
-              WebkitMaskSize: "contain", maskSize: "contain", WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat",
-              WebkitMaskPosition: "center", maskPosition: "center",
-            }}
-          />
+        <div className="mx-auto mb-5 flex size-[72px] items-center justify-center rounded-full bg-teal-light text-primary">
+          <UiIcon name={page.icon} className="size-[34px]" />
         </div>
       )}
       {(page.title || !many) && <h1 className="text-[28px] font-semibold leading-tight">{fill(page.title ?? (page.items?.[0] ? itemText(page.items[0], "text", lang) : undefined), vars)}</h1>}
       {page.body && <p className="mt-3 text-[15px] leading-[1.6] text-muted-foreground">{fill(page.body, vars)}</p>}
       {!page.title && !many && page.items?.[0]?.help && <p className="mt-3 text-[15px] leading-[1.6] text-muted-foreground">{itemText(page.items[0], "help", lang)}</p>}
       {many && <p className="mt-2 text-xs text-muted-foreground">{t("answered", { k: prog.answered, m: prog.total })}</p>}
-      {page.bullets && (
+      {page.type === "boodschap" && <Boodschap page={page} vars={vars} />}
+      {page.type !== "boodschap" && page.bullets && (
         <div className="mt-6 rounded-[18px] bg-sand p-5">
           <div className="mb-3 text-[15px] font-semibold">{t("good_to_know")}</div>
           <ul className="flex flex-col gap-2">{page.bullets.map((b) => <li key={b} className="flex gap-3 text-[15px]"><CheckIcon />{b}</li>)}</ul>
@@ -154,6 +149,55 @@ export function QuestionnaireRunner({
         </div>
       )}
     </Frame>
+  );
+}
+
+/** The four forms of a Boodschap page: list, three steps, a patient story, or the booked practitioner. */
+function Boodschap({ page, vars }: { page: Page; vars: Record<string, string> }) {
+  const form = (page["form"] as string | undefined) ?? "list";
+  if (form === "steps") {
+    const steps = ((page["step_items"] as string[] | undefined) ?? []).filter(Boolean);
+    return (
+      <ol className="mt-6 flex flex-col gap-4">
+        {steps.map((st, i) => (
+          <li key={i} className="flex items-start gap-3 text-[15px] leading-[1.5]">
+            <span className="inline-flex size-[30px] shrink-0 items-center justify-center rounded-full bg-primary text-[13px] text-primary-foreground">{i + 1}</span>
+            <span className="pt-1">{fill(st, vars)}</span>
+          </li>
+        ))}
+      </ol>
+    );
+  }
+  if (form === "testimonial") {
+    const who = [page["quote_name"], page["quote_place"]].filter(Boolean).join(", ");
+    return (
+      <figure className="mt-6 rounded-[18px] bg-sand p-5">
+        <blockquote className="text-[17px] leading-[1.6]">“{String(page["quote"] ?? "")}”</blockquote>
+        {who && <figcaption className="mt-3 text-[13px] text-muted-foreground">{who}</figcaption>}
+      </figure>
+    );
+  }
+  if (form === "practitioner") {
+    const photo = vars["behandelaar_foto"];
+    const name = vars["behandelaar_naam"] || vars["behandelaar_voornaam"] || "";
+    return (
+      <div className="mt-6 flex items-start gap-4 rounded-[18px] bg-sand p-5">
+        {photo ? <img src={photo} alt="" className="size-16 shrink-0 rounded-full object-cover" /> : <span className="inline-flex size-16 shrink-0 items-center justify-center rounded-full bg-teal-light text-lg font-semibold text-primary">{name.charAt(0)}</span>}
+        <div className="min-w-0">
+          <div className="text-[15px] font-semibold">{name}</div>
+          {vars["behandelaar_tekst"] && <p className="mt-1 text-[15px] leading-[1.5] text-muted-foreground">{vars["behandelaar_tekst"]}</p>}
+        </div>
+      </div>
+    );
+  }
+  return (
+    <ul className="mt-5 flex flex-col gap-3">
+      {(page.bullets ?? []).map((b, i) => (
+        <li key={i} className="flex items-start gap-3 text-[15px] leading-[1.5]">
+          <span className="mt-0.5 inline-flex size-[22px] shrink-0 items-center justify-center rounded-full bg-teal-light text-primary"><CheckIcon small /></span>{fill(b, vars)}
+        </li>
+      ))}
+    </ul>
   );
 }
 
