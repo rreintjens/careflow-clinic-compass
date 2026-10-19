@@ -185,8 +185,12 @@
 .admin-data-table[data-column-layout="equipment"] th:nth-child(4) {width:19%;}
 .admin-data-table[data-column-layout="equipment"] th:nth-child(5) {width:14%;}
 .admin-data-table[data-column-layout="equipment"] th:nth-child(6) {width:4%;}
-.admin-data-table[data-column-layout="mail-variants"] th:nth-child(1) {width:44%;}
-.admin-data-table[data-column-layout="mail-variants"] th:nth-child(2) {width:14%;}
+.admin-data-table[data-column-layout="mail-variants"] table {min-width:760px;}
+.admin-data-table[data-column-layout="mail-variants"] td button {white-space:normal;max-width:100%;}
+.admin-data-table[data-column-layout="mail-variants"] td:nth-child(2) > span {flex-wrap:wrap;}
+.admin-data-table[data-column-layout="mail-variants"] td:last-child button {padding:0;}
+.admin-data-table[data-column-layout="mail-variants"] th:nth-child(1) {width:38%;}
+.admin-data-table[data-column-layout="mail-variants"] th:nth-child(2) {width:20%;}
 .admin-data-table[data-column-layout="mail-variants"] th:nth-child(3) {width:16%;}
 .admin-data-table[data-column-layout="mail-variants"] th:nth-child(4) {width:20%;}
 .admin-data-table[data-column-layout="mail-variants"] th:nth-child(5) {width:6%;}
