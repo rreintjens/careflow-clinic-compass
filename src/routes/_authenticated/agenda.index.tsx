@@ -129,7 +129,7 @@ function Page() {
             </div>
           ) : <p className="text-[13px] text-muted-foreground">{view.cols.length} behandelaars ingeroosterd op deze dag</p>}
           <div className="overflow-x-auto">
-            <div className="grid min-w-max" style={{ gridTemplateColumns: `56px repeat(${Math.max(1, view.cols.length)}, minmax(${week ? 160 : 260}px, 1fr))` }}>
+            <div className="grid min-w-max" style={{ gridTemplateColumns: `56px repeat(${Math.max(1, view.cols.length)}, minmax(340px, 1fr))` }}>
               <span />
               {view.cols.map((c) => week
                 ? <p key={c.key} className={cn("px-2 pb-3 text-[14px]", c.today && "font-semibold text-primary")}>{c.title}</p>

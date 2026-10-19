@@ -148,13 +148,15 @@ function SchedulePage() {
                       const top = ((toMin(b.starts) - START_H * 60) / 60) * PX_PER_H;
                       const h = ((toMin(b.ends) - toMin(b.starts)) / 60) * PX_PER_H;
                       const isOnline = onlineIds.includes(b.location_id);
+                      const overlaps = active.filter((x) => x.weekday === b.weekday && toMin(x.starts) < toMin(b.ends) && toMin(b.starts) < toMin(x.ends));
+                      const lane = overlaps.findIndex((x) => x.id === b.id);
                       return (
                         <button
                           key={b.id}
                           type="button"
                           onClick={() => setBlockModal(b)}
                           className={cn("absolute inset-x-1 flex flex-col items-start justify-center overflow-hidden rounded-[10px] px-2 text-left", isOnline ? "bg-teal-light" : "bg-sand", "hover:ring-2 hover:ring-primary")}
-                          style={{ top: top + 1, height: h - 2 }}
+                          style={{ top: top + 1, height: h - 2, left: `calc(${lane * 100 / overlaps.length}% + 4px)`, right: "auto", width: `calc(${100 / overlaps.length}% - 8px)` }}
                         >
                           <span className="absolute right-1.5 top-1.5"><RecurBadge r={b.recurrence} /></span>
                           <span className="flex max-w-full items-center gap-1 text-xs"><span className="truncate">{locName(org, b.location_id)}</span>{!isOnline && b.allows_online && <img src="/ui-icons/videogesprek.svg" alt="Online consulten tussendoor" className="size-3.5 shrink-0" />}</span>
