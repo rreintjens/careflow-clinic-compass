@@ -89,7 +89,7 @@ function RolesPage() {
                 onClick={canManage ? () => setEditing(r.id) : undefined}
                 className={cn("border-b border-line", canManage && "cursor-pointer hover:bg-sand")}
               >
-                <td className="px-2.5 py-3">{r.name}</td>
+                <td className="px-2.5 py-3"><PillButton data-row-action variant="ghost" disabled={!canManage} className="px-0 text-foreground" onClick={()=>setEditing(r.id)}>{r.name}</PillButton></td>
                 <td className="px-2.5 py-3">{label(LANDING_OPTIONS, r.landing_page)}</td>
                 <td className="px-2.5 py-3">{label(CONSULT_OPTIONS, r.consult_mode)}</td>
                 <td className="px-2.5 py-3">{r.record_visibility}</td>

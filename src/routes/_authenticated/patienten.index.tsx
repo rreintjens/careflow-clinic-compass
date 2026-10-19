@@ -85,7 +85,7 @@ function Page() {
         <Select className="w-56" label="Behandelaar" value={prac} onChange={setPrac} options={[...all("Alle behandelaars"), ...ref.practitioners.map((p) => ({ value: p.id, label: `${p.first_name} ${p.last_name}` }))]} />
       </div>
       <div className="overflow-x-auto">
-        <DataTable><table className="w-full text-[14px]">
+        <DataTable count={shown.length} label="patiënten" loading={!data}><table className="w-full text-[14px]">
           <thead><tr className="border-b border-mist text-left text-[12px] text-muted-foreground">
             {["Patiëntnummer", "Naam", "Aangemeld", "Behandeling", "Afspraak", "Behandelaar", "Vragenlijst", "Bron"].map((h) => <th key={h} className="whitespace-nowrap px-2.5 py-3 font-normal">{h}</th>)}
           </tr></thead>
