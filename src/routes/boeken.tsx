@@ -69,9 +69,25 @@ function Booking() {
   };
   const go = (patch: Partial<Search>, replace = false) => navigate({ search: (prev) => ({ ...prev, ...patch }), replace });
 
+  // One tap may never advance more than one step: ignore touches for ~400 ms after a step change,
+  // so a tap that started on the previous screen cannot land on a button of the new screen.
+  const stepKey = `${s.cat ?? ""}|${s.sub ?? ""}|${s.t ?? ""}|${s.l ?? ""}|${s.p ?? ""}|${s.stap ?? ""}`;
+  const [settling, setSettling] = useState(true);
+  useEffect(() => {
+    setSettling(true);
+    const t = window.setTimeout(() => setSettling(false), 400);
+    return () => window.clearTimeout(t);
+  }, [stepKey]);
+  const guard = settling ? "pointer-events-none" : undefined;
+
   if (!("categories" in data) || !data.tenant) return <Shell lang={lang} onLang={() => go({ lang: lang === "nl" ? "en" : "nl" })}><p className="pt-10 text-[15px]">{tx("unknown_brand")}</p></Shell>;
   const c = data as Full;
   const name = (x: { name_nl: string; name_en: string | null }) => (lang === "en" && x.name_en) || x.name_nl;
+  /** Icon with fallback up the tree: subcategory → parent category, treatment → its (sub)category. */
+  const catIcon = (id: string | null | undefined): string | null | undefined => {
+    const x = c.categories.find((k) => k.id === id);
+    return x?.icon ?? (x?.parent_id ? catIcon(x.parent_id) : undefined);
+  };
   const allowed = link ? new Set(link.locationIds) : null;
   const mode = link?.practitionerMode && MODES.has(link.practitionerMode) ? (link.practitionerMode as ChoiceMode) : null;
   const locationsFor = (tid: string) => c.treatmentLocations.filter((x) => x.treatment_id === tid && c.locations.some((l) => l.id === x.location_id) && (!allowed || allowed.has(x.location_id))).map((x) => x.location_id);
@@ -88,25 +104,27 @@ function Booking() {
   const phone = c.tenant.phone;
 
   if (step.kind === "planner" && s.stap === "vasthouden" && s.d && s.tijd) {
-    return <HoldStep c={c} s={eff} treatmentId={step.treatment} locationId={step.location} practitionerId={step.practitioner ?? "any"} tx={tx} lang={lang} go={go} />;
+    return <div className={guard}><HoldStep c={c} s={eff} treatmentId={step.treatment} locationId={step.location} practitionerId={step.practitioner ?? "any"} tx={tx} lang={lang} go={go} /></div>;
   }
 
   return (
     <Shell lang={lang} progress={progress} onBack={back} onClose={close} onLang={step.kind === "category" ? () => go({ lang: lang === "nl" ? "en" : "nl" }, true) : undefined}
       footer={step.kind === "category" && phone ? <p className="text-center text-[13px] text-muted-foreground">{tx("call")} <a href={`tel:${phone}`} className="text-primary underline">{phone}</a></p> : null}>
+      <div className={guard}>
       {step.kind === "none" && <p className="pt-10 text-[15px]">{tx("nothing_bookable")}</p>}
       {step.kind === "category" && (
         <List title={tx("q_category")} rows={step.options.map((id) => { const x = c.categories.find((k) => k.id === id); return { id, title: x ? name(x) : "", icon: x?.icon }; })} onPick={(id) => go({ cat: id })} />
       )}
       {step.kind === "subcategory" && (
-        <List title={name(c.categories.find((k) => k.id === step.category) ?? { name_nl: "", name_en: null })} rows={step.options.map((id) => { const x = c.categories.find((k) => k.id === id); return { id, title: x ? name(x) : "", icon: x?.icon }; })} onPick={(id) => go({ sub: id })} />
+        <List title={name(c.categories.find((k) => k.id === step.category) ?? { name_nl: "", name_en: null })} rows={step.options.map((id) => { const x = c.categories.find((k) => k.id === id); return { id, title: x ? name(x) : "", icon: x?.icon ?? catIcon(x?.parent_id) }; })} onPick={(id) => go({ sub: id })} />
       )}
       {step.kind === "treatment" && (
-        <List title={tx("q_treatment")} rows={step.options.map((id) => { const x = c.treatments.find((k) => k.id === id); return { id, title: x ? name(x) : "", sub: x ? `${x.duration_min} min` : "", icon: x?.icon }; })} onPick={(id) => go({ t: id })} />
+        <List title={tx("q_treatment")} rows={step.options.map((id) => { const x = c.treatments.find((k) => k.id === id); return { id, title: x ? name(x) : "", sub: x ? `${x.duration_min} min` : "", icon: x?.icon ?? catIcon(step.category) }; })} onPick={(id) => go({ t: id })} />
       )}
       {step.kind === "location" && <LocationStep c={c} treatmentId={step.treatment} options={step.options} tx={tx} name={name} onPick={(id) => go({ l: id })} />}
       {step.kind === "practitioner" && <PractitionerStep c={c} s={s} treatmentId={step.treatment} locationId={step.location} required={step.required} tx={tx} onPick={(p) => go({ p, stap: undefined, tijd: undefined })} />}
       {step.kind === "planner" && <PlannerStep c={c} s={s} step={step} tx={tx} lang={lang} go={go} />}
+      </div>
     </Shell>
   );
 }
@@ -140,7 +158,7 @@ function List({ title, rows, onPick }: { title: string; rows: Array<{ id: string
       <div className="flex flex-col gap-2">
         {rows.map((r) => (
           <button key={r.id} type="button" onClick={() => onPick(r.id)} className="flex min-h-[60px] items-center gap-4 rounded-[16px] bg-sand px-5 text-left">
-            <span className="flex size-8 shrink-0 items-center justify-center">{r.icon && <img src={`/treatment-icons/${r.icon}.png`} alt="" className="size-7" />}</span>
+            {r.icon ? <span className="flex size-8 shrink-0 items-center justify-center"><img src={`/treatment-icons/${r.icon}.png`} alt="" className="size-7" /></span> : null}
             <span className="flex-1"><span className="block whitespace-nowrap text-[16px]">{r.title}</span>{r.sub && <span className="block text-[13px] text-muted-foreground">{r.sub}</span>}</span>
             <Chevron />
           </button>
@@ -646,7 +664,7 @@ function ConfirmedStep({ c, s, treatmentId, locationId, practitionerId, manageTo
       {hasQ && (
         <div className="mt-5 rounded-[18px] bg-teal-light p-5">
           <p className="text-[17px] font-semibold">{tx("c_one_step")}</p>
-          <p className="mt-2 text-[14px] leading-[1.6]">{tx("c_one_step_body", { voornaam: p?.first_name ?? "" })}</p>
+          <p className="mt-2 text-[14px] leading-[1.6]">{tx("c_one_step_body", { voornaam: p?.first_name ?? "", min: t?.questionnaire_minutes ?? 8 })}</p>
           <PillButton size="lg" className="mt-5 w-full" onClick={start}>{tx("c_start")}</PillButton>
           <p className="mt-3 text-center text-[12px]">{tx("c_auto", { n: left })}</p>
         </div>

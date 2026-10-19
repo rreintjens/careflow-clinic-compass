@@ -87,6 +87,9 @@ export function locationBookability(args: {
 }
 
 /** Duration choices: steps of 5 minutes, 5 to 240. */
+/** Icons a category, subcategory or treatment can show in the booking flow (PNG basenames in /treatment-icons). */
+export const TREATMENT_ICONS = ["botox", "fillers", "medisch-afvallen", "skinboosters", "huidtherapie", "lasertherapie", "huidverstrakking", "ooglidcorrectie"];
+
 export function durationOptions(max = 240): number[] {
   return Array.from({ length: max / 5 }, (_, i) => (i + 1) * 5);
 }

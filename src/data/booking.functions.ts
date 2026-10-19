@@ -25,7 +25,7 @@ export const getBookingCatalog = createServerFn({ method: "GET" })
     const [cats, links, treatments, tLocs, locs, prs, pLocs, pTreat, roles, tRoles, settings, mixed] = await Promise.all([
       db.from("treatment_categories").select("id, parent_id, name_nl, name_en, icon, sort").eq("tenant_id", tid).order("sort"),
       db.from("treatment_category_links").select("treatment_id, category_id, sort").eq("tenant_id", tid),
-      db.from("treatments").select("id, slug, name_nl, name_en, icon, duration_min, practitioner_choice, status, pre_questionnaire_key, post_questionnaire_key").eq("tenant_id", tid).eq("status", "active"),
+      db.from("treatments").select("id, slug, name_nl, name_en, icon, duration_min, practitioner_choice, status, pre_questionnaire_key, post_questionnaire_key, questionnaire_minutes").eq("tenant_id", tid).eq("status", "active"),
       db.from("treatment_locations").select("treatment_id, location_id").eq("tenant_id", tid),
       db.from("locations").select("id, slug, name, kind, address, status, show_new_label, sort").eq("tenant_id", tid).order("sort"),
       db.from("practitioners").select("id, first_name, last_name, role_id, photo_path, bio_nl, status, sort").eq("tenant_id", tid).eq("status", "active"),

@@ -28,7 +28,7 @@ export async function queueAppointmentMail(db: Db, appointmentId: string, moment
   const [tenant, patient, treatment, prac, loc, templates, links, settings, sets] = await Promise.all([
     db.from("tenants").select("id, slug, time_zone, default_language, booking_domains").eq("id", a.tenant_id).single(),
     db.from("patients").select("id, first_name, email").eq("id", a.patient_id).single(),
-    db.from("treatments").select("name_nl, name_en, description_nl, description_en, preparation_nl, preparation_en, duration_min, post_questionnaire_key, cancel_until_hours, no_show_fee_eur").eq("id", a.treatment_id).single(),
+    db.from("treatments").select("name_nl, name_en, description_nl, description_en, preparation_nl, preparation_en, duration_min, post_questionnaire_key, cancel_until_hours, no_show_fee_eur, questionnaire_minutes").eq("id", a.treatment_id).single(),
     db.from("practitioners").select("first_name, last_name, photo_path").eq("id", a.practitioner_id).maybeSingle(),
     db.from("locations").select("name, kind, address, postal_city, maps_url, phone").eq("id", a.location_id).maybeSingle(),
     db.from("mail_templates").select("*").eq("tenant_id", a.tenant_id).neq("status", "archived"),
@@ -55,7 +55,7 @@ export async function queueAppointmentMail(db: Db, appointmentId: string, moment
   const noShow = ((await db.from("option_lists").select("label_nl").eq("list_key", "mail_ui").eq("value", "no_show_zin").maybeSingle()).data?.label_nl) ?? "";
   const values: Record<string, string> = {
     voornaam: p.first_name, dag: day, tijd: start.toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: t.time_zone }),
-    behandeling: translated(tr.name_nl, tr.name_en, lang), duur: String(tr.duration_min), duur_eenheid: lang === "en" ? "minutes" : "minuten",
+    behandeling: translated(tr.name_nl, tr.name_en, lang), duur: String(tr.duration_min), duur_eenheid: lang === "en" ? "minutes" : "minuten", vragenlijst_minuten: String(tr.questionnaire_minutes ?? 8),
     behandeling_omschrijving: translated(tr.description_nl, tr.description_en, lang), voorbereiding: translated(tr.preparation_nl, tr.preparation_en, lang),
     behandelaar: prac.data ? `${prac.data.first_name} ${prac.data.last_name}` : "", behandelaar_voornaam: prac.data?.first_name ?? "",
     locatie: online ? "Online" : loc.data?.name ?? "", locatie_naam: loc.data?.name ?? "", adres: [loc.data?.address, loc.data?.postal_city].filter(Boolean).join("\n"),

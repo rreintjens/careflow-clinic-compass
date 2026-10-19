@@ -25,7 +25,7 @@ export const Route = createFileRoute("/_authenticated/organisatie/behandelingen/
   component: TreatmentsPage,
 });
 
-const CATEGORY_ICONS = ["botox", "fillers", "medisch-afvallen", "skinboosters", "huidtherapie", "lasertherapie", "huidverstrakking", "ooglidcorrectie"];
+const CATEGORY_ICONS = TREATMENT_ICONS;
 
 function DragHandle() {
   return (

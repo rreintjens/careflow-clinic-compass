@@ -65,6 +65,7 @@ function TreatmentForm({ org, defaults, onSaved, onCancel }: { org: Org; default
   const [locs, setLocs] = useState(offeredLocationIds(org, id));
   const [pre, setPre] = useState(t.pre_questionnaire_key ?? "none");
   const [post, setPost] = useState(t.post_questionnaire_key ?? "none");
+  const [qmin, setQmin] = useState(String(t.questionnaire_minutes ?? 8));
   const [lang, setLang] = useState<"nl" | "en">("nl");
   const [texts, setTexts] = useState({
     description_nl: t.description_nl ?? "", description_en: t.description_en ?? "",
@@ -96,6 +97,7 @@ function TreatmentForm({ org, defaults, onSaved, onCancel }: { org: Org; default
           status,
           pre_questionnaire_key: pre === "none" ? null : pre,
           post_questionnaire_key: post === "none" ? null : post,
+          questionnaire_minutes: Math.min(60, Math.max(1, Number(qmin) || 8)),
           ...Object.fromEntries(Object.entries(texts).map(([k, v]) => [k, v.trim() || null])),
         },
         { categoryIds: cats, roleIds: roles, locationIds: locs },
@@ -226,6 +228,7 @@ function TreatmentForm({ org, defaults, onSaved, onCancel }: { org: Org; default
             <div className="grid grid-cols-2 gap-4">
               <Select label="Vragen vóór het boeken" value={pre} onChange={setPre} options={[{ value: "none", label: "Geen" }, ...opts(org, "pre_questionnaire")]} />
               <Select label="Medische vragenlijst na het boeken" value={post} onChange={setPost} options={[{ value: "none", label: "Geen" }, ...opts(org, "post_questionnaire")]} />
+              <TextField label="Duur medische vragenlijst (minuten)" inputMode="numeric" value={qmin} onChange={(e) => setQmin(e.target.value.replace(/[^\d]/g, "").slice(0, 2))} help="Deze duur ziet de patiënt in de bevestiging, de intro van de vragenlijst en de mails." />
             </div>
             <div className="mt-5 text-[13px] font-medium">E-mails die voor deze behandeling gaan</div>
             <ul className="mt-1 divide-y divide-line">

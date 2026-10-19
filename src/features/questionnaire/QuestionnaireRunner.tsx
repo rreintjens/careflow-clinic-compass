@@ -105,6 +105,18 @@ export function QuestionnaireRunner({
   const isQuestions = !!page.items?.length;
   const prog = pageProgress(page, ctx);
   const many = (page.items?.length ?? 0) > 1;
+  // Flowoverzicht: the line under the title follows the sections this patient still gets, not a fixed sentence.
+  const afterLbls = [t("step_details"), t("step_confirm")];
+  const flowLine = page.type === "flow_overview" && ui["flow_line"]
+    ? (() => {
+        const rem = flowSteps(def, ctx, page.id, [t("step_appointment")], afterLbls)
+          .filter((s) => s.state !== "done" && !afterLbls.includes(s.label))
+          .map((s) => s.label.toLowerCase());
+        if (!rem.length) return null;
+        const secties = rem.length === 1 ? rem[0]! : `${rem.slice(0, -1).join(", ")} en ${rem[rem.length - 1]}`;
+        return fill(ui["flow_line"] as string, { secties });
+      })()
+    : null;
   return (
     <Frame scrollRef={scrollRef} fullScreen={fullScreen} progress={progress} onBack={idx > 0 ? back : undefined}
       footer={<>
@@ -119,7 +131,7 @@ export function QuestionnaireRunner({
         </div>
       )}
       {(page.title || !many) && <h1 className="text-[28px] font-semibold leading-tight">{fill(page.title ?? (page.items?.[0] ? itemText(page.items[0], "text", lang) : undefined), vars)}</h1>}
-      {page.body && <p className="mt-3 text-[15px] leading-[1.6] text-muted-foreground">{fill(page.body, vars)}</p>}
+      {page.body && !flowLine && <p className="mt-3 text-[15px] leading-[1.6] text-muted-foreground">{fill(page.body, vars)}</p>}
       {!page.title && !many && page.items?.[0]?.help && <p className="mt-3 text-[15px] leading-[1.6] text-muted-foreground">{itemText(page.items[0], "help", lang)}</p>}
       {many && <p className="mt-2 text-xs text-muted-foreground">{t("answered", { k: prog.answered, m: prog.total })}</p>}
       {page.type === "boodschap" && <Boodschap page={page} vars={vars} />}
@@ -129,6 +141,7 @@ export function QuestionnaireRunner({
           <ul className="flex flex-col gap-2">{page.bullets.map((b) => <li key={b} className="flex gap-3 text-[15px]"><CheckIcon />{b}</li>)}</ul>
         </div>
       )}
+      {page.type === "flow_overview" && flowLine && <p className="mt-3 text-[15px] leading-[1.6] text-muted-foreground">{flowLine}</p>}
       {page.type === "flow_overview" && (
         <ol className="mt-6 flex flex-col gap-4">
           {flowSteps(def, ctx, page.id, [t("step_appointment")], [t("step_details"), t("step_confirm")]).map((s, i) => (
@@ -280,7 +293,13 @@ function ItemInput({ item, answers, set, t, today, showLabel, all, lang }: { lan
       const unknown = v === "unknown";
       return (
         <div>{label}{help}
-          {item.type === "measure_with_image" && <div className="mb-5 flex h-[190px] items-center justify-center rounded-[18px] bg-mist" aria-label={item.image}><span className="h-[42px] w-[70px] rounded-[8px] bg-muted-foreground/20" /></div>}
+          {item.type === "measure_with_image" && (
+            <div className="mb-5 flex h-[190px] items-center justify-center overflow-hidden rounded-[18px] bg-mist" aria-label={item.image}>
+              {item.image && /^https?:\/\//.test(item.image)
+                ? <img src={item.image} alt="" className="h-full w-full object-cover" />
+                : <MeasureIllustration />}
+            </div>
+          )}
           <div className="relative">
             <input inputMode="numeric" className={fieldCls} value={unknown ? "" : String(v ?? "")} onChange={(e) => { const d = e.target.value.replace(/[^\d]/g, ""); set(item.id, d ? Number(d) : undefined); }} />
             {item.unit && <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[15px] text-muted-foreground">{item.unit}</span>}
@@ -340,6 +359,23 @@ export function DobField({ value, onChange, t, today }: { value: string; onChang
       </div>
       {age !== null && Number.isFinite(age) && <p className="mt-3 text-[13px] text-muted-foreground">{t("age_shown", { age })}</p>}
     </div>
+  );
+}
+
+/** House-style line illustration for measure_with_image without an uploaded image: a tape measure around the waist at navel height. */
+function MeasureIllustration() {
+  return (
+    <svg viewBox="0 0 220 150" className="h-[150px] text-primary" fill="none" stroke="currentColor" strokeLinecap="round" aria-hidden="true">
+      <path d="M80 14 C76 38 68 52 70 72 C71.5 86 76 96 78 112 C79 124 78 134 77 142" strokeWidth="2.5" />
+      <path d="M140 14 C144 38 152 52 150 72 C148.5 86 144 96 142 112 C141 124 142 134 143 142" strokeWidth="2.5" />
+      <circle cx="110" cy="88" r="2.2" fill="currentColor" stroke="none" />
+      <path d="M66 78 C86 86 134 86 154 78" strokeWidth="8" opacity="0.22" />
+      <path d="M66 78 C86 86 134 86 154 78" strokeWidth="1.6" />
+      <path d="M82 82v6 M96 84v6 M110 84.5v6 M124 84v6 M138 82v6" strokeWidth="1.4" />
+      <path d="M154 78 C168 76 178 68 180 56 L180 46" strokeWidth="3" />
+      <rect x="174" y="34" width="12" height="13" rx="2.5" strokeWidth="2" />
+      <path d="M177 40h6" strokeWidth="1.4" />
+    </svg>
   );
 }
 
