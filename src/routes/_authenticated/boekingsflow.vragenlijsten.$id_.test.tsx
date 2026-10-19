@@ -12,6 +12,7 @@ import { QuestionnaireRunner } from "@/features/questionnaire/QuestionnaireRunne
 
 export const Route = createFileRoute("/_authenticated/boekingsflow/vragenlijsten/$id_/test")({
   head: () => ({ meta: [{ title: "Testmodus vragenlijst · Beheer · The Body Clinic" }, { name: "robots", content: "noindex" }] }),
+  validateSearch: (s: Record<string, unknown>): { pagina?: string } => (typeof s["pagina"] === "string" ? { pagina: s["pagina"] } : {}),
   loader: ({ context }) => Promise.all([context.queryClient.ensureQueryData(questionnairesQuery), context.queryClient.ensureQueryData(orgQuery)]),
   component: TestMode,
 });
@@ -21,6 +22,7 @@ const TEST_VARS = { voornaam: "Sanne", behandelaar_voornaam: "Feikje", dag: "din
 
 function TestMode() {
   const { id } = Route.useParams();
+  const { pagina } = Route.useSearch();
   const { data } = useSuspenseQuery(questionnairesQuery);
   const { data: org } = useSuspenseQuery(orgQuery);
   const q = data.questionnaires.find((x) => x.id === id);
@@ -46,7 +48,7 @@ function TestMode() {
         </div>
       </div>
       <div className="grid grid-cols-[390px_minmax(0,1fr)] items-start gap-8">
-        <QuestionnaireRunner key={`${versionId}-${run}`} flow={doc} def={def} ui={data.uiTexts} today={today} vars={TEST_VARS} initial={initial}
+        <QuestionnaireRunner key={`${versionId}-${run}`} flow={doc} def={def} ui={data.uiTexts} today={today} vars={TEST_VARS} initial={initial} {...(pagina ? { startPageId: pagina } : {})}
           onFinish={(answers) => setResult({ answers })} onRed={(red) => setResult({ answers: {}, red })} />
         <div className="flex flex-col gap-4">
           <Card title="Versie">

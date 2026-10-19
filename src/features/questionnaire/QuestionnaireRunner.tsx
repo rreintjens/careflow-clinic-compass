@@ -11,11 +11,24 @@ import { cn } from "@/lib/utils";
 
 export type UiTexts = Record<string, string>;
 
+/** English text of an item when chosen, falling back to Dutch per field. */
+export function itemText(i: Item, key: "text" | "help" | "allow_unknown", lang: Lang): string | undefined {
+  const en = lang === "en" ? (i[`${key}_en`] as string | undefined) : undefined;
+  return en || (i[key] as string | undefined);
+}
+export function optionLabel(i: Item, option: string, lang: Lang): string {
+  if (lang !== "en") return option;
+  if (option === i.exclusive_option) return (i["exclusive_option_en"] as string | undefined) || option;
+  const idx = (i.options ?? []).indexOf(option);
+  return ((i["options_en"] as string[] | undefined)?.[idx]) || option;
+}
+export type Lang = "nl" | "en";
+
 const fill = (s: string | undefined, vars: Record<string, string>) => (s ?? "").replace(/\{(\w+)\}/g, (m, k: string) => vars[k] ?? m);
 
 /** Patient-facing questionnaire at 390px; used in test mode now and in the booking flow later. */
 export function QuestionnaireRunner({
-  flow, def, ui, today, vars = {}, initial = {}, startPageId, onFinish, onRed, onAnswers, fullScreen = false,
+  flow, def, ui, today, vars = {}, initial = {}, startPageId, onFinish, onRed, onAnswers, fullScreen = false, lang = "nl",
 }: {
   flow: Pick<FlowFile, "settings" | "computed_fields">;
   def: QuestionnaireDef;
@@ -28,6 +41,7 @@ export function QuestionnaireRunner({
   onRed?: (red: RedOutcome) => void;
   onAnswers?: (answers: Answers) => void;
   fullScreen?: boolean;
+  lang?: Lang;
 }) {
   const [answers, setAnswers] = useState<Answers>(initial);
   const [pageId, setPageId] = useState(startPageId ?? def.pages[0]?.id ?? "");
@@ -109,9 +123,9 @@ export function QuestionnaireRunner({
           />
         </div>
       )}
-      {(page.title || !many) && <h1 className="text-[28px] font-semibold leading-tight">{fill(page.title ?? page.items?.[0]?.text, vars)}</h1>}
+      {(page.title || !many) && <h1 className="text-[28px] font-semibold leading-tight">{fill(page.title ?? (page.items?.[0] ? itemText(page.items[0], "text", lang) : undefined), vars)}</h1>}
       {page.body && <p className="mt-3 text-[15px] leading-[1.6] text-muted-foreground">{fill(page.body, vars)}</p>}
-      {!page.title && !many && page.items?.[0]?.help && <p className="mt-3 text-[15px] leading-[1.6] text-muted-foreground">{page.items[0].help}</p>}
+      {!page.title && !many && page.items?.[0]?.help && <p className="mt-3 text-[15px] leading-[1.6] text-muted-foreground">{itemText(page.items[0], "help", lang)}</p>}
       {many && <p className="mt-2 text-xs text-muted-foreground">{t("answered", { k: prog.answered, m: prog.total })}</p>}
       {page.bullets && (
         <div className="mt-6 rounded-[18px] bg-sand p-5">
@@ -133,7 +147,7 @@ export function QuestionnaireRunner({
         <div className="mt-6 flex flex-col gap-6">
           {visibleItems(page, ctx).map((i) => (
             <div key={i.id} id={`q-${i.id}`} className={cn(showMissing && !i.optional && !itemAnswered(i, answers) && "-mx-3 rounded-[16px] bg-warning-bg px-3 py-3")}>
-              <ItemInput item={i} page={page} answers={answers} set={set} t={t} today={today} showLabel={many} all={def} />
+              <ItemInput item={i} page={page} answers={answers} set={set} t={t} today={today} showLabel={many} all={def} lang={lang} />
               {showMissing && !i.optional && !itemAnswered(i, answers) && <p role="alert" className="mt-2 text-[13px] text-warning">{t("missing_answer")}</p>}
             </div>
           ))}
@@ -162,14 +176,14 @@ function Frame({ progress, onBack, children, footer, scrollRef, fullScreen }: { 
 const pill = (on: boolean) => cn("flex min-h-[50px] w-full items-center gap-3 rounded-[14px] px-4 py-3 text-left text-[15px]", on ? "border border-primary bg-teal-light" : "border border-transparent bg-sand");
 const fieldCls = "h-[54px] w-full rounded-[14px] bg-sand px-4 text-[17px] outline-none focus-visible:ring-1 focus-visible:ring-primary";
 
-function ItemInput({ item, answers, set, t, today, showLabel, all }: { item: Item; page: Page; answers: Answers; set: (k: string, v: unknown) => void; t: (k: string, e?: Record<string, string | number>) => string; today: string; showLabel: boolean; all: QuestionnaireDef }) {
+function ItemInput({ item, answers, set, t, today, showLabel, all, lang }: { lang: Lang; item: Item; page: Page; answers: Answers; set: (k: string, v: unknown) => void; t: (k: string, e?: Record<string, string | number>) => string; today: string; showLabel: boolean; all: QuestionnaireDef }) {
   const v = answers[item.id];
-  const label = showLabel ? <div className="mb-3 text-[15px]">{item.text}</div> : null;
-  const help = showLabel && item.help ? <p className="-mt-2 mb-3 text-[13px] text-muted-foreground">{item.help}</p> : null;
+  const label = showLabel ? <div className="mb-3 text-[15px]">{itemText(item, "text", lang)}</div> : null;
+  const help = showLabel && item.help ? <p className="-mt-2 mb-3 text-[13px] text-muted-foreground">{itemText(item, "help", lang)}</p> : null;
   switch (item.type) {
     case "single_choice":
     case "yes_no": {
-      const options = item.type === "yes_no" ? [{ value: "yes", label: t("yes") }, { value: "no", label: t("no") }] : (item.options ?? []).map((o) => ({ value: o, label: o }));
+      const options = item.type === "yes_no" ? [{ value: "yes", label: t("yes") }, { value: "no", label: t("no") }] : (item.options ?? []).map((o) => ({ value: o, label: optionLabel(item, o, lang) }));
       return (
         <div>{label}{help}
           <div className={cn("flex gap-2", item.type === "yes_no" ? "flex-row" : "flex-col")}>
@@ -187,7 +201,7 @@ function ItemInput({ item, answers, set, t, today, showLabel, all }: { item: Ite
       const cur = Array.isArray(v) ? (v as string[]) : [];
       const box = (o: string) => (
         <button key={o} type="button" onClick={() => set(item.id, toggleOption(cur, o, item.exclusive_option))} className={pill(cur.includes(o))}>
-          <span className={cn("inline-flex size-5 shrink-0 items-center justify-center rounded-[5px] border", cur.includes(o) ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/50")}>{cur.includes(o) && <CheckIcon small />}</span>{o}
+          <span className={cn("inline-flex size-5 shrink-0 items-center justify-center rounded-[5px] border", cur.includes(o) ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/50")}>{cur.includes(o) && <CheckIcon small />}</span>{optionLabel(item, o, lang)}
         </button>
       );
       return (
@@ -226,7 +240,7 @@ function ItemInput({ item, answers, set, t, today, showLabel, all }: { item: Ite
             <input inputMode="numeric" className={fieldCls} value={unknown ? "" : String(v ?? "")} onChange={(e) => { const d = e.target.value.replace(/[^\d]/g, ""); set(item.id, d ? Number(d) : undefined); }} />
             {item.unit && <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[15px] text-muted-foreground">{item.unit}</span>}
           </div>
-          {item.allow_unknown && <button type="button" onClick={() => set(item.id, unknown ? undefined : "unknown")} className={cn(pill(unknown), "mt-3")}>{item.allow_unknown}</button>}
+          {item.allow_unknown && <button type="button" onClick={() => set(item.id, unknown ? undefined : "unknown")} className={cn(pill(unknown), "mt-3")}>{itemText(item, "allow_unknown", lang)}</button>}
         </div>
       );
     }
@@ -235,7 +249,7 @@ function ItemInput({ item, answers, set, t, today, showLabel, all }: { item: Ite
     case "checkbox_required":
       return (
         <button type="button" onClick={() => set(item.id, v !== true)} className={pill(v === true)}>
-          <span className={cn("inline-flex size-5 shrink-0 items-center justify-center rounded-[5px] border", v === true ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/50")}>{v === true && <CheckIcon small />}</span>{item.text}
+          <span className={cn("inline-flex size-5 shrink-0 items-center justify-center rounded-[5px] border", v === true ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/50")}>{v === true && <CheckIcon small />}</span>{itemText(item, "text", lang)}
         </button>
       );
     case "answer_summary": {

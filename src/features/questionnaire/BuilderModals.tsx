@@ -1,36 +1,34 @@
 import { useState } from "react";
 
-import { Checkbox, TextArea, TextField, TextLink } from "@/components/Field";
+import { Link } from "@tanstack/react-router";
+
+import { Checkbox, PlusIcon, TextArea, TextField, TextLink, inputCls } from "@/components/Field";
 import { Modal } from "@/components/Modal";
 import { PillButton } from "@/components/PillButton";
+import { SegmentedControl } from "@/components/SegmentedControl";
 import { Select } from "@/components/Select";
-import type { Condition, Item, ItemType, Page, PageType } from "@/domain/questionnaire/engine";
+import type { Condition, Item, ItemType, Page, PageType, QuestionnaireDef } from "@/domain/questionnaire/engine";
+import { answerValues, isSimpleRed, redAnswers, redRuleFor } from "@/domain/questionnaire/situations";
 import { evaluate } from "@/domain/questionnaire/expr";
 import { cn } from "@/lib/utils";
 
-import { ConditionEditor, type FieldInfo } from "./conditions";
+import { ConditionLine, ConditionModal, type CondCtx } from "./conditions";
+import { QuestionnaireRunner, type Lang, type UiTexts } from "./QuestionnaireRunner";
 
 type Opt = { value: string; label: string };
+export type { CondCtx };
 const lines = (s: string) => s.split("\n").map((x) => x.trim()).filter(Boolean);
 const slug = (s: string) => s.toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "").slice(0, 40) || "vraag";
 
-/** Optional condition block: off = no condition. */
-function OptionalCondition({ label, value, onChange, ctx }: { label: string; value?: Condition | undefined; onChange: (c: Condition | undefined) => void; ctx: CondCtx }) {
-  return (
-    <div className="flex flex-col gap-2">
-      <Checkbox label={label} checked={!!value} onChange={(on) => onChange(on ? { all: [] } : undefined)} />
-      {value && <ConditionEditor value={value} onChange={onChange} {...ctx} />}
-    </div>
-  );
-}
-export interface CondCtx { fields: FieldInfo[]; ops: Opt[]; refs: Opt[] }
+type CondTarget = { key: string; title: string; always: string; value: Condition | undefined; set: (c: Condition | undefined) => void };
 
-export function PageModal({ page, pageTypes, sections, icons, ctx, onSave, onDelete, onClose }: {
-  page: Page | null; pageTypes: Opt[]; sections: string[]; icons: string[]; ctx: CondCtx;
+export function PageModal({ page, pageTypes, sections, icons, ctx, questionnaireName, onSave, onDelete, onClose }: {
+  page: Page | null; pageTypes: Opt[]; sections: string[]; icons: string[]; ctx: CondCtx; questionnaireName: string;
   onSave: (p: Page) => void; onDelete?: (() => void) | undefined; onClose: () => void;
 }) {
   const [p, setP] = useState<Page>(page ?? { id: `p_${Date.now().toString(36)}`, type: "text", title: "" });
   const [iconOpen, setIconOpen] = useState(false);
+  const [cond, setCond] = useState<CondTarget | null>(null);
   const type = (p.type ?? "question_page") as PageType;
   const set = (patch: Record<string, unknown>) => setP({ ...p, ...patch } as Page);
   const clean = (x: Page): Page => Object.fromEntries(Object.entries(x).filter(([, v]) => v !== undefined && v !== "" && !(Array.isArray(v) && v.length === 0 && v !== x.items))) as Page;
@@ -54,9 +52,10 @@ export function PageModal({ page, pageTypes, sections, icons, ctx, onSave, onDel
             </div>
           )}
         </div>
-        <div className="mt-5"><OptionalCondition label="Alleen tonen onder een voorwaarde" value={p.show_if} onChange={(c) => set({ show_if: c })} ctx={ctx} /></div>
-        {type === "question_page" && <div className="mt-4"><OptionalCondition label="Rood als (voor de hele pagina)" value={p.red_if} onChange={(c) => set({ red_if: c })} ctx={ctx} /></div>}
+        <div className="mt-5"><ConditionLine label="Tonen" empty="Altijd" value={p.show_if} ctx={ctx} onEdit={() => setCond({ key: "show", title: `Wanneer tonen we de pagina ${p.title || p.section || ""}?`.replace(" ?", "?"), always: "Altijd tonen", value: p.show_if, set: (c) => set({ show_if: c }) })} /></div>
+        {type === "question_page" && <div className="mt-4"><ConditionLine label="Rood als (voor de hele pagina)" empty="Nooit" value={p.red_if} ctx={ctx} onEdit={() => setCond({ key: "red", title: "Wanneer is deze pagina rood?", always: "Nooit rood", value: p.red_if, set: (c) => set({ red_if: c }) })} /></div>}
       </Modal>
+      {cond && <ConditionModal title={cond.title} description={questionnaireName} alwaysLabel={cond.always} value={cond.value} ctx={ctx} onClose={() => setCond(null)} onSave={(c) => { cond.set(c); setCond(null); }} />}
       {iconOpen && <IconPicker icons={icons} value={p.icon} onPick={(i) => { set({ icon: i }); setIconOpen(false); }} onClose={() => setIconOpen(false)} />}
     </>
   );
@@ -80,57 +79,185 @@ export function IconPicker({ icons, value, onPick, onClose }: { icons: string[];
   );
 }
 
-export function ItemModal({ item, itemTypes, sections, section, rejections, ctx, onSave, onDelete, onClose }: {
-  item: Item | null; itemTypes: Opt[]; sections: string[]; section?: string | undefined; rejections: Opt[]; ctx: CondCtx;
+export function ItemModal({ item, number, questionnaireName, questionnaireId, def, page, flow, ui, itemTypes, sections, section, rejections, images, ctx, onSave, onDelete, onClose }: {
+  item: Item | null; number: number; questionnaireName: string; questionnaireId: string; def: QuestionnaireDef; page: Page | undefined;
+  flow: { settings: Record<string, unknown>; computed_fields: Record<string, string> }; ui: UiTexts;
+  itemTypes: Opt[]; sections: string[]; section?: string | undefined; rejections: Opt[]; images: Opt[]; ctx: CondCtx;
   onSave: (i: Item, section: string | undefined) => void; onDelete?: (() => void) | undefined; onClose: () => void;
 }) {
   const [i, setI] = useState<Item>(item ?? { id: "", text: "", type: "single_choice", options: [] });
   const [sec, setSec] = useState(section ?? "");
-  const set = (patch: Record<string, unknown>) => setI({ ...i, ...patch } as Item);
+  const [lang, setLang] = useState<Lang>("nl");
+  const [cond, setCond] = useState<CondTarget | null>(null);
+  const simple = isSimpleRed(i);
+  const [red, setRed] = useState<string[]>(() => (simple ? redAnswers(i) : []));
+  const [redDirty, setRedDirty] = useState(false);
+  const [adding, setAdding] = useState<{ text: string; red: boolean; exclusive: boolean } | null>(null);
+  const [drag, setDrag] = useState<number | null>(null);
+  const set = (patch: Record<string, unknown>) => setI((x) => ({ ...x, ...patch } as Item));
   const t = i.type;
   const hasOptions = t === "single_choice" || t === "multi_choice";
+  const choiceType = hasOptions || t === "yes_no";
+  const en = lang === "en";
+  const optsEn = (i["options_en"] as string[] | undefined) ?? [];
   const sigMode = i.signal_if === undefined ? "none" : typeof i.signal_if === "string" && i.signal_if !== "any_except_exclusive" ? "value" : i.signal_if === "any_except_exclusive" ? "any" : Array.isArray(i.signal_if) ? "values" : "condition";
-  const choices = t === "yes_no" ? ["yes", "no"] : [...(i.options ?? []), ...(i.exclusive_option ? [i.exclusive_option] : [])];
-  const save = () => {
+  const choices = answerValues(i);
+  const ansLabel = (c: string) => (c === "yes" ? "Ja" : c === "no" ? "Nee" : c);
+
+  /** The item as it will be saved, with the per-answer red rule written when an outcome changed. */
+  const current = (): Item => {
     const id = i.id || slug(i.text);
-    const out = Object.fromEntries(Object.entries({ ...i, id }).filter(([, v]) => v !== undefined && v !== "")) as Item;
-    onSave(out, sec.trim() || undefined);
+    const base = { ...i, id };
+    const withRed = redDirty && simple ? { ...base, red_if: redRuleFor(base, red) } : base;
+    return Object.fromEntries(Object.entries(withRed).filter(([, v]) => v !== undefined && v !== "" && !(Array.isArray(v) && v.length === 0 && v !== withRed.options))) as Item;
   };
+  const toggleRed = (o: string) => { setRed((r) => (r.includes(o) ? r.filter((x) => x !== o) : [...r, o])); setRedDirty(true); };
+  const rename = (idx: number, isExclusive: boolean, text: string) => {
+    if (en) {
+      if (isExclusive) set({ exclusive_option_en: text });
+      else { const next = [...optsEn]; next[idx] = text; set({ options_en: next }); }
+      return;
+    }
+    const old = isExclusive ? i.exclusive_option : i.options?.[idx];
+    if (isExclusive) set({ exclusive_option: text });
+    else set({ options: (i.options ?? []).map((x, j) => (j === idx ? text : x)) });
+    if (old && red.includes(old)) { setRed(red.map((x) => (x === old ? text : x))); setRedDirty(true); }
+  };
+  const remove = (idx: number, isExclusive: boolean) => {
+    const old = isExclusive ? i.exclusive_option : i.options?.[idx];
+    if (isExclusive) set({ exclusive_option: undefined, exclusive_option_en: undefined });
+    else set({ options: (i.options ?? []).filter((_, j) => j !== idx), options_en: optsEn.filter((_, j) => j !== idx) });
+    if (old && red.includes(old)) { setRed(red.filter((x) => x !== old)); setRedDirty(true); }
+  };
+  const add = () => {
+    if (!adding?.text.trim()) return;
+    const text = adding.text.trim();
+    if (adding.exclusive && t === "multi_choice") {
+      const prev = i.exclusive_option;
+      set({ exclusive_option: text, options: prev ? [...(i.options ?? []), prev] : i.options });
+    } else set({ options: [...(i.options ?? []), text] });
+    if (adding.red) { setRed([...red, text]); setRedDirty(true); }
+    setAdding(null);
+  };
+  const moveOpt = (from: number, to: number) => {
+    const o = [...(i.options ?? [])], e = [...optsEn];
+    const [m] = o.splice(from, 1); if (m !== undefined) o.splice(to, 0, m);
+    const [me] = e.splice(from, 1); if (me !== undefined) e.splice(to, 0, me);
+    set({ options: o, ...(optsEn.length ? { options_en: e } : {}) });
+  };
+
+  const live = current();
+  const noShow = ({ show_if: _s, ...x }: Item): Item => x;
+  const pageBase = page ? (({ show_if: _a, red_if: _b, ...x }: Page) => x)(page) : undefined;
+  const previewPage: Page = pageBase
+    ? { ...pageBase, items: item ? (pageBase.items ?? []).map((x) => (x === item ? noShow(live) : x)) : [...(pageBase.items ?? []), noShow(live)] }
+    : { id: "preview", ...(sec.trim() ? { section: sec.trim() } : {}), items: [noShow(live)] };
+  const previewDef: QuestionnaireDef = { ...def, pages: [previewPage] };
+  const today = new Date().toISOString().slice(0, 10);
+  const sectionName = sec.trim() || page?.section;
+
   return (
-    <Modal open width="lg" onOpenChange={(o) => !o && onClose()} title={item ? "Vraag wijzigen" : "Vraag toevoegen"} description="De vraag, de antwoorden en de beslisregel."
-      footer={<div className="flex w-full items-center justify-between">{onDelete ? <TextLink tone="warning" onClick={onDelete}>Vraag verwijderen</TextLink> : <span />}<div className="flex gap-2"><PillButton variant="outline" onClick={onClose}>Annuleren</PillButton><PillButton disabled={!i.text.trim()} onClick={save}>Opslaan</PillButton></div></div>}>
-      <div className="grid grid-cols-2 gap-4">
-        <Select label="Type vraag" value={t} onChange={(v) => set({ type: v as ItemType })} options={itemTypes} />
-        <div className="flex flex-col gap-2">
-          <Select label="Onderdeel" value={sections.includes(sec) ? sec : sec ? "__new" : "__none"} onChange={(v) => setSec(v === "__none" ? "" : v === "__new" ? " " : v)} options={[{ value: "__none", label: "Geen" }, ...sections.map((s) => ({ value: s, label: s })), { value: "__new", label: "Nieuw onderdeel" }]} />
-          {sec && !sections.includes(sec) && <TextField label="Naam onderdeel" value={sec.trim()} onChange={(e) => setSec(e.target.value || " ")} />}
+    <>
+      <Modal open width="xl" onOpenChange={(o) => !o && onClose()} title={`Vraag ${number} ${item ? "wijzigen" : "toevoegen"}`} description={`${questionnaireName}${sectionName ? ` · onderdeel ${sectionName}` : ""}`}
+        footer={<div className="flex w-full items-center justify-between">{onDelete ? <TextLink tone="warning" onClick={onDelete}>Verwijderen</TextLink> : <span />}<div className="flex gap-2"><PillButton variant="outline" onClick={onClose}>Annuleren</PillButton><PillButton disabled={!i.text.trim()} onClick={() => onSave(current(), sec.trim() || undefined)}>Opslaan</PillButton></div></div>}>
+        <div className="grid grid-cols-[minmax(0,1fr)_300px] gap-8">
+          <div className="flex min-w-0 flex-col gap-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-2">
+                <Select label="Onderdeel" value={sections.includes(sec) ? sec : sec ? "__new" : "__none"} onChange={(v) => setSec(v === "__none" ? "" : v === "__new" ? " " : v)} options={[{ value: "__none", label: "Geen" }, ...sections.map((s) => ({ value: s, label: s })), { value: "__new", label: "Nieuw onderdeel" }]} />
+                {sec && !sections.includes(sec) && <TextField label="Naam onderdeel" value={sec.trim()} onChange={(e) => setSec(e.target.value || " ")} />}
+              </div>
+              <Select label="Type vraag" value={t} onChange={(v) => set({ type: v as ItemType })} options={itemTypes} />
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="w-[72px] text-[13px] font-medium leading-tight">Taal van de teksten</span>
+              <SegmentedControl label="Taal van de teksten" value={lang} onChange={setLang} options={[{ value: "nl", label: "Nederlands" }, { value: "en", label: "Engels" }]} />
+              <span className="text-xs leading-[1.4] text-muted-foreground">Vraag, toelichting en antwoorden hebben per taal een eigen veld; de voorwaarden en uitkomsten zijn gedeeld.</span>
+            </div>
+            <TextArea label="Vraag" rows={2} value={en ? String(i["text_en"] ?? "") : i.text} placeholder={en ? i.text : undefined} onChange={(e) => set(en ? { text_en: e.target.value } : { text: e.target.value })} />
+            <TextArea label="Toelichting onder de vraag" rows={2} value={en ? String(i["help_en"] ?? "") : (i.help ?? "")} placeholder={en ? i.help : undefined} onChange={(e) => set(en ? { help_en: e.target.value } : { help: e.target.value })} help="Optioneel." />
+
+            {choiceType && (
+              <div className="flex flex-col gap-2">
+                <span className="text-[13px] font-medium">Antwoorden en uitkomst</span>
+                {choices.map((c) => {
+                  const isEx = c === i.exclusive_option;
+                  const idx = isEx ? -1 : (i.options ?? []).indexOf(c);
+                  const text = t === "yes_no" ? ansLabel(c) : en ? (isEx ? String(i["exclusive_option_en"] ?? "") : (optsEn[idx] ?? "")) : c;
+                  return (
+                    <div key={`${c}-${idx}`} draggable={hasOptions && !isEx} onDragStart={() => setDrag(idx)} onDragOver={(e) => e.preventDefault()} onDrop={() => { if (drag !== null && idx >= 0 && drag !== idx) moveOpt(drag, idx); setDrag(null); }}
+                      className="flex h-11 items-center gap-3 rounded-[12px] bg-sand px-4">
+                      <span className={cn("text-xs text-muted-foreground", hasOptions && !isEx ? "cursor-grab" : "opacity-0")} aria-hidden="true">⋮⋮</span>
+                      {t === "yes_no" ? <span className="flex-1 text-[15px]">{text}</span>
+                        : <input aria-label="Tekst van het antwoord" className="min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted-foreground" value={text} placeholder={en ? c : undefined} onChange={(e) => rename(idx, isEx, e.target.value)} />}
+                      {isEx && <span className="inline-flex h-7 items-center gap-1 rounded-full border border-line bg-background px-3 text-xs">− Sluit de rest uit</span>}
+                      {simple && <button type="button" onClick={() => toggleRed(c)} className={cn("h-7 rounded-full px-3 text-xs", red.includes(c) ? "bg-warning-bg text-warning" : "bg-teal-light text-primary")}>{red.includes(c) ? "Rood" : "Groen"}</button>}
+                      {hasOptions && <button type="button" aria-label="Antwoord verwijderen" onClick={() => remove(idx, isEx)} className="rounded-full p-1 text-muted-foreground hover:bg-background"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg></button>}
+                    </div>
+                  );
+                })}
+                {hasOptions && adding && (
+                  <div className="flex flex-col gap-3 rounded-[14px] border border-primary p-4">
+                    <input autoFocus aria-label="Tekst van het antwoord" placeholder="Tekst van het antwoord" className={inputCls} value={adding.text} onChange={(e) => setAdding({ ...adding, text: e.target.value })} onKeyDown={(e) => e.key === "Enter" && add()} />
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="text-[13px]">Uitkomst</span>
+                      <SegmentedControl label="Uitkomst" value={adding.red ? "red" : "green"} onChange={(v) => setAdding({ ...adding, red: v === "red" })} options={[{ value: "green", label: "Groen" }, { value: "red", label: "Rood" }]} />
+                      {t === "multi_choice" && <Checkbox label="Sluit andere antwoorden uit" checked={adding.exclusive} onChange={(v) => setAdding({ ...adding, exclusive: v })} />}
+                      <div className="ml-auto flex gap-2"><PillButton size="sm" variant="outline" onClick={() => setAdding(null)}>Annuleren</PillButton><PillButton size="sm" disabled={!adding.text.trim()} onClick={add}>Toevoegen</PillButton></div>
+                    </div>
+                  </div>
+                )}
+                {hasOptions && !adding && (
+                  <div><button type="button" onClick={() => setAdding({ text: "", red: false, exclusive: false })} className="inline-flex h-9 items-center gap-2 rounded-full border border-dashed border-primary px-4 text-[13px] text-primary"><PlusIcon />Antwoord</button></div>
+                )}
+                <p className="text-xs leading-[1.6] text-muted-foreground">Per antwoord kies je de uitkomst en of het de andere antwoorden uitsluit. Kiest de patiënt “Geen van deze”, dan gaan de andere vinkjes uit; kiest de patiënt daarna een aandoening, dan gaat “Geen van deze” weer uit. Bij één keuze per vraag is dit niet nodig.</p>
+              </div>
+            )}
+            {(!choiceType || !simple) && (
+              <ConditionLine label="Rood als" empty="Nooit" value={i.red_if} ctx={ctx}
+                onEdit={() => setCond({ key: "red", title: `Wanneer is vraag ${number} rood?`, always: "Nooit rood", value: i.red_if, set: (c) => { set({ red_if: c }); setRed(c ? redAnswers({ ...i, red_if: c }) : []); setRedDirty(false); } })} />
+            )}
+            {(i.red_if || red.length > 0) && <Select label="Afwijzingsscherm" value={i.red_variant ?? "__auto"} onChange={(v) => set({ red_variant: v === "__auto" ? undefined : v })} options={[{ value: "__auto", label: "Automatisch kiezen" }, ...rejections]} />}
+
+            {(t === "number" || t === "measure_with_image") && <TextField label="Eenheid" value={i.unit ?? ""} onChange={(e) => set({ unit: e.target.value })} />}
+            {t === "measure_with_image" && <>
+              <Select label="Afbeelding" value={i.image ?? "__none"} onChange={(v) => set({ image: v === "__none" ? undefined : v })} options={[{ value: "__none", label: "Geen" }, ...images, ...(i.image && !images.some((x) => x.value === i.image) ? [{ value: i.image, label: i.image }] : [])]} help="Bij een maat, zoals buikomvang, zet je hier de foto." />
+              <TextField label="Antwoord als de patiënt het niet weet" value={en ? String(i["allow_unknown_en"] ?? "") : (i.allow_unknown ?? "")} placeholder={en ? i.allow_unknown : undefined} onChange={(e) => set(en ? { allow_unknown_en: e.target.value } : { allow_unknown: e.target.value })} />
+            </>}
+            <Checkbox label="Optioneel (mag leeg blijven)" checked={!!i.optional} onChange={(v) => set({ optional: v || undefined })} />
+
+            <ConditionLine label="Tonen" empty="Altijd" value={i.show_if} ctx={ctx} help="Of alleen als een eerdere vraag een bepaald antwoord heeft."
+              onEdit={() => setCond({ key: "show", title: `Wanneer tonen we vraag ${number}, ${shortTitle(i.text)}?`, always: "Altijd tonen", value: i.show_if, set: (c) => set({ show_if: c }) })} />
+
+            <div className="grid grid-cols-2 gap-4">
+              <Select label="Signaal voor de arts" value={sigMode} onChange={(m) => set({ signal_if: m === "none" ? undefined : m === "any" ? "any_except_exclusive" : m === "value" ? (choices[0] ?? "yes") : m === "values" ? [] : { all: [] } })}
+                options={[{ value: "none", label: "Geen signaal" }, ...(t === "multi_choice" ? [{ value: "any", label: "Bij elk antwoord behalve het uitsluitende" }] : []), ...(t === "yes_no" ? [{ value: "value", label: "Bij één antwoord" }] : []), ...(hasOptions ? [{ value: "values", label: "Bij gekozen antwoorden" }] : []), { value: "condition", label: "Onder een voorwaarde" }]} />
+              {i.signal_if !== undefined && <TextField label="Naam van het signaal" value={i.signal_label ?? ""} onChange={(e) => set({ signal_label: e.target.value })} />}
+              {sigMode === "value" && <Select label="Antwoord" value={String(i.signal_if)} onChange={(v) => set({ signal_if: v })} options={choices.map((c) => ({ value: c, label: ansLabel(c) }))} />}
+            </div>
+            {sigMode === "values" && <div className="flex flex-col gap-2">{choices.map((c) => <Checkbox key={c} label={c} checked={(i.signal_if as string[]).includes(c)} onChange={(on) => set({ signal_if: on ? [...(i.signal_if as string[]), c] : (i.signal_if as string[]).filter((x) => x !== c) })} />)}</div>}
+            {sigMode === "condition" && <ConditionLine label="Signaal als" empty="Nooit" value={(i.signal_if as Condition).all?.length || (i.signal_if as Condition).any?.length ? (i.signal_if as Condition) : undefined} ctx={ctx}
+              onEdit={() => setCond({ key: "signal", title: `Wanneer krijgt de arts een signaal bij vraag ${number}?`, always: "Altijd", value: i.signal_if as Condition, set: (c) => set({ signal_if: c ?? { all: [] } }) })} />}
+            <p className="text-xs leading-[1.6] text-muted-foreground">Kiest de patiënt een rood antwoord, dan vervalt de afspraak en volgt het afwijzingsscherm. Bij “Geen van deze” gaat de patiënt door.</p>
+          </div>
+
+          <aside className="flex flex-col gap-3">
+            <div className="text-[15px] font-semibold">Voorbeeld voor de patiënt</div>
+            <p className="text-xs leading-[1.5] text-muted-foreground">Vraag {number} zoals de patiënt hem ziet. Het voorbeeld rekent mee.</p>
+            <div className="h-[523px] w-[242px] overflow-hidden rounded-[18px]">
+              <div className="origin-top-left scale-[0.62]">
+                <QuestionnaireRunner key={lang} flow={flow} def={previewDef} ui={ui} today={today} lang={lang} initial={{ height_cm: 178, weight_kg: 88 }} />
+              </div>
+            </div>
+            {page && <Link to="/boekingsflow/vragenlijsten/$id/test" params={{ id: questionnaireId }} search={{ pagina: page.id }} target="_blank" className="text-sm text-primary underline">Open het klikbare scherm</Link>}
+          </aside>
         </div>
-        <TextField label="Vraag" value={i.text} onChange={(e) => set({ text: e.target.value })} className="col-span-2" />
-        <TextArea label="Toelichting onder de vraag" value={i.help ?? ""} onChange={(e) => set({ help: e.target.value })} className="col-span-2" />
-        {hasOptions && <TextArea label="Antwoorden (één per regel)" value={(i.options ?? []).join("\n")} onChange={(e) => set({ options: lines(e.target.value) })} className="col-span-2" />}
-        {t === "multi_choice" && <TextField label="Antwoord dat de rest uitsluit" value={i.exclusive_option ?? ""} onChange={(e) => set({ exclusive_option: e.target.value })} help="Bijvoorbeeld: Geen van deze." />}
-        {(t === "number" || t === "measure_with_image") && <TextField label="Eenheid" value={i.unit ?? ""} onChange={(e) => set({ unit: e.target.value })} />}
-        {t === "measure_with_image" && <TextField label="Antwoord als de patiënt het niet weet" value={i.allow_unknown ?? ""} onChange={(e) => set({ allow_unknown: e.target.value })} />}
-        <div className="col-span-2"><Checkbox label="Optioneel (mag leeg blijven)" checked={!!i.optional} onChange={(v) => set({ optional: v || undefined })} /></div>
-      </div>
-      <div className="mt-5 flex flex-col gap-4">
-        <OptionalCondition label="Alleen tonen onder een voorwaarde (verschijnt onder de vorige vraag)" value={i.show_if} onChange={(c) => set({ show_if: c })} ctx={ctx} />
-        <OptionalCondition label="Rood als" value={i.red_if} onChange={(c) => set({ red_if: c })} ctx={ctx} />
-        {i.red_if && <Select label="Afwijzingsscherm" value={i.red_variant ?? "__auto"} onChange={(v) => set({ red_variant: v === "__auto" ? undefined : v })} options={[{ value: "__auto", label: "Automatisch kiezen" }, ...rejections]} />}
-        <div className="grid grid-cols-2 gap-4">
-          <Select label="Signaal voor de arts" value={sigMode} onChange={(m) => set({ signal_if: m === "none" ? undefined : m === "any" ? "any_except_exclusive" : m === "value" ? (choices[0] ?? "yes") : m === "values" ? [] : { all: [] } })}
-            options={[{ value: "none", label: "Geen signaal" }, ...(t === "multi_choice" ? [{ value: "any", label: "Bij elk antwoord behalve het uitsluitende" }] : []), ...(t === "yes_no" ? [{ value: "value", label: "Bij één antwoord" }] : []), ...(hasOptions ? [{ value: "values", label: "Bij gekozen antwoorden" }] : []), { value: "condition", label: "Onder een voorwaarde" }]} />
-          {i.signal_if !== undefined && <TextField label="Naam van het signaal" value={i.signal_label ?? ""} onChange={(e) => set({ signal_label: e.target.value })} />}
-          {sigMode === "value" && <Select label="Antwoord" value={String(i.signal_if)} onChange={(v) => set({ signal_if: v })} options={choices.map((c) => ({ value: c, label: c === "yes" ? "Ja" : c === "no" ? "Nee" : c }))} />}
-        </div>
-        {sigMode === "values" && (
-          <div className="flex flex-col gap-2">{choices.map((c) => <Checkbox key={c} label={c} checked={(i.signal_if as string[]).includes(c)} onChange={(on) => set({ signal_if: on ? [...(i.signal_if as string[]), c] : (i.signal_if as string[]).filter((x) => x !== c) })} />)}</div>
-        )}
-        {sigMode === "condition" && <ConditionEditor value={i.signal_if as Condition} onChange={(c) => set({ signal_if: c })} {...ctx} />}
-      </div>
-    </Modal>
+      </Modal>
+      {cond && <ConditionModal title={cond.title} description={questionnaireName} alwaysLabel={cond.always} value={cond.value} ctx={ctx} onClose={() => setCond(null)} onSave={(c) => { cond.set(c); setCond(null); }} />}
+    </>
   );
 }
+const shortTitle = (s: string) => { const w = s.replace(/\?$/, "").split(" ").filter((x) => x.length > 3); return (w.at(-1) ?? s).toLowerCase(); };
 
 /** Thresholds: numeric settings, standard and reduced side by side. */
 export function ThresholdsModal({ settings, rows, onSave, onClose }: { settings: Record<string, unknown>; rows: Array<{ label: string; std: string; red: string }>; onSave: (s: Record<string, unknown>) => void; onClose: () => void }) {

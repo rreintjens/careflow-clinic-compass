@@ -10,7 +10,7 @@ export interface ModalProps {
   description?: string;
   children: ReactNode;
   footer?: ReactNode;
-  width?: "md" | "lg";
+  width?: "md" | "lg" | "xl";
 }
 
 /** Every add/edit in the admin happens in this modal, above the page. */
@@ -22,7 +22,7 @@ export function Modal({ open, onOpenChange, title, description, children, footer
         <Dialog.Content
           className={cn(
             "fixed left-1/2 top-1/2 z-50 flex max-h-[90vh] w-[calc(100%-32px)] -translate-x-1/2 -translate-y-1/2 flex-col rounded-[20px] bg-background shadow-[0_8px_24px_rgba(57,51,46,0.10)]",
-            width === "md" ? "max-w-[560px]" : "max-w-[820px]",
+            width === "md" ? "max-w-[560px]" : width === "lg" ? "max-w-[820px]" : "max-w-[1180px]",
           )}
         >
           <div className="flex items-start justify-between gap-4 px-7 pt-6">
