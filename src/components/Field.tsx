@@ -25,8 +25,9 @@ export function TextField({ label, help, className, ...props }: { label: string;
   );
 }
 
-export function TextArea({ label, help, className, ...props }: { label: string; help?: ReactNode } & TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  const id = useId();
+export function TextArea({ label, help, className, id: providedId, ...props }: { label: string; help?: ReactNode } & TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  const generatedId = useId();
+  const id = providedId ?? generatedId;
   return (
     <div className={cn("flex min-w-0 flex-col gap-2", className)}>
       <label htmlFor={id} className="text-[13px] font-medium">{label}</label>
