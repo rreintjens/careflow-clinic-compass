@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Keuze behandelaar begrijpelijk (eigenaar 19-10): elke optie één regel uitleg (tweeregelig in de lijst én onder het veld); "Zoals de behandeling" toont huidige instelling; "Vast (via boekingslink)" hernoemen naar "Vaste behandelaar" met gedeelde behandelaarpicker eronder (verplicht vóór opslaan); zelfde uitleg bij Standaard keuze behandelaar in behandeling-pop-up; als Rob verifiëren
+
 - [ ] Gedeelde doorzoekbare picker (combobox) overal (eigenaar 19-10): locaties, behandelaars, behandelingen, categorieën, medewerkers, vragenlijsten; zoeken op naam/rol/categorie/adres met markering, pijltjestoetsen, groepen met structuur, single- en multi-select (chips, "Alles in deze groep", "Wis selectie"), niet-kiesbaar = verborgen of uitgegrijsd met reden; o.a. boekingslink-modal, Afspraak maken, agendafilters, rooster, behandelaar-/behandeling-pop-ups, apparatuur, vragenlijst Gekoppeld aan, e-mail Geldt voor, dossier Aanvraag/vervolgactie, gebruikers, lijstfilters; alle vervangen velden rapporteren
 
 - [ ] Eén lijstpatroon in beheer (eigenaar 19-10): gedeelde ListPage/DataTable (Behandelaars als referentie) voor Patiënten, Behandelingen (rechterlijst), Behandelaars, Locaties, Apparatuur, Boekingslinks, Kanalen en campagnes, Vragenlijsten, E-mails en sjablonen, Gebruikers en rollen, Logboek, Verzonden e-mails; hele rij klikbaar, "Wijzig"-links weg, één filterrij, één groeps-/leeg-/laadstijl; per pagina als Rob verifiëren
