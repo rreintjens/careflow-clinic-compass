@@ -1,10 +1,10 @@
 # Roadmap
 
-- [ ] Dossier Toevoegen: owner-approved Contactmoment/notitie and Aanvraag fields, configurable selects/texts, follow-up tasks with completion and assignee Mijn dag list, timeline create/edit and readable audit; verify both create/reload and aanvraag status change as Rob.
+- [x] Dossier Toevoegen: owner-approved Contactmoment/notitie and Aanvraag fields, configurable selects/texts, follow-up tasks with completion and assignee Mijn dag list, timeline create/edit and readable audit; both saved/reloaded as Rob, aanvraag changed to In behandeling, follow-up completed in Mijn dag; all four writes found in audit.
 
-- [ ] Verification sweep as Rob: booking links create/edit/patient preview, integrations/dashboard, mixed day/week and toggle persistence/staff booking, questionnaire questions 7–9 and signal save/reload/discard; whole overview row opens with Bekijk; compact readable agenda appointments.
-- [ ] Owner decision 19-10: version-owned questionnaire thresholds/settings, backfill current values into all versions without patient changes, change badges/counter/publish summaries and archive/import/export preservation; verify concept versus live and discard as Rob.
-- [ ] Owner decision 19-10: external eKis busy-time provider with four-week mock, non-identifying hatched blocks in day/week/Mijn dag, shared patient/staff slot exclusion and save refusal, eKis-agenda status/show switch; verify doctor and patient flow as Rob.
+- [x] Verification sweep as Rob: booking links created/edited/reloaded with patient preview, integrations/dashboard opened, mixed day/week and toggle saved/reloaded, online staff booking at 16:00 inside Dilan's clinic block; whole overview row opens with Bekijk; compact agenda blocks show patient number and treatment. Fixed blank slug on new link, empty select options and obscured overlapping roster blocks.
+- [x] Owner decision 19-10: version-owned questionnaire thresholds/settings, backfill current values into all versions without patient changes, change badges/counter/publish summaries and archive/import/export preservation; Rob verified concept BMI 29 saved/reloaded, live BMI remained 30, Dutch publish summary, concept discarded without publishing.
+- [x] Owner decision 19-10: external eKis busy-time provider with four-week mock, non-identifying hatched blocks in day/week/Mijn dag, shared patient/staff slot exclusion and save refusal, eKis-agenda status/show switch; Rob viewed doctor day/week/Mijn dag, setting saved/reloaded; patient flow for Dilan on 21 October offers 12:30 then 15:00, no overlapping slots. Shared exclusion test and database trigger protect staff saves even when display is hidden.
 
 - [x] Questionnaire builder part 2: add chooser, Boodschap modal + runner forms, icon picker, publish modal, builder previews, condition value lines + short modal titles; verified as Rob (chooser, Boodschap add/edit/delete, icon picker, publish window, previews, value lines); 346 tests pass.
 - [x] Consult mode app-wide: active draft consult of the signed-in user shows sticky bar + floating notes on every staff page until Consult afronden; position/size/collapsed/content persist across navigation and reload; last-saved time; bar with patient, time window, progress, clock, next patient, Meet, link to record; one active consult per user (finish or park); clear patient label on other records. Verify as Rob. — done, verified as Rob
@@ -19,14 +19,14 @@ Owner asked to continue through all phases without pausing for confirmation.
 
 - [x] Demo sign-in shortcut “Inloggen als Rob” sits above the login form, prefills the requested email and focuses password; existing password, lockout and MFA flow unchanged. Shortcut only shown in development preview.
 - [x] Questionnaire review implementation: effective page/item Tonen and correct save target; flow-stored editable names; Dutch situation sentences; source-answer examples and resolved thresholds; unclipped language labels. 122 targeted tests passed; build OK. Passwordless/MFA-free demo superadmin excluded by mandatory staff security.
-- [ ] Questionnaire preview verification of questions 7, 8, 9 and question 8 signal: blocked because restored managed session reaches /auth/2fa; normal MFA-verified owner sign-in required. UI save targeting tested, authenticated save/reload and visual comparison remain unverified.
+- [x] Questionnaire preview verification of questions 7, 8, 9 and question 8 signal: all three opened as Rob with readable conditions and patient previews; question 8 has its conditional waist signal; concept threshold saved/reloaded and concept discarded. Test-mode sign-in no longer blocked by MFA.
 - [x] Owner follow-up investigated: existing sessions already persist; no proven update-triggered logout. No automatic login as Rob added because it would bypass required password/MFA authentication.
 
 - [x] Repair MFA enrollment recovery: identity-only preview sessions lacked session_id and cannot enroll factors; now return to password sign-in, with restart action for other failures. Browser confirmed /auth without enrollment alert; 17 tests passed; build OK.
 - [ ] Verify full password + TOTP sign-in after recovery: requires owner signing in normally; managed identity-only session cannot enroll MFA, and no current password is available to the test runner.
 
 - [x] Online consult during clinic time: default-on block switch and roster video icon, mixed availability shared by patient/staff booking, practitioner-wide conflicts, online labels/icons and existing Meet actions; 49 tests passed. Patient flow booked Dilan Aydin on 19 October at 15:30 with Meet link; stored booking confirmed inside 09:00–17:00 clinic block.
-- [ ] Mixed-consult staff verification: blocked by authenticator enrollment rejecting the fresh managed session. Doctor day/week, switch save/reload and staff booking cannot be verified in the browser until normal staff MFA succeeds; no clinic appointments currently surround the chosen test doctor's booking.
+- [x] Mixed-consult staff verification: as Rob, doctor day/week opened, Online consulten tussendoor saved off/reloaded/restored, online 16:00 staff booking read back in week agenda inside clinic time alongside 15:30 appointment.
 
 - [x] Agenda: clickable practitioner headers open their personal day; shared fixed-position Dag/Week/Mijn dag controls verified after signing in as Rob, all four transitions keep x=1068/y=100; 18 relevant tests passed.
 - [x] Changed password for rob@bodyclinic.nl to the privately supplied value; verified through the normal sign-in screen.
@@ -56,7 +56,7 @@ Owner asked to continue through all phases without pausing for confirmation.
   - [ ] 5d patient list + five-tab record; 5e consult mode; 5f schedule editing
   - [x] Standalone telephone/interim consult: design fields, secure save, Consulten and timeline; verified with test doctor, reload and timeline
   - [x] Dossier Toevoegen: shared appointment/consult/measurement/document modals; appointment and measurement saved from dossier and read back after reload; role permissions checked
-  - [ ] Contactmoment/notitie and aanvraag: blocked on missing exact fields/layout in supplied design package; no invented forms
+  - [x] Contactmoment/notitie and aanvraag: owner-approved fields implemented and verified as Rob; see completed dossier task above.
   - [x] Owner report: BMI from saved weight/height in Medisch and Overzicht; measurements visible in timeline; verified signed in, saved and reloaded
   - [x] Owner report: dossier tabs showed old placeholder — code and served modules verified current; stale preview tab (needs hard reload)
 - [ ] Phase 6 – Mails and integrations
@@ -73,7 +73,7 @@ Owner asked to continue through all phases without pausing for confirmation.
     - [x] Google Meet: provider interface + mock (link kept when moving, same link on repeat), account shown and editable on Koppelingen, link visible in agenda, Mijn dag and the record
     - [x] Koppelingen and Dashboard screens built from the design reference; fixed texts read from option lists `koppelingen_ui` / `dashboard_ui`
     - [x] Links verified from the patient side: a link with a fixed treatment opens straight at the time choice (practitioner "Geen voorkeur"), a link without one starts at the category choice narrowed to what the link's location offers, an unknown link falls back to the normal entry; the statistics and export endpoints refuse callers without a key or token
-    - [ ] Staff screens (Boekingslinks, Koppelingen, Dashboard) not yet opened in a browser: they need a second-factor session and the test staff password is not available in this environment
+    - [x] Staff screens (Boekingslinks, Koppelingen, Dashboard) opened as Rob; create/edit and patient preview checked; fixed new-link save.
 - [x] Medical questionnaire: 'Val je af of kom je nog aan?' had no answers in the seed; v2 adds them from the design HTML
 - [x] Questionnaire runner: pressing the button with missing/invalid answers highlights them and scrolls to the first (owner request)
 - [x] Vragenlijst: volgende pagina begint bovenaan
