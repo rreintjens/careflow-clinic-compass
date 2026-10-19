@@ -2,6 +2,8 @@
 
 Owner asked to continue through all phases without pausing for confirmation.
 
+- [ ] Online consult during clinic time: block switch, mixed availability, cross-location conflicts, agenda display, tests and patient booking verification. Work only on this request.
+
 - [x] Agenda: clickable practitioner headers open their personal day; shared fixed-position Dag/Week/Mijn dag controls verified after signing in as Rob, all four transitions keep x=1068/y=100; 18 relevant tests passed.
 - [x] Changed password for rob@bodyclinic.nl to the privately supplied value; verified through the normal sign-in screen.
 

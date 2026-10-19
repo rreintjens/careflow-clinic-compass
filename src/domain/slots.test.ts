@@ -52,3 +52,37 @@ describe("hold", () => {
     expect(secondsLeft(exp, 840_000)).toBe(60);
   });
 });
+
+describe("mixed online and clinic time", () => {
+  const onlineLocationIds = ["Online"];
+  const all = ["09:00", "09:15", "09:30", "09:45", "10:00", "10:15", "10:30"];
+  it.each([
+    { rule: "online consult inside enabled clinic block", locationId: "Online", blockLocation: "L", allows_online: true, expected: all },
+    { rule: "no online consult inside disabled clinic block", locationId: "Online", blockLocation: "L", allows_online: false, expected: [] },
+    { rule: "clinic booking never uses online-only block", locationId: "L", blockLocation: "Online", allows_online: true, expected: [] },
+    { rule: "online-only ignores the flag", locationId: "Online", blockLocation: "Online", allows_online: false, expected: all },
+  ])("$rule", ({ locationId, blockLocation, allows_online, expected }) => {
+    expect(times(freeSlots({ ...base, locationId, onlineLocationIds, blocks: [{ ...block, location_id: blockLocation, allows_online }] }))).toEqual(expected);
+  });
+  it.each([
+    { booking: "L", occupied: "Online" },
+    { booking: "Online", occupied: "L" },
+  ])("$occupied appointment blocks $booking booking for the same doctor", ({ booking, occupied }) => {
+    const appointments = [{ practitioner_id: "p1", location_id: occupied, date: base.date, start: 570, end: 600 }];
+    expect(times(freeSlots({ ...base, locationId: booking, onlineLocationIds, busy: appointments }))).toEqual(["09:00", "10:00", "10:15", "10:30"]);
+  });
+  it.each([
+    { rule: "treatment scope", blocks: [{ ...block, treatment_ids: ["X"] }], exceptions: [], expected: [] },
+    { rule: "recurrence", blocks: [{ ...block, recurrence: "biweekly" as const, valid_from: "2026-10-13" }], exceptions: [], expected: [] },
+    { rule: "vacation", blocks: [block], exceptions: [{ practitioner_id: "p1", kind: "vacation" as const, date_from: base.date, date_to: null, starts: null, ends: null, location_id: null }], expected: [] },
+    { rule: "break", blocks: [block], exceptions: [{ practitioner_id: "p1", kind: "break" as const, date_from: base.date, date_to: null, starts: "10:00", ends: "10:30", location_id: null }], expected: ["09:00", "09:15", "09:30", "10:30"] },
+    { rule: "no duplicate online times", blocks: [block, { ...block, location_id: "Online" }], exceptions: [], expected: all },
+  ])("mixed online availability respects $rule", ({ blocks, exceptions, expected }) => {
+    expect(times(freeSlots({ ...base, locationId: "Online", onlineLocationIds, blocks, exceptions }))).toEqual(expected);
+  });
+  it("no preference counts both online and clinic appointments", () => {
+    const slots = freeSlots({ ...base, locationId: "Online", onlineLocationIds, practitionerIds: ["p1", "p2"], blocks: [block, { ...block, practitioner_id: "p2", location_id: "Online" }] });
+    const appointments = [{ practitioner_id: "p1", location_id: "L" }, { practitioner_id: "p1", location_id: "Online" }, { practitioner_id: "p2", location_id: "Online" }];
+    expect(mergeByTime(slots, (p) => appointments.filter((a) => a.practitioner_id === p).length).map((s) => s.practitioner_id)).toEqual(Array(7).fill("p2"));
+  });
+});

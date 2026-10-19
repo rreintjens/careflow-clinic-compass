@@ -39,7 +39,8 @@ export function NewAppointmentModal({ open, onOpenChange, data, onPickInAgenda, 
   const hasClinic = data.locations.some((l) => l.kind !== "online" && treatLocs.has(l.id));
   const locOptions = data.locations.filter((l) => treatLocs.has(l.id) && (how === "online" ? l.kind === "online" : l.kind !== "online"));
   const pracOptions = data.practitioners.filter((p) => data.pracTreat.some((x) => x.practitioner_id === p.id && x.treatment_id === treatment && !(x.excluded_location_ids ?? []).includes(loc))
-    && data.pracLoc.some((x) => x.practitioner_id === p.id && x.location_id === loc));
+    && (data.pracLoc.some((x) => x.practitioner_id === p.id && x.location_id === loc)
+      || (locKind(loc) === "online" && data.blocks.some((b) => b.practitioner_id === p.id && locKind(b.location_id) === "clinic" && b.allows_online && (!b.treatment_ids?.length || b.treatment_ids.includes(treatment))))));
 
   useEffect(() => { if (how === "online" && !hasOnline && hasClinic) setHow("clinic"); if (how === "clinic" && !hasClinic && hasOnline) setHow("online"); }, [hasOnline, hasClinic, how]);
   useEffect(() => { if (!locOptions.some((l) => l.id === loc)) setLoc(locOptions[0]?.id ?? ""); }, [locOptions, loc]);

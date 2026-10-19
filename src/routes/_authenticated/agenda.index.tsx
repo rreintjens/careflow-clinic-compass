@@ -151,7 +151,7 @@ function Page() {
                       <button key={a.id} type="button" onClick={() => go({ afspraak: a.id })}
                         className={cn("absolute inset-x-2 overflow-hidden rounded-[8px] px-2.5 py-1 text-left", on ? "bg-primary text-primary-foreground" : "bg-background ring-1 ring-mist")}
                         style={{ top: ((a.s.minute - view.range[0] * 60) / 60) * HOUR + 2, height: Math.max(26, ((a.e.minute - a.s.minute) / 60) * HOUR - 4) }}>
-                        <p className="whitespace-nowrap text-[12px] font-semibold">{fmtTime(a.s.minute)} · {a.patient?.patient_number ?? ""}{online && <span className={on ? "" : "text-primary"}> · Online</span>}</p>
+                        <p className="flex items-center gap-1 whitespace-nowrap text-[12px] font-semibold">{fmtTime(a.s.minute)} · {a.patient?.patient_number ?? ""}{online && <span className={cn("inline-flex items-center gap-1", !on && "text-primary")}><img src="/ui-icons/videogesprek.svg" alt="" className="size-3.5" />Online</span>}</p>
                         {!week && <p className="truncate text-[11px]">{tName}</p>}
                       </button>
                     );

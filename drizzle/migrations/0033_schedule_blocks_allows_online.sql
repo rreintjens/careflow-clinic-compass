@@ -1,0 +1,2 @@
+ALTER TABLE public.schedule_blocks ADD COLUMN allows_online boolean NOT NULL DEFAULT true;
+COMMENT ON COLUMN public.schedule_blocks.allows_online IS 'Allows online consults during free time in a clinic block; ignored for Online blocks.';

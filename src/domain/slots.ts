@@ -11,6 +11,7 @@ export interface SlotBlock {
   valid_from: string;
   valid_until: string | null;
   treatment_ids: string[] | null;
+  allows_online?: boolean;
 }
 export interface SlotException {
   practitioner_id: string;
@@ -35,17 +36,25 @@ export function blockOn(b: SlotBlock, date: string): boolean {
 }
 
 /** Working intervals of one practitioner at one location on a date, after exceptions. */
-export function workIntervals(args: { practitionerId: string; locationId: string; treatmentId: string; date: string; blocks: readonly SlotBlock[]; exceptions: readonly SlotException[] }): Array<[number, number]> {
+export function workIntervals(args: { practitionerId: string; locationId: string; treatmentId: string; date: string; blocks: readonly SlotBlock[]; exceptions: readonly SlotException[]; onlineLocationIds?: readonly string[] }): Array<[number, number]> {
   const { practitionerId: p, locationId, treatmentId, date } = args;
+  const onlineIds = args.onlineLocationIds ?? [];
+  const online = onlineIds.includes(locationId);
   const ex = args.exceptions.filter((e) => e.practitioner_id === p && inRange(date, e.date_from, e.date_to));
   const vacation = ex.find((e) => e.kind === "vacation");
   if (vacation && !vacation.starts) return [];
   let iv: Array<[number, number]> = args.blocks
-    .filter((b) => b.practitioner_id === p && b.location_id === locationId && (!b.treatment_ids?.length || b.treatment_ids.includes(treatmentId)) && blockOn(b, date))
+    .filter((b) => b.practitioner_id === p && (b.location_id === locationId || (online && !onlineIds.includes(b.location_id) && b.allows_online !== false)) && (!b.treatment_ids?.length || b.treatment_ids.includes(treatmentId)) && blockOn(b, date))
     .map((b) => [toMin(b.starts), toMin(b.ends)]);
   for (const e of ex) if (e.kind === "extra_day" && (!e.location_id || e.location_id === locationId) && e.starts && e.ends) iv.push([toMin(e.starts), toMin(e.ends)]);
   for (const e of ex) if ((e.kind === "break" || e.kind === "vacation") && e.starts && e.ends) iv = subtract(iv, toMin(e.starts), toMin(e.ends));
-  return iv;
+  const merged: Array<[number, number]> = [];
+  for (const [start, end] of iv.sort((a, b) => a[0] - b[0])) {
+    const last = merged.at(-1);
+    if (last && start < last[1]) last[1] = Math.max(last[1], end);
+    else merged.push([start, end]);
+  }
+  return merged;
 }
 
 function subtract(iv: Array<[number, number]>, s: number, e: number): Array<[number, number]> {
@@ -59,7 +68,7 @@ function subtract(iv: Array<[number, number]>, s: number, e: number): Array<[num
 export function freeSlots(args: {
   date: string; locationId: string; treatmentId: string; durationMin: number; practitionerIds: readonly string[];
   blocks: readonly SlotBlock[]; exceptions: readonly SlotException[]; busy: readonly Busy[];
-  now: { date: string; minute: number }; leadMinutes: number; maxAheadWeeks: number; step?: number;
+  now: { date: string; minute: number }; leadMinutes: number; maxAheadWeeks: number; step?: number; onlineLocationIds?: readonly string[];
 }): Slot[] {
   const step = args.step ?? 15;
   const last = new Date(`${args.now.date}T00:00:00Z`);
@@ -69,7 +78,7 @@ export function freeSlots(args: {
   const out: Slot[] = [];
   for (const p of args.practitionerIds) {
     const busy = args.busy.filter((b) => b.practitioner_id === p && b.date === args.date);
-    for (const [a, b] of workIntervals({ practitionerId: p, locationId: args.locationId, treatmentId: args.treatmentId, date: args.date, blocks: args.blocks, exceptions: args.exceptions })) {
+    for (const [a, b] of workIntervals({ practitionerId: p, locationId: args.locationId, treatmentId: args.treatmentId, date: args.date, blocks: args.blocks, exceptions: args.exceptions, onlineLocationIds: args.onlineLocationIds ?? [] })) {
       for (let s = Math.ceil(a / step) * step; s + args.durationMin <= b; s += step) {
         if (s < earliest) continue;
         if (busy.some((x) => s < x.end && x.start < s + args.durationMin)) continue;

@@ -36,7 +36,7 @@ export function PatientCard({ a, treatment, online, onClose, framed = false }: {
     <div className={cn("flex flex-col gap-5 bg-background p-6", framed ? "rounded-[20px] ring-1 ring-primary" : "")}>
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-[12px] text-muted-foreground">{day} · {fmtTime(a.s.minute)} tot {fmtTime(a.e.minute)}{online ? " · online" : ""}</p>
+          <p className="text-[12px] text-muted-foreground">{day} · {fmtTime(a.s.minute)} tot {fmtTime(a.e.minute)}{online && <span className="inline-flex items-center gap-1"> · <img src="/ui-icons/videogesprek.svg" alt="" className="size-3.5" />Online</span>}</p>
           <h2 className="mt-1 text-[22px] font-semibold">{p ? `${p.first_name} ${p.last_name}` : ""}</h2>
           <p className="text-[13px] text-muted-foreground">{[p?.patient_number, p?.date_of_birth ? `${ageOf(p.date_of_birth, a.s.date)} jaar` : null, `${a.new_patient ? "eerste " : ""}${treatment.toLowerCase()}`].filter(Boolean).join(" · ")}</p>
         </div>

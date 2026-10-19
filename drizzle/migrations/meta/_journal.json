@@ -232,6 +232,13 @@
       "when": 1792339136020,
       "tag": "0032_mfa_required_from_claim",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1792396634916,
+      "tag": "0033_schedule_blocks_allows_online",
+      "breakpoints": true
     }
   ]
 }

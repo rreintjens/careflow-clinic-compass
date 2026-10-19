@@ -21,7 +21,7 @@ export const getBookingCatalog = createServerFn({ method: "GET" })
     const { data: ui } = await db.from("option_lists").select("list_key, value, label_nl, label_en").in("list_key", ["booking_ui", "questionnaire_ui", "salutation", "referral_source", "country", "phone_country"]).order("sort");
     if (!tenant) return { tenant: null, ui: ui ?? [] } as const;
     const tid = tenant.id;
-    const [cats, links, treatments, tLocs, locs, prs, pLocs, pTreat, roles, tRoles, settings] = await Promise.all([
+    const [cats, links, treatments, tLocs, locs, prs, pLocs, pTreat, roles, tRoles, settings, mixed] = await Promise.all([
       db.from("treatment_categories").select("id, parent_id, name_nl, name_en, icon, sort").eq("tenant_id", tid).order("sort"),
       db.from("treatment_category_links").select("treatment_id, category_id, sort").eq("tenant_id", tid),
       db.from("treatments").select("id, slug, name_nl, name_en, icon, duration_min, practitioner_choice, status, pre_questionnaire_key, post_questionnaire_key").eq("tenant_id", tid).eq("status", "active"),
@@ -33,6 +33,7 @@ export const getBookingCatalog = createServerFn({ method: "GET" })
       db.from("practitioner_roles").select("id, name_nl, name_en").eq("tenant_id", tid),
       db.from("treatment_practitioner_roles").select("treatment_id, role_id").eq("tenant_id", tid),
       db.from("settings").select("key, value").eq("tenant_id", tid),
+      db.from("schedule_blocks").select("practitioner_id, location_id, treatment_ids").eq("tenant_id", tid).eq("allows_online", true),
     ]);
     const bucket = `practitioner-photos-${tenant.slug}`;
     const photos = await Promise.all((prs.data ?? []).map(async (p) => {
@@ -51,7 +52,9 @@ export const getBookingCatalog = createServerFn({ method: "GET" })
       treatmentLocations: tLocs.data ?? [],
       locations: (locs.data ?? []).filter((l) => l.status === "open"),
       practitioners: (prs.data ?? []).map((p, i) => ({ id: p.id, first_name: p.first_name, last_name: p.last_name, role_id: p.role_id, photo: photos[i] ?? null, sort: p.sort })),
-      practitionerLocations: pLocs.data ?? [],
+      practitionerLocations: [...(pLocs.data ?? []), ...(locs.data ?? []).filter((l) => l.kind === "online").flatMap((l) =>
+        (mixed.data ?? []).filter((b) => (locs.data ?? []).some((clinic) => clinic.id === b.location_id && clinic.kind === "clinic"))
+          .map((b) => ({ practitioner_id: b.practitioner_id, location_id: l.id })))],
       practitionerTreatments: pTreat.data ?? [],
       roles: roles.data ?? [],
       treatmentRoles: tRoles.data ?? [],
