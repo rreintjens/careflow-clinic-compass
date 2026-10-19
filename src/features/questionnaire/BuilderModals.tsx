@@ -392,7 +392,7 @@ export function PublishModal({ name, versions, draftNo, liveNo, running, changes
       <div className="mt-5 grid grid-cols-2 gap-4">
         <Select label="Publiceren" value="now" onChange={() => undefined} options={[{ value: "now", label: "Nu" }]} />
         <Select label="Lopende invullingen" value="finish_own" onChange={() => undefined} options={[{ value: "finish_own", label: `Maken de oude versie af; nieuwe starten in v${draftNo}` }]}
-          help={liveNo ? `${running} ${running === 1 ? "patiënt is" : "patiënten zijn"} nu bezig met v${liveNo}.` : undefined} />
+          help={liveNo ? `${running} ${running === 1 ? "patiënt is" : "patiënten zijn"} nu bezig met v${liveNo}.` : null} />
       </div>
       <div className="mt-5 flex flex-col gap-2">
         <span className="text-[13px] font-medium">Wat verandert er voor de patiënt</span>

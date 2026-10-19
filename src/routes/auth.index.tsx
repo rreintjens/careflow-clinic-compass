@@ -43,7 +43,7 @@ function LoginPage() {
   const { data: demo } = useQuery({ queryKey: ["demo-login-available"], queryFn: () => demoLoginAvailable(), staleTime: 60_000 });
 
   // Without a required second factor (test mode) the user goes straight to their landing page.
-  const finish = async (res: Awaited<ReturnType<typeof signInStaff>>) => {
+  const finish = async (res: { ok: false; error: string } | { ok: true; accessToken: string; refreshToken: string }) => {
     if (!res.ok) {
       setError(res.error);
       return;
