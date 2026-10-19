@@ -137,8 +137,10 @@ Keuzekaartcontrole als Rob: aanbevolen online kaart zandkleur; muis verandert na
 - [x] Dubbele telling weg: DataTable toont geen telling meer; telling staat alleen in de filterrij (aangevuld op Patiënten, Logboek, Verzonden e-mails, Kanalen en campagnes, Boekingslinks); "55 behandelaars" nog één keer
 
 ## Dokterskant end-to-end-test 19-10 (patiënt 1000007 Eva Proefrun)
-- [ ] Dossier › Medisch › intake toont alle triage-antwoorden in vraagvolgorde met signalen (nu alleen kop)
-- [ ] Signaal zichtbaar: Overzicht "Groen, met signaal: vergrote buikomvang (95 cm)", pil in dossierkop, patiëntkaart agenda en Mijn dag
-- [ ] Tijdzone-fix: "bij het boeken ... om 02:00" moet Nederlandse tijd zijn; andere datum-only/UTC-weergaven controleren
-- [ ] Consultpaneel vergelijkt patiëntnummer met UUID: zelfde identifier vergelijken
-- [ ] Consultbalk countdown: voor starttijd "Begint morgen om 11:00" / "over X minuten", pas aftellen vanaf start
+- [x] Dossier › Medisch: Eva's tien opgeslagen triagevelden in negen vragen in oorspronkelijke vraagvolgorde, lengte/gewicht samen en buikomvang gemarkeerd; als Rob gecontroleerd
+- [x] Signaal: "Groen, met signaal: vergrote buikomvang (95 cm)" in Overzicht; pil in dossierkop, patiëntkaart agenda en Mijn dag; op Eva als Rob gecontroleerd. Ontbrekende historische versie-id hersteld op basis van publicatietijd; toekomstige boekingen bewaren versie-id; gedeelde berekening gebruikt uitsluitend die versie
+- [x] Nederlandse tijd: Eva toont 19 oktober om 14:23 vanuit volledige afrondingstijd; datum-only metingen krijgen geen fictieve kloktijd; intake/metingen en bestaande tijdlijn/afspraakweergaven gecontroleerd, zomer/wintertijd getest
+- [x] Consultpaneel: patiëntnummer normaliseren naar string; Eva's eigen dossier en tabs zonder waarschuwing, ander dossier met Eva-waarschuwing; als Rob gecontroleerd
+- [x] Consultbalk: op Eva "Begint morgen om 11:00" gecontroleerd als Rob; minuten tot start binnen uur en resterende consulttijd pas vanaf start getest. Consult teruggeparkeerd, notities ongewijzigd
+
+Verificatie 19-10: alle vijf punten op 1000007 als Rob doorlopen; 58 gerichte tests groen, build OK. Bestaande sign-in-queryannulering (CancelledError in auth.2fa goLanding) waargenomen bij login; geen fout in de vijf gecontroleerde dossier/agenda-resultaten.

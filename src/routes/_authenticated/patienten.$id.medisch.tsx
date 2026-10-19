@@ -4,11 +4,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { TextArea, TextField } from "@/components/Field";
+import { TextArea } from "@/components/Field";
 import { Modal } from "@/components/Modal";
 import { PillButton } from "@/components/PillButton";
 import { dossierQuery } from "@/data/patients";
-import type { Item, QuestionnaireDef } from "@/domain/questionnaire/engine";
+import type { QuestionnaireDef } from "@/domain/questionnaire/engine";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { measurementsQuery } from "@/data/measurements";
@@ -20,16 +20,6 @@ export const Route = createFileRoute("/_authenticated/patienten/$id/medisch")({ 
 
 type Sig = { item: string };
 const fmtDate = (s: string) => formatClinicalDate(s);
-
-/** Display value of one stored answer, following the item type. */
-function show(it: Item, v: unknown): string {
-  if (v === undefined || v === null || v === "") return "";
-  if (Array.isArray(v)) return v.join(", ");
-  if (typeof v === "boolean") return v ? "Ja" : "Nee";
-  if (typeof v === "object") return Object.entries(v as Record<string, unknown>).map(([k, x]) => `${x}${it.fields?.[k] ? ` ${k.replace(/^.*_/, "")}` : ""}`).join(", ");
-  if (it.type === "date_segmented" && typeof v === "string") return v.split("-").reverse().join("-");
-  return `${String(v)}${it.unit ? ` ${it.unit}` : ""}`;
-}
 
 function useMedical(id: string) {
   return useQuery({
@@ -109,7 +99,7 @@ function Medical() {
             {rows.map((m) => {
               const calculated = measurementWithBmi(m, rows);
               const bmi = calculated.bmi === null ? "–" : calculated.bmi.toFixed(1).replace(".", ",");
-              return <tr key={m.id} className="border-b border-mist">{[new Date(m.measured_on).toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "numeric" }), m.weight_kg ? `${String(m.weight_kg).replace(".", ",")} kg` : "–", bmi, m.waist_cm ? `${m.waist_cm} cm` : "–", m.bp_systolic ? `${m.bp_systolic}/${m.bp_diastolic ?? ""}` : "–", m.pulse ?? "–", m.source === "triage" ? "Patiënt, bij het boeken" : "Medewerker"].map((v, i) => <td key={i} className="whitespace-nowrap px-2.5 py-3">{v}</td>)}</tr>;
+              return <tr key={m.id} className="border-b border-mist">{[fmtDate(m.measured_on), m.weight_kg ? `${String(m.weight_kg).replace(".", ",")} kg` : "–", bmi, m.waist_cm ? `${m.waist_cm} cm` : "–", m.bp_systolic ? `${m.bp_systolic}/${m.bp_diastolic ?? ""}` : "–", m.pulse ?? "–", m.source === "triage" ? "Patiënt, bij het boeken" : "Medewerker"].map((v, i) => <td key={i} className="whitespace-nowrap px-2.5 py-3">{v}</td>)}</tr>;
             })}
           </tbody>
         </table>
