@@ -145,7 +145,7 @@ function LinkModal({ d, link, onClose }: { d: BookingLinksData; link: Link | nul
       saveLink({
         data: {
           id: link?.id ?? null,
-          slug: link?.slug ?? "",
+          slug,
           name: name.trim(),
           source: source.trim(),
           treatment_id: draft.treatment_id,
