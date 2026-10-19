@@ -1,5 +1,13 @@
 # Roadmap
 
+- [ ] Questionnaire builder part 2: add chooser, Boodschap modal + runner forms, icon picker, publish modal, builder previews, condition value lines + short modal titles; verify each screen as Rob.
+- [ ] Consult mode app-wide: active draft consult of the signed-in user shows sticky bar + floating notes on every staff page until Consult afronden; position/size/collapsed/content persist across navigation and reload; last-saved time; bar with patient, time window, progress, clock, next patient, Meet, link to record; one active consult per user (finish or park); clear patient label on other records. Verify as Rob.
+- [ ] Users, roles, logbook in Instellingen: new user (test mode: generated password shown once, else invite), edit role/deactivate/block/reset password, last-superadmin guard; roles create/edit/delete with landing page, consult mode, record visibility, permissions; logbook viewed rows for every staff route + record view, readable Dutch lines with links, filters (date, user, action, patient number), server pagination 50, CSV export. Verify as Rob.
+- [ ] Record/agenda fixes: patient URLs by patient number (/patienten/1000123/...), old UUID links redirect, every record link uses the number; Afspraak maken → Nieuwe patiënt in the same modal (first/last name, segmented DOB, e-mail, phone; duplicate check name+DOB and e-mail offering existing patient) and continue booking. Verify as Rob.
+- [ ] Demo e-mails: every mail moment renders via existing renderer/resolution into an outbox (recipient, subject, html, moment, appointment, created_at, sent_at, status); tab Verzonden e-mails with filters (date, moment, status, patient number) and exact preview; real delivery only to allowlist in Instellingen (default rob@bodyclinic.nl), others status 'alleen demo'; reminder timing from settings on existing schedule. Verify: patient booking → confirmation in outbox, as Rob.
+
+- [x] Owner decision 19-10: no second factor in test-mode tenants (no enrollment step), real passwordless “Inloggen als Rob” (test mode only, server-checked); verified: button → dashboard → Vragen medisch afvallen → vraag 7 opened.
+
 Owner asked to continue through all phases without pausing for confirmation.
 
 - [x] Demo sign-in shortcut “Inloggen als Rob” sits above the login form, prefills the requested email and focuses password; existing password, lockout and MFA flow unchanged. Shortcut only shown in development preview.

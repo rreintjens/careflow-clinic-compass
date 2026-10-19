@@ -1,13 +1,15 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import { PillButton } from "@/components/PillButton";
-import { signInSchema, type SignInInput } from "@/domain/auth";
+import { landingPath, signInSchema, type SignInInput } from "@/domain/auth";
+import { staffContextQuery } from "@/data/staff";
 import { AuthLayout } from "@/features/auth/AuthLayout";
-import { signInStaff } from "@/features/auth/auth.functions";
+import { demoLoginAvailable, signInDemo, signInStaff } from "@/features/auth/auth.functions";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/auth/")({
@@ -35,11 +37,13 @@ const inputCls = "h-12 w-full rounded-[14px] bg-sand px-4 text-[15px] outline-no
 function LoginPage() {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
-  const { register, handleSubmit, formState, setValue, setFocus } = useForm<SignInInput>({ resolver: zodResolver(signInSchema) });
+  const queryClient = useQueryClient();
+  const [demoBusy, setDemoBusy] = useState(false);
+  const { register, handleSubmit, formState } = useForm<SignInInput>({ resolver: zodResolver(signInSchema) });
+  const { data: demo } = useQuery({ queryKey: ["demo-login-available"], queryFn: () => demoLoginAvailable(), staleTime: 60_000 });
 
-  const onSubmit = handleSubmit(async (values) => {
-    setError(null);
-    const res = await signInStaff({ data: values });
+  // Without a required second factor (test mode) the user goes straight to their landing page.
+  const finish = async (res: Awaited<ReturnType<typeof signInStaff>>) => {
     if (!res.ok) {
       setError(res.error);
       return;
@@ -49,25 +53,43 @@ function LoginPage() {
       setError("Inloggen is niet gelukt. Probeer het opnieuw.");
       return;
     }
-    navigate({ to: "/auth/2fa" });
+    const { data: required } = await supabase.rpc("mfa_required");
+    if (required !== false) {
+      navigate({ to: "/auth/2fa" });
+      return;
+    }
+    queryClient.removeQueries({ queryKey: staffContextQuery.queryKey });
+    const staff = await queryClient.fetchQuery(staffContextQuery);
+    navigate({ to: landingPath(staff?.landing_page), replace: true });
+  };
+
+  const onSubmit = handleSubmit(async (values) => {
+    setError(null);
+    await finish(await signInStaff({ data: values }));
   });
+
+  const onDemo = async () => {
+    setError(null);
+    setDemoBusy(true);
+    try {
+      await finish(await signInDemo());
+    } finally {
+      setDemoBusy(false);
+    }
+  };
 
   const notInTest = () => toast("Niet beschikbaar in de testomgeving");
 
   return (
     <AuthLayout>
-        {import.meta.env.DEV && (
+        {demo?.available && (
           <PillButton
             variant="outline"
             size="lg"
             block
             className="mb-6"
-            disabled={formState.isSubmitting}
-            onClick={() => {
-              setError(null);
-              setValue("email", "rob@bodyclinic.nl", { shouldDirty: true });
-              setFocus("password");
-            }}
+            disabled={formState.isSubmitting || demoBusy}
+            onClick={onDemo}
           >
             Inloggen als Rob
           </PillButton>

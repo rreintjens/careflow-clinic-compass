@@ -15,9 +15,9 @@
 - Pure business logic in `src/domain/` with table-driven tests; typed queries in `src/data/`; shared UI in `src/components/` (one PillButton, Card, Select, SegmentedControl, Modal, Sidebar…) — no duplicates, add a prop instead.
 - Agenda routes share AgendaToolbar for stable controls; public and staff booking share slots domain with online-location IDs and block flags so mixed-consult conflicts cannot diverge.
 - Configuration (settings, option lists, texts, roles, permissions, landing pages) lives in DB rows; code never contains those values.
-- Staff area = `_authenticated` layout: session + aal2 + active role; RLS on every table requires `is_aal2()` + `has_permission()` — MFA enforced server-side, never bypassed.
-- Password sign-in enforces lockout server-side; MFA enrollment needs a registered session, not an identity-only preview token. Server functions log auth events; audit_row_change logs writes; audit_log stays append-only.
-- Demo shortcuts only prefill the form in development; normal password/MFA checks remain authoritative.
+- Staff area: session + aal2 when `mfa_required()` + active role; RLS/server use `is_aal2()` + `has_permission()`. `mfa_required()` is false in test mode (demo) — one switch, so layers can't diverge.
+- Password sign-in enforces lockout server-side. Server functions log auth events; audit_log stays append-only.
+- `signInDemo`: passwordless for group setting `demo_login_email`, refused server-side unless its tenant is in test mode.
 - Identity columns only in `patients`; medical data goes in separate tables without identity columns.
 - Security headers are set in `src/start.ts` middleware (`src/lib/security-headers.ts`); `TBC_LIVE=true` switches framing to 'none'.
 - RLS proof: `TEST_STAFF_PASSWORD=… bunx vitest run src/test/rls-patients.integration.test.ts`.
