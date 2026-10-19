@@ -14,6 +14,8 @@ import { evaluate } from "@/domain/questionnaire/expr";
 import { UiIcon } from "@/components/UiIcon";
 import { cn } from "@/lib/utils";
 
+import { uploadQuestionnaireImage } from "@/data/questionnaire-images.functions";
+
 import { PointsEditor } from "./BoodschapModal";
 import { ConditionLine, ConditionModal, type CondCtx } from "./conditions";
 import { QuestionnaireRunner, type Lang, type UiTexts } from "./QuestionnaireRunner";
@@ -144,7 +146,25 @@ export function ItemModal({ item, initialType, number, questionnaireName, questi
   const [redDirty, setRedDirty] = useState(false);
   const [adding, setAdding] = useState<{ text: string; red: boolean; exclusive: boolean } | null>(null);
   const [drag, setDrag] = useState<number | null>(null);
+  const imageInput = useRef<HTMLInputElement>(null);
+  const [imageBusy, setImageBusy] = useState(false);
+  const [imageError, setImageError] = useState("");
   const set = (patch: Record<string, unknown>) => setI((x) => ({ ...x, ...patch } as Item));
+  /** Uploads a photo/drawing for measure_with_image; the public URL is stored on the item. */
+  const pickImage = async (file: File) => {
+    setImageBusy(true); setImageError("");
+    try {
+      const content = await new Promise<string>((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => { const v = r.result; typeof v === "string" ? resolve(v.slice(v.indexOf(",") + 1)) : reject(new Error("Afbeelding lezen is niet gelukt.")); };
+        r.onerror = () => reject(new Error("Afbeelding lezen is niet gelukt."));
+        r.readAsDataURL(file);
+      });
+      const r = await uploadQuestionnaireImage({ data: { content } });
+      set({ image: r.url });
+    } catch (e) { setImageError(e instanceof Error ? e.message : "Afbeelding uploaden is niet gelukt."); }
+    finally { setImageBusy(false); }
+  };
   const t = i.type;
   const hasOptions = t === "single_choice" || t === "multi_choice";
   const choiceType = hasOptions || t === "yes_no";
@@ -271,7 +291,15 @@ export function ItemModal({ item, initialType, number, questionnaireName, questi
 
             {(t === "number" || t === "measure_with_image") && <TextField label="Eenheid" value={i.unit ?? ""} onChange={(e) => set({ unit: e.target.value })} />}
             {t === "measure_with_image" && <>
-              <Select label="Afbeelding" value={i.image ?? "__none"} onChange={(v) => set({ image: v === "__none" ? undefined : v })} options={[{ value: "__none", label: "Geen" }, ...images, ...(i.image && !images.some((x) => x.value === i.image) ? [{ value: i.image, label: i.image }] : [])]} help="Bij een maat, zoals buikomvang, zet je hier de foto." />
+              <div>
+                <Select label="Afbeelding" value={i.image ?? "__none"} onChange={(v) => set({ image: v === "__none" ? undefined : v })} options={[{ value: "__none", label: "Geen" }, ...images, ...(i.image && !images.some((x) => x.value === i.image) ? [{ value: i.image, label: i.image.startsWith("http") ? "Eigen afbeelding" : i.image }] : [])]} help="Bij een maat, zoals buikomvang, zet je hier de foto of tekening. Zonder keuze tekent de vragenlijst een meetlint." />
+                <div className="mt-2 flex items-center gap-3">
+                  <PillButton size="sm" variant="outline" disabled={imageBusy} onClick={() => imageInput.current?.click()}>{imageBusy ? "Uploaden…" : "Upload eigen afbeelding"}</PillButton>
+                  {i.image?.startsWith("http") && <img src={i.image} alt="" className="h-10 rounded-[8px]" />}
+                </div>
+                <input ref={imageInput} type="file" accept="image/jpeg,image/png" className="hidden" aria-label="Upload eigen afbeelding" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void pickImage(f); }} />
+                {imageError && <p role="alert" className="mt-1 text-[13px] text-warning">{imageError}</p>}
+              </div>
               <TextField label="Antwoord als de patiënt het niet weet" value={en ? String(i["allow_unknown_en"] ?? "") : (i.allow_unknown ?? "")} placeholder={en ? i.allow_unknown : undefined} onChange={(e) => set(en ? { allow_unknown_en: e.target.value } : { allow_unknown: e.target.value })} />
             </>}
             <Checkbox label="Optioneel (mag leeg blijven)" checked={!!i.optional} onChange={(v) => set({ optional: v || undefined })} />

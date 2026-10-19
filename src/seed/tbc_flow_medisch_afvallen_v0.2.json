@@ -519,7 +519,7 @@
           "id": "m_welcome",
           "type": "text",
           "title": "Fijn dat je er bent",
-          "body": "Met deze vragen bereidt {behandelaar_voornaam} jouw consult voor. Het duurt ongeveer 8 minuten; je kunt tussendoor stoppen en later verdergaan via de link in je mail.",
+          "body": "Met deze vragen bereidt {behandelaar_voornaam} jouw consult voor. Het duurt ongeveer {vragenlijst_minuten} minuten; je kunt tussendoor stoppen en later verdergaan via de link in je mail.",
           "show_practitioner_card": true,
           "button": "Beginnen"
         },

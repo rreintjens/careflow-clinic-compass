@@ -16,8 +16,9 @@ export async function resolveTenant(slug: string | undefined) {
   const rows = data ?? [];
   const byHost = rows.find((t) => host && t.booking_domains.includes(host));
   if (byHost) return byHost;
-  const bySlug = slug ? rows.find((t) => t.slug === slug && t.test_mode) : undefined;
-  return bySlug ?? null;
+  if (slug) return rows.find((t) => t.slug === slug && t.test_mode) ?? null;
+  // No ?merk= and an unknown host: in demo the preview falls back to the test brand.
+  return rows.find((t) => t.slug === "tbc-nl" && t.test_mode) ?? null;
 }
 export const settingNum = (rows: Array<{ key: string; value: unknown }>, key: string, fallback: number) => {
   const v = rows.find((r) => r.key === key)?.value;

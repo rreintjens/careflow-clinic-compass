@@ -3397,6 +3397,7 @@ export type Database = {
           pre_questionnaire_key: string | null
           preparation_en: string | null
           preparation_nl: string | null
+          questionnaire_minutes: number
           slug: string
           status: string
           tenant_id: string
@@ -3422,6 +3423,7 @@ export type Database = {
           pre_questionnaire_key?: string | null
           preparation_en?: string | null
           preparation_nl?: string | null
+          questionnaire_minutes?: number
           slug: string
           status?: string
           tenant_id?: string
@@ -3447,6 +3449,7 @@ export type Database = {
           pre_questionnaire_key?: string | null
           preparation_en?: string | null
           preparation_nl?: string | null
+          questionnaire_minutes?: number
           slug?: string
           status?: string
           tenant_id?: string

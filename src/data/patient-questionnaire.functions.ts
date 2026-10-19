@@ -17,7 +17,7 @@ async function load(merk: string | undefined, token: string) {
   const db = await admin();
   const appt = (await db.from("appointments").select("id, patient_id, treatment_id, practitioner_id, status, starts_at").eq("tenant_id", tenant.id).eq("manage_token", token).maybeSingle()).data;
   if (!appt || appt.status !== "booked" || !appt.patient_id) return null;
-  const t = (await db.from("treatments").select("post_questionnaire_key, pre_questionnaire_key").eq("id", appt.treatment_id).single()).data;
+  const t = (await db.from("treatments").select("post_questionnaire_key, pre_questionnaire_key, questionnaire_minutes").eq("id", appt.treatment_id).single()).data;
   if (!t?.post_questionnaire_key) return null;
   const q = (await db.from("questionnaires").select("id, key, flow_id").eq("tenant_id", tenant.id).eq("key", t.post_questionnaire_key).maybeSingle()).data;
   if (!q) return null;
@@ -29,7 +29,7 @@ async function load(merk: string | undefined, token: string) {
     db.from("questionnaire_flows").select("document").eq("id", q.flow_id).maybeSingle(),
   ]);
   if (!v.data) return null;
-  return { tenant, db, appt, q, version: v.data, rawFlow: v.data.version_config, flow: v.data.version_config as unknown as FlowFile, triageKey: t.pre_questionnaire_key };
+  return { tenant, db, appt, q, version: v.data, rawFlow: v.data.version_config, flow: v.data.version_config as unknown as FlowFile, triageKey: t.pre_questionnaire_key, treatmentMinutes: t.questionnaire_minutes ?? 8 };
 }
 
 export const getPatientQuestionnaire = createServerFn({ method: "POST" })
@@ -46,7 +46,10 @@ export const getPatientQuestionnaire = createServerFn({ method: "POST" })
     ]);
     const own = sets.data?.find((r) => r.questionnaire_key === q.key);
     const triage = sets.data?.find((r) => r.questionnaire_key === x.triageKey);
-    const def = x.version.definition as unknown as QuestionnaireDef;
+    // Frozen published versions still contain the literal "ongeveer 8 minuten"; show the per-treatment setting instead.
+    const def = JSON.parse(
+      JSON.stringify(x.version.definition).replaceAll("ongeveer 8 minuten", "ongeveer {vragenlijst_minuten} minuten"),
+    ) as QuestionnaireDef;
     const prefill = triage ? prefillAnswers(def, triage.answers as Answers) : {};
     const start = new Date(appt.starts_at);
     const dag = start.toLocaleDateString("nl-NL", { weekday: "long", day: "numeric", month: "long", timeZone: tenant.time_zone });
@@ -55,7 +58,7 @@ export const getPatientQuestionnaire = createServerFn({ method: "POST" })
       found: true as const, ui,
       definition: x.version.definition, flow: x.rawFlow, status: own?.status ?? "new", completedAt: own?.completed_at ?? null, canEdit: editable(appt.starts_at),
       answers: JSON.parse(JSON.stringify({ ...prefill, ...((own?.answers ?? {}) as Answers) })) as import("@/integrations/supabase/types").Json,
-      vars: { voornaam: patient.data?.first_name ?? "", behandelaar_voornaam: pr.data?.first_name ?? "", dag, tijd },
+      vars: { voornaam: patient.data?.first_name ?? "", behandelaar_voornaam: pr.data?.first_name ?? "", dag, tijd, vragenlijst_minuten: String(x.treatmentMinutes) },
     };
   });
 

@@ -15,7 +15,7 @@ import {
   orgQuery, removePractitionerTreatment, roleName, saveRequirement, saveTreatment, setPractitionerTreatmentExclusions, subCategories,
   treatmentMainCategoryIds, workLocationIds, type Org, type Requirement, kindName, kindOpts,
 } from "@/data/organisation";
-import { durationOptions, practitionerExcludedHere, practitionerTreatmentLocations } from "@/domain/organisation";
+import { durationOptions, practitionerExcludedHere, practitionerTreatmentLocations, TREATMENT_ICONS } from "@/domain/organisation";
 import { REASON_TEXT, treatmentBookability } from "@/features/organisation/bookability";
 import { cn } from "@/lib/utils";
 
@@ -62,9 +62,11 @@ function TreatmentForm({ org, defaults, onSaved, onCancel }: { org: Org; default
   const [cancel, setCancel] = useState(t.cancel_until_hours != null ? String(t.cancel_until_hours) : "default");
   const [fee, setFee] = useState(t.no_show_fee_eur != null ? String(t.no_show_fee_eur) : "default");
   const [status, setStatus] = useState(t.status);
+  const [icon, setIcon] = useState(t.icon ?? "none");
   const [locs, setLocs] = useState(offeredLocationIds(org, id));
   const [pre, setPre] = useState(t.pre_questionnaire_key ?? "none");
   const [post, setPost] = useState(t.post_questionnaire_key ?? "none");
+  const [qmin, setQmin] = useState(String(t.questionnaire_minutes ?? 8));
   const [lang, setLang] = useState<"nl" | "en">("nl");
   const [texts, setTexts] = useState({
     description_nl: t.description_nl ?? "", description_en: t.description_en ?? "",
@@ -94,8 +96,10 @@ function TreatmentForm({ org, defaults, onSaved, onCancel }: { org: Org; default
           cancel_until_hours: cancel === "default" ? null : Number(cancel),
           no_show_fee_eur: fee === "default" ? null : Number(fee),
           status,
+          icon: icon === "none" ? null : icon,
           pre_questionnaire_key: pre === "none" ? null : pre,
           post_questionnaire_key: post === "none" ? null : post,
+          questionnaire_minutes: Math.min(60, Math.max(1, Number(qmin) || 8)),
           ...Object.fromEntries(Object.entries(texts).map(([k, v]) => [k, v.trim() || null])),
         },
         { categoryIds: cats, roleIds: roles, locationIds: locs },
@@ -161,6 +165,8 @@ function TreatmentForm({ org, defaults, onSaved, onCancel }: { org: Org; default
               <Select label="No-showbedrag" value={fee} onChange={setFee} options={[{ value: "default", label: `Standaard uit Algemeen (${defaults.noShowCents ? `€${defaults.noShowCents / 100}` : "geen"})` }, ...opts(org, "no_show_fee_eur")]} help="Bij te laat annuleren of niet verschijnen." />
               <Select label="Status" value={status} onChange={setStatus} options={opts(org, "treatment_status")} />
               <TextField label="Naam (Engels)" value={nameEn} onChange={(e) => setNameEn(e.target.value)} help="Leeg laten: de patiënt ziet de Nederlandse naam." />
+              <Select label="Icoon" value={icon} onChange={setIcon} options={[{ value: "none", label: "Icoon van de categorie" }, ...TREATMENT_ICONS.map((i) => ({ value: i, label: i.replace(/-/g, " ").replace(/^./, (c) => c.toUpperCase()) }))]} help="Leeg: de patiënt ziet het icoon van de (sub)categorie." />
+              <div className="flex items-end pb-1">{icon !== "none" && <img src={`/treatment-icons/${icon}.png`} alt="" className="h-11 w-11" />}</div>
             </div>
           </Card>
 
@@ -226,6 +232,7 @@ function TreatmentForm({ org, defaults, onSaved, onCancel }: { org: Org; default
             <div className="grid grid-cols-2 gap-4">
               <Select label="Vragen vóór het boeken" value={pre} onChange={setPre} options={[{ value: "none", label: "Geen" }, ...opts(org, "pre_questionnaire")]} />
               <Select label="Medische vragenlijst na het boeken" value={post} onChange={setPost} options={[{ value: "none", label: "Geen" }, ...opts(org, "post_questionnaire")]} />
+              <TextField label="Duur medische vragenlijst (minuten)" inputMode="numeric" value={qmin} onChange={(e) => setQmin(e.target.value.replace(/[^\d]/g, "").slice(0, 2))} help="Deze duur ziet de patiënt in de bevestiging, de intro van de vragenlijst en de mails." />
             </div>
             <div className="mt-5 text-[13px] font-medium">E-mails die voor deze behandeling gaan</div>
             <ul className="mt-1 divide-y divide-line">
