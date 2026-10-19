@@ -1,3 +1,4 @@
+import { ListPage,DataTable,RowChevron } from "@/components/ListPage";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
@@ -42,7 +43,7 @@ function Page() {
   const all = (l: string) => [{ value: "all", label: l }];
 
   return (
-    <div className="flex flex-col gap-6">
+    <ListPage>
       <PageHeader title="Patiënten" actions={
         <div className="relative">
           <div className="flex h-11 w-[320px] items-center gap-2 rounded-full bg-sand px-4">
@@ -84,7 +85,7 @@ function Page() {
         <Select className="w-56" label="Behandelaar" value={prac} onChange={setPrac} options={[...all("Alle behandelaars"), ...ref.practitioners.map((p) => ({ value: p.id, label: `${p.first_name} ${p.last_name}` }))]} />
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-[14px]">
+        <DataTable><table className="w-full text-[14px]">
           <thead><tr className="border-b border-mist text-left text-[12px] text-muted-foreground">
             {["Patiëntnummer", "Naam", "Aangemeld", "Behandeling", "Afspraak", "Behandelaar", "Vragenlijst", "Bron"].map((h) => <th key={h} className="whitespace-nowrap px-2.5 py-3 font-normal">{h}</th>)}
           </tr></thead>
@@ -106,8 +107,8 @@ function Page() {
             })}
             {data && shown.length === 0 && <tr><td colSpan={8} className="px-2.5 py-6 text-muted-foreground">Geen {mode === "created" ? "aanmeldingen" : "afspraken"} op deze dag.</td></tr>}
           </tbody>
-        </table>
+        </table></DataTable>
       </div>
-    </div>
+    </ListPage>
   );
 }

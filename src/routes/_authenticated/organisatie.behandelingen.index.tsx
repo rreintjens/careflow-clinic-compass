@@ -1,3 +1,4 @@
+import { ListPage,DataTable,RowChevron,ListGroup } from "@/components/ListPage";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
@@ -72,7 +73,7 @@ function TreatmentsPage() {
   const total = groups.reduce((n, g) => n + g.items.length, 0);
 
   return (
-    <div className="flex flex-col gap-6">
+    <ListPage>
       <PageHeader
         title="Behandelingen"
         description="Links de categorieën met hun subcategorieën, rechts de behandelingen per subcategorie. Een behandeling kan in meer categorieën en subcategorieën staan."
@@ -114,7 +115,7 @@ function TreatmentsPage() {
                     {c.name_nl}
                   </button>
                   <span className="text-xs text-muted-foreground">{countFor(c.id)}</span>
-                  <button type="button" onClick={() => setCatModal(c)} className="text-[13px] text-primary hover:text-primary-hover">Wijzig</button>
+                  <button type="button" onClick={() => setCatModal(c)} className="text-[13px] text-primary hover:text-primary-hover" aria-label="Categorie openen"><RowChevron/></button>
                 </div>
                 {sel === c.id && (
                   <ul className="flex flex-col py-1 pl-11">
@@ -140,7 +141,7 @@ function TreatmentsPage() {
           </p>
         </Card>
 
-        <Card>
+        <section>
           <h2 className="text-lg font-semibold">
             {selected?.name_nl ?? "Alle behandelingen"} <span className="font-normal text-muted-foreground">· {total} behandelingen</span>
           </h2>
@@ -155,9 +156,7 @@ function TreatmentsPage() {
             {groups.map((g) => (
               <div key={g.key} className="min-w-[640px]">
                 {g.label && (
-                  <div className="px-1 pb-1 pt-4 text-[13px] font-semibold text-primary">
-                    {g.label} <span className="font-normal text-muted-foreground">· {g.items.length}</span>
-                  </div>
+                  <ListGroup count={g.items.length}>{g.label}</ListGroup>
                 )}
                 {g.items.map((t, i) => (
                   <div
@@ -172,7 +171,7 @@ function TreatmentsPage() {
                       const cat = g.categoryId;
                       order.mutate(() => saveTreatmentOrder(cat, ids));
                     }}
-                    className="grid grid-cols-[28px_minmax(0,1fr)_230px_110px_60px] items-center gap-x-2 rounded-xl px-1 py-2.5 hover:bg-sand/60"
+                    data-list-row className="grid grid-cols-[28px_minmax(0,1fr)_230px_110px_60px] items-center gap-x-2 rounded-xl px-1 py-2.5 hover:bg-sand/60"
                   >
                     <DragHandle />
                     <div className="flex min-w-0 items-center gap-3">
@@ -187,7 +186,7 @@ function TreatmentsPage() {
                       <StatusMark kind={t.ok === t.total && t.total > 0 ? "ok" : "warn"} />
                       {t.ok} van {t.total}
                     </span>
-                    <Link to="/organisatie/behandelingen/$id" params={{ id: t.id }} className="text-[13px] text-primary hover:text-primary-hover">Wijzig</Link>
+                    <Link to="/organisatie/behandelingen/$id" params={{ id: t.id }} className="text-[13px] text-primary hover:text-primary-hover" aria-label="Openen"><RowChevron/></Link>
                   </div>
                 ))}
               </div>
@@ -195,7 +194,7 @@ function TreatmentsPage() {
             {total === 0 && <p className="py-6 text-sm text-muted-foreground">Geen behandelingen gevonden.</p>}
           </div>
           <p className="mt-4 text-xs text-muted-foreground">Deze volgorde is ook de volgorde binnen de categorie in de boekingsflow. Sleep om die te wijzigen.</p>
-        </Card>
+        </section>
       </div>
 
       {catModal && <CategoryModal org={org} category={catModal === "new" ? null : catModal} onClose={() => setCatModal(null)} onSaved={refresh} />}
@@ -210,7 +209,7 @@ function TreatmentsPage() {
           }}
         />
       )}
-    </div>
+    </ListPage>
   );
 }
 

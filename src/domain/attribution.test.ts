@@ -1,0 +1,6 @@
+import { expect,it } from "vitest";
+import { attributionEntitySchema,normalizeCode,randomLinkHash,structuredBookingUrl } from "./attribution";
+it("normalizes extra and campaign codes to lowercase letters digits and hyphens",()=>expect(normalizeCode(" Black Friday Één! ")).toBe("black-friday-een"));
+it("includes all structured UTM dimensions and the six character id",()=>expect(structuredBookingUrl({channel:"Instagram",source:"instagram",medium:"social",place:"story",content:"story",campaign:"Najaar 2026",campaignCode:"najaar-2026",extra:"black-friday",hash:"k7f3q2"})).toBe("/boeken?link=k7f3q2&utm_source=instagram&utm_medium=social&utm_campaign=najaar-2026&utm_content=story-black-friday&utm_id=k7f3q2"));
+it("produces random six character lowercase codes",()=>{const hashes=Array.from({length:100},randomLinkHash);expect(hashes.every(h=>/^[a-z0-9]{6}$/.test(h))).toBe(true);expect(new Set(hashes).size).toBe(100);});
+it("rejects a campaign ending before its start",()=>expect(attributionEntitySchema.safeParse({kind:"campaign",id:null,name:"Najaar",code:"najaar",active:true,startsOn:"2026-10-20",endsOn:"2026-10-19"}).success).toBe(false));

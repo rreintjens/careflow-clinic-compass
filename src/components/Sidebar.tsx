@@ -35,6 +35,7 @@ const GROUPS = [
     icon: icon(<><circle cx="6" cy="6" r="2.5" /><circle cx="6" cy="18" r="2.5" /><circle cx="18" cy="12" r="2.5" /><path d="M8 7l8 4M8 17l8-4" /></>),
     items: [
       { to: "/boekingsflow/boekingslinks", label: "Boekingslinks" },
+      { to: "/boekingsflow/kanalen-en-campagnes", label: "Kanalen en campagnes" },
       { to: "/boekingsflow/vragenlijsten", label: "Vragenlijsten" },
       { to: "/boekingsflow/e-mails", label: "E-mails en sjablonen" },
     ],

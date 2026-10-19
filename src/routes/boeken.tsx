@@ -4,6 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 
+import { resolveStartScreen,startScreenPage } from "@/domain/start-screen";
+import { Boodschap } from "@/features/questionnaire/QuestionnaireRunner";
 import { Logo } from "@/components/Logo";
 import { PatientFrame } from "@/components/PatientFrame";
 import { PillButton } from "@/components/PillButton";
@@ -30,15 +32,14 @@ const MODES = new Set<string>(["assigned", "optional", "required", "fixed"]);
 
 const catalogQuery = (merk: string | undefined) => queryOptions({ queryKey: ["booking-catalog", merk ?? ""], queryFn: () => getBookingCatalog({ data: { merk } }), staleTime: 60_000 });
 
-/** A booking link (boekingslink) answers part of the flow in advance; only fetched when ?link= is present. */
-const linkQuery = (merk: string | undefined, link: string | undefined) =>
-  queryOptions({ queryKey: ["booking-link", merk ?? "", link ?? ""], enabled: !!link, queryFn: () => getBookingLink({ data: { merk, link: link ?? "" } }), staleTime: 60_000 });
-
 export const Route = createFileRoute("/boeken")({
   validateSearch: search,
   loaderDeps: ({ search: s }) => ({ merk: s.merk, link: s.link }),
-  loader: ({ context, deps }) =>
-    context.queryClient.ensureQueryData(catalogQuery(deps.merk)).then(() => (deps.link ? context.queryClient.ensureQueryData(linkQuery(deps.merk, deps.link)) : undefined)),
+  loader: async ({ deps }) => {
+    const catalog=await getBookingCatalog({data:{merk:deps.merk}});
+    const link=deps.link?await getBookingLink({data:{merk:deps.merk,link:deps.link}}):null;
+    return {catalog,link};
+  },
   head: () => ({
     meta: [
       { title: "Afspraak maken · The Body Clinic" },
@@ -58,9 +59,10 @@ type Full = Extract<Cat, { categories: unknown }>;
 function Booking() {
   const s = Route.useSearch();
   const navigate = useNavigate({ from: "/boeken" });
-  const { data } = useSuspenseQuery(catalogQuery(s.merk));
-  const linkRes = useQuery(linkQuery(s.merk, s.link));
-  const link = linkRes.data && "found" in linkRes.data && linkRes.data.found ? linkRes.data.link : null;
+  const loaded=Route.useLoaderData();
+  const data=loaded.catalog;
+  const linkRes={data:loaded.link};
+  const link = linkRes.data?.found ? linkRes.data.link : null;
   const lang = s.lang ?? link?.language ?? "nl";
   const tx = (key: string, vars: Record<string, string | number> = {}) => {
     const r = data.ui.find((u) => (u.list_key === "booking_ui" || u.list_key === "questionnaire_ui") && u.value === key);
@@ -71,6 +73,7 @@ function Booking() {
 
   // One tap may never advance more than one step: ignore touches for ~400 ms after a step change,
   // so a tap that started on the previous screen cannot land on a button of the new screen.
+  const [startPassed,setStartPassed]=useState(false);
   const stepKey = `${s.cat ?? ""}|${s.sub ?? ""}|${s.t ?? ""}|${s.l ?? ""}|${s.p ?? ""}|${s.stap ?? ""}`;
   const [settling, setSettling] = useState(true);
   useEffect(() => {
@@ -81,7 +84,8 @@ function Booking() {
   const guard = settling ? "pointer-events-none" : undefined;
 
   if (!("categories" in data) || !data.tenant) return <Shell lang={lang} onLang={() => go({ lang: lang === "nl" ? "en" : "nl" })}><p className="pt-10 text-[15px]">{tx("unknown_brand")}</p></Shell>;
-  const c = data as Full;
+  const original = data as Full;
+  const c: Full = link ? {...original,treatments:original.treatments.filter(t=>link.treatmentIds.includes(t.id)),practitioners:original.practitioners.filter(p=>!link.practitionerIds||link.practitionerIds.includes(p.id))} : original;
   const name = (x: { name_nl: string; name_en: string | null }) => (lang === "en" && x.name_en) || x.name_nl;
   /** Icon with fallback up the tree: subcategory → parent category, treatment → its (sub)category. */
   const catIcon = (id: string | null | undefined): string | null | undefined => {
@@ -95,14 +99,22 @@ function Booking() {
   const catalog: Catalog = { categories: c.categories, links: link?.treatmentId ? c.links.filter((x) => x.treatment_id === link.treatmentId) : c.links, treatments, locationsFor };
   // Bron: een eigen ?bron= wint, dan de bron van de boekingslink, dan de utm-bron uit het webadres.
   const eff: Search = link
-    ? { ...s, t: s.t ?? link.treatmentId ?? undefined, p: mode === "fixed" ? link.practitionerId ?? undefined : s.p, bron: s.bron ?? (link.source || undefined) ?? s.utm_source }
+    ? { ...s, t: s.t ?? link.treatmentId ?? undefined, p: link.practitionerId ?? (s.p && s.p!=="any" && link.practitionerIds && !link.practitionerIds.includes(s.p) ? undefined : s.p), bron: s.bron ?? (link.source || undefined) ?? s.utm_source }
     : { ...s, bron: s.bron ?? s.utm_source };
-  const step = nextStep(catalog, eff);
+  let step = nextStep(catalog, eff);
+  if(startPassed&&link?.treatmentId&&!s.l&&!s.stap) step={kind:"location",treatment:link.treatmentId,options:locationsFor(link.treatmentId)};
+  if (step.kind === "practitioner") {
+    const people = eligiblePractitioners(c,step.treatment,step.location);
+    if (people.length === 1) step = nextStep(catalog,{...eff,p:people[0]?.id});
+  }
   const progress = { category: 0.1, subcategory: 0.15, treatment: 0.2, location: 0.3, practitioner: 0.4, planner: 0.45, none: 0 }[step.kind];
   const back = step.kind === "category" ? undefined : () => window.history.back();
   const close = () => navigate({ search: { merk: s.merk, lang: s.lang, bron: s.bron } });
   const phone = c.tenant.phone;
 
+  const startTreatment=c.treatments.find(t=>t.id===link?.treatmentId);
+  const startScreen=resolveStartScreen(link?{treatmentId:link.treatmentId,mode:link.startScreenMode,screen:link.startScreen}:null,startTreatment?.start_screen);
+  if(startScreen&&!startPassed&&!s.tijd&&!s.stap) {const page=startScreenPage(startScreen,lang);const people=c.practitioners.filter(p=>c.practitionerTreatments.some(pt=>pt.practitioner_id===p.id&&pt.treatment_id===startTreatment?.id));return <Shell lang={lang} footer={<PillButton size="lg" className="patient-choice choice-primary w-full" onClick={()=>setStartPassed(true)}>{page.button}</PillButton>}><Title>{page.title}</Title><p className="text-[15px] leading-relaxed">{page.body}</p>{startScreen.form==="practitioner"?<div className="mt-5 grid grid-cols-2 gap-4">{people.map(p=><div key={p.id} className="flex items-center gap-3"><Avatar src={p.photo} size={40}/><span className="text-sm">{p.first_name} {p.last_name}</span></div>)}</div>:<Boodschap page={page} vars={{}}/>}<div className="mt-6 flex items-center gap-3"><div className="flex -space-x-2">{people.slice(0,4).map(p=><Avatar key={p.id} src={p.photo} size={32}/>)}</div><span className="text-sm text-muted-foreground">{tx("duration_line",{rol:"arts",min:startTreatment?.duration_min??30})}</span></div></Shell>;}
   if (step.kind === "planner" && s.stap === "vasthouden" && s.d && s.tijd) {
     return <div className={guard}><HoldStep c={c} s={eff} treatmentId={step.treatment} locationId={step.location} practitionerId={step.practitioner ?? "any"} tx={tx} lang={lang} go={go} /></div>;
   }
@@ -121,7 +133,7 @@ function Booking() {
       {step.kind === "treatment" && (
         <List title={tx("q_treatment")} rows={step.options.map((id) => { const x = c.treatments.find((k) => k.id === id); return { id, title: x ? name(x) : "", sub: x ? `${x.duration_min} min` : "", icon: x?.icon ?? catIcon(step.category) }; })} onPick={(id) => go({ t: id })} />
       )}
-      {step.kind === "location" && <LocationStep c={c} treatmentId={step.treatment} options={step.options} tx={tx} name={name} onPick={(id) => go({ l: id })} />}
+      {step.kind === "location" && <LocationStep c={c} treatmentId={step.treatment} options={step.options} hidePeople={!!startScreen} tx={tx} name={name} onPick={(id) => go({ l: id })} />}
       {step.kind === "practitioner" && <PractitionerStep c={c} s={s} treatmentId={step.treatment} locationId={step.location} required={step.required} tx={tx} onPick={(p) => go({ p, stap: undefined, tijd: undefined })} />}
       {step.kind === "planner" && <PlannerStep c={c} s={s} step={step} tx={tx} lang={lang} go={go} />}
       </div>
@@ -157,7 +169,7 @@ function List({ title, rows, onPick }: { title: string; rows: Array<{ id: string
       <Title>{title}</Title>
       <div className="flex flex-col gap-2">
         {rows.map((r) => (
-          <button key={r.id} type="button" onClick={() => onPick(r.id)} className="flex min-h-[60px] items-center gap-4 rounded-[16px] bg-sand px-5 text-left">
+          <button key={r.id} type="button" onClick={() => onPick(r.id)} className="patient-choice flex min-h-[60px] items-center gap-4 rounded-[16px] bg-sand px-5 text-left">
             {r.icon ? <span className="flex size-8 shrink-0 items-center justify-center"><img src={`/treatment-icons/${r.icon}.png`} alt="" className="size-7" /></span> : null}
             <span className="flex-1"><span className="block whitespace-nowrap text-[16px]">{r.title}</span>{r.sub && <span className="block text-[13px] text-muted-foreground">{r.sub}</span>}</span>
             <Chevron />
@@ -176,14 +188,14 @@ function eligiblePractitioners(c: Full, treatmentId: string, locationId: string)
 }
 const roleName = (c: Full, roleId: string | null, lang = "nl") => { const r = c.roles.find((x) => x.id === roleId); return r ? ((lang === "en" && r.name_en) || r.name_nl) : ""; };
 
-function LocationStep({ c, treatmentId, options, tx, name, onPick }: { c: Full; treatmentId: string; options: string[]; tx: Tx; name: (x: { name_nl: string; name_en: string | null }) => string; onPick: (id: string) => void }) {
+function LocationStep({ c, treatmentId, options, tx, name, onPick,hidePeople=false }: { c: Full; treatmentId: string; options: string[];hidePeople?:boolean; tx: Tx; name: (x: { name_nl: string; name_en: string | null }) => string; onPick: (id: string) => void }) {
   const t = c.treatments.find((x) => x.id === treatmentId);
   const locs = sortLocations(c.locations.filter((l) => options.includes(l.id)));
   const roles = [...new Set(c.treatmentRoles.filter((x) => x.treatment_id === treatmentId).map((x) => roleName(c, x.role_id).toLowerCase()))];
   const people = c.practitioners.filter((p) => c.practitionerTreatments.some((x) => x.practitioner_id === p.id && x.treatment_id === treatmentId)).slice(0, 3);
   return (
     <>
-      <Title sub={t && (
+      <Title sub={!hidePeople && t && (
         <span className="flex items-center gap-3">
           <span className="flex -space-x-3">{people.map((p) => <Avatar key={p.id} src={p.photo} size={40} />)}</span>
           <span>{tx("duration_line", { rol: roles.length === 1 ? roles[0] ?? "" : tx("practitioner"), min: t.duration_min })}</span>
@@ -193,7 +205,7 @@ function LocationStep({ c, treatmentId, options, tx, name, onPick }: { c: Full; 
         {locs.map((l, i) => {
           const online = l.kind === "online";
           return (
-            <button key={l.id} type="button" onClick={() => onPick(l.id)} className={cn("relative flex min-h-[64px] items-center gap-4 rounded-[16px] px-5 py-3 text-left", online && i === 0 ? "border border-primary bg-background" : "bg-sand")}>
+            <button key={l.id} type="button" onClick={() => onPick(l.id)} className={cn("patient-choice relative flex min-h-[64px] items-center gap-4 rounded-[16px] px-5 py-3 text-left", online && i === 0 ? "choice-recommended" : "bg-sand")}>
               {online && i === 0 && <span className="absolute -top-2.5 right-4 rounded-full bg-primary px-2.5 py-0.5 text-[11px] font-medium text-primary-foreground">{tx("recommended")}</span>}
               <img src={online ? "/ui-icons/videogesprek.svg" : "/ui-icons/locatie.svg"} alt="" className="size-5 shrink-0" />
               <span className="flex-1">
@@ -221,7 +233,7 @@ function useSlots(c: Full, s: Search, treatmentId: string, locationId: string, p
   const fn = useServerFn(getBookingSlots);
   return useQuery({
     queryKey: ["booking-slots", s.merk ?? "", treatmentId, locationId, practitionerIds.join(","), from, days],
-    queryFn: () => fn({ data: { merk: s.merk, treatmentId, locationId, practitionerIds, from, days } }),
+    queryFn: () => fn({ data: { merk: s.merk, treatmentId, locationId, practitionerIds: practitionerIds.length ? practitionerIds : eligiblePractitioners(c,treatmentId,locationId).map(p=>p.id), from, days, link:s.link } }),
     enabled: !!c,
   });
 }
@@ -246,7 +258,7 @@ function PractitionerStep({ c, s, treatmentId, locationId, required, tx, onPick 
       <Title sub={required ? tx("who_required_help") : tx("who_help")}>{tx("q_who")}</Title>
       <p className="mb-2 text-[12px] text-muted-foreground">{tx("sorted_first_free")}</p>
       <div className="flex flex-col gap-2">
-        {!required && (
+        {(
           <Card onClick={() => onPick("any")} avatar={<span className="flex size-[52px] items-center justify-center rounded-full bg-background"><img src="/ui-icons/team.svg" alt="" className="size-5" /></span>}
             title={tx("no_preference")} sub={tx("no_preference_help")} when={q.isLoading ? "" : when(first(null))} />
         )}
@@ -262,7 +274,7 @@ function PractitionerStep({ c, s, treatmentId, locationId, required, tx, onPick 
 
 function Card({ avatar, title, sub, when, onClick }: { avatar: React.ReactNode; title: string; sub: string; when: string; onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} className="flex items-center gap-4 rounded-[16px] bg-sand px-4 py-4 text-left">
+    <button type="button" onClick={onClick} className="patient-choice flex items-center gap-4 rounded-[16px] bg-sand px-4 py-4 text-left">
       {avatar}
       <span className="min-w-0 flex-1">
         <span className="block text-[16px]">{title}</span>
@@ -295,7 +307,7 @@ function PlannerStep({ c, s, step, tx, lang, go }: { c: Full; s: Search; step: E
     <>
       <Title>{tx("q_when")}</Title>
       {step.canChoose && (
-        <button type="button" onClick={() => go({ stap: "wie" })} className="mb-6 flex items-center gap-3 rounded-[16px] bg-sand px-4 py-3 text-left">
+        <button type="button" onClick={() => go({ stap: "wie" })} className="patient-choice mb-6 flex items-center gap-3 rounded-[16px] bg-sand px-4 py-3 text-left">
           {p ? <Avatar src={p.photo} size={40} /> : <span className="flex size-10 items-center justify-center rounded-full bg-background"><img src="/ui-icons/team.svg" alt="" className="size-5" /></span>}
           <span className="flex-1"><span className="block text-[12px] text-muted-foreground">{roleLabel.charAt(0).toUpperCase() + roleLabel.slice(1)}</span><span className="block text-[15px]">{p ? `${p.first_name} ${p.last_name}` : tx("no_preference")}</span></span>
           <span className="flex items-center gap-1 whitespace-nowrap text-[14px] text-primary">{tx("choose", { rol: roleLabel.toLowerCase() })}<Chevron /></span>
@@ -313,7 +325,7 @@ function PlannerStep({ c, s, step, tx, lang, go }: { c: Full; s: Search; step: E
           const has = slots.some((x) => x.date === d);
           const on = d === selected;
           return (
-            <button key={d} type="button" disabled={!has} onClick={() => go({ d, tijd: undefined }, true)} className="flex flex-col items-center gap-1.5 disabled:opacity-40">
+            <button key={d} type="button" disabled={!has} onClick={() => go({ d, tijd: undefined }, true)} aria-pressed={selected===d} className="patient-choice rounded-[12px] px-1 flex flex-col items-center gap-1.5 disabled:opacity-40">
               <span className={cn("text-[12px]", on ? "font-semibold text-primary" : "text-muted-foreground")}>{fmt(d, { weekday: "short" }).slice(0, 2)}</span>
               <span className={cn("flex size-10 items-center justify-center rounded-full text-[15px]", on ? "bg-primary text-primary-foreground" : has ? "bg-sand" : "")}>{Number(d.slice(8))}</span>
             </button>
@@ -334,7 +346,7 @@ function PlannerStep({ c, s, step, tx, lang, go }: { c: Full; s: Search; step: E
                   <div className="grid grid-cols-4 gap-2">
                     {list.map((x) => {
                       const t = fmtTime(x.start);
-                      return <button key={t} type="button" onClick={() => go({ tijd: t }, true)} className={cn("h-12 rounded-[12px] text-[15px]", s.tijd === t ? "bg-primary text-primary-foreground" : "bg-sand")}>{t}</button>;
+                      return <button key={t} type="button" onClick={() => go({ tijd: t }, true)} aria-pressed={s.tijd===t} className="patient-choice h-12 rounded-[12px] text-[15px]">{t}</button>;
                     })}
                   </div>
                 )}
@@ -351,7 +363,7 @@ function PlannerStep({ c, s, step, tx, lang, go }: { c: Full; s: Search; step: E
       <div className="flex-1" />
       {chosen && (
         <div className="sticky bottom-0 -mx-5 mt-6 border-t border-line bg-background px-5 pb-2 pt-4">
-          <PillButton size="lg" className="w-full" onClick={() => go({ stap: "vasthouden", d: selected })}>
+          <PillButton size="lg" className="patient-choice choice-primary w-full" onClick={() => go({ stap: "vasthouden", d: selected })}>
             {tx("continue_with", { when: `${fmt(selected, { weekday: "short", day: "numeric", month: "short" })}, ${s.tijd}` })}
           </PillButton>
         </div>
@@ -406,12 +418,12 @@ function HoldStep({ c, s, treatmentId, locationId, practitionerId, tx, lang, go 
   const again = () => go({ stap: undefined, tijd: undefined });
 
   if (state.kind === "taken") return (
-    <Shell lang={lang} progress={0.45} onBack={again} footer={<PillButton size="lg" className="w-full" onClick={again}>{tx("choose_again")}</PillButton>}>
+    <Shell lang={lang} progress={0.45} onBack={again} footer={<PillButton size="lg" className="patient-choice choice-primary w-full" onClick={again}>{tx("choose_again")}</PillButton>}>
       <p className="text-[15px] leading-[1.6]">{tx("slot_taken")}</p>
     </Shell>
   );
   if (state.kind === "expired") return (
-    <Shell lang={lang} progress={0.6} onBack={again} footer={<PillButton size="lg" className="w-full" onClick={again}>{tx("choose_again")}</PillButton>}>
+    <Shell lang={lang} progress={0.6} onBack={again} footer={<PillButton size="lg" className="patient-choice choice-primary w-full" onClick={again}>{tx("choose_again")}</PillButton>}>
       <Title sub={tx("expired_body", { min: state.minutes })}>{tx("expired_title")}</Title>
       <div className="rounded-[18px] bg-sand p-5">
         <p className="text-[13px] text-muted-foreground">{tx("your_choice")}</p>
@@ -532,12 +544,12 @@ function DetailsStep({ c, s, token, treatmentId, locationId, practitionerId, tx,
   const privacy = tx("d_c_privacy", { link: "\u0000" }).split("\u0000");
 
   return (
-    <Shell lang={lang} progress={0.85} onBack={again} footer={<>{error && <p role="alert" className="mb-3 text-center text-[14px] text-warning">{error}</p>}<PillButton size="lg" className="w-full" disabled={busy} onClick={() => void submit()}>{tx("d_submit")}</PillButton></>}>
+    <Shell lang={lang} progress={0.85} onBack={again} footer={<>{error && <p role="alert" className="mb-3 text-center text-[14px] text-warning">{error}</p>}<PillButton size="lg" className="patient-choice choice-primary w-full" disabled={busy} onClick={() => void submit()}>{tx("d_submit")}</PillButton></>}>
       <Title sub={!existing ? tx("d_sub") : undefined}>{tx("d_title")}</Title>
       <p className="-mt-2 mb-3 text-[15px]">{tx("d_been_before")}</p>
       <div className="flex gap-2">
         {[false, true].map((v) => (
-          <button key={String(v)} type="button" onClick={() => setExisting(v)} className={cn("h-11 whitespace-nowrap rounded-full px-5 text-[15px]", existing === v ? "border border-primary bg-teal-light" : "border border-transparent bg-sand")}>{v ? tx("d_existing") : tx("d_new")}</button>
+          <button key={String(v)} type="button" onClick={() => setExisting(v)} aria-pressed={existing===v} className={cn("patient-choice h-11 whitespace-nowrap rounded-full px-5 text-[15px]", existing === v ? "border border-primary bg-teal-light" : "border border-transparent bg-sand")}>{v ? tx("d_existing") : tx("d_new")}</button>
         ))}
       </div>
       {existing && <p className="mt-4 text-[14px] leading-[1.6] text-muted-foreground">{tx("d_existing_help")}</p>}

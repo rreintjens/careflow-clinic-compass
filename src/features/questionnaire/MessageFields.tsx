@@ -1,0 +1,12 @@
+import { TextArea,TextField } from "@/components/Field";
+import { Select } from "@/components/Select";
+import type { Page } from "@/domain/questionnaire/engine";
+import { PillButton } from "@/components/PillButton";
+
+/** Content editor shared by questionnaire messages and booking introductions. */
+export function MessageFields({page,onChange,lang="nl",maxText,maxPoints=4}:{page:Page;onChange:(page:Page)=>void;lang?:string;maxText?:number;maxPoints?:number}){
+ const key=(field:string)=>lang==="en"?`${field}_en`:field;
+ const set=(field:string,value:unknown)=>onChange({...page,[key(field)]:value});
+ const form=String(page["form"]??"none");const points=(page[key(form==="steps"?"step_items":"bullets")] as string[]|undefined)??[];
+ return <div className="flex flex-col gap-4"><Select label="Vorm" value={form} onChange={v=>onChange({...page,form:v})} options={[{value:"none",label:"Geen"},{value:"list",label:"Opsomming"},{value:"steps",label:"Stappen"},{value:"testimonial",label:"Ervaring"},{value:"practitioner",label:"Behandelaars"}]}/><TextField label="Titel" value={String(page[key("title")]??"")} onChange={e=>set("title",e.target.value)}/><TextArea label="Tekst" maxLength={maxText} value={String(page[key("body")]??"")} onChange={e=>set("body",e.target.value)}/>{(form==="list"||form==="steps")&&<div className="flex flex-col gap-2">{points.map((point,i)=><div key={i} className="flex items-end gap-2"><TextField className="flex-1" label={`${form==="steps"?"Stap":"Punt"} ${i+1}`} value={point} onChange={e=>set(form==="steps"?"step_items":"bullets",points.map((p,j)=>i===j?e.target.value:p))}/><PillButton variant="ghost" aria-label={`${form==="steps"?"Stap":"Punt"} ${i+1} verwijderen`} onClick={()=>set(form==="steps"?"step_items":"bullets",points.filter((_,j)=>j!==i))}>×</PillButton></div>)}<PillButton variant="outline" disabled={points.length>=maxPoints} onClick={()=>set(form==="steps"?"step_items":"bullets",[...points,""])}>+ {form==="steps"?"Stap":"Punt"}</PillButton></div>}{form==="testimonial"&&<><TextArea label="Quote" value={String(page[key("quote")]??"")} onChange={e=>set("quote",e.target.value)}/><TextField label="Naam" value={String(page["quote_name"]??"")} onChange={e=>onChange({...page,quote_name:e.target.value})}/></>}<TextField label="Knoptekst" value={String(page[key("button")]??"")} onChange={e=>set("button",e.target.value)}/></div>;
+}

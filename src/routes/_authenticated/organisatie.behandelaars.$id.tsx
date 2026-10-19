@@ -8,6 +8,7 @@ import { Card } from "@/components/Card";
 import { Checkbox, Chip, PlusIcon, SearchField, StatusMark, Tag, TextArea, TextField, TextLink } from "@/components/Field";
 import { Modal } from "@/components/Modal";
 import { PillButton } from "@/components/PillButton";
+import { MultiSelect } from "@/components/MultiSelect";
 import { Select } from "@/components/Select";
 import {
   addTreatmentsToPractitioner, fullName, locName, mainCategories, offeredLocationIds, optLabel, opts, orgQuery, removePractitionerTreatment,
@@ -145,9 +146,7 @@ function PractitionerForm({ org }: { org: Org }) {
           </Card>
 
           <Card title="Werklocaties" description={`Het rooster kan ${p.first_name} alleen op deze locaties inplannen.`}>
-            <div className="flex flex-wrap gap-2">
-              {org.locations.map((l) => <Chip key={l.id} selected={locs.includes(l.id)} onClick={() => setLocs(locs.includes(l.id) ? locs.filter((x) => x !== l.id) : [...locs, l.id])}>{l.name}</Chip>)}
-            </div>
+            <MultiSelect label="Werklocaties" options={org.locations.map(l => ({value:l.id,label:l.name}))} value={locs} onChange={setLocs} />
           </Card>
 
           <Card title="Behandelingen, en waar ze die doet" description={`Klik op een behandeling om aan te passen op welke werklocaties ${p.first_name} die doet.`}>
@@ -268,37 +267,7 @@ function AddTreatmentsModal({ org, practitionerId, onClose, onSaved }: { org: Or
         </div>
       }
     >
-      <SearchField placeholder="Zoek een behandeling" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Zoek een behandeling" />
-      <div className="mt-4 flex flex-col gap-5">
-        {groups.map(({ c, items }) => {
-          const open = items;
-          const all = open.length > 0 && open.every((t) => picked.includes(t.id));
-          return (
-            <div key={c.id}>
-              <div className="flex items-center gap-3">
-                <Checkbox checked={all} label={c.name_nl} disabled={!open.length} onChange={(v) => setPicked(v ? [...new Set([...picked, ...open.map((t) => t.id)])] : picked.filter((x) => !open.some((t) => t.id === x)))} />
-                <span className="flex-1 text-sm font-semibold">{c.name_nl}</span>
-                {open.length > 0 && (all
-                  ? <button type="button" className="text-[13px] text-primary" onClick={() => setPicked(picked.filter((x) => !open.some((t) => t.id === x)))}>Niets uit deze categorie</button>
-                  : <button type="button" className="text-[13px] text-primary" onClick={() => setPicked([...new Set([...picked, ...open.map((t) => t.id)])])}>Alle {open.length} selecteren</button>)}
-              </div>
-              <ul className="mt-2 flex flex-col gap-2 pl-7">
-                {items.map((t) => {
-                  const already = done.has(t.id);
-                  const on = picked.includes(t.id);
-                  return (
-                    <li key={t.id} className={cn("flex items-center gap-3 rounded-[14px] px-3.5 py-3", on ? "border border-primary bg-teal-light" : "border border-line")}>
-                      <Checkbox checked={on} label={t.name_nl} onChange={(v) => toggle(t.id, v)} />
-                      <span className="flex-1 text-sm">{t.name_nl}</span>
-                      <span className="text-xs text-muted-foreground">{already && !on ? "Wordt verwijderd" : already ? "Al toegevoegd" : `${t.duration_min} min`}</span>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          );
-        })}
-      </div>
+      <MultiSelect label="Behandelingen" value={picked} onChange={setPicked} options={groups.flatMap(({c,items})=>items.map(t=>({value:t.id,label:t.name_nl,group:c.name_nl,detail:`${t.duration_min} minuten`})))} />
     </Modal>
   );
 }
@@ -333,7 +302,7 @@ function TreatmentLocationsModal({ org, practitionerId, treatmentId, workLocatio
       }
     >
       <div className="flex flex-wrap gap-2">
-        {candidates.map((l) => <Chip key={l} selected={!excluded.includes(l)} onClick={() => setExcluded(excluded.includes(l) ? excluded.filter((x) => x !== l) : [...excluded, l])}>{locName(org, l)}</Chip>)}
+        <MultiSelect label="Locaties voor deze behandeling" options={candidates.map(l => ({value:l,label:locName(org,l)}))} value={candidates.filter(l => !excluded.includes(l))} onChange={ids => setExcluded(candidates.filter(l => !ids.includes(l)))} />
         {candidates.length === 0 && <p className="text-sm text-warning">Werkt niet waar dit wordt aangeboden.</p>}
       </div>
     </Modal>

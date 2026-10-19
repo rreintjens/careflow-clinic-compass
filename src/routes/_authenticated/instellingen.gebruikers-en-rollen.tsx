@@ -1,3 +1,4 @@
+import { ListPage,DataTable,RowChevron } from "@/components/ListPage";
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
@@ -8,7 +9,7 @@ import { Modal } from "@/components/Modal";
 import { PageHeader } from "@/components/PageHeader";
 import { PillButton } from "@/components/PillButton";
 import { Select } from "@/components/Select";
-import { Checkbox, TextField, Toggle } from "@/components/Field";
+import { Checkbox, SearchField, TextField, Toggle } from "@/components/Field";
 import { CONSULT_OPTIONS, LANDING_OPTIONS, SCOPE_LABELS, createRole, deleteRole, practitionerLinksQuery, rolesQuery, saveRolePermissions, updateRole, usersQuery } from "@/data/roles";
 import { createStaffUser, resetStaffPassword, updateStaffUser } from "@/data/users.functions";
 import { useServerFn } from "@tanstack/react-start";
@@ -29,6 +30,7 @@ function RolesPage() {
   const users = useQuery(usersQuery);
   const qc = useQueryClient();
   const canManage = Boolean(me?.permissions.includes("roles.manage"));
+  const [search,setSearch]=useState("");
   const [tab, setTab] = useState<"users" | "roles">("roles");
   const [editing, setEditing] = useState<string | null>(null);
   const [userEdit, setUserEdit] = useState<string | null>(null);
@@ -63,14 +65,15 @@ function RolesPage() {
   const role = data.roles.find((r) => r.id === editing);
 
   return (
-    <div className="flex flex-col gap-6">
+    <ListPage>
       <PageHeader
         title="Gebruikers en rollen"
         description="Vink per rol aan wat die rol mag. De superadmin heeft altijd alle rechten en er blijft altijd minstens één superadmin."
         actions={canManage && <div className="flex gap-2"><PillButton variant="outline" onClick={() => setEditing("new")}>Nieuwe rol</PillButton><PillButton onClick={() => setUserEdit("new")}>Nieuwe gebruiker</PillButton></div>}
       />
-      <Card title="Startpagina en consultmodus per rol" description="Waar iemand landt na het inloggen, en wie het notitiepaneel en de tellers ziet.">
-        <table className="w-full text-sm">
+      <SearchField aria-label="Zoek gebruiker of rol" placeholder="Zoek gebruiker of rol" value={search} onChange={e=>setSearch(e.target.value)}/>
+      <section>
+        <DataTable><table className="w-full text-sm">
           <thead>
             <tr className="border-b border-line text-left text-xs text-muted-foreground">
               <th className="px-2.5 py-2 font-normal">Rol</th>
@@ -80,7 +83,7 @@ function RolesPage() {
             </tr>
           </thead>
           <tbody>
-            {data.roles.map((r) => (
+            {data.roles.filter(r=>r.name.toLowerCase().includes(search.toLowerCase())).map((r) => (
               <tr
                 key={r.id}
                 onClick={canManage ? () => setEditing(r.id) : undefined}
@@ -93,9 +96,9 @@ function RolesPage() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></DataTable>
         <p className="mt-3 text-xs text-muted-foreground">Per rol in te stellen in de pop-up van de rol; dit is de standaard.</p>
-      </Card>
+      </section>
 
       <div role="tablist" className="flex gap-6 overflow-x-auto border-b border-line">
         {(
@@ -117,29 +120,29 @@ function RolesPage() {
       </div>
 
       {tab === "users" ? (
-        <Card>
+        <DataTable count={data.userRoles.length} label="gebruikers">
           <ul className="divide-y divide-line text-sm">
-            {data.userRoles.map((m) => {
+            {data.userRoles.filter(m=>{const u=users.data?.find(u=>u.id===m.user_id);return [u?.full_name,u?.email,data.roles.find(r=>r.id===m.role_id)?.name].join(" ").toLowerCase().includes(search.toLowerCase());}).map((m) => {
               const u = users.data?.find((x) => x.id === m.user_id);
               const pr = practitioners.data?.find((x) => x.user_id === m.user_id);
               const status = u?.blocked ? "Geblokkeerd" : m.active ? "Actief" : "Gedeactiveerd";
               return (
-                <li key={m.user_id} className="grid grid-cols-[1.2fr_1.4fr_1fr_1fr_110px_70px] items-center gap-4 py-3">
+                <li key={m.user_id} onClick={canManage?()=>setUserEdit(m.user_id):undefined} className="grid grid-cols-[1.2fr_1.4fr_1fr_1fr_110px_70px] items-center gap-4 py-3">
                   <span className="font-medium">{u?.full_name ?? "Onbekend"}</span>
                   <span className="truncate text-muted-foreground">{u?.email}</span>
                   <span>{data.roles.find((r) => r.id === m.role_id)?.name}</span>
                   <span className="text-muted-foreground">{pr ? `${pr.first_name} ${pr.last_name}` : "Geen behandelaar"}</span>
                   <span><span className={cn("whitespace-nowrap rounded-full px-2.5 py-1 text-xs", status === "Actief" ? "bg-teal-light text-primary-hover" : "bg-warning-bg text-warning")}>{status}</span></span>
-                  {canManage ? <button type="button" className="text-primary underline" onClick={() => setUserEdit(m.user_id)}>Wijzig</button> : <span />}
+                  {canManage ? <button type="button" className="text-primary underline" onClick={() => setUserEdit(m.user_id)} aria-label="Gebruiker openen"><RowChevron/></button> : <span />}
                 </li>
               );
             })}
           </ul>
-        </Card>
+        </DataTable>
       ) : (
         <>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <DataTable><table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-line">
                   <th className="px-2.5 py-3 text-left align-bottom text-xs font-normal text-muted-foreground">Recht</th>
@@ -171,7 +174,7 @@ function RolesPage() {
                   />
                 ))}
               </tbody>
-            </table>
+            </table></DataTable>
           </div>
           <div className="flex items-center gap-4">
             <PillButton onClick={() => save.mutate()} disabled={!canManage || save.isPending || diff.add.length + diff.remove.length === 0}>
@@ -190,7 +193,7 @@ function RolesPage() {
         <UserModal key={userEdit} userId={userEdit === "new" ? null : userEdit} roles={data.roles} member={data.userRoles.find((m) => m.user_id === userEdit) ?? null}
           profile={users.data?.find((u) => u.id === userEdit) ?? null} practitioners={practitioners.data ?? []} onClose={() => setUserEdit(null)} />
       )}
-    </div>
+    </ListPage>
   );
 }
 

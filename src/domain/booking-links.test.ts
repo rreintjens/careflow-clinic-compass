@@ -5,6 +5,9 @@ import {
   absoluteBookingLinkUtm,
   bookingLinkPath,
   bookingLinkUtm,
+  scopeTreatments,
+  scopePractitioners,
+  scopeUnbookable,
   linkLocations,
   linkPractitioners,
   linkProblem,
@@ -90,4 +93,14 @@ describe("bookingLinkUtm", () => {
     expect(absoluteBookingLinkUtm("x1", "Radio", "boek.bodyclinic.nl")).toBe("https://boek.bodyclinic.nl/boeken?link=x1&utm_source=radio&utm_campaign=x1");
     expect(absoluteBookingLinkUtm("x1", "", null)).toBe("/boeken?link=x1&utm_source=x1&utm_campaign=x1");
   });
+});
+
+
+describe("multi-treatment scope",()=>{
+ const c:LinkCatalog={categories:[{id:"MA",parent_id:null},{id:"child",parent_id:"MA"}],treatments:[{id:"consult",categories:["MA"],locations:["online"]},{id:"new",categories:["child"],locations:["online"]},{id:"cosmetic",categories:["other"],locations:["clinic"]}],practitioners:[{id:"rob",treatments:["consult","new"],locations:["online"]},{id:"dilan",treatments:["consult"],locations:["online"]},{id:"other",treatments:["consult"],locations:["online"]}]};
+ const d={...draft(),category_ids:["MA"],location_ids:["online"],practitioner_scope:"selected" as const,practitioner_ids:["rob","dilan"]};
+ it("whole Medisch afvallen includes subsequently added subcategory treatments",()=>expect(scopeTreatments(c,d)).toEqual(["consult","new"]));
+ it("only the two selected doctors are offered",()=>expect(scopePractitioners(c,d,"consult","online")).toEqual(["rob","dilan"]));
+ it("flags treatments without a selected practitioner at the location",()=>expect(scopeUnbookable(c,{...d,practitioner_ids:["dilan"]})).toEqual(["new"]));
+ it("respects exclusions at individual locations",()=>expect(scopePractitioners({...c,practitioners:[{id:"rob",treatments:["consult"],locations:["online"],exclusions:[{treatment_id:"consult",excluded_location_ids:["online"]}]}]},d,"consult")).toEqual([]));
 });

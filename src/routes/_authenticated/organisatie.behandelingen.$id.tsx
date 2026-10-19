@@ -9,6 +9,8 @@ import { Checkbox, Chip, PlusIcon, SearchField, StatusMark, Tag, TextArea, TextF
 import { Modal } from "@/components/Modal";
 import { MultiSelect } from "@/components/MultiSelect";
 import { PillButton } from "@/components/PillButton";
+import { StartScreenEditor } from "@/features/questionnaire/StartScreenEditor";
+import { readStartScreen } from "@/domain/start-screen";
 import { Select } from "@/components/Select";
 import {
   addPractitionersToTreatment, deleteRequirement, fullName, generalDefaultsQuery, locName, mainCategories, offeredLocationIds, optLabel, opts,
@@ -66,6 +68,7 @@ function TreatmentForm({ org, defaults, onSaved, onCancel }: { org: Org; default
   const [locs, setLocs] = useState(offeredLocationIds(org, id));
   const [pre, setPre] = useState(t.pre_questionnaire_key ?? "none");
   const [post, setPost] = useState(t.post_questionnaire_key ?? "none");
+  const [startScreen,setStartScreen]=useState(readStartScreen(t.start_screen));
   const [qmin, setQmin] = useState(String(t.questionnaire_minutes ?? 8));
   const [lang, setLang] = useState<"nl" | "en">("nl");
   const [texts, setTexts] = useState({
@@ -99,6 +102,7 @@ function TreatmentForm({ org, defaults, onSaved, onCancel }: { org: Org; default
           icon: icon === "none" ? null : icon,
           pre_questionnaire_key: pre === "none" ? null : pre,
           post_questionnaire_key: post === "none" ? null : post,
+          start_screen:startScreen,
           questionnaire_minutes: Math.min(60, Math.max(1, Number(qmin) || 8)),
           ...Object.fromEntries(Object.entries(texts).map(([k, v]) => [k, v.trim() || null])),
         },
@@ -152,6 +156,7 @@ function TreatmentForm({ org, defaults, onSaved, onCancel }: { org: Org; default
         </div>
       </div>
 
+      <section className="border-t border-line pt-5"><h2 className="mb-4 text-lg font-semibold">Startscherm in de boekingsflow</h2><StartScreenEditor value={startScreen} onChange={setStartScreen} defaultButton="Kies waar en wanneer"/></section>
       <div className="grid grid-cols-[minmax(0,1fr)_300px] items-start gap-6">
         <div className="flex min-w-0 flex-col gap-6">
           <Card title="Algemeen">
@@ -171,11 +176,7 @@ function TreatmentForm({ org, defaults, onSaved, onCancel }: { org: Org; default
           </Card>
 
           <Card title="Waar wordt deze behandeling aangeboden?" description={`${locs.some((l) => org.locations.find((x) => x.id === l)?.kind === "online") ? "Online staat aan: deze behandeling kan ook op afstand." : "Online staat uit: deze behandeling kan niet op afstand."} Dezelfde keuze zie je terug op de pagina van elke locatie.`}>
-            <div className="flex flex-wrap gap-2">
-              {org.locations.map((l) => (
-                <Chip key={l.id} selected={locs.includes(l.id)} onClick={() => setLocs(locs.includes(l.id) ? locs.filter((x) => x !== l.id) : [...locs, l.id])}>{l.name}</Chip>
-              ))}
-            </div>
+            <MultiSelect label="Aangeboden op locaties" options={org.locations.map(l => ({value:l.id,label:l.name}))} value={locs} onChange={setLocs} />
           </Card>
 
           <Card title="Wie doet deze behandeling, en waar?" description="Klik op een behandelaar om de locaties aan te passen. Je ziet de locaties waar die werkt en waar deze behandeling wordt aangeboden.">
@@ -367,36 +368,11 @@ function AddPractitionersModal({ org, treatmentId, roleIds, onClose, onSaved }: 
         <span className="text-muted-foreground">{candidates.length} behandelaars beschikbaar</span>
         <span className="flex gap-3"><TextLink onClick={() => setPicked(candidates.map((c) => c.id))}>Selecteer alle {candidates.length}</TextLink><TextLink onClick={() => setPicked([])}>Wis selectie</TextLink></span>
       </div>
-      <ul className="mt-3 flex flex-col gap-2">
-        {candidates.map((p) => {
-          const work = workLocationIds(org, p.id);
-          const here = practitionerTreatmentLocations(work, offered, []);
-          const on = picked.includes(p.id);
-          return (
-            <li key={p.id} className={cn("flex items-center gap-3 rounded-[14px] border px-3 py-2.5", on ? "border-primary bg-teal-light" : "border-line")}>
-              <Checkbox checked={on} label={fullName(p)} onChange={(v) => setPicked(v ? [...picked, p.id] : picked.filter((x) => x !== p.id))} />
-              <Avatar path={p.photo_path} size={32} />
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-sm">{fullName(p)}</div>
-                <div className="truncate text-xs text-muted-foreground">{roleName(org, p.role_id)} · {work.map((l) => locName(org, l)).join(" en ")}</div>
-              </div>
-              <span className={cn("max-w-[220px] text-right text-xs", here.length ? "text-primary" : "text-warning")}>
-                {here.length ? `Doet het dan in ${here.map((l) => locName(org, l)).join(" en ")}` : "Werkt niet waar dit wordt aangeboden"}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
+      <MultiSelect label="Behandelaars toevoegen" value={picked} onChange={setPicked} options={candidates.map(p => ({value:p.id,label:fullName(p),disabled:!practitionerTreatmentLocations(workLocationIds(org,p.id),offered,[]).length,reason:!practitionerTreatmentLocations(workLocationIds(org,p.id),offered,[]).length ? "Werkt niet waar dit wordt aangeboden" : undefined}))} />
       {mains.length > 0 && (
         <div className="mt-4 rounded-[14px] bg-sand p-4">
           <div className="text-xs">Ook toevoegen aan de andere behandelingen in</div>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {mains.map((c) => (
-              <Chip key={c} selected={alsoCats.includes(c)} onClick={() => setAlsoCats(alsoCats.includes(c) ? alsoCats.filter((x) => x !== c) : [...alsoCats, c])}>
-                {org.categories.find((x) => x.id === c)?.name_nl} ({otherInCat(c).length} andere)
-              </Chip>
-            ))}
-          </div>
+          <MultiSelect label="Ook toevoegen aan categorieën" value={alsoCats} onChange={setAlsoCats} options={mains.map(c => ({value:c,label:org.categories.find(x => x.id===c)?.name_nl ?? c}))} />
         </div>
       )}
     </Modal>
@@ -434,9 +410,7 @@ function PractitionerLocationsModal({ org, treatmentId, practitionerId, onClose,
       }
     >
       <div className="flex flex-wrap gap-2">
-        {candidates.map((l) => (
-          <Chip key={l} selected={!excluded.includes(l)} onClick={() => setExcluded(excluded.includes(l) ? excluded.filter((x) => x !== l) : [...excluded, l])}>{locName(org, l)}</Chip>
-        ))}
+        <MultiSelect label="Locaties voor deze behandelaar" options={candidates.map(l => ({value:l,label:locName(org,l)}))} value={candidates.filter(l => !excluded.includes(l))} onChange={ids => setExcluded(candidates.filter(l => !ids.includes(l)))} />
         {candidates.length === 0 && <p className="text-sm text-warning">Werkt niet waar dit wordt aangeboden.</p>}
       </div>
     </Modal>

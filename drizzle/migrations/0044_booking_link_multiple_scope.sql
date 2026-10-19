@@ -1,0 +1,5 @@
+ALTER TABLE public.booking_links ADD COLUMN treatment_ids uuid[] NOT NULL DEFAULT '{}', ADD COLUMN category_ids uuid[] NOT NULL DEFAULT '{}', ADD COLUMN practitioner_ids uuid[] NOT NULL DEFAULT '{}', ADD COLUMN practitioner_scope text NOT NULL DEFAULT 'all';
+UPDATE public.booking_links SET treatment_ids = CASE WHEN treatment_id IS NOT NULL THEN ARRAY[treatment_id] ELSE '{}'::uuid[] END, practitioner_ids = CASE WHEN practitioner_id IS NOT NULL THEN ARRAY[practitioner_id] ELSE '{}'::uuid[] END, practitioner_scope = CASE WHEN practitioner_mode = 'fixed' THEN 'selected' ELSE 'all' END, practitioner_mode = CASE WHEN practitioner_mode = 'fixed' THEN NULL ELSE practitioner_mode END;
+ALTER TABLE public.booking_links ADD CONSTRAINT booking_link_practitioner_scope CHECK (practitioner_scope IN ('all','selected'));
+COMMENT ON COLUMN public.booking_links.treatment_id IS 'DEPRECATED: replaced by treatment_ids and category_ids; retained for legacy readers';
+COMMENT ON COLUMN public.booking_links.practitioner_id IS 'DEPRECATED: replaced by practitioner_ids and practitioner_scope; retained for legacy readers';

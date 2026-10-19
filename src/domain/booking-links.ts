@@ -3,6 +3,7 @@
  * mode, language) plus the reporting source that every booking through the link carries.
  * Pure rules only — the database decides which links exist, this decides what a link means.
  */
+import { startScreenSchema } from "./start-screen";
 import { z } from "zod";
 
 export const bookingLinkSchema = z
@@ -15,7 +16,13 @@ export const bookingLinkSchema = z
     location_ids: z.array(z.string().uuid()).max(60),
     practitioner_mode: z.string().max(20).nullable(),
     practitioner_id: z.string().uuid().nullable(),
+    treatment_ids: z.array(z.string().uuid()).max(500).default([]),
+    category_ids: z.array(z.string().uuid()).max(100).default([]),
+    practitioner_ids: z.array(z.string().uuid()).max(100).default([]),
+    practitioner_scope: z.enum(["all", "selected"]).default("all"),
     language: z.enum(["nl", "en"]),
+    start_screen_mode:z.enum(["treatment","custom","none"]).default("treatment"),start_screen:startScreenSchema.nullable().default(null),
+    channel_id:z.string().uuid().nullable().default(null),place_id:z.string().uuid().nullable().default(null),campaign_id:z.string().uuid().nullable().default(null),extra:z.string().max(30).regex(/^[a-z0-9-]*$/).default(""),
     status: z.enum(["active", "inactive"]),
   })
   .superRefine((v, ctx) => {
@@ -30,8 +37,32 @@ export type LinkDraft = Pick<BookingLinkInput, "treatment_id" | "location_ids" |
 
 /** Minimal catalogue view: which locations offer a treatment, and what each practitioner does. */
 export interface LinkCatalog {
-  treatments: ReadonlyArray<{ id: string; locations: readonly string[] }>;
-  practitioners: ReadonlyArray<{ id: string; treatments: readonly string[]; locations: readonly string[] }>;
+  treatments: ReadonlyArray<{ id: string; locations: readonly string[]; categories?: readonly string[] }>;
+  practitioners: ReadonlyArray<{ id: string; treatments: readonly string[]; locations: readonly string[]; exclusions?: ReadonlyArray<{ treatment_id: string; excluded_location_ids: readonly string[] }> }>;
+  categories?: ReadonlyArray<{ id: string; parent_id: string | null }>;
+}
+
+export type LinkScope = LinkDraft & Partial<Pick<BookingLinkInput, "treatment_ids" | "category_ids" | "practitioner_ids" | "practitioner_scope">>;
+
+/** Category selections resolve against the current catalogue, never a frozen treatment list. */
+export function scopeTreatments(c: LinkCatalog, d: LinkScope): string[] {
+  const treatments = d.treatment_ids?.length ? d.treatment_ids : d.treatment_id ? [d.treatment_id] : [];
+  const categories = new Set(d.category_ids ?? []);
+  for (const category of c.categories ?? []) if (category.parent_id && categories.has(category.parent_id)) categories.add(category.id);
+  if (!treatments.length && !categories.size) return c.treatments.map(t => t.id);
+  return c.treatments.filter(t => treatments.includes(t.id) || t.categories?.some(id => categories.has(id))).map(t => t.id);
+}
+
+export function scopePractitioners(c: LinkCatalog, d: LinkScope, treatmentId: string, locationId?: string): string[] {
+  const treatment = c.treatments.find(t => t.id === treatmentId);
+  const locations = treatment?.locations.filter(l => d.location_ids.includes(l) && (!locationId || l === locationId)) ?? [];
+  return c.practitioners.filter(p => p.treatments.includes(treatmentId)
+    && (d.practitioner_scope !== "selected" || d.practitioner_ids?.includes(p.id))
+    && locations.some(l => p.locations.includes(l) && !p.exclusions?.find(e => e.treatment_id === treatmentId)?.excluded_location_ids.includes(l))).map(p => p.id);
+}
+
+export function scopeUnbookable(c: LinkCatalog, d: LinkScope): string[] {
+  return scopeTreatments(c, d).filter(id => !scopePractitioners(c, d, id).length);
 }
 
 /** Locations the patient can still pick: the chosen ones that actually offer the fixed treatment. */

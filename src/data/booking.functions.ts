@@ -4,6 +4,8 @@
  * (no patient data, no staff e-mail, no internal notes).
  */
 import { createServerFn } from "@tanstack/react-start";
+import { resolveLinkScope } from "./booking-link-scope.server";
+import { scopePractitioners } from "@/domain/booking-links";
 import { safeQueue } from "./mailer.server";
 import { z } from "zod";
 
@@ -25,7 +27,7 @@ export const getBookingCatalog = createServerFn({ method: "GET" })
     const [cats, links, treatments, tLocs, locs, prs, pLocs, pTreat, roles, tRoles, settings, mixed] = await Promise.all([
       db.from("treatment_categories").select("id, parent_id, name_nl, name_en, icon, sort").eq("tenant_id", tid).order("sort"),
       db.from("treatment_category_links").select("treatment_id, category_id, sort").eq("tenant_id", tid),
-      db.from("treatments").select("id, slug, name_nl, name_en, icon, duration_min, practitioner_choice, status, pre_questionnaire_key, post_questionnaire_key, questionnaire_minutes").eq("tenant_id", tid).eq("status", "active"),
+      db.from("treatments").select("id, slug, name_nl, name_en, icon, duration_min, practitioner_choice, status, pre_questionnaire_key, post_questionnaire_key, questionnaire_minutes, start_screen").eq("tenant_id", tid).eq("status", "active"),
       db.from("treatment_locations").select("treatment_id, location_id").eq("tenant_id", tid),
       db.from("locations").select("id, slug, name, kind, address, status, show_new_label, sort").eq("tenant_id", tid).order("sort"),
       db.from("practitioners").select("id, first_name, last_name, role_id, photo_path, bio_nl, status, sort").eq("tenant_id", tid).eq("status", "active"),
@@ -70,6 +72,7 @@ export const getBookingCatalog = createServerFn({ method: "GET" })
  */
 export const getBookingSlots = createServerFn({ method: "POST" })
   .inputValidator(z.object({
+    link: z.string().max(60).optional(),
     merk: z.string().max(60).optional(),
     treatmentId: z.string().uuid(),
     locationId: z.string().uuid(),
@@ -80,7 +83,13 @@ export const getBookingSlots = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const tenant = await resolveTenant(data.merk);
     if (!tenant) return { perPractitioner: {} as Record<string, Slot[]>, merged: [] as Slot[], today: "" };
-    return computeSlots(tenant, data);
+    if (!data.link) return computeSlots(tenant,data);
+    const scope=await resolveLinkScope(await admin(),tenant.id,data.link);
+    if (!scope || !scope.treatmentIds.includes(data.treatmentId) || !scope.row.location_ids.includes(data.locationId)) return {perPractitioner:{} as Record<string,Slot[]>,merged:[] as Slot[],today:""};
+    const allowed=scopePractitioners(scope.catalog,scope.draft,data.treatmentId,data.locationId);
+    const ids=data.practitionerIds.length?data.practitionerIds.filter(id=>allowed.includes(id)):allowed;
+    if (!ids.length) return {perPractitioner:{} as Record<string,Slot[]>,merged:[] as Slot[],today:""};
+    return computeSlots(tenant,{...data,practitionerIds:ids});
   });
 
 
@@ -102,13 +111,16 @@ export const holdSlot = createServerFn({ method: "POST" })
     const tenant = await resolveTenant(data.merk);
     if (!tenant) return { ok: false as const };
     const db = await admin();
-    const linkRow = data.link
-      ? (await db.from("booking_links").select("id, source").eq("tenant_id", tenant.id).eq("slug", data.link).eq("status", "active").maybeSingle()).data
-      : null;
-    if (data.link && !linkRow) return { ok: false as const };
+    const scope=data.link?await resolveLinkScope(db,tenant.id,data.link):null;
+    const linkRow=scope?.row??null;
+    if(data.link && (!scope || !scope.treatmentIds.includes(data.treatmentId) || !scope.row.location_ids.includes(data.locationId))) return {ok:false as const};
+    const allowed=scope?scopePractitioners(scope.catalog,scope.draft,data.treatmentId,data.locationId):null;
+    if(allowed && (!allowed.length || (data.practitionerId!=="any" && !allowed.includes(data.practitionerId)))) return {ok:false as const};
     if (data.replaceToken) await db.from("appointments").update({ status: "released" }).eq("tenant_id", tenant.id).eq("hold_token", data.replaceToken).eq("status", "held");
+    let attribution=null;
+    if(linkRow){const [channel,place,campaign]=await Promise.all([db.from("booking_channels").select("name,utm_source,utm_medium").eq("tenant_id",tenant.id).eq("id",linkRow.channel_id??"").maybeSingle(),db.from("booking_places").select("name,code").eq("tenant_id",tenant.id).eq("id",linkRow.place_id??"").maybeSingle(),db.from("booking_campaigns").select("name,code").eq("tenant_id",tenant.id).eq("id",linkRow.campaign_id??"").maybeSingle()]);attribution={channel:channel.data?.name??"",source:channel.data?.utm_source??"",medium:channel.data?.utm_medium??"",place:place.data?.name??"",content:place.data?.code??"",campaign:campaign.data?.name??"",campaignCode:campaign.data?.code??"",extra:linkRow.extra,hash:linkRow.hash};}
     const minute = Number(data.time.slice(0, 2)) * 60 + Number(data.time.slice(3));
-    const slots = await computeSlots(tenant, { treatmentId: data.treatmentId, locationId: data.locationId, practitionerIds: data.practitionerId === "any" ? [] : [data.practitionerId], from: data.date, days: 1 });
+    const slots = await computeSlots(tenant, { treatmentId: data.treatmentId, locationId: data.locationId, practitionerIds: data.practitionerId === "any" ? allowed ?? [] : [data.practitionerId], from: data.date, days: 1 });
     const pick = data.practitionerId === "any"
       ? slots.merged.find((x) => x.date === data.date && x.start === minute)
       : slots.perPractitioner[data.practitionerId]?.find((x) => x.date === data.date && x.start === minute);
@@ -123,7 +135,7 @@ export const holdSlot = createServerFn({ method: "POST" })
     const ins = await db.from("appointments").insert({
       tenant_id: tenant.id, treatment_id: data.treatmentId, location_id: data.locationId, practitioner_id: pick.practitioner_id,
       starts_at: startsAt.toISOString(), ends_at: endsAt.toISOString(), status: "held", hold_expires_at: expires.toISOString(),
-      language: data.language, source: data.source ?? linkRow?.source ?? null, booking_link_id: linkRow?.id ?? null,
+      language: data.language, source: linkRow?.source ?? data.source ?? null, booking_link_id: linkRow?.id ?? null,booking_channel_id:linkRow?.channel_id??null,booking_place_id:linkRow?.place_id??null,booking_campaign_id:linkRow?.campaign_id??null,booking_hash:linkRow?.hash??null,booking_extra:linkRow?.extra??null,booking_attribution:attribution,
     }).select("hold_token").single();
     if (ins.error || !ins.data?.hold_token) return { ok: false as const };
     // Lost a race: another hold for the same practitioner overlaps and was created first.

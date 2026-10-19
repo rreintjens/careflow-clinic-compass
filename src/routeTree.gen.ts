@@ -21,6 +21,7 @@ import { Route as AuthenticatedAgendaIndexRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAgendaMijnDagRouteImport } from './routes/_authenticated/agenda.mijn-dag'
 import { Route as AuthenticatedAgendaRoosterRouteImport } from './routes/_authenticated/agenda.rooster'
 import { Route as AuthenticatedBoekingsflowBoekingslinksRouteImport } from './routes/_authenticated/boekingsflow.boekingslinks'
+import { Route as AuthenticatedBoekingsflowKanalenEnCampagnesRouteImport } from './routes/_authenticated/boekingsflow.kanalen-en-campagnes'
 import { Route as AuthenticatedInstellingenAlgemeenRouteImport } from './routes/_authenticated/instellingen.algemeen'
 import { Route as AuthenticatedInstellingenGebruikersEnRollenRouteImport } from './routes/_authenticated/instellingen.gebruikers-en-rollen'
 import { Route as AuthenticatedInstellingenKoppelingenRouteImport } from './routes/_authenticated/instellingen.koppelingen'
@@ -110,6 +111,12 @@ const AuthenticatedBoekingsflowBoekingslinksRoute =
   AuthenticatedBoekingsflowBoekingslinksRouteImport.update({
     id: '/boekingsflow/boekingslinks',
     path: '/boekingsflow/boekingslinks',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedBoekingsflowKanalenEnCampagnesRoute =
+  AuthenticatedBoekingsflowKanalenEnCampagnesRouteImport.update({
+    id: '/boekingsflow/kanalen-en-campagnes',
+    path: '/boekingsflow/kanalen-en-campagnes',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedInstellingenAlgemeenRoute =
@@ -284,6 +291,7 @@ export interface FileRoutesByFullPath {
   '/agenda/mijn-dag': typeof AuthenticatedAgendaMijnDagRoute
   '/agenda/rooster': typeof AuthenticatedAgendaRoosterRoute
   '/boekingsflow/boekingslinks': typeof AuthenticatedBoekingsflowBoekingslinksRoute
+  '/boekingsflow/kanalen-en-campagnes': typeof AuthenticatedBoekingsflowKanalenEnCampagnesRoute
   '/instellingen/algemeen': typeof AuthenticatedInstellingenAlgemeenRoute
   '/instellingen/gebruikers-en-rollen': typeof AuthenticatedInstellingenGebruikersEnRollenRoute
   '/instellingen/koppelingen': typeof AuthenticatedInstellingenKoppelingenRoute
@@ -324,6 +332,7 @@ export interface FileRoutesByTo {
   '/agenda/mijn-dag': typeof AuthenticatedAgendaMijnDagRoute
   '/agenda/rooster': typeof AuthenticatedAgendaRoosterRoute
   '/boekingsflow/boekingslinks': typeof AuthenticatedBoekingsflowBoekingslinksRoute
+  '/boekingsflow/kanalen-en-campagnes': typeof AuthenticatedBoekingsflowKanalenEnCampagnesRoute
   '/instellingen/algemeen': typeof AuthenticatedInstellingenAlgemeenRoute
   '/instellingen/gebruikers-en-rollen': typeof AuthenticatedInstellingenGebruikersEnRollenRoute
   '/instellingen/koppelingen': typeof AuthenticatedInstellingenKoppelingenRoute
@@ -365,6 +374,7 @@ export interface FileRoutesById {
   '/_authenticated/agenda/mijn-dag': typeof AuthenticatedAgendaMijnDagRoute
   '/_authenticated/agenda/rooster': typeof AuthenticatedAgendaRoosterRoute
   '/_authenticated/boekingsflow/boekingslinks': typeof AuthenticatedBoekingsflowBoekingslinksRoute
+  '/_authenticated/boekingsflow/kanalen-en-campagnes': typeof AuthenticatedBoekingsflowKanalenEnCampagnesRoute
   '/_authenticated/instellingen/algemeen': typeof AuthenticatedInstellingenAlgemeenRoute
   '/_authenticated/instellingen/gebruikers-en-rollen': typeof AuthenticatedInstellingenGebruikersEnRollenRoute
   '/_authenticated/instellingen/koppelingen': typeof AuthenticatedInstellingenKoppelingenRoute
@@ -407,6 +417,7 @@ export interface FileRouteTypes {
     | '/agenda/mijn-dag'
     | '/agenda/rooster'
     | '/boekingsflow/boekingslinks'
+    | '/boekingsflow/kanalen-en-campagnes'
     | '/instellingen/algemeen'
     | '/instellingen/gebruikers-en-rollen'
     | '/instellingen/koppelingen'
@@ -447,6 +458,7 @@ export interface FileRouteTypes {
     | '/agenda/mijn-dag'
     | '/agenda/rooster'
     | '/boekingsflow/boekingslinks'
+    | '/boekingsflow/kanalen-en-campagnes'
     | '/instellingen/algemeen'
     | '/instellingen/gebruikers-en-rollen'
     | '/instellingen/koppelingen'
@@ -487,6 +499,7 @@ export interface FileRouteTypes {
     | '/_authenticated/agenda/mijn-dag'
     | '/_authenticated/agenda/rooster'
     | '/_authenticated/boekingsflow/boekingslinks'
+    | '/_authenticated/boekingsflow/kanalen-en-campagnes'
     | '/_authenticated/instellingen/algemeen'
     | '/_authenticated/instellingen/gebruikers-en-rollen'
     | '/_authenticated/instellingen/koppelingen'
@@ -614,6 +627,13 @@ declare module '@tanstack/react-router' {
       path: '/boekingsflow/boekingslinks'
       fullPath: '/boekingsflow/boekingslinks'
       preLoaderRoute: typeof AuthenticatedBoekingsflowBoekingslinksRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/boekingsflow/kanalen-en-campagnes': {
+      id: '/_authenticated/boekingsflow/kanalen-en-campagnes'
+      path: '/boekingsflow/kanalen-en-campagnes'
+      fullPath: '/boekingsflow/kanalen-en-campagnes'
+      preLoaderRoute: typeof AuthenticatedBoekingsflowKanalenEnCampagnesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/instellingen/algemeen': {
@@ -838,6 +858,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAgendaMijnDagRoute: typeof AuthenticatedAgendaMijnDagRoute
   AuthenticatedAgendaRoosterRoute: typeof AuthenticatedAgendaRoosterRoute
   AuthenticatedBoekingsflowBoekingslinksRoute: typeof AuthenticatedBoekingsflowBoekingslinksRoute
+  AuthenticatedBoekingsflowKanalenEnCampagnesRoute: typeof AuthenticatedBoekingsflowKanalenEnCampagnesRoute
   AuthenticatedInstellingenAlgemeenRoute: typeof AuthenticatedInstellingenAlgemeenRoute
   AuthenticatedInstellingenGebruikersEnRollenRoute: typeof AuthenticatedInstellingenGebruikersEnRollenRoute
   AuthenticatedInstellingenKoppelingenRoute: typeof AuthenticatedInstellingenKoppelingenRoute
@@ -866,6 +887,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAgendaRoosterRoute: AuthenticatedAgendaRoosterRoute,
   AuthenticatedBoekingsflowBoekingslinksRoute:
     AuthenticatedBoekingsflowBoekingslinksRoute,
+  AuthenticatedBoekingsflowKanalenEnCampagnesRoute:
+    AuthenticatedBoekingsflowKanalenEnCampagnesRoute,
   AuthenticatedInstellingenAlgemeenRoute:
     AuthenticatedInstellingenAlgemeenRoute,
   AuthenticatedInstellingenGebruikersEnRollenRoute:

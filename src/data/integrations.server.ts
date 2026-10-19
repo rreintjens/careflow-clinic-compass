@@ -98,6 +98,7 @@ export interface StatsSummary {
   per_day: DayCounts[];
   per_source: SourceCount[];
   per_location: LocationStats[];
+  per_channel: SourceCount[];per_campaign: SourceCount[];per_link: SourceCount[];
   triage_reasons: Array<{ reason: string; count: number }>;
 }
 
@@ -112,7 +113,7 @@ export async function statsSummary(tenant: { id: string; time_zone: string }, da
   const today = zonedParts(now, tz).date;
   const from = addLocalDays(today, -(Math.max(1, Math.min(365, days)) - 1));
   const [appts, links, blocks, reasons, locations] = await Promise.all([
-    db.from("appointments").select("created_at, starts_at, ends_at, status, booking_link_id, referral_source, location_id").eq("tenant_id", tenant.id).neq("status", "released"),
+    db.from("appointments").select("created_at, starts_at, ends_at, status, source, booking_attribution, booking_hash, booking_link_id, referral_source, location_id").eq("tenant_id", tenant.id).neq("status", "released"),
     db.from("booking_links").select("id, source").eq("tenant_id", tenant.id),
     db.from("schedule_blocks").select("practitioner_id, weekday, location_id, starts, ends, recurrence, valid_from, valid_until, treatment_ids").eq("tenant_id", tenant.id),
     db.from("triage_rejection_counts").select("reason, count, day").eq("tenant_id", tenant.id).gte("day", from).lte("day", today),
@@ -131,7 +132,7 @@ export async function statsSummary(tenant: { id: string; time_zone: string }, da
   const daysList = Array.from({ length: Math.max(1, Math.round((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000) + 1) }, (_, i) => addLocalDays(from, i));
 
   const linkSources = new Map((links.data ?? []).map((l) => [l.id, l.source]));
-  const countRows: CountRow[] = arrivals.map((a) => ({ source: null, referral_source: a.referral_source, booking_link_id: a.booking_link_id }));
+  const countRows: CountRow[] = arrivals.map((a) => ({ source: a.source, referral_source: a.referral_source, booking_link_id: a.booking_link_id }));
 
   // Today, per location: booked minutes against the time that is on the roster.
   const scheduled = new Map<string, number>();
@@ -178,6 +179,9 @@ export async function statsSummary(tenant: { id: string; time_zone: string }, da
     },
     per_day: perDay(daysList, arrivals.map((a) => ({ day: dayOf(a.created_at) ?? "" })), inRange.map((a) => ({ day: dayOf(a.starts_at) ?? "" }))),
     per_source: bySource(countRows, linkSources),
+    per_channel:bySource(arrivals.map(a=>({source:a.booking_attribution&&typeof a.booking_attribution==="object"&&!Array.isArray(a.booking_attribution)?String(a.booking_attribution["channel"]??"Website"):"Website",referral_source:null,booking_link_id:null})),new Map()),
+    per_campaign:bySource(arrivals.map(a=>({source:a.booking_attribution&&typeof a.booking_attribution==="object"&&!Array.isArray(a.booking_attribution)?String(a.booking_attribution["campaign"]??"Geen campagne"):"Geen campagne",referral_source:null,booking_link_id:null})),new Map()),
+    per_link:bySource(arrivals.map(a=>({source:a.booking_hash??"Zonder boekingslink",referral_source:null,booking_link_id:null})),new Map()),
     per_location: perLocation,
     triage_reasons: [...reasonTotals.entries()].map(([reason, count]) => ({ reason, count })).sort((a, b) => b.count - a.count || a.reason.localeCompare(b.reason, "nl")),
   };

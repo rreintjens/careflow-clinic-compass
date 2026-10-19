@@ -8,6 +8,7 @@ import { Select } from "@/components/Select";
 import type { Condition, Page, QuestionnaireDef } from "@/domain/questionnaire/engine";
 import { cn } from "@/lib/utils";
 
+import { MessageFields } from "./MessageFields";
 import { ConditionModal, compactConditionText, type CondCtx } from "./conditions";
 import { QuestionnaireRunner, type UiTexts } from "./QuestionnaireRunner";
 
@@ -44,7 +45,7 @@ export function flowPositions(def: QuestionnaireDef, nums: Record<string, number
   return [{ value: START, label: "Aan het begin" }, ...def.pages.filter((p) => p.id !== exclude).map((p) => {
     const items = p.items ?? [];
     if (!items.length) return { value: p.id, label: `Na pagina ${nums[p.id]} (${cut(p.title ?? "")})` };
-    if (items.length === 1 && !p.title) return { value: p.id, label: `Na vraag ${nums[items[0]!.id]} (${cut(items[0]!.text)})` };
+    if (items.length === 1 && !p.title && items[0]) return { value: p.id, label: `Na vraag ${nums[items[0].id]} (${cut(items[0].text)})` };
     return { value: p.id, label: `Na vragenpagina (${cut(p.title ?? p.section ?? "")})` };
   })];
 }
@@ -92,27 +93,7 @@ export function BoodschapModal({ page, after, positions, forms, images, buttons,
                 {p.show_if && <TextLink onClick={() => setCond(true)}>Voorwaarde wijzigen</TextLink>}
               </div>
             </div>
-            <TextField label="Titel" value={p.title ?? ""} onChange={(e) => set({ title: e.target.value })} />
-            {form === "list" && <PointsEditor label="Opsomming" value={p.bullets ?? []} onChange={(b) => set({ bullets: b })} />}
-            {form === "steps" && (
-              <div className="flex flex-col gap-2">
-                <span className="text-[13px] font-medium">Stappen</span>
-                {[0, 1, 2].map((i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">{i + 1}</span>
-                    <input aria-label={`Stap ${i + 1}`} className={inputCls} value={steps[i] ?? ""} onChange={(e) => set({ step_items: [0, 1, 2].map((j) => (j === i ? e.target.value : steps[j] ?? "")) })} />
-                  </div>
-                ))}
-              </div>
-            )}
-            {form === "testimonial" && <>
-              <TextArea label="Quote" rows={3} value={String(p["quote"] ?? "")} onChange={(e) => set({ quote: e.target.value })} />
-              <div className="grid grid-cols-2 gap-4">
-                <TextField label="Voornaam" value={String(p["quote_name"] ?? "")} onChange={(e) => set({ quote_name: e.target.value })} />
-                <TextField label="Plaats" value={String(p["quote_place"] ?? "")} onChange={(e) => set({ quote_place: e.target.value })} />
-              </div>
-            </>}
-            {form === "practitioner" && <p className="rounded-[14px] bg-teal-light px-4 py-3 text-sm leading-[1.6]">Foto en korte tekst komen automatisch van de behandelaar bij wie de patiënt de afspraak heeft. Het voorbeeld toont {practitioner.name || "een behandelaar"}.</p>}
+            <MessageFields page={p} onChange={setP} maxPoints={4}/>
             <div className="grid grid-cols-2 gap-4">
               <Select label="Afbeelding" value={p.image ?? "__none"} onChange={(v) => set({ image: v === "__none" ? undefined : v })} options={[{ value: "__none", label: "Geen" }, ...images]} help="Uit de beeldbank van de site." />
               <Select label="Knop" value={p.button ?? buttons[0]?.value ?? ""} onChange={(v) => set({ button: v })} options={withCurrent(buttons, p.button)} />

@@ -1,3 +1,4 @@
+import { ListPage,DataTable,RowChevron } from "@/components/ListPage";
 import { keepPreviousData, queryOptions, useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
@@ -101,7 +102,7 @@ function LogPage() {
 
   let lastDay = "";
   return (
-    <div className="flex flex-col gap-6">
+    <ListPage>
       <PageHeader title="Logboek" description="Alles wat in het systeem gebeurt, ook welke pagina’s zijn bekeken. Niemand kan regels wijzigen of verwijderen." />
       <div className="flex flex-wrap items-end gap-3">
         <Select inline label="Periode" value={f.range} onChange={(range) => set({ range })} options={[{ value: "today", label: "Vandaag" }, { value: "yesterday", label: "Gisteren" }, { value: "7", label: "Laatste 7 dagen" }, { value: "30", label: "Laatste 30 dagen" }, { value: "custom", label: "Periode kiezen" }, { value: "all", label: "Alles" }]} />
@@ -114,7 +115,7 @@ function LogPage() {
         <SearchField aria-label="Patiëntnummer" placeholder="Patiëntnummer" inputMode="numeric" value={f.patient} onChange={(e) => set({ patient: e.target.value.replace(/\D/g, "") })} className="w-[240px]" />
         <PillButton variant="outline" className="ml-auto" onClick={exportCsv}>Exporteren</PillButton>
       </div>
-      <div>
+      <DataTable count={rows.length} label="regels">
         {rows.length === 0 && <p className="py-8 text-sm text-muted-foreground">Geen regels in deze selectie.</p>}
         {rows.map((r) => {
           const d = new Date(r.at), k = dayKey(d);
@@ -123,7 +124,7 @@ function LogPage() {
           return (
             <div key={r.id}>
               {head}
-              <div className="grid grid-cols-[56px_170px_1fr_auto] items-start gap-4 border-b border-line py-3.5 text-sm">
+              <div data-list-row className="grid grid-cols-[56px_170px_1fr_auto] items-start gap-4 border-b border-line py-3.5 text-sm">
                 <span className="text-muted-foreground">{timeFmt.format(d)}</span>
                 <span><span className={cn("whitespace-nowrap rounded-full px-2.5 py-1 text-xs", r.category === "medical" ? "bg-teal-light text-primary-hover" : "bg-sand")}>{CATEGORY_LABELS[r.category] ?? r.category}</span></span>
                 <span>{who ? <><b className="font-semibold">{who}</b> {l.text}</> : l.text}{l.sub && <span className="block text-xs text-muted-foreground">{l.sub}</span>}</span>
@@ -132,7 +133,7 @@ function LogPage() {
             </div>
           );
         })}
-      </div>
+      </DataTable>
       <div className="flex items-center justify-between">
         <span className="text-sm text-muted-foreground">{count ? `Regel ${page * PAGE + 1} tot ${Math.min(count, page * PAGE + PAGE)} van ${count.toLocaleString("nl-NL")}` : ""}</span>
         <nav aria-label="Pagina's" className="flex items-center gap-1">
@@ -143,6 +144,6 @@ function LogPage() {
           <button type="button" aria-label="Volgende" disabled={page >= total - 1} onClick={() => setPage(page + 1)} className="flex size-9 items-center justify-center rounded-full bg-sand disabled:opacity-40"><UiIcon name="pijl-rechts" className="size-4" /></button>
         </nav>
       </div>
-    </div>
+    </ListPage>
   );
 }
