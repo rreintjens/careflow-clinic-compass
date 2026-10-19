@@ -8,6 +8,7 @@ import { PillButton } from "@/components/PillButton";
 import { SegmentedControl } from "@/components/SegmentedControl";
 import { Select } from "@/components/Select";
 import type { Condition, Item, ItemType, Page, PageType, QuestionnaireDef } from "@/domain/questionnaire/engine";
+import { effectiveVisibility, visibilityTarget } from "@/domain/questionnaire/builder";
 import { answerValues, isSimpleRed, redAnswers, redRuleFor } from "@/domain/questionnaire/situations";
 import { evaluate } from "@/domain/questionnaire/expr";
 import { cn } from "@/lib/utils";
@@ -55,7 +56,7 @@ export function PageModal({ page, pageTypes, sections, icons, ctx, questionnaire
         <div className="mt-5"><ConditionLine label="Tonen" empty="Altijd" value={p.show_if} ctx={ctx} onEdit={() => setCond({ key: "show", title: `Wanneer tonen we de pagina ${p.title || p.section || ""}?`.replace(" ?", "?"), always: "Altijd tonen", value: p.show_if, set: (c) => set({ show_if: c }) })} /></div>
         {type === "question_page" && <div className="mt-4"><ConditionLine label="Rood als (voor de hele pagina)" empty="Nooit" value={p.red_if} ctx={ctx} onEdit={() => setCond({ key: "red", title: "Wanneer is deze pagina rood?", always: "Nooit rood", value: p.red_if, set: (c) => set({ red_if: c }) })} /></div>}
       </Modal>
-      {cond && <ConditionModal title={cond.title} description={questionnaireName} alwaysLabel={cond.always} value={cond.value} ctx={ctx} onClose={() => setCond(null)} onSave={(c) => { cond.set(c); setCond(null); }} />}
+      {cond && <ConditionModal title={cond.title} description={questionnaireName} alwaysLabel={cond.always} value={cond.value} ctx={ctx} outcome={cond.key === "signal" ? "signal" : cond.key === "red" ? "red" : "show"} onClose={() => setCond(null)} onSave={(c) => { cond.set(c); setCond(null); }} />}
       {iconOpen && <IconPicker icons={icons} value={p.icon} onPick={(i) => { set({ icon: i }); setIconOpen(false); }} onClose={() => setIconOpen(false)} />}
     </>
   );
@@ -83,9 +84,15 @@ export function ItemModal({ item, number, questionnaireName, questionnaireId, de
   item: Item | null; number: number; questionnaireName: string; questionnaireId: string; def: QuestionnaireDef; page: Page | undefined;
   flow: { settings: Record<string, unknown>; computed_fields: Record<string, string> }; ui: UiTexts;
   itemTypes: Opt[]; sections: string[]; section?: string | undefined; rejections: Opt[]; images: Opt[]; ctx: CondCtx;
-  onSave: (i: Item, section: string | undefined) => void; onDelete?: (() => void) | undefined; onClose: () => void;
+  onSave: (i: Item, section: string | undefined, pageCondition?: { value: Condition | undefined }) => void; onDelete?: (() => void) | undefined; onClose: () => void;
 }) {
   const [i, setI] = useState<Item>(item ?? { id: "", text: "", type: "single_choice", options: [] });
+  const [pageShow, setPageShow] = useState(page?.show_if);
+  const [pageShowDirty, setPageShowDirty] = useState(false);
+  const pageTarget = visibilityTarget(page) === "page";
+  const effectivePage = page ? { ...page } : undefined;
+  if (effectivePage) { if (pageShow) effectivePage.show_if = pageShow; else delete effectivePage.show_if; }
+  const effectiveShow = effectiveVisibility(effectivePage, i);
   const [sec, setSec] = useState(section ?? "");
   const [lang, setLang] = useState<Lang>("nl");
   const [cond, setCond] = useState<CondTarget | null>(null);
@@ -159,7 +166,7 @@ export function ItemModal({ item, number, questionnaireName, questionnaireId, de
   return (
     <>
       <Modal open width="xl" onOpenChange={(o) => !o && onClose()} title={`Vraag ${number} ${item ? "wijzigen" : "toevoegen"}`} description={`${questionnaireName}${sectionName ? ` · onderdeel ${sectionName}` : ""}`}
-        footer={<div className="flex w-full items-center justify-between">{onDelete ? <TextLink tone="warning" onClick={onDelete}>Verwijderen</TextLink> : <span />}<div className="flex gap-2"><PillButton variant="outline" onClick={onClose}>Annuleren</PillButton><PillButton disabled={!i.text.trim()} onClick={() => onSave(current(), sec.trim() || undefined)}>Opslaan</PillButton></div></div>}>
+        footer={<div className="flex w-full items-center justify-between">{onDelete ? <TextLink tone="warning" onClick={onDelete}>Verwijderen</TextLink> : <span />}<div className="flex gap-2"><PillButton variant="outline" onClick={onClose}>Annuleren</PillButton><PillButton disabled={!i.text.trim()} onClick={() => onSave(current(), sec.trim() || undefined, pageShowDirty ? { value: pageShow } : undefined)}>Opslaan</PillButton></div></div>}>
         <div className="grid grid-cols-[minmax(0,1fr)_300px] gap-8">
           <div className="flex min-w-0 flex-col gap-4">
             <div className="grid grid-cols-2 gap-4">
@@ -169,10 +176,10 @@ export function ItemModal({ item, number, questionnaireName, questionnaireId, de
               </div>
               <Select label="Type vraag" value={t} onChange={(v) => set({ type: v as ItemType })} options={itemTypes} />
             </div>
-            <div className="flex items-center gap-3">
-              <span className="w-[72px] text-[13px] font-medium leading-tight">Taal van de teksten</span>
-              <SegmentedControl label="Taal van de teksten" value={lang} onChange={setLang} options={[{ value: "nl", label: "Nederlands" }, { value: "en", label: "Engels" }]} />
-              <span className="text-xs leading-[1.4] text-muted-foreground">Vraag, toelichting en antwoorden hebben per taal een eigen veld; de voorwaarden en uitkomsten zijn gedeeld.</span>
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="shrink-0 text-[13px] font-medium whitespace-nowrap">Taal van de teksten</span>
+                            <SegmentedControl className="shrink-0" label="Taal van de teksten" value={lang} onChange={setLang} options={[{ value: "nl", label: "Nederlands" }, { value: "en", label: "Engels" }]} />
+              <span className="basis-full text-xs leading-[1.4] text-muted-foreground">Vraag, toelichting en antwoorden hebben per taal een eigen veld; de voorwaarden en uitkomsten zijn gedeeld.</span>
             </div>
             <TextArea label="Vraag" rows={2} value={en ? String(i["text_en"] ?? "") : i.text} placeholder={en ? i.text : undefined} onChange={(e) => set(en ? { text_en: e.target.value } : { text: e.target.value })} />
             <TextArea label="Toelichting onder de vraag" rows={2} value={en ? String(i["help_en"] ?? "") : (i.help ?? "")} placeholder={en ? i.help : undefined} onChange={(e) => set(en ? { help_en: e.target.value } : { help: e.target.value })} help="Optioneel." />
@@ -226,8 +233,10 @@ export function ItemModal({ item, number, questionnaireName, questionnaireId, de
             </>}
             <Checkbox label="Optioneel (mag leeg blijven)" checked={!!i.optional} onChange={(v) => set({ optional: v || undefined })} />
 
-            <ConditionLine label="Tonen" empty="Altijd" value={i.show_if} ctx={ctx} help="Of alleen als een eerdere vraag een bepaald antwoord heeft."
-              onEdit={() => setCond({ key: "show", title: `Wanneer tonen we vraag ${number}, ${shortTitle(i.text)}?`, always: "Altijd tonen", value: i.show_if, set: (c) => set({ show_if: c }) })} />
+            <ConditionLine label="Tonen" empty="Altijd" value={effectiveShow} ctx={ctx} help="Of alleen als een eerdere vraag een bepaald antwoord heeft."
+              onEdit={() => setCond({ key: "show", title: `Wanneer tonen we vraag ${number}, ${shortTitle(i.text)}?`, always: "Altijd tonen", value: pageTarget ? pageShow : i.show_if, set: (c) => { if (pageTarget) { setPageShow(c); setPageShowDirty(true); } else set({ show_if: c }); } })} />
+
+            {!pageTarget && pageShow && <p className="text-xs text-muted-foreground">De paginavoorwaarde blijft ook van toepassing.</p>}
 
             <div className="grid grid-cols-2 gap-4">
               <Select label="Signaal voor de arts" value={sigMode} onChange={(m) => set({ signal_if: m === "none" ? undefined : m === "any" ? "any_except_exclusive" : m === "value" ? (choices[0] ?? "yes") : m === "values" ? [] : { all: [] } })}
@@ -253,14 +262,15 @@ export function ItemModal({ item, number, questionnaireName, questionnaireId, de
           </aside>
         </div>
       </Modal>
-      {cond && <ConditionModal title={cond.title} description={questionnaireName} alwaysLabel={cond.always} value={cond.value} ctx={ctx} onClose={() => setCond(null)} onSave={(c) => { cond.set(c); setCond(null); }} />}
+      {cond && <ConditionModal title={cond.title} description={questionnaireName} alwaysLabel={cond.always} value={cond.value} ctx={ctx} outcome={cond.key === "signal" ? "signal" : cond.key === "red" ? "red" : "show"} onClose={() => setCond(null)} onSave={(c) => { cond.set(c); setCond(null); }} />}
     </>
   );
 }
 const shortTitle = (s: string) => { const w = s.replace(/\?$/, "").split(" ").filter((x) => x.length > 3); return (w.at(-1) ?? s).toLowerCase(); };
 
 /** Thresholds: numeric settings, standard and reduced side by side. */
-export function ThresholdsModal({ settings, rows, onSave, onClose }: { settings: Record<string, unknown>; rows: Array<{ label: string; std: string; red: string }>; onSave: (s: Record<string, unknown>) => void; onClose: () => void }) {
+export function ThresholdsModal({ settings, rows, names, onSave, onClose }: { settings: Record<string, unknown>; rows: Array<{ label: string; std: string; red: string }>; names: Record<string, string>; onSave: (s: Record<string, unknown>, names: Record<string, string>) => void; onClose: () => void }) {
+  const [labels, setLabels] = useState(names);
   const [s, setS] = useState<Record<string, unknown>>(JSON.parse(JSON.stringify(settings)));
   const get = (p: string) => p.split(".").reduce<unknown>((o, k) => (o as Record<string, unknown> | undefined)?.[k], s);
   const put = (p: string, v: number) => {
@@ -272,29 +282,29 @@ export function ThresholdsModal({ settings, rows, onSave, onClose }: { settings:
     setS(next);
   };
   const num = (p: string) => (
-    <input inputMode="decimal" aria-label={p} className="h-11 w-full rounded-[12px] bg-sand px-3 text-[15px] outline-none" defaultValue={String(get(p) ?? "").replace(".", ",")} onChange={(e) => { const n = Number(e.target.value.replace(",", ".")); if (!Number.isNaN(n)) put(p, n); }} />
+    <input inputMode="decimal" aria-label={labels[p] || "Grenswaarde"} className="h-11 w-full rounded-[12px] bg-sand px-3 text-[15px] outline-none" defaultValue={String(get(p) ?? "").replace(".", ",")} onChange={(e) => { const n = Number(e.target.value.replace(",", ".")); if (!Number.isNaN(n)) put(p, n); }} />
   );
   return (
     <Modal open width="lg" onOpenChange={(o) => !o && onClose()} title="Grenswaarden wijzigen" description="Gelden direct voor nieuwe antwoorden."
-      footer={<><PillButton variant="outline" onClick={onClose}>Annuleren</PillButton><PillButton onClick={() => onSave(s)}>Opslaan</PillButton></>}>
+      footer={<><PillButton variant="outline" onClick={onClose}>Annuleren</PillButton><PillButton onClick={() => onSave(s, labels)}>Opslaan</PillButton></>}>
       <div className="grid grid-cols-[1fr_140px_140px] items-center gap-3 text-sm">
-        <span className="text-xs text-muted-foreground">Regel</span><span className="text-xs text-muted-foreground">Standaard</span><span className="text-xs text-muted-foreground">Verlaagd</span>
-        {rows.map((r) => <div key={r.label} className="contents"><span>{r.label}</span>{num(r.std)}{num(r.red)}</div>)}
+        <span className="text-xs text-muted-foreground">Naam</span><span className="text-xs text-muted-foreground">Standaard</span><span className="text-xs text-muted-foreground">Verlaagd</span>
+        {rows.map((r) => <div key={r.label} className="contents"><TextField label="Naam" value={labels[r.std] ?? r.label} onChange={(e) => setLabels({ ...labels, [r.std]: e.target.value, ...(r.red !== r.std ? { [r.red]: `${e.target.value} (verlaagd)` } : {}) })} />{num(r.std)}{num(r.red)}</div>)}
       </div>
     </Modal>
   );
 }
 
-export function ComputedModal({ name, formula, sample, onSave, onDelete, onClose }: { name: string | null; formula: string; sample: (f: string) => string; onSave: (n: string, f: string) => void; onDelete?: (() => void) | undefined; onClose: () => void }) {
-  const [n, setN] = useState(name ?? "");
+export function ComputedModal({ name, displayName, formula, sample, onSave, onDelete, onClose }: { name: string | null; displayName: string; formula: string; sample: (f: string) => string; onSave: (n: string, f: string, label: string) => void; onDelete?: (() => void) | undefined; onClose: () => void }) {
+  const [n, setN] = useState(displayName);
   const [f, setF] = useState(formula);
   let check = "";
   try { evaluate(f, { today: "2026-01-01", lookup: () => 1 }); check = sample(f); } catch (e) { check = e instanceof Error ? e.message : "Formule klopt niet"; }
   return (
     <Modal open onOpenChange={(o) => !o && onClose()} title={name ? "Berekend veld wijzigen" : "Berekend veld toevoegen"} description="Velden tussen accolades, bijvoorbeeld {weight_kg}."
-      footer={<div className="flex w-full items-center justify-between">{onDelete ? <TextLink tone="warning" onClick={onDelete}>Verwijderen</TextLink> : <span />}<div className="flex gap-2"><PillButton variant="outline" onClick={onClose}>Annuleren</PillButton><PillButton disabled={!n.trim() || !f.trim()} onClick={() => onSave(slug(n), f)}>Opslaan</PillButton></div></div>}>
+      footer={<div className="flex w-full items-center justify-between">{onDelete ? <TextLink tone="warning" onClick={onDelete}>Verwijderen</TextLink> : <span />}<div className="flex gap-2"><PillButton variant="outline" onClick={onClose}>Annuleren</PillButton><PillButton disabled={!n.trim() || !f.trim()} onClick={() => onSave(name ?? slug(n), f, n.trim())}>Opslaan</PillButton></div></div>}>
       <div className="flex flex-col gap-4">
-        <TextField label="Veld" value={n} onChange={(e) => setN(e.target.value)} disabled={!!name} />
+        <TextField label="Naam" value={n} onChange={(e) => setN(e.target.value)} />
         <TextField label="Formule" value={f} onChange={(e) => setF(e.target.value)} className="font-mono" />
         <p className="text-[13px] text-muted-foreground">Voorbeeld: {check}</p>
       </div>
