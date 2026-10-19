@@ -16,20 +16,22 @@ export interface SelectProps {
   help?: string | null;
   disabled?: boolean;
   className?: string;
+  /** Compact inline pill on a sand surface (condition rows); the label is only for screen readers. */
+  inline?: boolean;
 }
 
 /** The only select in the app: sand field, no border, teal chevron. */
-export function Select({ label, options, value, onChange, help, disabled, className }: SelectProps) {
+export function Select({ label, options, value, onChange, help, disabled, className, inline }: SelectProps) {
   const id = useId();
   return (
-    <div className={cn("flex min-w-0 flex-col gap-2", className)}>
-      <label htmlFor={id} className="text-[13px] font-medium">
+    <div className={cn("flex min-w-0 flex-col gap-2", inline && "inline-flex", className)}>
+      <label htmlFor={id} className={cn("text-[13px] font-medium", inline && "sr-only")}>
         {label}
       </label>
       <RSelect.Root value={value} onValueChange={onChange} disabled={disabled ?? false}>
         <RSelect.Trigger
           id={id}
-          className="flex h-12 items-center justify-between gap-2.5 rounded-[14px] bg-sand px-4 text-left text-[15px] data-[disabled]:opacity-60"
+          className={cn("flex items-center justify-between gap-2.5 text-left data-[disabled]:opacity-60", inline ? "h-9 rounded-[10px] bg-background px-3 text-sm" : "h-12 rounded-[14px] bg-sand px-4 text-[15px]")}
         >
           <span className="truncate">
             <RSelect.Value />

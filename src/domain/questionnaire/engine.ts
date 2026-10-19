@@ -1,7 +1,7 @@
 /** Questionnaire engine: conditions, computed fields, visible pages, red outcomes and signals. */
 import { evaluate } from "./expr";
 
-export type Op = "eq" | "not_eq" | "lt" | "lte" | "gt" | "gte";
+export type Op = "eq" | "not_eq" | "lt" | "lte" | "gt" | "gte" | "contains";
 export interface Leaf { field: string; op: Op; value: unknown }
 export type Condition = { all?: Array<Leaf | Condition>; any?: Array<Leaf | Condition> };
 
@@ -103,6 +103,7 @@ function leafTrue(l: Leaf, ctx: Ctx): boolean {
   switch (l.op) {
     case "eq": return eq();
     case "not_eq": return !eq();
+    case "contains": { const want = Array.isArray(b) ? b : [b]; return Array.isArray(a) ? a.some((x) => want.includes(x)) : want.includes(a); }
     default: {
       const x = typeof a === "number" ? a : Number(a);
       const y = Number(b);

@@ -239,6 +239,13 @@
       "when": 1792396634916,
       "tag": "0033_schedule_blocks_allows_online",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1792398633189,
+      "tag": "0034_questionnaire_condition_ops_and_images",
+      "breakpoints": true
     }
   ]
 }

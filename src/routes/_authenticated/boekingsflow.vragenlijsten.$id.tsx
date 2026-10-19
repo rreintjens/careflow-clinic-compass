@@ -15,7 +15,7 @@ import {
 import { makeCtx, type Item, type Page, type QuestionnaireDef } from "@/domain/questionnaire/engine";
 import { evaluate } from "@/domain/questionnaire/expr";
 import { ComputedModal, ItemModal, PageModal, PublishModal, ThresholdsModal } from "@/features/questionnaire/BuilderModals";
-import { conditionText, fieldInfos, refOptions } from "@/features/questionnaire/conditions";
+import { conditionText, fieldInfos, questionNumbers, refOptions } from "@/features/questionnaire/conditions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/boekingsflow/vragenlijsten/$id")({
@@ -72,7 +72,7 @@ function Builder() {
   const opsList = opts(org, "questionnaire_op");
   const opsMap = Object.fromEntries(opsList.map((o) => [o.value, o.label]));
   const refs = refOptions(settings, computed);
-  const ctx = { fields, ops: opsList, refs };
+  const ctx = { fields, ops: opsList, refs, settings, computed };
   const sections = [...new Set(def.pages.map((p) => p.section).filter(Boolean))] as string[];
   const cond = (c: Parameters<typeof conditionText>[0]) => conditionText(c, fields, opsMap, settings);
   const typeLabel = (t: string) => optLabel(org, "questionnaire_item_type", t);
@@ -280,7 +280,7 @@ function Builder() {
       </Card>
 
       {edit?.kind === "page" && (
-        <PageModal page={edit.index === null ? null : (def.pages[edit.index] ?? null)} pageTypes={opts(org, "questionnaire_page_type")} sections={sections} icons={ICONS} ctx={ctx}
+        <PageModal page={edit.index === null ? null : (def.pages[edit.index] ?? null)} pageTypes={opts(org, "questionnaire_page_type")} sections={sections} icons={ICONS} ctx={ctx} questionnaireName={def.name}
           onSave={(p) => savePage(p, edit.index)} onClose={() => setEdit(null)}
           onDelete={edit.index === null ? undefined : () => setPages(def.pages.filter((_, i) => i !== edit.index))} />
       )}
@@ -288,7 +288,8 @@ function Builder() {
         const p = edit.page === null ? undefined : def.pages[edit.page];
         const item = p && edit.item !== null ? (p.items?.[edit.item] ?? null) : null;
         return (
-          <ItemModal item={item} itemTypes={opts(org, "questionnaire_item_type")} sections={sections} section={p?.section} rejections={rejections} ctx={ctx}
+          <ItemModal item={item} number={item ? (questionNumbers(def)[item.id] ?? 0) : Object.keys(questionNumbers(def)).length + 1} questionnaireName={def.name} questionnaireId={q.id} def={def} page={p}
+            flow={{ settings, computed_fields: computed }} ui={data.uiTexts} images={opts(org, "questionnaire_image")} itemTypes={opts(org, "questionnaire_item_type")} sections={sections} section={p?.section} rejections={rejections} ctx={ctx}
             onSave={(i, s) => saveItem(i, s, edit.page, edit.item)} onClose={() => setEdit(null)}
             onDelete={edit.page === null || edit.item === null ? undefined : () => {
               const pi = edit.page as number, ii = edit.item as number;
