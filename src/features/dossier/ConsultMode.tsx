@@ -7,11 +7,13 @@ import { Checkbox } from "@/components/Field";
 import { Modal } from "@/components/Modal";
 import { PillButton } from "@/components/PillButton";
 import { UiIcon } from "@/components/UiIcon";
+import { consultTiming, isOtherPatientRecord } from "@/domain/consult";
+import { recordKey } from "@/data/patients";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
 type Note = { id: string; subjective: string; objective: string; evaluation: string; plan: string; checklist: Record<string, boolean>; updated_at: string; status: string };
-type Patient = { id: string; first_name: string; last_name: string; patient_number: string | null };
+type Patient = { id: string; first_name: string; last_name: string; patient_number: string | number | null };
 type ApptInfo = { id: string; starts_at: string; ends_at: string; meet_link: string | null; practitioner_id: string | null; location: { kind: string } | null };
 export type ActiveConsult = Note & { patient: Patient; appointment: ApptInfo };
 const SOEP = [["subjective", "Subjectief"], ["objective", "Objectief"], ["evaluation", "Evaluatie"], ["plan", "Plan"]] as const;
@@ -82,9 +84,10 @@ export function ActiveConsultMode() {
   const { data: next } = useQuery({
     queryKey: ["consult-next", c?.appointment.id], enabled: !!c?.appointment.practitioner_id,
     queryFn: async () => {
-      const a = c!.appointment;
+      const a = c?.appointment;
+      if (!a?.practitioner_id) return null;
       const dayEnd = new Date(a.starts_at); dayEnd.setHours(23, 59, 59, 999);
-      const { data } = await supabase.from("appointments").select("starts_at, patient:patients(first_name, last_name)").eq("practitioner_id", a.practitioner_id!).eq("status", "booked")
+      const { data } = await supabase.from("appointments").select("starts_at, patient:patients(first_name, last_name)").eq("practitioner_id", a.practitioner_id).eq("status", "booked")
         .gte("starts_at", a.ends_at).lte("starts_at", dayEnd.toISOString()).neq("id", a.id).order("starts_at").limit(1).maybeSingle();
       return data as { starts_at: string; patient: { first_name: string; last_name: string } | null } | null;
     },
@@ -133,12 +136,9 @@ export function ActiveConsultMode() {
   const v = { ...c, ...local } as ActiveConsult;
   const a = c.appointment, p = c.patient;
   const name = `${p.first_name} ${p.last_name}`;
-  const start = new Date(a.starts_at).getTime(), end = new Date(a.ends_at).getTime();
-  const left = Math.max(0, Math.round((end - now) / 60_000));
-  const pct = Math.min(100, Math.max(0, ((now - start) / (end - start)) * 100));
+  const timing = consultTiming(a.starts_at, a.ends_at, now);
   const online = a.location?.kind === "online";
-  const recordMatch = pathname.match(/^\/patienten\/([^/]+)/);
-  const otherRecord = !!recordMatch && recordMatch[1] !== p.id && recordMatch[1] !== p.patient_number;
+  const otherRecord = isOtherPatientRecord(pathname, p);
 
   // Keep the panel on screen whatever the window size; stored offsets are relative to the top-right corner.
   const vw = typeof window === "undefined" ? 1440 : window.innerWidth, vh = typeof window === "undefined" ? 900 : window.innerHeight;
@@ -153,12 +153,12 @@ export function ActiveConsultMode() {
       <div className="sticky top-0 z-30 -mt-2 mb-6 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-[18px] bg-primary px-5 py-3.5 text-primary-foreground" role="region" aria-label="Consult bezig">
         <span className="flex items-center gap-2 whitespace-nowrap text-[14px] font-semibold"><span className="size-2 rounded-full bg-teal-light" />Consult bezig · {name}</span>
         <span className="whitespace-nowrap text-[13px] opacity-80">{hm(a.starts_at)} tot {hm(a.ends_at)}</span>
-        <span className="flex items-center gap-2 whitespace-nowrap rounded-full bg-primary-foreground/15 px-3 py-1 text-[13px]">Nog <b>{left} min</b><span className="h-1.5 w-24 rounded-full bg-primary-foreground/25"><span className="block h-full rounded-full bg-teal-light" style={{ width: `${pct}%` }} /></span></span>
+        <span className="flex items-center gap-2 whitespace-nowrap rounded-full bg-primary-foreground/15 px-3 py-1 text-[13px]"><b>{timing.label}</b>{timing.phase === "started" && <span className="h-1.5 w-24 rounded-full bg-primary-foreground/25"><span className="block h-full rounded-full bg-teal-light" style={{ width: `${timing.progress}%` }} /></span>}</span>
         <span className="whitespace-nowrap text-[13px] opacity-80">Nu {hm(new Date(now))}</span>
         <span className="whitespace-nowrap text-[13px] opacity-80">{next ? `Volgende: ${hm(next.starts_at)} ${next.patient?.first_name ?? ""} ${next.patient?.last_name ?? ""}` : "Geen volgende afspraak vandaag"}</span>
         <div className="ml-auto flex gap-2">
           {online && a.meet_link && <a href={a.meet_link} target="_blank" rel="noreferrer"><PillButton size="sm" className="bg-background text-primary hover:bg-background"><UiIcon name="videogesprek" className="size-4" />Meet</PillButton></a>}
-          <Link to="/patienten/$id" params={{ id: p.patient_number ?? p.id }}><PillButton size="sm" variant="outline" className="border-primary-foreground/60 bg-transparent text-primary-foreground">Dossier</PillButton></Link>
+          <Link to="/patienten/$id" params={{ id: recordKey(p) }}><PillButton size="sm" variant="outline" className="border-primary-foreground/60 bg-transparent text-primary-foreground">Dossier</PillButton></Link>
           <Link to="/agenda/mijn-dag"><PillButton size="sm" variant="outline" className="border-primary-foreground/60 bg-transparent text-primary-foreground">Agenda</PillButton></Link>
         </div>
       </div>
@@ -178,7 +178,7 @@ export function ActiveConsultMode() {
             <p className="px-5 pt-1 text-[12px] text-muted-foreground">Alles wat je hier typt wordt direct bewaard, ook als je naar een ander tabblad, de agenda of een andere patiënt gaat. Het paneel blijft staan tot je het consult afrondt.</p>
             <div className="mx-5 mt-3 flex rounded-full bg-background p-1">
               {([["notes", "Notities"], ["steps", "Stappen"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => savePrefs({ tab: k })} className={cn("flex-1 rounded-full py-1.5 text-[13px]", prefs.tab === k ? "bg-primary text-primary-foreground" : "")}>{l}</button>)}
-              <Link to="/patienten/$id" params={{ id: p.patient_number ?? p.id }} className="flex-1 rounded-full py-1.5 text-center text-[13px]">Dossier</Link>
+              <Link to="/patienten/$id" params={{ id: recordKey(p) }} className="flex-1 rounded-full py-1.5 text-center text-[13px]">Dossier</Link>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto px-5 py-3">
               {prefs.tab === "notes" ? SOEP.map(([k, l]) => (
@@ -225,7 +225,7 @@ function FinishModal({ note, patient, appt, steps, onClose, onDone }: { note: No
       <div className="flex flex-col gap-2">
         {row(filled === 4, "Consultverslag", filled === 4 ? "Subjectief, objectief, evaluatie en plan ingevuld" : `${filled} van 4 velden ingevuld`)}
         {row(done === steps.length, "Stappen", `${done} van ${steps.length} afgevinkt`)}
-        {row(!!plan, "Behandelplan en medicatie", plan ? "Ingevuld" : "Nog leeg. Zonder plan kan de apotheek niets klaarzetten.", !plan && <Link to="/patienten/$id/behandeling" params={{ id: patient.patient_number ?? patient.id }} onClick={onClose} className="text-[13px] text-primary underline">Nu maken</Link>)}
+        {row(!!plan, "Behandelplan en medicatie", plan ? "Ingevuld" : "Nog leeg. Zonder plan kan de apotheek niets klaarzetten.", !plan && <Link to="/patienten/$id/behandeling" params={{ id: recordKey(patient) }} onClick={onClose} className="text-[13px] text-primary underline">Nu maken</Link>)}
       </div>
       <p className="mt-4 text-[12px] text-muted-foreground">Afronden zet het verslag vast in het dossier en sluit het notitiepaneel. Het Meet-gesprek sluit je zelf.</p>
     </Modal>
