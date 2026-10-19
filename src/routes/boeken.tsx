@@ -436,7 +436,7 @@ function HoldStep({ c, s, treatmentId, locationId, practitionerId, tx, lang, go 
   if (phase === "confirmed" && confirmed) return <ConfirmedStep c={c} s={s} treatmentId={treatmentId} locationId={locationId} practitionerId={state.kind === "held" ? state.practitionerId : practitionerId} manageToken={confirmed} meetLink={meet} tx={tx} lang={lang} />;
   if (state.kind === "held" && (phase === "details" || !triageKey || !triage.data)) return (
     <DetailsStep c={c} s={s} token={state.token} treatmentId={treatmentId} locationId={locationId} practitionerId={state.practitionerId} tx={tx} lang={lang} again={again}
-      triageKey={triageKey} triageAnswers={readJson<Answers>(ANSWERS_KEY) ?? undefined}
+      triageKey={triageKey} triageVersionId={triage.data?.versionId} triageAnswers={readJson<Answers>(ANSWERS_KEY) ?? undefined}
       onExpired={() => setState({ kind: "expired", minutes: state.minutes })}
       onDone={(m, meeting) => { confirmedRef.current = true; sessionStorage.removeItem(ANSWERS_KEY); sessionStorage.removeItem(HOLD_KEY); setConfirmed(m); setMeet(meeting ?? null); setPhase("confirmed"); }} />
   );
@@ -486,9 +486,9 @@ function Check({ checked, onChange, children }: { checked: boolean; onChange: (v
 function SectionTitle({ children }: { children: React.ReactNode }) { return <h2 className="mb-3 mt-8 text-[17px] font-semibold">{children}</h2>; }
 
 /** "Je gegevens": one form for new and existing patients; date of birth comes from the triage when asked there. */
-function DetailsStep({ c, s, token, treatmentId, locationId, practitionerId, tx, lang, again, triageKey, triageAnswers, onExpired, onDone }: {
+function DetailsStep({ c, s, token, treatmentId, locationId, practitionerId, tx, lang, again, triageKey, triageVersionId, triageAnswers, onExpired, onDone }: {
   c: Full; s: Search; token: string; treatmentId: string; locationId: string; practitionerId: string; tx: Tx; lang: string; again: () => void;
-  triageKey: string | null; triageAnswers: Answers | undefined; onExpired: () => void; onDone: (manageToken: string, meetLink: string | null) => void;
+  triageKey: string | null; triageVersionId?: string; triageAnswers: Answers | undefined; onExpired: () => void; onDone: (manageToken: string, meetLink: string | null) => void;
 }) {
   const confirm = useServerFn(confirmBooking);
   const lookup = useServerFn(lookupAddress);
@@ -534,7 +534,7 @@ function DetailsStep({ c, s, token, treatmentId, locationId, practitionerId, tx,
         merk: s.merk, token, existing, salutation: f.salutation, firstName: f.firstName, lastName: f.lastName, dateOfBirth: f.dateOfBirth, email: f.email, phoneCountry: f.phoneCountry, phone: f.phone,
         country: f.country, postcode: f.postcode, houseNumber: f.houseNumber, suffix: f.suffix || undefined, street: f.street, city: f.city,
         referral: existing ? undefined : f.referral || undefined, note: f.note || undefined, consentPrivacy: true, consentGp: cons.gp, gpName: cons.gpName || undefined, consentLsp: cons.lsp, consentMarketing: cons.marketing,
-        triageKey: triageKey ?? undefined, triageAnswers,
+        triageKey: triageKey ?? undefined, triageVersionId, triageAnswers,
       } });
       if (r.ok) onDone(r.manageToken, r.meetLink);
       else if (r.reason === "expired") onExpired();

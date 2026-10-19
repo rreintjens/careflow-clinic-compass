@@ -6,6 +6,7 @@ import type { AgendaAppt } from "@/data/agenda";
 import { fmtTime } from "@/domain/slots";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { withAnswerSignals } from "@/data/answer-sets";
 
 export type CardAppt = AgendaAppt & { s: { date: string; minute: number }; e: { minute: number } };
 type Signal = { item: string; label: string };
@@ -17,8 +18,9 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 export const appointmentAnswersQuery = (appointmentId: string) => ({
   queryKey: ["appt-answers", appointmentId],
   queryFn: async () => {
-    const { data } = await supabase.from("answer_sets").select("questionnaire_key, status, completed_at, signals").eq("appointment_id", appointmentId);
-    return data ?? [];
+    const { data, error } = await supabase.from("answer_sets").select("questionnaire_key, status, completed_at, signals, version_id, answers, created_at").eq("appointment_id", appointmentId);
+    if (error) throw error;
+    return withAnswerSignals(data ?? []);
   },
 });
 export const signalsOf = (sets: ReadonlyArray<{ signals: unknown }>): Signal[] => sets.flatMap((s) => (Array.isArray(s.signals) ? (s.signals as Signal[]) : []));

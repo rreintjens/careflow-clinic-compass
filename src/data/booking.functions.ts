@@ -12,6 +12,8 @@ import { z } from "zod";
 import type { Slot } from "@/domain/slots";
 import { admin, computeSlots, localParts, localToUtc, resolveTenant, settingNum } from "./booking.server";
 import { attachMeeting } from "./meeting.server";
+import { answerSignals } from "@/domain/questionnaire/answers";
+import type { Answers, QuestionnaireDef } from "@/domain/questionnaire/engine";
 
 
 
@@ -170,11 +172,11 @@ export const getTriage = createServerFn({ method: "GET" })
     const q = (await db.from("questionnaires").select("id, key, flow_id").eq("tenant_id", tenant.id).eq("key", data.key).maybeSingle()).data;
     if (!q) return null;
     const [v, f] = await Promise.all([
-      db.from("questionnaire_versions").select("definition, version_config").eq("questionnaire_id", q.id).eq("status", "published").maybeSingle(),
+      db.from("questionnaire_versions").select("id, definition, version_config").eq("questionnaire_id", q.id).eq("status", "published").maybeSingle(),
       db.from("questionnaire_flows").select("document").eq("id", q.flow_id).maybeSingle(),
     ]);
     if (!v.data) return null;
-    return { key: q.key, definition: v.data.definition, flow: v.data.version_config };
+    return { key: q.key, versionId: v.data.id, definition: v.data.definition, flow: v.data.version_config };
   });
 
 /** Dutch address from postcode + house number (public PDOK locatieserver). */
@@ -219,6 +221,7 @@ const detailsSchema = z.object({
   consentLsp: z.boolean(),
   consentMarketing: z.boolean(),
   triageKey: z.string().max(80).optional(),
+  triageVersionId: z.string().uuid().optional(),
   triageAnswers: z.record(z.string(), z.unknown()).optional(),
 });
 
@@ -236,6 +239,15 @@ export const confirmBooking = createServerFn({ method: "POST" })
     const [by, bm, bd] = data.dateOfBirth.split("-").map(Number) as [number, number, number];
     const age = ty - by - (tm < bm || (tm === bm && td < bd) ? 1 : 0);
     if (age < 18) return { ok: false as const, reason: "young" };
+
+    let triageVersion = null;
+    if (data.triageKey && data.triageAnswers) {
+      const q = (await db.from("questionnaires").select("id").eq("tenant_id", tenant.id).eq("key", data.triageKey).maybeSingle()).data;
+      if (!q) return { ok: false as const, reason: "failed" };
+      const query = db.from("questionnaire_versions").select("id, definition, version_config").eq("questionnaire_id", q.id).in("status", ["published", "archived"]);
+      triageVersion = (await (data.triageVersionId ? query.eq("id", data.triageVersionId) : query.eq("status", "published")).maybeSingle()).data;
+      if (!triageVersion) return { ok: false as const, reason: "failed" };
+    }
 
     const email = data.email.toLowerCase();
     const fields = {
@@ -259,7 +271,8 @@ export const confirmBooking = createServerFn({ method: "POST" })
     ].map((c) => ({ ...c, tenant_id: tenant.id, patient_id: patientId, appointment_id: appt.id })));
     const meeting = await attachMeeting(db, tenant, appt.id);
     if (data.triageKey && data.triageAnswers) {
-      await db.from("answer_sets").insert({ tenant_id: tenant.id, patient_id: patientId, appointment_id: appt.id, questionnaire_key: data.triageKey, answers: data.triageAnswers as never, status: "completed", completed_at: new Date().toISOString() });
+      const signals = triageVersion ? answerSignals(triageVersion.definition as unknown as QuestionnaireDef, triageVersion.version_config, data.triageAnswers as Answers, today) : [];
+      await db.from("answer_sets").insert({ tenant_id: tenant.id, patient_id: patientId, appointment_id: appt.id, questionnaire_key: data.triageKey, version_id: triageVersion?.id, answers: data.triageAnswers as never, signals: signals as never, status: "completed", completed_at: new Date().toISOString() });
     }
     await safeQueue(db, appt.id, "confirmation", { dedupe: `confirmation-${appt.id}` });
     return { ok: true as const, manageToken: appt.manage_token, meetLink: meeting?.link ?? null };

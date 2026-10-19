@@ -13,11 +13,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { measurementsQuery } from "@/data/measurements";
 import { measurementWithBmi } from "@/domain/measurements";
+import { answerText } from "@/domain/questionnaire/answers";
+import { formatClinicalDate } from "@/domain/time";
 
 export const Route = createFileRoute("/_authenticated/patienten/$id/medisch")({ head: () => ({ meta: [{ title: "Medisch · Dossier · The Body Clinic" }, { name: "description", content: "Intake, anamnese en metingen in het patiëntendossier." }, { property: "og:title", content: "Medisch dossier · The Body Clinic" }, { property: "og:description", content: "Intake, anamnese en metingen in het patiëntendossier." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { name: "robots", content: "noindex" }] }), component: Medical });
 
 type Sig = { item: string };
-const fmtDate = (s: string) => new Date(s).toLocaleDateString("nl-NL", { day: "numeric", month: "long", timeZone: "Europe/Amsterdam" });
+const fmtDate = (s: string) => formatClinicalDate(s);
 
 /** Display value of one stored answer, following the item type. */
 function show(it: Item, v: unknown): string {
@@ -74,15 +76,15 @@ function Medical() {
           const def = s.version_id ? defs[s.version_id] : undefined;
           const ans = (s.answers ?? {}) as Record<string, unknown>;
           const sig = new Set((Array.isArray(s.signals) ? (s.signals as Sig[]) : []).map((x) => x.item));
-          const items = (def?.pages ?? []).flatMap((p) => p.items ?? []).filter((it) => it.type !== "answer_summary" && it.type !== "checkbox_required" && show(it, ans[it.id]) !== "");
+          const items = (def?.pages ?? []).flatMap((p) => p.items ?? []).filter((it) => it.type !== "answer_summary" && it.type !== "checkbox_required" && answerText(it, ans) !== "");
           return (
             <div key={s.id} className="mt-5">
               <p className="mb-2 text-[14px] font-semibold">{def?.name ?? s.questionnaire_key}, {fmtDate(s.completed_at ?? s.created_at)}</p>
-              <dl className="grid grid-cols-2 gap-x-6">
+              <dl className="grid grid-cols-1 gap-x-6">
                 {items.map((it) => (
                   <div key={it.id} className="grid grid-cols-[200px_1fr] gap-4 border-b border-mist py-2.5 text-[13px]">
                     <dt className="text-muted-foreground">{it.text}</dt>
-                    <dd>{show(it, ans[it.id])}{sig.has(it.id) && <span className="ml-2 whitespace-nowrap rounded-full bg-signal px-2.5 py-0.5 text-[11px] ring-1 ring-signal-border">signaal</span>}</dd>
+                    <dd>{answerText(it, ans)}{sig.has(it.id) && <span className="ml-2 whitespace-nowrap rounded-full bg-signal px-2.5 py-0.5 text-[11px] ring-1 ring-signal-border">signaal</span>}</dd>
                   </div>
                 ))}
               </dl>

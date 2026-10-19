@@ -24,3 +24,12 @@ export const addLocalDays = (date: string, n: number) => {
   d.setUTCDate(d.getUTCDate() + n);
   return d.toISOString().slice(0, 10);
 };
+
+/** A date-only value has no clock time. */
+export function formatClinicalDate(value: string, withTime = false, tz = "Europe/Amsterdam") {
+  const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value);
+  return new Date(dateOnly ? `${value}T12:00:00Z` : value).toLocaleString("nl-NL", {
+    day: "numeric", month: "long", timeZone: dateOnly ? "UTC" : tz,
+    ...(!dateOnly && withTime ? { hour: "2-digit", minute: "2-digit" } as const : {}),
+  });
+}
