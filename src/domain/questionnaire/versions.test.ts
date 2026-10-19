@@ -9,7 +9,7 @@ const live: QuestionnaireDef = { id: "q", name: "Q", moment: "before_booking", p
 ] };
 
 describe("concept row labels", () => {
-  it("marks a question that is not live as Nieuw", () => expect(rowChange(live, { id: "p2", items: [{ id: "b", type: "date", text: "Datum?" }] }, { id: "b" })).toBe("new"));
+  it("marks a question that is not live as Nieuw", () => expect(rowChange(live, { id: "p2", items: [{ id: "b", type: "yes_no", text: "Ja?" }] }, { id: "b" })).toBe("new"));
   it("marks an edited question as Gewijzigd", () => expect(rowChange(live, { id: "p1", items: [{ id: "a", type: "number", text: "Je gewicht?" }] }, { id: "a" })).toBe("changed"));
   it("leaves unchanged rows unlabelled", () => expect(rowChange(live, live.pages[0]!)).toBeNull());
   it("labels nothing without a live version", () => expect(rowChange(null, live.pages[0]!)).toBeNull());
