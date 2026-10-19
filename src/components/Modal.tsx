@@ -11,15 +11,20 @@ export interface ModalProps {
   children: ReactNode;
   footer?: ReactNode;
   width?: "md" | "lg" | "xl";
+  initialFocusId?: string;
 }
 
 /** Every add/edit in the admin happens in this modal, above the page. */
-export function Modal({ open, onOpenChange, title, description, children, footer, width = "md" }: ModalProps) {
+export function Modal({ open, onOpenChange, title, description, children, footer, width = "md", initialFocusId }: ModalProps) {
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-foreground/30" />
         <Dialog.Content
+          onOpenAutoFocus={(event) => {
+            const field = initialFocusId ? document.getElementById(initialFocusId) : null;
+            if (field) { event.preventDefault(); field.focus(); }
+          }}
           className={cn(
             "fixed left-1/2 top-1/2 z-50 flex max-h-[90vh] w-[calc(100%-32px)] -translate-x-1/2 -translate-y-1/2 flex-col rounded-[20px] bg-background shadow-[0_8px_24px_rgba(57,51,46,0.10)]",
             width === "md" ? "max-w-[560px]" : width === "lg" ? "max-w-[820px]" : "max-w-[1180px]",

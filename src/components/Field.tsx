@@ -1,6 +1,16 @@
 import { useId, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from "react";
 
 import { cn } from "@/lib/utils";
+import { PillButton } from "./PillButton";
+import { UiIcon } from "./UiIcon";
+
+/** Readable dossier content is also the keyboard-accessible edit action. */
+export function EditableFieldRow({ label, value, onClick }: { label: string; value: string; onClick: () => void }) {
+  return <PillButton variant="ghost" aria-label={label} aria-haspopup="dialog" onClick={onClick} className="h-auto min-h-16 w-full justify-between whitespace-normal rounded-none border-b border-mist px-3 py-4 text-left font-normal text-foreground hover:bg-sand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+    <span className="grid min-w-0 flex-1 gap-2 sm:grid-cols-[220px_1fr] sm:gap-4"><span className="text-[13px] font-medium">{label}</span><span className="min-w-0 whitespace-pre-wrap break-words text-[14px]">{value || "–"}</span></span>
+    <UiIcon name="pijl-rechts" className="h-4 w-4 shrink-0 text-primary" />
+  </PillButton>;
+}
 
 export const inputCls = "h-12 w-full rounded-[14px] bg-sand px-4 text-[15px] outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring";
 
