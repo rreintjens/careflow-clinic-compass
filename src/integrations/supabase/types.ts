@@ -921,6 +921,57 @@ export type Database = {
           },
         ]
       }
+      external_busy_periods: {
+        Row: {
+          created_at: string
+          ends_at: string
+          id: string
+          label: string
+          practitioner_id: string
+          provider: string
+          starts_at: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          ends_at: string
+          id?: string
+          label?: string
+          practitioner_id: string
+          provider?: string
+          starts_at: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          ends_at?: string
+          id?: string
+          label?: string
+          practitioner_id?: string
+          provider?: string
+          starts_at?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_busy_periods_practitioner_id_fkey"
+            columns: ["practitioner_id"]
+            isOneToOne: false
+            referencedRelation: "practitioners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "external_busy_periods_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_admins: {
         Row: {
           created_at: string
@@ -1589,6 +1640,85 @@ export type Database = {
           },
         ]
       }
+      patient_contacts: {
+        Row: {
+          assigned_to: string | null
+          body: string
+          created_at: string
+          created_by: string | null
+          direction: string | null
+          done: boolean
+          due_on: string | null
+          follow_up: string | null
+          id: string
+          kind: string
+          occurred_at: string
+          patient_id: string
+          subject: string
+          tenant_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          direction?: string | null
+          done?: boolean
+          due_on?: string | null
+          follow_up?: string | null
+          id?: string
+          kind: string
+          occurred_at?: string
+          patient_id: string
+          subject: string
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          direction?: string | null
+          done?: boolean
+          due_on?: string | null
+          follow_up?: string | null
+          id?: string
+          kind?: string
+          occurred_at?: string
+          patient_id?: string
+          subject?: string
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_contacts_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_contacts_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_contacts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patient_documents: {
         Row: {
           created_at: string
@@ -1636,6 +1766,82 @@ export type Database = {
           },
           {
             foreignKeyName: "patient_documents_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patient_requests: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          destination: string
+          duration_months: number | null
+          explanation: string
+          id: string
+          kind: string
+          patient_id: string
+          practitioner_id: string | null
+          status: string
+          status_changed_at: string
+          status_changed_by: string | null
+          tenant_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          destination: string
+          duration_months?: number | null
+          explanation?: string
+          id?: string
+          kind: string
+          patient_id: string
+          practitioner_id?: string | null
+          status?: string
+          status_changed_at?: string
+          status_changed_by?: string | null
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          destination?: string
+          duration_months?: number | null
+          explanation?: string
+          id?: string
+          kind?: string
+          patient_id?: string
+          practitioner_id?: string | null
+          status?: string
+          status_changed_at?: string
+          status_changed_by?: string | null
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_requests_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_requests_practitioner_id_fkey"
+            columns: ["practitioner_id"]
+            isOneToOne: false
+            referencedRelation: "practitioners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_requests_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -2134,6 +2340,7 @@ export type Database = {
           tenant_id: string
           updated_at: string
           updated_by: string | null
+          version_config: Json
           version_no: number
         }
         Insert: {
@@ -2149,6 +2356,7 @@ export type Database = {
           tenant_id?: string
           updated_at?: string
           updated_by?: string | null
+          version_config?: Json
           version_no: number
         }
         Update: {
@@ -2164,6 +2372,7 @@ export type Database = {
           tenant_id?: string
           updated_at?: string
           updated_by?: string | null
+          version_config?: Json
           version_no?: number
         }
         Relationships: [

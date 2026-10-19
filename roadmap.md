@@ -1,5 +1,11 @@
 # Roadmap
 
+- [ ] Dossier Toevoegen: owner-approved Contactmoment/notitie and Aanvraag fields, configurable selects/texts, follow-up tasks with completion and assignee Mijn dag list, timeline create/edit and readable audit; verify both create/reload and aanvraag status change as Rob.
+
+- [ ] Verification sweep as Rob: booking links create/edit/patient preview, integrations/dashboard, mixed day/week and toggle persistence/staff booking, questionnaire questions 7–9 and signal save/reload/discard; whole overview row opens with Bekijk; compact readable agenda appointments.
+- [ ] Owner decision 19-10: version-owned questionnaire thresholds/settings, backfill current values into all versions without patient changes, change badges/counter/publish summaries and archive/import/export preservation; verify concept versus live and discard as Rob.
+- [ ] Owner decision 19-10: external eKis busy-time provider with four-week mock, non-identifying hatched blocks in day/week/Mijn dag, shared patient/staff slot exclusion and save refusal, eKis-agenda status/show switch; verify doctor and patient flow as Rob.
+
 - [x] Questionnaire builder part 2: add chooser, Boodschap modal + runner forms, icon picker, publish modal, builder previews, condition value lines + short modal titles; verified as Rob (chooser, Boodschap add/edit/delete, icon picker, publish window, previews, value lines); 346 tests pass.
 - [x] Consult mode app-wide: active draft consult of the signed-in user shows sticky bar + floating notes on every staff page until Consult afronden; position/size/collapsed/content persist across navigation and reload; last-saved time; bar with patient, time window, progress, clock, next patient, Meet, link to record; one active consult per user (finish or park); clear patient label on other records. Verify as Rob. — done, verified as Rob
 - [x] Users, roles, logbook in Instellingen: new user (test mode: generated password shown once, else invite), edit role/deactivate/block/reset password, last-superadmin guard; roles create/edit/delete with landing page, consult mode, record visibility, permissions; logbook viewed rows for every staff route + record view, readable Dutch lines with links, filters (date, user, action, patient number), server pagination 50, CSV export. Verify as Rob.

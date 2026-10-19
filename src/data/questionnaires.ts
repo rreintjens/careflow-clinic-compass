@@ -2,6 +2,7 @@ import { queryOptions } from "@tanstack/react-query";
 
 import type { FlowFile, QuestionnaireDef } from "@/domain/questionnaire/engine";
 import { joinFlow, splitFlow } from "@/domain/questionnaire/io";
+import { versionConfig } from "@/domain/questionnaire/version-config";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 
@@ -32,7 +33,7 @@ export const publishedOf = (d: QData, qid: string) => versionsOf(d, qid).find((v
 export const draftOf = (d: QData, qid: string) => versionsOf(d, qid).find((v) => v.status === "draft");
 /** The version the builder edits: the draft, else the published one (read-only until a draft is made). */
 export const workingVersion = (d: QData, qid: string) => draftOf(d, qid) ?? publishedOf(d, qid) ?? versionsOf(d, qid)[0];
-export const defOf = (v: VersionRow | undefined) => (v?.definition ?? null) as unknown as QuestionnaireDef | null;
+export const defOf = (v: VersionRow | undefined): QuestionnaireDef | null => v ? { ...(v.definition as unknown as QuestionnaireDef), version_config: v.version_config } : null;
 export const flowOf = (d: QData, flowId: string) => d.flows.find((f) => f.id === flowId);
 
 /** Imports a flow file: one flow row, one questionnaire per entry, each as a published version 1 (or a new draft when it exists). */
@@ -48,8 +49,9 @@ export async function importFlow(file: FlowFile, flowKey: string, publish: boole
     if (row) await ok(supabase.from("questionnaires").update({ name: q.name, moment: q.moment, sort: i, flow_id: flowId }).eq("id", qid));
     const versions = await ok(supabase.from("questionnaire_versions").select("id, version_no, status").eq("questionnaire_id", qid).order("version_no", { ascending: false }));
     const draft = versions.find((v) => v.status === "draft");
-    if (draft) await ok(supabase.from("questionnaire_versions").update({ definition: q as unknown as Json }).eq("id", draft.id));
-    else await ok(supabase.from("questionnaire_versions").insert({ questionnaire_id: qid, version_no: (versions[0]?.version_no ?? 0) + 1, status: "draft", definition: q as unknown as Json, note: "Geïmporteerd" }));
+    const config = versionConfig(q["version_config"], document) as unknown as Json;
+    if (draft) await ok(supabase.from("questionnaire_versions").update({ definition: q as unknown as Json, version_config: config }).eq("id", draft.id));
+    else await ok(supabase.from("questionnaire_versions").insert({ questionnaire_id: qid, version_no: (versions[0]?.version_no ?? 0) + 1, status: "draft", definition: q as unknown as Json, version_config: config, note: "Geïmporteerd" }));
     if (publish) {
       const d = await ok(supabase.from("questionnaire_versions").select("id").eq("questionnaire_id", qid).eq("status", "draft").single());
       await publishVersion(qid, d.id);
@@ -67,13 +69,13 @@ export function exportFlow(d: QData, flowId: string): FlowFile {
 
 export async function createDraft(qid: string, from: VersionRow) {
   const versions = await ok(supabase.from("questionnaire_versions").select("version_no").eq("questionnaire_id", qid).order("version_no", { ascending: false }).limit(1));
-  await ok(supabase.from("questionnaire_versions").insert({ questionnaire_id: qid, version_no: (versions[0]?.version_no ?? 0) + 1, status: "draft", definition: from.definition, note: `Gebaseerd op versie ${from.version_no}` }));
+  await ok(supabase.from("questionnaire_versions").insert({ questionnaire_id: qid, version_no: (versions[0]?.version_no ?? 0) + 1, status: "draft", definition: from.definition, version_config: from.version_config, note: `Gebaseerd op versie ${from.version_no}` }));
 }
 
 /** "Als concept gebruiken": the concept becomes a copy of an older version; an existing concept is replaced. */
 export async function useVersionAsDraft(qid: string, from: VersionRow, draft: VersionRow | undefined) {
   if (!draft) return createDraft(qid, from);
-  await ok(supabase.from("questionnaire_versions").update({ definition: from.definition, note: `Gebaseerd op versie ${from.version_no}` }).eq("id", draft.id).eq("status", "draft"));
+  await ok(supabase.from("questionnaire_versions").update({ definition: from.definition, version_config: from.version_config, note: `Gebaseerd op versie ${from.version_no}` }).eq("id", draft.id).eq("status", "draft"));
 }
 
 /** Display names of publishers and editors (members of the active tenant only). */
@@ -84,7 +86,8 @@ export const staffNamesQuery = (ids: string[]) => queryOptions({
 });
 
 export async function saveDraft(versionId: string, def: QuestionnaireDef) {
-  await ok(supabase.from("questionnaire_versions").update({ definition: def as unknown as Json }).eq("id", versionId).eq("status", "draft"));
+  const { version_config, ...definition } = def;
+  await ok(supabase.from("questionnaire_versions").update({ definition: definition as unknown as Json, ...(version_config ? { version_config: version_config as Json } : {}) }).eq("id", versionId).eq("status", "draft"));
   await ok(supabase.from("questionnaires").update({ name: def.name, moment: def.moment }).eq("key", def.id));
 }
 
@@ -105,8 +108,9 @@ export async function saveFlowDocument(flowId: string, document: Record<string, 
 
 export async function createQuestionnaire(flowId: string, key: string, name: string, moment: string, sort: number) {
   const def: QuestionnaireDef = { id: key, name, moment, pages: [] };
+  const flow = await ok(supabase.from("questionnaire_flows").select("document").eq("id", flowId).single());
   const q = await ok(supabase.from("questionnaires").insert({ flow_id: flowId, key, name, moment, sort }).select("id").single());
-  await ok(supabase.from("questionnaire_versions").insert({ questionnaire_id: q.id, version_no: 1, status: "draft", definition: def as unknown as Json }));
+  await ok(supabase.from("questionnaire_versions").insert({ questionnaire_id: q.id, version_no: 1, status: "draft", definition: def as unknown as Json, version_config: versionConfig(flow.document) as unknown as Json }));
   return q.id;
 }
 

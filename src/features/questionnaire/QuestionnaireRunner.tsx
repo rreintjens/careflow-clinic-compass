@@ -8,6 +8,7 @@ import {
   type Answers, type FlowFile, type Item, type Page, type QuestionnaireDef, type RedOutcome,
 } from "@/domain/questionnaire/engine";
 import { yearsBetween } from "@/domain/questionnaire/expr";
+import { configOfDefinition } from "@/domain/questionnaire/version-config";
 import { cn } from "@/lib/utils";
 
 export type UiTexts = Record<string, string>;
@@ -52,7 +53,7 @@ export function QuestionnaireRunner({
   // Every new page (and the rejection screen) starts at the top.
   useEffect(() => { scrollRef.current?.scrollTo({ top: 0 }); if (fullScreen) window.scrollTo({ top: 0 }); }, [pageId, red, fullScreen]);
   useEffect(() => { onAnswers?.(answers); }, [answers, onAnswers]);
-  const ctx = useMemo(() => makeCtx(flow, answers, today), [flow, answers, today]);
+  const ctx = useMemo(() => makeCtx(configOfDefinition(def, flow), answers, today), [def, flow, answers, today]);
   const pages = visiblePages(def, ctx);
   const idx = Math.max(0, pages.findIndex((p) => p.id === pageId));
   const page = pages[idx];

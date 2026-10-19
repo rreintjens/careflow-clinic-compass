@@ -115,7 +115,7 @@ export function NewAppointmentModal({ open, onOpenChange, data, onPickInAgenda, 
     setBusy(true);
     const r = await create({ data: { patientId: patient, treatmentId: treatment, locationId: loc, practitionerId: prac, date: slot.date, start: slot.start, notify, reason: reason || null } });
     setBusy(false);
-    if (!r.ok) { setError(r.reason === "taken" ? "Dit moment is net bezet. Kies een ander moment." : "Inplannen is niet gelukt."); void qc.invalidateQueries({ queryKey: ["staff-slots"] }); return; }
+    if (!r.ok) { setError(r.reason === "external_busy" ? "Deze behandelaar is op dit moment bezet in eKis. Kies een ander moment." : r.reason === "taken" ? "Dit moment is bezet, mogelijk in eKis. Kies een ander moment." : "Inplannen is niet gelukt."); void qc.invalidateQueries({ queryKey: ["staff-slots"] }); return; }
     await Promise.all([qc.invalidateQueries({ queryKey: ["agenda-appts"] }), qc.invalidateQueries({ queryKey: ["dossier"] }), qc.invalidateQueries({ queryKey: ["patient-list"] })]);
     reset();
     onOpenChange(false);

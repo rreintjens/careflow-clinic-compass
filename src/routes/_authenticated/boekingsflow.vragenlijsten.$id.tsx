@@ -16,6 +16,7 @@ import { effectiveVisibility, questionNumbers, readFieldNames } from "@/domain/q
 import { describeChanges, insertBeforeLast, rowChange } from "@/domain/questionnaire/diff";
 import { makeCtx, type FlowFile, type Item, type ItemType, type Page, type PageType, type QuestionnaireDef } from "@/domain/questionnaire/engine";
 import { evaluate } from "@/domain/questionnaire/expr";
+import { configurationChanges, versionConfig } from "@/domain/questionnaire/version-config";
 import { AddList, type AddChoice } from "@/features/questionnaire/AddChooser";
 import { DiscardDialog, PublishDialog, VersionsDialog, changesCount, livePeriod, longDate, whenSaved } from "@/features/questionnaire/VersionDialogs";
 import { VersionPill } from "@/features/questionnaire/VersionPill";
@@ -65,7 +66,7 @@ function Builder() {
   const working = archived ?? (inEdit ? draft : pub ?? draft);
   const def = defOf(working);
   const flow = q ? flowOf(data, q.flow_id) : undefined;
-  const doc = (flow?.document ?? {}) as Record<string, unknown>;
+  const doc = versionConfig(working?.version_config) as unknown as Record<string, unknown>;
   const names = readFieldNames(doc);
   const settings = (doc["settings"] ?? {}) as Record<string, unknown>;
   const computed = (doc["computed_fields"] ?? {}) as Record<string, string>;
@@ -344,17 +345,17 @@ function Builder() {
       </Card>
 
       <Card title="Instellingen van deze vragenlijst">
-        <div className={cn("grid grid-cols-2 gap-4", !editable && "pointer-events-none opacity-80")}>
+        <fieldset disabled={!editable} className="grid grid-cols-2 gap-4">
           <Select label="Moment" value={def.moment} onChange={(v) => writeDef({ ...def, moment: v })} options={opts(org, "questionnaire_moment")} />
           <MultiSelect label="Gekoppeld aan" value={linked.map((t) => t.id)} onChange={(ids) => mut.mutate(() => linkTreatments(q.key, q.moment, ids, org.treatments))} options={org.treatments.map((t) => ({ value: t.id, label: t.name_nl }))} />
           {Object.entries((def["outcomes"] ?? {}) as Record<string, string>).map(([k, v]) => (
             <Select key={k} label={k === "red" ? "Bij rood" : k === "green" ? "Bij groen" : "Uitkomst"} value={v} onChange={(x) => writeDef({ ...def, outcomes: { ...(def["outcomes"] as Record<string, string>), [k]: x } })} options={opts(org, "questionnaire_outcome")} />
           ))}
-        </div>
+        </fieldset>
       </Card>
 
       {Object.keys(settings).some((k) => k === "bmi") && (
-        <Card title="Grenswaarden" description="Deze waarden gebruikt de BMI-vraag. Ze gelden voor de hele flow en zijn zonder nieuwe versie te wijzigen.">
+        <Card title="Grenswaarden" description={`Waarden van versie ${working.version_no}${inEdit ? " · concept" : " · alleen-lezen"}.`} action={inEdit && pub && configurationChanges(pub.version_config, working.version_config).length > 0 ? <VersionPill tone="draft">Gewijzigd</VersionPill> : undefined}>
           <table className="w-full">
             <thead><tr className="border-b border-line"><th className={thCls}>Regel</th><th className={thCls}>Standaard</th><th className={thCls}>Verlaagd, bij herkomst uit de genoemde regio’s</th></tr></thead>
             <tbody className="divide-y divide-line">
@@ -427,13 +428,13 @@ function Builder() {
             }} />
         );
       })()}
-      {edit?.kind === "thresholds" && flow && (
-        <ThresholdsModal settings={settings} rows={THRESHOLDS} names={names.thresholds} onClose={() => setEdit(null)} onSave={(s, labels) => mut.mutate(() => saveFlowDocument(flow.id, { ...doc, settings: s, field_names: { ...names, thresholds: labels } }))} />
+      {edit?.kind === "thresholds" && editable && (
+        <ThresholdsModal settings={settings} rows={THRESHOLDS} names={names.thresholds} onClose={() => setEdit(null)} onSave={(s, labels) => writeDef({ ...def, version_config: { ...doc, settings: s, field_names: { ...names, thresholds: labels } } })} />
       )}
-      {edit?.kind === "computed" && flow && (
+      {edit?.kind === "computed" && editable && (
         <ComputedModal name={edit.name} displayName={edit.name ? names.computed[edit.name] ?? "" : ""} formula={edit.name ? (computed[edit.name] ?? "") : ""} sample={sample} onClose={() => setEdit(null)}
-          onSave={(name, f, label) => mut.mutate(() => saveFlowDocument(flow.id, { ...doc, computed_fields: { ...computed, [name]: f }, field_names: { ...names, computed: { ...names.computed, [name]: label } } }))}
-          onDelete={edit.name ? () => { const c = { ...computed }, labels = { ...names.computed }; delete c[edit.name as string]; delete labels[edit.name as string]; mut.mutate(() => saveFlowDocument(flow.id, { ...doc, computed_fields: c, field_names: { ...names, computed: labels } })); } : undefined} />
+          onSave={(name, f, label) => writeDef({ ...def, version_config: { ...doc, computed_fields: { ...computed, [name]: f }, field_names: { ...names, computed: { ...names.computed, [name]: label } } } })}
+          onDelete={edit.name ? () => { const c = { ...computed }, labels = { ...names.computed }; delete c[edit.name as string]; delete labels[edit.name as string]; writeDef({ ...def, version_config: { ...doc, computed_fields: c, field_names: { ...names, computed: labels } } }); } : undefined} />
       )}
       {edit?.kind === "publish" && draft && (
         <PublishDialog name={def.name} moment={optLabel(org, "questionnaire_moment", q.moment)} liveNo={pub?.version_no ?? null} draftNo={draft.version_no} changes={changes} busy={mut.isPending}

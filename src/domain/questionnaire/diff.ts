@@ -1,6 +1,7 @@
 /** Plain-language list of what changes for the patient between the live version and a concept. */
 import { questionNumbers } from "./builder";
 import type { Item, Page, QuestionnaireDef } from "./engine";
+import { configurationChanges } from "./version-config";
 
 const items = (d: QuestionnaireDef) => new Map(d.pages.flatMap((p) => (p.items ?? []).map((i) => [i.id, i] as const)));
 const plain = (d: QuestionnaireDef) => new Map(d.pages.filter((p) => !p.items?.length).map((p) => [p.id, p] as const));
@@ -11,7 +12,7 @@ const label = (o: string) => o.toLowerCase();
 
 export function describeChanges(live: QuestionnaireDef | null, draft: QuestionnaireDef): string[] {
   if (!live) return ["Dit wordt de eerste versie die patiënten krijgen"];
-  const out: string[] = [];
+  const out: string[] = configurationChanges(live["version_config"], draft["version_config"]);
   const nums = questionNumbers(draft);
   const liveItems = items(live), draftItems = items(draft);
   const pageOf = (d: QuestionnaireDef, id: string) => d.pages.find((p) => p.items?.some((i) => i.id === id));

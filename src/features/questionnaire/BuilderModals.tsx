@@ -327,7 +327,7 @@ export function ThresholdsModal({ settings, rows, names, onSave, onClose }: { se
     <input inputMode="decimal" aria-label={labels[p] || "Grenswaarde"} className="h-11 w-full rounded-[12px] bg-sand px-3 text-[15px] outline-none" defaultValue={String(get(p) ?? "").replace(".", ",")} onChange={(e) => { const n = Number(e.target.value.replace(",", ".")); if (!Number.isNaN(n)) put(p, n); }} />
   );
   return (
-    <Modal open width="lg" onOpenChange={(o) => !o && onClose()} title="Grenswaarden wijzigen" description="Gelden direct voor nieuwe antwoorden."
+    <Modal open width="lg" onOpenChange={(o) => !o && onClose()} title="Grenswaarden wijzigen" description="Deze waarden horen bij het concept. Patiënten krijgen ze pas na publiceren."
       footer={<><PillButton variant="outline" onClick={onClose}>Annuleren</PillButton><PillButton onClick={() => onSave(s, labels)}>Opslaan</PillButton></>}>
       <div className="grid grid-cols-[1fr_140px_140px] items-center gap-3 text-sm">
         <span className="text-xs text-muted-foreground">Naam</span><span className="text-xs text-muted-foreground">Standaard</span><span className="text-xs text-muted-foreground">Verlaagd</span>

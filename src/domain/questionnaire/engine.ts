@@ -1,5 +1,6 @@
 /** Questionnaire engine: conditions, computed fields, visible pages, red outcomes and signals. */
 import { evaluate } from "./expr";
+import { configOfDefinition } from "./version-config";
 
 export type Op = "eq" | "not_eq" | "lt" | "lte" | "gt" | "gte" | "contains";
 export interface Leaf { field: string; op: Op; value: unknown }
@@ -172,7 +173,7 @@ export function pageProgress(p: Page, ctx: Ctx) {
 /** The resume screen: progress per visible question page and where to continue. */
 export interface ResumePage { id: string; title: string; answered: number; total: number; complete: boolean }
 export function resumeState(q: QuestionnaireDef, flow: Pick<FlowFile, "settings" | "computed_fields">, answers: Answers, today: string) {
-  const ctx = makeCtx(flow, answers, today);
+  const ctx = makeCtx(configOfDefinition(q, flow), answers, today);
   const pages = visiblePages(q, ctx).filter(isQuestionPage).map((p) => {
     const progress = pageProgress(p, ctx);
     return { id: p.id, title: p.title ?? p.items?.[0]?.text ?? p.id, ...progress, complete: pageComplete(p, ctx) };

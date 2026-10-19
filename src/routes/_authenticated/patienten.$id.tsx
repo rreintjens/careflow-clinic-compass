@@ -6,6 +6,7 @@ import { dossierQuery, recordKey } from "@/data/patients";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { DossierAddModal } from "@/features/dossier/DossierAddModal";
+import { FollowUps } from "@/features/dossier/FollowUps";
 import { supabase } from "@/integrations/supabase/client";
 
 import { signalsOf } from "@/features/agenda/PatientCard";
@@ -87,6 +88,7 @@ function Layout() {
         ))}
       </nav>
       <Outlet />
+      <FollowUps patientId={id} />
       {adding && <DossierAddModal key={id} patient={p} onClose={() => setAdding(false)} />}
       <p className="text-[12px] text-muted-foreground">Elke weergave en wijziging staat in het technisch logboek.</p>
     </div>

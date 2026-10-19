@@ -3,7 +3,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { measurementWithBmi } from "@/domain/measurements";
 
 export type TimelineKind = "appointments" | "questionnaires" | "contact" | "treatment" | "system";
-export interface TimelineEvent { at: string; kind: TimelineKind; icon: string; title: string; body: string; who: string; meet?: string | null }
+export interface TimelineEvent { at: string; kind: TimelineKind; icon: string; title: string; body: string; who: string; meet?: string | null; entry?: { kind: "contact" | "request"; id: string } }
 
 const STATUS: Record<string, string> = { booked: "", cancelled: " · geannuleerd", no_show: " · niet verschenen", completed: " · afgerond" };
 
