@@ -19,7 +19,7 @@
 - Password sign-in enforces lockout server-side; MFA enrollment needs a registered session, not an identity-only preview token. Server functions log auth events; audit_row_change logs writes; audit_log stays append-only.
 - Identity columns only in `patients`; medical data goes in separate tables without identity columns.
 - Security headers are set in `src/start.ts` middleware (`src/lib/security-headers.ts`); `TBC_LIVE=true` switches framing to 'none'.
-- RLS proof: `TEST_STAFF_PASSWORD=… bunx vitest run src/test/rls-patients.integration.test.ts` (enrolls and removes a temporary TOTP factor per role).
+- RLS proof: `TEST_STAFF_PASSWORD=… bunx vitest run src/test/rls-patients.integration.test.ts`.
 - Multi-tenant (docs/03_MULTI_TENANT.md is binding): every tenant table has non-null `tenant_id` defaulting to `current_tenant()`; every policy ANDs `tenant_id = current_tenant()` — isolation lives in the database.
 - Active tenant = `app_metadata.active_tenant` in the JWT, written only by server functions (`signInStaff`, `switchTenant`) and honoured only with a membership; roles come from `tenant_memberships` (`user_roles` is deprecated). Group admins are the exception: they sign in without a membership, see every tenant in `my_tenants`, and act as `superadmin` in any tenant via fallbacks in `current_role_key`/`has_permission`/`my_staff_context`.
 - Shared group data (permissions, option_lists, languages, group_settings) is editable only by `group_admins`; storage buckets are per tenant (`<name>-<slug>`).
