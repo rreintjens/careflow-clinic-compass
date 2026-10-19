@@ -79,10 +79,11 @@ function Page() {
           <div key={String(l)} className="rounded-[18px] bg-sand p-5"><p className="text-[13px] text-muted-foreground">{l}</p><p className="mt-1 text-[26px] font-semibold">{v ?? "–"}</p></div>
         ))}
       </div>
-      <div className="flex gap-3">
+      <div className="flex items-center gap-3">
         <Select className="w-56" label="Behandeling" value={treat} onChange={setTreat} options={[...all("Alle behandelingen"), ...ref.treatments.map((t) => ({ value: t.id, label: t.name_nl }))]} />
         <Select className="w-56" label="Locatie" value={loc} onChange={setLoc} options={[...all("Alle locaties"), ...ref.locations.map((l) => ({ value: l.id, label: l.name }))]} />
         <Select className="w-56" label="Behandelaar" value={prac} onChange={setPrac} options={[...all("Alle behandelaars"), ...ref.practitioners.map((p) => ({ value: p.id, label: `${p.first_name} ${p.last_name}` }))]} />
+        <span className="ml-auto text-xs text-muted-foreground">{shown.length} patiënten</span>
       </div>
       <div className="overflow-x-auto">
         <DataTable count={shown.length} label="patiënten" loading={!data}><table className="w-full text-[14px]">

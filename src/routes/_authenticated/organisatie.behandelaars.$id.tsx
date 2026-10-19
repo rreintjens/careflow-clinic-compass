@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { Avatar } from "@/components/Avatar";
 import { Card } from "@/components/Card";
+import { rowOpen, RowChevron } from "@/components/ListPage";
 import { Checkbox, Chip, PlusIcon, SearchField, StatusMark, Tag, TextArea, TextField, TextLink } from "@/components/Field";
 import { Modal } from "@/components/Modal";
 import { PillButton } from "@/components/PillButton";
@@ -150,9 +151,9 @@ function PractitionerForm({ org }: { org: Org }) {
           </Card>
 
           <Card title="Behandelingen, en waar ze die doet" description={`Klik op een behandeling om aan te passen op welke werklocaties ${p.first_name} die doet.`}>
-            <ul className="divide-y divide-line">
+            <ul className="divide-y divide-line" onClick={rowOpen}>
               {rows.map((r) => (
-                <li key={r.t.id} className="flex items-center gap-3 py-3">
+                <li key={r.t.id} data-list-row className="flex items-center gap-3 py-3">
                   <div className="w-[240px] min-w-0">
                     <div className="truncate text-sm">{r.t.name_nl}</div>
                     <div className="truncate text-xs text-muted-foreground">{r.cats}</div>
@@ -162,7 +163,7 @@ function PractitionerForm({ org }: { org: Org }) {
                     {r.here.length === 0 && <span className="text-xs text-warning">Werkt niet waar dit wordt aangeboden</span>}
                     {r.notHere.length > 0 && <span className="text-xs text-muted-foreground">Niet in {r.notHere.map((l) => locName(org, l)).join(", ")}</span>}
                   </div>
-                  <button type="button" onClick={() => setEditT(r.t.id)} className="text-[13px] text-primary hover:text-primary-hover">Wijzig</button>
+                  <button type="button" data-row-action onClick={() => setEditT(r.t.id)} className="text-primary" aria-label={`${r.t.name_nl} aanpassen`}><RowChevron /></button>
                 </li>
               ))}
             </ul>

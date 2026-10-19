@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { Avatar } from "@/components/Avatar";
 import { Card } from "@/components/Card";
+import { rowOpen, RowChevron } from "@/components/ListPage";
 import { Checkbox, Chip, PlusIcon, SearchField, StatusMark, Tag, TextArea, TextField, TextLink, tdCls, thCls } from "@/components/Field";
 import { Modal } from "@/components/Modal";
 import { MultiSelect } from "@/components/MultiSelect";
@@ -186,9 +187,9 @@ function TreatmentForm({ org, defaults, onSaved, onCancel }: { org: Org; default
               <Select label="Locatie" value={plocF} onChange={setPlocF} options={locationOptions} className="[&>label]:sr-only" />
             </div>
             <p className="mt-4 text-xs text-muted-foreground">{doers.length} behandelaars doen {t.name_nl.toLowerCase()}</p>
-            <ul className="mt-2 divide-y divide-line">
+            <ul className="mt-2 divide-y divide-line" onClick={rowOpen}>
               {visibleDoers.map(({ p, here, notHere }) => (
-                <li key={p.id} className="flex items-center gap-3 py-2.5">
+                <li key={p.id} data-list-row className="flex items-center gap-3 py-2.5">
                   <Avatar path={p.photo_path} size={36} />
                   <div className="w-[180px] min-w-0">
                     <div className="truncate text-sm">{fullName(p)}</div>
@@ -199,7 +200,7 @@ function TreatmentForm({ org, defaults, onSaved, onCancel }: { org: Org; default
                     {here.length === 0 && <span className="text-xs text-warning">Werkt niet waar dit wordt aangeboden</span>}
                     {notHere.length > 0 && <span className="text-xs text-muted-foreground">Niet in {notHere.map((l) => locName(org, l)).join(", ")}</span>}
                   </div>
-                  <button type="button" onClick={() => setEditPrac(p.id)} className="text-[13px] text-primary hover:text-primary-hover">Wijzig</button>
+                  <button type="button" data-row-action onClick={() => setEditPrac(p.id)} className="text-primary" aria-label={`${fullName(p)} aanpassen`}><RowChevron /></button>
                 </li>
               ))}
             </ul>
@@ -208,19 +209,20 @@ function TreatmentForm({ org, defaults, onSaved, onCancel }: { org: Org; default
           </Card>
 
           <Card title="Wat is er nodig?" description="Een vaste laser hoort bij een kamer. Een verplaatsbare laser zoekt het systeem erbij als die op dat moment op de locatie is, samen met een vrije kamer.">
-            <table className="w-full">
+            <table className="w-full" onClick={rowOpen}>
               <thead><tr className="border-b border-line"><th className={thCls}>Benodigdheid</th><th className={thCls}>Waar het vandaan komt</th><th className={thCls}>Aantal</th><th className={thCls}>Hoe lang</th><th className={thCls} /></tr></thead>
               <tbody className="divide-y divide-line">
                 {reqs.map((r) => (
-                  <tr key={r.id}>
+                  <tr key={r.id} data-list-row>
                     <td className={tdCls}>{r.kind === "room" ? "Een kamer" : kindName(org, r.equipment_kind)}</td>
                     <td className={tdCls}>{r.kind === "room" ? "Elke vrije behandelkamer op de locatie" : "Vast in een kamer, of een verplaatsbare die dan op de locatie is"}</td>
                     <td className={tdCls}>{r.quantity}</td>
                     <td className={tdCls}>{optLabel(org, "requirement_duration", r.duration)}</td>
                     <td className={cn(tdCls, "text-right")}>
-                      {r.kind === "room" ? <TextLink onClick={() => setReqModal(r)}>Wijzig</TextLink> : (
-                        <span className="flex justify-end gap-3"><TextLink onClick={() => setReqModal(r)}>Wijzig</TextLink><Link to="/organisatie/apparatuur" className="text-sm text-primary underline underline-offset-2">Bekijk apparatuur</Link></span>
-                      )}
+                      <span className="flex items-center justify-end gap-3">
+                        <button type="button" data-row-action onClick={() => setReqModal(r)} className={cn("text-primary", r.kind !== "room" && "order-2")} aria-label="Benodigdheid wijzigen"><RowChevron /></button>
+                        {r.kind !== "room" && <Link to="/organisatie/apparatuur" className="order-1 text-sm text-primary underline underline-offset-2">Bekijk apparatuur</Link>}
+                      </span>
                     </td>
                   </tr>
                 ))}

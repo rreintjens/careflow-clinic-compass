@@ -113,7 +113,8 @@ function LogPage() {
         <Select inline label="Gebruiker" value={f.user} onChange={(user) => set({ user })} options={[{ value: "all", label: "Alle gebruikers" }, ...(users.data ?? []).map((u) => ({ value: u.id, label: u.full_name }))]} />
         <Select inline label="Actie" value={f.category} onChange={(category) => set({ category })} options={[{ value: "all", label: "Alle acties" }, ...Object.entries(CATEGORY_LABELS).map(([value, label]) => ({ value, label }))]} />
         <SearchField aria-label="Patiëntnummer" placeholder="Patiëntnummer" inputMode="numeric" value={f.patient} onChange={(e) => set({ patient: e.target.value.replace(/\D/g, "") })} className="w-[240px]" />
-        <PillButton variant="outline" className="ml-auto" onClick={exportCsv}>Exporteren</PillButton>
+        <span className="ml-auto text-xs text-muted-foreground">{rows.length} regels</span>
+        <PillButton variant="outline" onClick={exportCsv}>Exporteren</PillButton>
       </div>
       <DataTable count={rows.length} label="regels">
         {rows.length === 0 && <p className="py-8 text-sm text-muted-foreground">Geen regels in deze selectie.</p>}

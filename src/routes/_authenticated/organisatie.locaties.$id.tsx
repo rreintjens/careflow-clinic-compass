@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { Card } from "@/components/Card";
+import { rowOpen, RowChevron } from "@/components/ListPage";
 import { Checkbox, PlusIcon, SearchField, StatusMark, Tag, TextField, TextLink, Toggle, tdCls, thCls } from "@/components/Field";
 import { Modal } from "@/components/Modal";
 import { PillButton } from "@/components/PillButton";
@@ -133,17 +134,17 @@ function LocationForm({ org }: { org: Org }) {
 
           {!online && (
             <Card title="Kamers en apparatuur" description="Apparatuur die vast in een kamer staat, zoals een laser of afzuiger, geef je als kenmerk van die kamer op.">
-              <table className="w-full">
+              <table className="w-full" onClick={rowOpen}>
                 <thead><tr className="border-b border-line"><th className={thCls}>Kamer</th><th className={thCls}>Kenmerken</th><th className={thCls}>Geschikt voor</th><th className={thCls} /></tr></thead>
                 <tbody className="divide-y divide-line">
                   {rooms.map((r) => {
                     const f = roomFeatures(r);
                     return (
-                      <tr key={r.id}>
+                      <tr key={r.id} data-list-row>
                         <td className={tdCls}>{r.name}</td>
                         <td className={tdCls}>{f.length ? <span className="flex gap-1">{f.map((e) => <Tag key={e.id}>{kindName(org, e.kind)}</Tag>)}</span> : <span className="text-muted-foreground">Geen</span>}</td>
                         <td className={tdCls}>{suitedFor(r)}</td>
-                        <td className={tdCls}><TextLink onClick={() => setRoomModal(r)}>Wijzig</TextLink></td>
+                        <td className={tdCls}><button type="button" data-row-action onClick={() => setRoomModal(r)} className="text-primary" aria-label={`Kamer ${r.name} wijzigen`}><RowChevron /></button></td>
                       </tr>
                     );
                   })}
@@ -157,9 +158,9 @@ function LocationForm({ org }: { org: Org }) {
         <Card title="Behandelingen hier">
           <Tag tone={okCount === here.length ? "teal" : "warning"}>{okCount} van {here.length} boekbaar</Tag>
           <p className="mt-2 text-sm text-muted-foreground">Dezelfde keuze als op de pagina van elke behandeling.</p>
-          <ul className="mt-3 max-h-[640px] divide-y divide-line overflow-y-auto">
+          <ul className="mt-3 max-h-[640px] divide-y divide-line overflow-y-auto" onClick={rowOpen}>
             {here.map(({ t, reason, docs }) => t && (
-              <li key={t.id} className="flex gap-3 py-3">
+              <li key={t.id} data-list-row className="flex items-center gap-3 py-3">
                 <StatusMark kind={reason === "ok" ? "ok" : "warn"} />
                 <div className="min-w-0 flex-1">
                   <div className="text-sm">{t.name_nl}</div>
@@ -167,7 +168,7 @@ function LocationForm({ org }: { org: Org }) {
                     {reason === "ok" ? (docs.length <= 2 ? docs.map((d) => fullName(org.practitioners.find((p) => p.id === d.practitioner_id) ?? { first_name: "", last_name: "" })).join(", ") : `${docs.length} behandelaars`) : REASON_TEXT[reason]}
                   </div>
                 </div>
-                <Link to="/organisatie/behandelingen/$id" params={{ id: t.id }} className="text-[13px] text-primary underline underline-offset-2">Wijzig</Link>
+                <Link to="/organisatie/behandelingen/$id" params={{ id: t.id }} aria-label={`${t.name_nl} openen`} className="text-primary"><RowChevron /></Link>
               </li>
             ))}
           </ul>

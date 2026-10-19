@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { Card } from "@/components/Card";
+import { rowOpen, RowChevron } from "@/components/ListPage";
 import { PlusIcon, Tag, TextLink, tdCls, thCls } from "@/components/Field";
 import { MultiSelect } from "@/components/MultiSelect";
 import { PillButton } from "@/components/PillButton";
@@ -196,7 +197,7 @@ function Builder() {
           <div className="text-xs text-muted-foreground">{sub}</div>
           {show && <div className="mt-1 flex items-center gap-1.5 text-xs text-primary"><UiIcon name="route" className="size-3.5" />Alleen als {show}</div>}
         </div>
-        {editable && <span onClick={(e) => e.stopPropagation()}><TextLink onClick={onEdit}>Wijzig</TextLink></span>}
+        {editable && <button type="button" aria-label="Wijzig" onClick={(e) => { e.stopPropagation(); onEdit(); }} className="shrink-0 self-center text-primary"><RowChevron /></button>}
       </div>
     );
   };
@@ -324,7 +325,7 @@ function Builder() {
                   </button>
                   <span className="rounded-full bg-foreground px-3 py-1 text-xs text-background">{pageTypeLabel("question_page")}</span>
                   <span className="text-sm">{p.title ?? p.section}</span>{badge(p)}
-                  {editable && <span className="ml-auto"><TextLink onClick={() => setEdit({ kind: "page", index: pi })}>Wijzig</TextLink></span>}
+                  {editable && <button type="button" aria-label="Wijzig" onClick={(e) => { e.stopPropagation(); setEdit({ kind: "page", index: pi }); }} className="ml-auto shrink-0 text-primary"><RowChevron /></button>}
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">{items.length} vragen op één scherm{p.show_if ? ` · alleen als ${short(p.show_if)}` : ""}{p.red_if ? ` · rood als ${cond(p.red_if)}` : ""}</p>
                 {!collapsed.has(p.id) && <div className="mt-2 flex flex-col gap-2">
@@ -370,11 +371,11 @@ function Builder() {
       )}
 
       <Card title="Berekende velden" description="Eenvoudige formules met velden tussen accolades. Je gebruikt ze in voorwaarden en in teksten.">
-        <table className="w-full">
+        <table className="w-full" onClick={rowOpen}>
           <thead><tr className="border-b border-line"><th className={thCls}>Veld</th><th className={thCls}>Formule</th><th className={thCls}>Voorbeeld</th><th className={thCls} /></tr></thead>
           <tbody className="divide-y divide-line">
             {Object.entries(computed).map(([k, f]) => (
-              <tr key={k}><td className={tdCls}>{names.computed[k] || "Berekend veld zonder naam"}</td><td className={cn(tdCls, "font-mono text-xs")}>{f}</td><td className={tdCls}>{sample(f)}</td><td className={tdCls}>{editable && <TextLink onClick={() => setEdit({ kind: "computed", name: k })}>Wijzig</TextLink>}</td></tr>
+              <tr key={k} {...(editable ? { "data-list-row": "" } : {})}><td className={tdCls}>{names.computed[k] || "Berekend veld zonder naam"}</td><td className={cn(tdCls, "font-mono text-xs")}>{f}</td><td className={tdCls}>{sample(f)}</td><td className={tdCls}>{editable && <button type="button" data-row-action aria-label={`${names.computed[k] || k} wijzigen`} onClick={() => setEdit({ kind: "computed", name: k })} className="text-primary"><RowChevron /></button>}</td></tr>
             ))}
           </tbody>
         </table>
