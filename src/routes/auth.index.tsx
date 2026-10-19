@@ -35,7 +35,7 @@ const inputCls = "h-12 w-full rounded-[14px] bg-sand px-4 text-[15px] outline-no
 function LoginPage() {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
-  const { register, handleSubmit, formState } = useForm<SignInInput>({ resolver: zodResolver(signInSchema) });
+  const { register, handleSubmit, formState, setValue, setFocus } = useForm<SignInInput>({ resolver: zodResolver(signInSchema) });
 
   const onSubmit = handleSubmit(async (values) => {
     setError(null);
@@ -56,6 +56,22 @@ function LoginPage() {
 
   return (
     <AuthLayout>
+        {import.meta.env.DEV && (
+          <PillButton
+            variant="outline"
+            size="lg"
+            block
+            className="mb-6"
+            disabled={formState.isSubmitting}
+            onClick={() => {
+              setError(null);
+              setValue("email", "rob@bodyclinic.nl", { shouldDirty: true });
+              setFocus("password");
+            }}
+          >
+            Inloggen als Rob
+          </PillButton>
+        )}
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
         <h2 className="text-[26px] font-semibold tracking-tight">Inloggen</h2>
         <div className="flex flex-col gap-2">
