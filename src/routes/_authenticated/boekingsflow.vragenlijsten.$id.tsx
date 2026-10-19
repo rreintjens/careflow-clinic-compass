@@ -217,7 +217,7 @@ function Builder() {
   const selPage = sel !== null ? def.pages[sel] : undefined;
   const previewLabel = selPage ? (selPage.items?.length === 1 && !selPage.title ? `Vraag ${nums[selPage.items[0]!.id] ?? ""} · ${selPage.items[0]!.text}` : `Pagina ${nums[selPage.id] ?? sel! + 1} · ${selPage.title ?? selPage.section ?? ""}`) : "";
   const startEdit = () => {
-    setArchiveId(null);
+    setArchiveId(null); setNotice(null);
     if (draft) { setEditing(true); return; }
     if (!pub) return;
     mut.mutate(async () => { await createDraft(q.id, pub); setEditing(true); setNotice(`Je werkt nu aan versie ${Math.max(...versions.map((v) => v.version_no)) + 1}. Versie ${pub.version_no} blijft live tot je publiceert.`); });
@@ -258,28 +258,30 @@ function Builder() {
           </div>
         </div>
         <p className="mt-2 text-sm text-muted-foreground">
-          {[inEdit && draft ? (pub ? `Gebaseerd op versie ${pub.version_no}` : "Nog geen versie live") : pub ? `Live sinds ${longDate(pub.published_at)}${by(pub.published_by) ? `, gepubliceerd door ${by(pub.published_by)}` : ""}` : "",
+          {[archived ? "" : inEdit && draft ? (pub ? `Gebaseerd op versie ${pub.version_no}` : "Nog geen versie live") : pub ? `Live sinds ${longDate(pub.published_at)}${by(pub.published_by) ? `, gepubliceerd door ${by(pub.published_by)}` : ""}` : "",
             linked.length ? `gekoppeld aan ${linked.map((t) => t.name_nl).join(", ")}` : "", `${def.pages.length} pagina’s`].filter(Boolean).join(" · ")}
         </p>
       </div>
 
       {archived && (() => { const per = livePeriod(archived, versions); return (
         <div className="flex flex-wrap items-center gap-4 rounded-[16px] bg-sand px-5 py-4">
-          <p className="mr-auto text-sm"><b className="font-semibold">Je bekijkt versie {archived.version_no} · archief</b>{per.from ? `, live van ${per.from}${per.to ? ` tot ${per.to}` : ""}` : ""}. Niets kan hier worden gewijzigd.</p>
+          <p className="min-w-0 flex-1 text-sm"><b className="font-semibold">Je bekijkt versie {archived.version_no} · archief</b>{per.from ? `, live van ${per.from}${per.to ? ` tot ${per.to}` : ""}` : ""}. Niets kan hier worden gewijzigd.</p>
           {pub && <PillButton variant="outline" onClick={() => setArchiveId(null)}>Terug naar versie {pub.version_no} (live)</PillButton>}
           <PillButton onClick={() => { if (draft && !window.confirm(`Concept versie ${draft.version_no} wordt vervangen door een kopie van versie ${archived.version_no}. Doorgaan?`)) return; mut.mutate(async () => { await useVersionAsDraft(q.id, archived, draft); setArchiveId(null); setEditing(true); toast.success(`Versie ${archived.version_no} staat klaar als concept`); }); }}>Als concept gebruiken</PillButton>
         </div>); })()}
 
       {inEdit && draft && (
         <div className="sticky top-0 z-20 flex flex-wrap items-center gap-4 rounded-[16px] bg-warning-bg px-5 py-4 ring-1 ring-warning/30">
-          <div className="mr-auto min-w-[280px] max-w-[620px] text-sm">
+          <div className="min-w-[280px] flex-1 text-sm">
             <p className="font-semibold text-warning">Je werkt aan versie {draft.version_no} · concept</p>
             <p>{pub ? `Versie ${pub.version_no} blijft live voor patiënten tot je publiceert. ` : ""}Alles wat je wijzigt wordt meteen bewaard · {changesCount(changes.length)}{mut.isPending ? " · bezig met bewaren…" : ""}.</p>
           </div>
+          <div className="flex shrink-0 flex-wrap items-center gap-3">
           {pub && <TextLink tone="warning" onClick={() => setEdit({ kind: "discard" })}>Concept weggooien</TextLink>}
           {testLink(draft, "Test concept")}
           {pub && <PillButton variant="outline" onClick={() => { setEditing(false); setNotice(`Versie ${draft.version_no} is bewaard als concept. Je kunt later verder.`); }}>Opslaan en sluiten</PillButton>}
           <PillButton onClick={() => setEdit({ kind: "publish" })}>Publiceren</PillButton>
+          </div>
         </div>
       )}
 
@@ -362,7 +364,7 @@ function Builder() {
               })}
             </tbody>
           </table>
-          <div className="mt-4"><PillButton variant="outline" onClick={() => setEdit({ kind: "thresholds" })}>Grenswaarden wijzigen</PillButton></div>
+          {editable && <div className="mt-4"><PillButton variant="outline" onClick={() => setEdit({ kind: "thresholds" })}>Grenswaarden wijzigen</PillButton></div>}
         </Card>
       )}
 
@@ -371,11 +373,11 @@ function Builder() {
           <thead><tr className="border-b border-line"><th className={thCls}>Veld</th><th className={thCls}>Formule</th><th className={thCls}>Voorbeeld</th><th className={thCls} /></tr></thead>
           <tbody className="divide-y divide-line">
             {Object.entries(computed).map(([k, f]) => (
-              <tr key={k}><td className={tdCls}>{names.computed[k] || "Berekend veld zonder naam"}</td><td className={cn(tdCls, "font-mono text-xs")}>{f}</td><td className={tdCls}>{sample(f)}</td><td className={tdCls}><TextLink onClick={() => setEdit({ kind: "computed", name: k })}>Wijzig</TextLink></td></tr>
+              <tr key={k}><td className={tdCls}>{names.computed[k] || "Berekend veld zonder naam"}</td><td className={cn(tdCls, "font-mono text-xs")}>{f}</td><td className={tdCls}>{sample(f)}</td><td className={tdCls}>{editable && <TextLink onClick={() => setEdit({ kind: "computed", name: k })}>Wijzig</TextLink>}</td></tr>
             ))}
           </tbody>
         </table>
-        <div className="mt-4"><PillButton variant="outline" onClick={() => setEdit({ kind: "computed", name: null })}><PlusIcon />Berekend veld toevoegen</PillButton></div>
+        {editable && <div className="mt-4"><PillButton variant="outline" onClick={() => setEdit({ kind: "computed", name: null })}><PlusIcon />Berekend veld toevoegen</PillButton></div>}
       </Card>
 
       </div>
