@@ -7,7 +7,7 @@ import { SegmentedControl } from "@/components/SegmentedControl";
 import { Select } from "@/components/Select";
 import { evalCondition, isLeaf, resolveValue, type Condition, type Leaf, type QuestionnaireDef } from "@/domain/questionnaire/engine";
 import { fromSituations, toSituations, type Row, type RowOp, type Situations } from "@/domain/questionnaire/situations";
-import { conditionExample, type FieldNames } from "@/domain/questionnaire/builder";
+import { conditionExample, questionNumbers, type FieldNames } from "@/domain/questionnaire/builder";
 import { cn } from "@/lib/utils";
 
 export interface FieldInfo { value: string; label: string; options?: string[] | undefined; kind: "answer" | "computed"; multi?: boolean; number?: number | undefined; unit?: string | undefined; exclusive?: string | undefined }
@@ -16,16 +16,7 @@ type Opt = { value: string; label: string };
 /** Everything a condition needs: fields, comparison labels, thresholds and the flow for the worked example. */
 export interface CondCtx { fields: FieldInfo[]; ops: Opt[]; refs: Opt[]; settings: Record<string, unknown>; computed: Record<string, string>; names?: FieldNames }
 
-/** Builder numbering: a text page counts once, every question counts once. */
-export function questionNumbers(def: QuestionnaireDef): Record<string, number> {
-  const out: Record<string, number> = {};
-  let n = 0;
-  for (const p of def.pages) {
-    if (!p.items?.length) { n += 1; out[p.id] = n; continue; }
-    for (const i of p.items) { n += 1; out[i.id] = n; }
-  }
-  return out;
-}
+export { questionNumbers };
 
 /** Every field a condition can test: answers of all items plus computed fields. */
 export function fieldInfos(def: QuestionnaireDef, computed: Record<string, string>, names?: FieldNames): FieldInfo[] {
