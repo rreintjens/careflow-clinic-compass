@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 
 import { Link } from "@tanstack/react-router";
 
@@ -8,26 +8,27 @@ import { PillButton } from "@/components/PillButton";
 import { SegmentedControl } from "@/components/SegmentedControl";
 import { Select } from "@/components/Select";
 import type { Condition, Item, ItemType, Page, PageType, QuestionnaireDef } from "@/domain/questionnaire/engine";
-import { effectiveVisibility, visibilityTarget } from "@/domain/questionnaire/builder";
+import { effectiveVisibility, shortName, visibilityTarget } from "@/domain/questionnaire/builder";
 import { answerValues, isSimpleRed, redAnswers, redRuleFor } from "@/domain/questionnaire/situations";
 import { evaluate } from "@/domain/questionnaire/expr";
+import { UiIcon } from "@/components/UiIcon";
 import { cn } from "@/lib/utils";
 
+import { PointsEditor } from "./BoodschapModal";
 import { ConditionLine, ConditionModal, type CondCtx } from "./conditions";
 import { QuestionnaireRunner, type Lang, type UiTexts } from "./QuestionnaireRunner";
 
 type Opt = { value: string; label: string };
 export type { CondCtx };
-const lines = (s: string) => s.split("\n").map((x) => x.trim()).filter(Boolean);
 const slug = (s: string) => s.toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "").slice(0, 40) || "vraag";
 
 type CondTarget = { key: string; title: string; always: string; value: Condition | undefined; set: (c: Condition | undefined) => void };
 
-export function PageModal({ page, pageTypes, sections, icons, ctx, questionnaireName, onSave, onDelete, onClose }: {
-  page: Page | null; pageTypes: Opt[]; sections: string[]; icons: string[]; ctx: CondCtx; questionnaireName: string;
+export function PageModal({ page, initialType, pageTypes, sections, icons, iconCategories, ctx, questionnaireName, onSave, onDelete, onClose }: {
+  page: Page | null; initialType?: PageType | undefined; pageTypes: Opt[]; sections: string[]; icons: IconEntry[]; iconCategories: Opt[]; ctx: CondCtx; questionnaireName: string;
   onSave: (p: Page) => void; onDelete?: (() => void) | undefined; onClose: () => void;
 }) {
-  const [p, setP] = useState<Page>(page ?? { id: `p_${Date.now().toString(36)}`, type: "text", title: "" });
+  const [p, setP] = useState<Page>(page ?? { id: `p_${Date.now().toString(36)}`, type: initialType ?? "text", title: "", ...(initialType === "question_page" ? { items: [] } : {}) });
   const [iconOpen, setIconOpen] = useState(false);
   const [cond, setCond] = useState<CondTarget | null>(null);
   const type = (p.type ?? "question_page") as PageType;
@@ -42,51 +43,93 @@ export function PageModal({ page, pageTypes, sections, icons, ctx, questionnaire
           <Select label="Onderdeel" value={p.section ?? "__none"} onChange={(v) => set({ section: v === "__none" ? undefined : v })} options={[{ value: "__none", label: "Geen" }, ...sections.map((s) => ({ value: s, label: s }))]} help="Nieuw onderdeel? Typ het bij een vraag." />
           <TextField label="Titel" value={p.title ?? ""} onChange={(e) => set({ title: e.target.value })} className="col-span-2" />
           <TextArea label="Tekst" value={p.body ?? ""} onChange={(e) => set({ body: e.target.value })} className="col-span-2" help="Gebruik {voornaam}, {behandelaar_voornaam}, {dag}, {tijd} voor gegevens van de afspraak." />
-          {(type === "text" || type === "boodschap") && <TextArea label="Opsomming (één per regel)" value={(p.bullets ?? []).join("\n")} onChange={(e) => set({ bullets: lines(e.target.value) })} className="col-span-2" />}
+          {type === "text" && <div className="col-span-2"><PointsEditor label="Opsomming" value={p.bullets ?? []} onChange={(b) => set({ bullets: b })} /></div>}
           <TextField label="Tekst op de knop" value={p.button ?? ""} onChange={(e) => set({ button: e.target.value })} help="Leeg = Verder." />
           {(type === "text" || type === "boodschap") && (
             <div className="flex flex-col gap-2">
               <span className="text-[13px] font-medium">Icoon</span>
               <button type="button" onClick={() => setIconOpen(true)} className="flex h-12 items-center gap-3 rounded-[14px] bg-sand px-4 text-left text-[15px]">
-                {p.icon ? <><img src={`/ui-icons/${p.icon}.svg`} alt="" className="size-5" />{p.icon}</> : <span className="text-muted-foreground">Geen icoon</span>}
+                {p.icon ? <><UiIcon name={p.icon} className="size-5 text-primary" />{p.icon}</> : <span className="text-muted-foreground">Geen icoon</span>}
               </button>
             </div>
           )}
         </div>
-        <div className="mt-5"><ConditionLine label="Tonen" empty="Altijd" value={p.show_if} ctx={ctx} onEdit={() => setCond({ key: "show", title: `Wanneer tonen we de pagina ${p.title || p.section || ""}?`.replace(" ?", "?"), always: "Altijd tonen", value: p.show_if, set: (c) => set({ show_if: c }) })} /></div>
+        <div className="mt-5"><ConditionLine label="Tonen" empty="Altijd" value={p.show_if} ctx={ctx} onEdit={() => setCond({ key: "show", title: `Wanneer tonen we de pagina ${p.title ? `“${p.title}”` : p.section || ""}?`.replace(" ?", "?"), always: "Altijd tonen", value: p.show_if, set: (c) => set({ show_if: c }) })} /></div>
         {type === "question_page" && <div className="mt-4"><ConditionLine label="Rood als (voor de hele pagina)" empty="Nooit" value={p.red_if} ctx={ctx} onEdit={() => setCond({ key: "red", title: "Wanneer is deze pagina rood?", always: "Nooit rood", value: p.red_if, set: (c) => set({ red_if: c }) })} /></div>}
       </Modal>
       {cond && <ConditionModal title={cond.title} description={questionnaireName} alwaysLabel={cond.always} value={cond.value} ctx={ctx} outcome={cond.key === "signal" ? "signal" : cond.key === "red" ? "red" : "show"} onClose={() => setCond(null)} onSave={(c) => { cond.set(c); setCond(null); }} />}
-      {iconOpen && <IconPicker icons={icons} value={p.icon} onPick={(i) => { set({ icon: i }); setIconOpen(false); }} onClose={() => setIconOpen(false)} />}
+      {iconOpen && <IconPicker icons={icons} categories={iconCategories} pageTitle={p.title ?? ""} value={p.icon} onPick={(i) => { set({ icon: i }); setIconOpen(false); }} onClose={() => setIconOpen(false)} />}
     </>
   );
 }
 
-export function IconPicker({ icons, value, onPick, onClose }: { icons: string[]; value?: string | undefined; onPick: (i: string | undefined) => void; onClose: () => void }) {
+export type IconEntry = { name: string; tags: string[] };
+
+/** Icon picker of vragenlijst-icoon.dc.html: search on name or meaning, category pills, results and all icons. */
+export function IconPicker({ icons, categories, pageTitle, value, onPick, onClose }: { icons: IconEntry[]; categories: Opt[]; pageTitle: string; value?: string | undefined; onPick: (i: string | undefined) => void; onClose: () => void }) {
   const [q, setQ] = useState("");
-  const shown = icons.filter((i) => i.includes(q.toLowerCase()));
+  const [cat, setCat] = useState<string | null>(null);
+  const [chosen, setChosen] = useState<string | undefined>(value);
+  const [all, setAll] = useState(false);
+  const catNames = [...new Set(categories.map((c) => c.label))];
+  const catOf = (n: string) => categories.find((c) => c.value === n)?.label;
+  const needle = q.trim().toLowerCase();
+  const results = needle ? icons.filter((i) => i.name.includes(needle) || i.tags.some((t) => t.includes(needle))) : cat ? icons.filter((i) => catOf(i.name) === cat) : [];
+  const shown = all ? icons : icons.slice(0, 40);
+  const tile = (i: IconEntry) => (
+    <button key={i.name} type="button" onClick={() => setChosen(i.name)} aria-pressed={chosen === i.name}
+      className={cn("flex flex-col items-center gap-1.5 rounded-[12px] border-[1.5px] px-1.5 py-3 text-[11px] font-medium", chosen === i.name ? "border-primary bg-teal-light" : "border-line bg-background")}>
+      <UiIcon name={i.name} className="size-[26px] text-primary" /><span className="w-full truncate">{i.name}</span>
+    </button>
+  );
   return (
-    <Modal open onOpenChange={(o) => !o && onClose()} title="Icoon kiezen" description="Alleen iconen uit de vaste set."
-      footer={<><TextLink onClick={() => onPick(undefined)}>Geen icoon</TextLink><PillButton variant="outline" onClick={onClose}>Annuleren</PillButton></>}>
-      <TextField label="Zoeken" value={q} onChange={(e) => setQ(e.target.value)} />
-      <div className="mt-4 grid grid-cols-6 gap-2">
-        {shown.map((i) => (
-          <button key={i} type="button" title={i} onClick={() => onPick(i)} className={cn("flex flex-col items-center gap-1 rounded-[12px] p-2 text-[11px]", value === i ? "bg-teal-light ring-1 ring-primary" : "bg-sand")}>
-            <img src={`/ui-icons/${i}.svg`} alt="" className="size-6" /><span className="w-full truncate">{i}</span>
-          </button>
-        ))}
+    <Modal open onOpenChange={(o) => !o && onClose()} width="lg" title="Kies een icoon" description={`${pageTitle ? `Voor de pagina “${pageTitle}” · ` : ""}zoek op naam of betekenis`}
+      footer={<div className="flex w-full items-center justify-between"><TextLink onClick={() => onPick(undefined)}>Geen icoon</TextLink><div className="flex gap-2"><PillButton variant="outline" onClick={onClose}>Annuleren</PillButton><PillButton disabled={!chosen} onClick={() => onPick(chosen)}>Gebruik dit icoon</PillButton></div></div>}>
+      <div className="flex flex-col gap-4">
+        <label className="flex h-[46px] items-center gap-2 rounded-full bg-sand px-4">
+          <UiIcon name="zoeken" className="size-[18px] text-muted-foreground" />
+          <input aria-label="Zoek een icoon" autoFocus className="min-w-0 flex-1 bg-transparent text-sm outline-none" value={q} onChange={(e) => { setQ(e.target.value); setCat(null); }} />
+          {(needle || cat) && <span className="text-xs text-muted-foreground">{results.length} van {icons.length}</span>}
+        </label>
+        <div className="flex flex-wrap gap-1.5">
+          {catNames.map((c) => <button key={c} type="button" aria-pressed={cat === c} onClick={() => { setCat(cat === c ? null : c); setQ(""); }} className={cn("inline-flex h-6 items-center rounded-full px-2.5 text-xs font-medium", cat === c ? "bg-primary text-primary-foreground" : "bg-sand")}>{c}</button>)}
+        </div>
+        {(needle || cat) && (
+          <div className="flex flex-col gap-2">
+            <span className="text-[13px] font-medium">Resultaten voor “{needle || cat}”</span>
+            {results.length ? <div className="grid grid-cols-4 gap-2">{results.map(tile)}</div> : <p className="text-sm text-muted-foreground">Geen icoon gevonden.</p>}
+          </div>
+        )}
+        <div className="flex flex-col gap-2">
+          <span className="text-[13px] font-medium">Alle iconen</span>
+          <div className="flex flex-wrap gap-1.5">
+            {shown.map((i) => (
+              <button key={i.name} type="button" title={i.name} aria-label={i.name} aria-pressed={chosen === i.name} onClick={() => setChosen(i.name)}
+                className={cn("flex size-11 items-center justify-center rounded-[10px] border", chosen === i.name ? "border-primary bg-teal-light text-primary" : "border-line bg-background text-foreground")}>
+                <UiIcon name={i.name} className="size-5" />
+              </button>
+            ))}
+            {!all && icons.length > 40 && <button type="button" onClick={() => setAll(true)} className="flex size-11 items-center justify-center rounded-[10px] bg-sand text-[11px] text-muted-foreground">+{icons.length - 40}</button>}
+          </div>
+        </div>
+        {chosen && (
+          <div className="flex items-center gap-3 rounded-[14px] bg-teal-light px-4 py-3 text-[13px] leading-[1.5]">
+            <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-[12px] bg-background text-primary"><UiIcon name={chosen} className="size-5" /></span>
+            <span>Gekozen: <strong className="font-semibold">{chosen}</strong>. Grootte en kleur volgen de pagina.</span>
+          </div>
+        )}
       </div>
     </Modal>
   );
 }
 
-export function ItemModal({ item, number, questionnaireName, questionnaireId, def, page, flow, ui, itemTypes, sections, section, rejections, images, ctx, onSave, onDelete, onClose }: {
-  item: Item | null; number: number; questionnaireName: string; questionnaireId: string; def: QuestionnaireDef; page: Page | undefined;
+export function ItemModal({ item, initialType, number, questionnaireName, questionnaireId, def, page, flow, ui, itemTypes, sections, section, rejections, images, ctx, onSave, onDelete, onClose }: {
+  item: Item | null; initialType?: ItemType | undefined; number: number; questionnaireName: string; questionnaireId: string; def: QuestionnaireDef; page: Page | undefined;
   flow: { settings: Record<string, unknown>; computed_fields: Record<string, string> }; ui: UiTexts;
   itemTypes: Opt[]; sections: string[]; section?: string | undefined; rejections: Opt[]; images: Opt[]; ctx: CondCtx;
   onSave: (i: Item, section: string | undefined, pageCondition?: { value: Condition | undefined }) => void; onDelete?: (() => void) | undefined; onClose: () => void;
 }) {
-  const [i, setI] = useState<Item>(item ?? { id: "", text: "", type: "single_choice", options: [] });
+  const [i, setI] = useState<Item>(item ?? { id: "", text: "", type: initialType ?? "single_choice", ...((initialType ?? "single_choice").endsWith("choice") ? { options: [] } : {}) });
   const [pageShow, setPageShow] = useState(page?.show_if);
   const [pageShowDirty, setPageShowDirty] = useState(false);
   const pageTarget = visibilityTarget(page) === "page";
@@ -234,7 +277,7 @@ export function ItemModal({ item, number, questionnaireName, questionnaireId, de
             <Checkbox label="Optioneel (mag leeg blijven)" checked={!!i.optional} onChange={(v) => set({ optional: v || undefined })} />
 
             <ConditionLine label="Tonen" empty="Altijd" value={effectiveShow} ctx={ctx} help="Of alleen als een eerdere vraag een bepaald antwoord heeft."
-              onEdit={() => setCond({ key: "show", title: `Wanneer tonen we vraag ${number}, ${shortTitle(i.text)}?`, always: "Altijd tonen", value: pageTarget ? pageShow : i.show_if, set: (c) => { if (pageTarget) { setPageShow(c); setPageShowDirty(true); } else set({ show_if: c }); } })} />
+              onEdit={() => setCond({ key: "show", title: `Wanneer tonen we vraag ${number}, ${shortName(i.text)}?`, always: "Altijd tonen", value: pageTarget ? pageShow : i.show_if, set: (c) => { if (pageTarget) { setPageShow(c); setPageShowDirty(true); } else set({ show_if: c }); } })} />
 
             {!pageTarget && pageShow && <p className="text-xs text-muted-foreground">De paginavoorwaarde blijft ook van toepassing.</p>}
 
@@ -266,7 +309,6 @@ export function ItemModal({ item, number, questionnaireName, questionnaireId, de
     </>
   );
 }
-const shortTitle = (s: string) => { const w = s.replace(/\?$/, "").split(" ").filter((x) => x.length > 3); return (w.at(-1) ?? s).toLowerCase(); };
 
 /** Thresholds: numeric settings, standard and reduced side by side. */
 export function ThresholdsModal({ settings, rows, names, onSave, onClose }: { settings: Record<string, unknown>; rows: Array<{ label: string; std: string; red: string }>; names: Record<string, string>; onSave: (s: Record<string, unknown>, names: Record<string, string>) => void; onClose: () => void }) {
@@ -312,12 +354,57 @@ export function ComputedModal({ name, displayName, formula, sample, onSave, onDe
   );
 }
 
-export function PublishModal({ versionNo, changes, onPublish, onClose, busy }: { versionNo: number; changes: string; onPublish: () => void; onClose: () => void; busy: boolean }) {
+export type PublishVersion = { id: string; version_no: number; status: string; note: string | null; published_at: string | null; updated_at: string; answers: number };
+
+const fmtDate = (iso: string, time = false) => new Date(iso).toLocaleString("nl-NL", { day: "numeric", month: "short", year: "numeric", ...(time ? { hour: "2-digit", minute: "2-digit" } : {}) }).replace(".", "");
+const changedAt = (iso: string) => {
+  const d = new Date(iso), today = new Date();
+  const t = d.toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" });
+  return d.toDateString() === today.toDateString() ? `vandaag ${t}` : fmtDate(iso, true);
+};
+
+/** Versions and publishing (vragenlijst-publiceren.dc.html): Concept / Live / Archief, running answers, the changes, test/export/import. */
+export function PublishModal({ name, versions, draftNo, liveNo, running, changes, changeCount, testLink, busy, onExport, onImport, onDiscard, onPublish, onClose }: {
+  name: string; versions: PublishVersion[]; draftNo: number; liveNo: number | null; running: number; changes: string; changeCount: number; testLink: ReactNode; busy: boolean;
+  onExport: () => void; onImport: (file: File) => void; onDiscard?: (() => void) | undefined; onPublish: () => void; onClose: () => void;
+}) {
+  const file = useRef<HTMLInputElement>(null);
+  const pill = (status: string) => (status === "draft" ? "Concept" : status === "published" ? "Live" : "Archief");
   return (
-    <Modal open onOpenChange={(o) => !o && onClose()} title={`Versie ${versionNo} publiceren`} description="Nieuwe patiënten krijgen deze versie. Eerder ingevulde antwoorden blijven bij hun eigen versie."
-      footer={<><PillButton variant="outline" onClick={onClose}>Annuleren</PillButton><PillButton disabled={busy} onClick={onPublish}>Publiceren</PillButton></>}>
-      <p className="text-sm leading-[1.6]">{changes}</p>
-      <p className="mt-3 text-sm leading-[1.6]">De huidige actieve versie gaat naar het archief.</p>
+    <Modal open width="lg" onOpenChange={(o) => !o && onClose()} title={`${name} · versies en publiceren`} description={`Concept v${draftNo} staat klaar${liveNo ? `; live is v${liveNo}` : ""}`}
+      footer={<div className="flex w-full items-center justify-between">{onDiscard ? <TextLink tone="warning" onClick={onDiscard}>Concept weggooien</TextLink> : <span />}<div className="flex gap-2"><PillButton variant="outline" onClick={onClose}>Annuleren</PillButton><PillButton disabled={busy} onClick={onPublish}>Publiceer v{draftNo}</PillButton></div></div>}>
+      <div className="flex flex-col gap-2">
+        {versions.map((v) => (
+          <div key={v.id} className={cn("flex items-center gap-4 rounded-[14px] px-4 py-3", v.status === "draft" ? "bg-teal-light" : "bg-sand")}>
+            <span className="w-8 text-sm font-semibold">v{v.version_no}</span>
+            <div className="min-w-0 flex-1">
+              <div className="text-sm">{v.status === "draft" ? `Concept${v.note ? `: ${v.note}` : ""}` : `Gepubliceerd ${v.published_at ? fmtDate(v.published_at, v.status === "published") : ""}`}</div>
+              <div className="text-xs text-muted-foreground">
+                {v.status === "draft" ? `Gewijzigd ${changedAt(v.updated_at)}${liveNo ? ` · ${changeCount} ${changeCount === 1 ? "wijziging" : "wijzigingen"} sinds v${liveNo}` : ""}`
+                  : v.status === "published" ? `${v.answers.toLocaleString("nl-NL")} ${v.answers === 1 ? "patiënt doorliep" : "patiënten doorliepen"} deze versie; antwoorden blijven aan v${v.version_no} gekoppeld`
+                    : "Vervangen; antwoorden bewaard"}
+              </div>
+            </div>
+            <span className={cn("text-xs", v.status === "draft" ? "text-primary" : "text-muted-foreground")}>{pill(v.status)}</span>
+          </div>
+        ))}
+      </div>
+      <div className="mt-5 grid grid-cols-2 gap-4">
+        <Select label="Publiceren" value="now" onChange={() => undefined} options={[{ value: "now", label: "Nu" }]} />
+        <Select label="Lopende invullingen" value="finish_own" onChange={() => undefined} options={[{ value: "finish_own", label: `Maken de oude versie af; nieuwe starten in v${draftNo}` }]}
+          help={liveNo ? `${running} ${running === 1 ? "patiënt is" : "patiënten zijn"} nu bezig met v${liveNo}.` : undefined} />
+      </div>
+      <div className="mt-5 flex flex-col gap-2">
+        <span className="text-[13px] font-medium">Wat verandert er voor de patiënt</span>
+        <p className="rounded-[14px] bg-sand px-4 py-3 text-sm leading-[1.6]">{changes}</p>
+      </div>
+      <div className="mt-5 flex flex-wrap gap-2">
+        {testLink}
+        <PillButton variant="outline" onClick={onExport}>Exporteren als JSON</PillButton>
+        <PillButton variant="outline" onClick={() => file.current?.click()}>Importeren</PillButton>
+        <input ref={file} type="file" accept="application/json" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onImport(f); e.target.value = ""; }} />
+      </div>
+      <p className="mt-4 text-xs leading-[1.6] text-muted-foreground">Elke antwoordset bewaart het versienummer. Een gepubliceerde versie wijzig je nooit; je maakt een nieuw concept. Testen opent de flow met testdata, zonder iets op te slaan.</p>
     </Modal>
   );
 }
