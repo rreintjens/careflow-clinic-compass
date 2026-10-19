@@ -3,6 +3,7 @@
  * functions return display data for that one appointment only.
  */
 import { createServerFn } from "@tanstack/react-start";
+import { safeQueue } from "./mailer.server";
 import { z } from "zod";
 
 import { canChangeOnline, manageable } from "@/domain/manage";
@@ -81,6 +82,7 @@ export const rescheduleAppointment = createServerFn({ method: "POST" })
     const startsAt = localToUtc(data.date, data.start, x.tenant.time_zone);
     const len = Date.parse(x.appt.ends_at) - Date.parse(x.appt.starts_at);
     const upd = await x.db.from("appointments").update({ starts_at: startsAt.toISOString(), ends_at: new Date(startsAt.getTime() + len).toISOString() }).eq("id", x.appt.id).eq("status", "booked").select("id");
+    if (upd.data?.length) await safeQueue(x.db, x.appt.id, "rescheduled");
     return { ok: !!upd.data?.length };
   });
 
@@ -90,6 +92,7 @@ export const cancelAppointment = createServerFn({ method: "POST" })
     const x = await load(data.merk, data.token);
     if (!x || !manageable(x.appt.status) || !canChangeOnline(x.appt.starts_at, new Date(), x.hours)) return { ok: false as const };
     const upd = await x.db.from("appointments").update({ status: "cancelled" }).eq("id", x.appt.id).eq("status", "booked").select("id");
+    if (upd.data?.length) await safeQueue(x.db, x.appt.id, "cancelled", { dedupe: `cancelled-${x.appt.id}` });
     return { ok: !!upd.data?.length };
   });
 

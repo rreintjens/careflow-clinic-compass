@@ -32,6 +32,7 @@ import { Route as ApiPublicEkisExportRouteImport } from './routes/api/public/eki
 import { Route as ApiPublicStatsRouteImport } from './routes/api/public/stats'
 import { Route as AuthenticatedBoekingsflowEMailsIndexRouteImport } from './routes/_authenticated/boekingsflow.e-mails.index'
 import { Route as AuthenticatedBoekingsflowEMailsBehandelingRouteImport } from './routes/_authenticated/boekingsflow.e-mails.behandeling'
+import { Route as AuthenticatedBoekingsflowEMailsVerzondenRouteImport } from './routes/_authenticated/boekingsflow.e-mails.verzonden'
 import { Route as AuthenticatedBoekingsflowVragenlijstenIndexRouteImport } from './routes/_authenticated/boekingsflow.vragenlijsten.index'
 import { Route as AuthenticatedBoekingsflowVragenlijstenIdRouteImport } from './routes/_authenticated/boekingsflow.vragenlijsten.$id'
 import { Route as AuthenticatedOrganisatieBehandelaarsIndexRouteImport } from './routes/_authenticated/organisatie.behandelaars.index'
@@ -45,6 +46,7 @@ import { Route as AuthenticatedPatientenIdBehandelingRouteImport } from './route
 import { Route as AuthenticatedPatientenIdDocumentenRouteImport } from './routes/_authenticated/patienten.$id.documenten'
 import { Route as AuthenticatedPatientenIdMedischRouteImport } from './routes/_authenticated/patienten.$id.medisch'
 import { Route as AuthenticatedPatientenIdTijdlijnRouteImport } from './routes/_authenticated/patienten.$id.tijdlijn'
+import { Route as ApiPublicJobsMailRemindersRouteImport } from './routes/api/public/jobs/mail-reminders'
 import { Route as AuthenticatedBoekingsflowVragenlijstenIdTestRouteImport } from './routes/_authenticated/boekingsflow.vragenlijsten.$id_.test'
 
 const IndexRoute = IndexRouteImport.update({
@@ -174,6 +176,12 @@ const AuthenticatedBoekingsflowEMailsBehandelingRoute =
     path: '/boekingsflow/e-mails/behandeling',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedBoekingsflowEMailsVerzondenRoute =
+  AuthenticatedBoekingsflowEMailsVerzondenRouteImport.update({
+    id: '/boekingsflow/e-mails/verzonden',
+    path: '/boekingsflow/e-mails/verzonden',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedBoekingsflowVragenlijstenIndexRoute =
   AuthenticatedBoekingsflowVragenlijstenIndexRouteImport.update({
     id: '/boekingsflow/vragenlijsten/',
@@ -252,6 +260,12 @@ const AuthenticatedPatientenIdTijdlijnRoute =
     path: '/tijdlijn',
     getParentRoute: () => AuthenticatedPatientenIdRoute,
   } as any)
+const ApiPublicJobsMailRemindersRoute =
+  ApiPublicJobsMailRemindersRouteImport.update({
+    id: '/api/public/jobs/mail-reminders',
+    path: '/api/public/jobs/mail-reminders',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedBoekingsflowVragenlijstenIdTestRoute =
   AuthenticatedBoekingsflowVragenlijstenIdTestRouteImport.update({
     id: '/boekingsflow/vragenlijsten/$id_/test',
@@ -281,6 +295,7 @@ export interface FileRoutesByFullPath {
   '/agenda/': typeof AuthenticatedAgendaIndexRoute
   '/patienten/': typeof AuthenticatedPatientenIndexRoute
   '/boekingsflow/e-mails/behandeling': typeof AuthenticatedBoekingsflowEMailsBehandelingRoute
+  '/boekingsflow/e-mails/verzonden': typeof AuthenticatedBoekingsflowEMailsVerzondenRoute
   '/boekingsflow/vragenlijsten/$id': typeof AuthenticatedBoekingsflowVragenlijstenIdRoute
   '/organisatie/behandelaars/$id': typeof AuthenticatedOrganisatieBehandelaarsIdRoute
   '/organisatie/behandelingen/$id': typeof AuthenticatedOrganisatieBehandelingenIdRoute
@@ -289,6 +304,7 @@ export interface FileRoutesByFullPath {
   '/patienten/$id/documenten': typeof AuthenticatedPatientenIdDocumentenRoute
   '/patienten/$id/medisch': typeof AuthenticatedPatientenIdMedischRoute
   '/patienten/$id/tijdlijn': typeof AuthenticatedPatientenIdTijdlijnRoute
+  '/api/public/jobs/mail-reminders': typeof ApiPublicJobsMailRemindersRoute
   '/boekingsflow/e-mails/': typeof AuthenticatedBoekingsflowEMailsIndexRoute
   '/boekingsflow/vragenlijsten/': typeof AuthenticatedBoekingsflowVragenlijstenIndexRoute
   '/organisatie/behandelaars/': typeof AuthenticatedOrganisatieBehandelaarsIndexRoute
@@ -318,6 +334,7 @@ export interface FileRoutesByTo {
   '/agenda': typeof AuthenticatedAgendaIndexRoute
   '/patienten': typeof AuthenticatedPatientenIndexRoute
   '/boekingsflow/e-mails/behandeling': typeof AuthenticatedBoekingsflowEMailsBehandelingRoute
+  '/boekingsflow/e-mails/verzonden': typeof AuthenticatedBoekingsflowEMailsVerzondenRoute
   '/boekingsflow/vragenlijsten/$id': typeof AuthenticatedBoekingsflowVragenlijstenIdRoute
   '/organisatie/behandelaars/$id': typeof AuthenticatedOrganisatieBehandelaarsIdRoute
   '/organisatie/behandelingen/$id': typeof AuthenticatedOrganisatieBehandelingenIdRoute
@@ -326,6 +343,7 @@ export interface FileRoutesByTo {
   '/patienten/$id/documenten': typeof AuthenticatedPatientenIdDocumentenRoute
   '/patienten/$id/medisch': typeof AuthenticatedPatientenIdMedischRoute
   '/patienten/$id/tijdlijn': typeof AuthenticatedPatientenIdTijdlijnRoute
+  '/api/public/jobs/mail-reminders': typeof ApiPublicJobsMailRemindersRoute
   '/boekingsflow/e-mails': typeof AuthenticatedBoekingsflowEMailsIndexRoute
   '/boekingsflow/vragenlijsten': typeof AuthenticatedBoekingsflowVragenlijstenIndexRoute
   '/organisatie/behandelaars': typeof AuthenticatedOrganisatieBehandelaarsIndexRoute
@@ -358,6 +376,7 @@ export interface FileRoutesById {
   '/_authenticated/agenda/': typeof AuthenticatedAgendaIndexRoute
   '/_authenticated/patienten/': typeof AuthenticatedPatientenIndexRoute
   '/_authenticated/boekingsflow/e-mails/behandeling': typeof AuthenticatedBoekingsflowEMailsBehandelingRoute
+  '/_authenticated/boekingsflow/e-mails/verzonden': typeof AuthenticatedBoekingsflowEMailsVerzondenRoute
   '/_authenticated/boekingsflow/vragenlijsten/$id': typeof AuthenticatedBoekingsflowVragenlijstenIdRoute
   '/_authenticated/organisatie/behandelaars/$id': typeof AuthenticatedOrganisatieBehandelaarsIdRoute
   '/_authenticated/organisatie/behandelingen/$id': typeof AuthenticatedOrganisatieBehandelingenIdRoute
@@ -366,6 +385,7 @@ export interface FileRoutesById {
   '/_authenticated/patienten/$id/documenten': typeof AuthenticatedPatientenIdDocumentenRoute
   '/_authenticated/patienten/$id/medisch': typeof AuthenticatedPatientenIdMedischRoute
   '/_authenticated/patienten/$id/tijdlijn': typeof AuthenticatedPatientenIdTijdlijnRoute
+  '/api/public/jobs/mail-reminders': typeof ApiPublicJobsMailRemindersRoute
   '/_authenticated/boekingsflow/e-mails/': typeof AuthenticatedBoekingsflowEMailsIndexRoute
   '/_authenticated/boekingsflow/vragenlijsten/': typeof AuthenticatedBoekingsflowVragenlijstenIndexRoute
   '/_authenticated/organisatie/behandelaars/': typeof AuthenticatedOrganisatieBehandelaarsIndexRoute
@@ -398,6 +418,7 @@ export interface FileRouteTypes {
     | '/agenda/'
     | '/patienten/'
     | '/boekingsflow/e-mails/behandeling'
+    | '/boekingsflow/e-mails/verzonden'
     | '/boekingsflow/vragenlijsten/$id'
     | '/organisatie/behandelaars/$id'
     | '/organisatie/behandelingen/$id'
@@ -406,6 +427,7 @@ export interface FileRouteTypes {
     | '/patienten/$id/documenten'
     | '/patienten/$id/medisch'
     | '/patienten/$id/tijdlijn'
+    | '/api/public/jobs/mail-reminders'
     | '/boekingsflow/e-mails/'
     | '/boekingsflow/vragenlijsten/'
     | '/organisatie/behandelaars/'
@@ -435,6 +457,7 @@ export interface FileRouteTypes {
     | '/agenda'
     | '/patienten'
     | '/boekingsflow/e-mails/behandeling'
+    | '/boekingsflow/e-mails/verzonden'
     | '/boekingsflow/vragenlijsten/$id'
     | '/organisatie/behandelaars/$id'
     | '/organisatie/behandelingen/$id'
@@ -443,6 +466,7 @@ export interface FileRouteTypes {
     | '/patienten/$id/documenten'
     | '/patienten/$id/medisch'
     | '/patienten/$id/tijdlijn'
+    | '/api/public/jobs/mail-reminders'
     | '/boekingsflow/e-mails'
     | '/boekingsflow/vragenlijsten'
     | '/organisatie/behandelaars'
@@ -474,6 +498,7 @@ export interface FileRouteTypes {
     | '/_authenticated/agenda/'
     | '/_authenticated/patienten/'
     | '/_authenticated/boekingsflow/e-mails/behandeling'
+    | '/_authenticated/boekingsflow/e-mails/verzonden'
     | '/_authenticated/boekingsflow/vragenlijsten/$id'
     | '/_authenticated/organisatie/behandelaars/$id'
     | '/_authenticated/organisatie/behandelingen/$id'
@@ -482,6 +507,7 @@ export interface FileRouteTypes {
     | '/_authenticated/patienten/$id/documenten'
     | '/_authenticated/patienten/$id/medisch'
     | '/_authenticated/patienten/$id/tijdlijn'
+    | '/api/public/jobs/mail-reminders'
     | '/_authenticated/boekingsflow/e-mails/'
     | '/_authenticated/boekingsflow/vragenlijsten/'
     | '/_authenticated/organisatie/behandelaars/'
@@ -501,6 +527,7 @@ export interface RootRouteChildren {
   AuthIndexRoute: typeof AuthIndexRoute
   ApiPublicEkisExportRoute: typeof ApiPublicEkisExportRoute
   ApiPublicStatsRoute: typeof ApiPublicStatsRoute
+  ApiPublicJobsMailRemindersRoute: typeof ApiPublicJobsMailRemindersRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -666,6 +693,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBoekingsflowEMailsBehandelingRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/boekingsflow/e-mails/verzonden': {
+      id: '/_authenticated/boekingsflow/e-mails/verzonden'
+      path: '/boekingsflow/e-mails/verzonden'
+      fullPath: '/boekingsflow/e-mails/verzonden'
+      preLoaderRoute: typeof AuthenticatedBoekingsflowEMailsVerzondenRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/boekingsflow/vragenlijsten/': {
       id: '/_authenticated/boekingsflow/vragenlijsten/'
       path: '/boekingsflow/vragenlijsten'
@@ -757,6 +791,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPatientenIdTijdlijnRouteImport
       parentRoute: typeof AuthenticatedPatientenIdRoute
     }
+    '/api/public/jobs/mail-reminders': {
+      id: '/api/public/jobs/mail-reminders'
+      path: '/api/public/jobs/mail-reminders'
+      fullPath: '/api/public/jobs/mail-reminders'
+      preLoaderRoute: typeof ApiPublicJobsMailRemindersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/boekingsflow/vragenlijsten/$id_/test': {
       id: '/_authenticated/boekingsflow/vragenlijsten/$id_/test'
       path: '/boekingsflow/vragenlijsten/$id/test'
@@ -806,6 +847,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAgendaIndexRoute: typeof AuthenticatedAgendaIndexRoute
   AuthenticatedPatientenIndexRoute: typeof AuthenticatedPatientenIndexRoute
   AuthenticatedBoekingsflowEMailsBehandelingRoute: typeof AuthenticatedBoekingsflowEMailsBehandelingRoute
+  AuthenticatedBoekingsflowEMailsVerzondenRoute: typeof AuthenticatedBoekingsflowEMailsVerzondenRoute
   AuthenticatedBoekingsflowVragenlijstenIdRoute: typeof AuthenticatedBoekingsflowVragenlijstenIdRoute
   AuthenticatedOrganisatieBehandelaarsIdRoute: typeof AuthenticatedOrganisatieBehandelaarsIdRoute
   AuthenticatedOrganisatieBehandelingenIdRoute: typeof AuthenticatedOrganisatieBehandelingenIdRoute
@@ -838,6 +880,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPatientenIndexRoute: AuthenticatedPatientenIndexRoute,
   AuthenticatedBoekingsflowEMailsBehandelingRoute:
     AuthenticatedBoekingsflowEMailsBehandelingRoute,
+  AuthenticatedBoekingsflowEMailsVerzondenRoute:
+    AuthenticatedBoekingsflowEMailsVerzondenRoute,
   AuthenticatedBoekingsflowVragenlijstenIdRoute:
     AuthenticatedBoekingsflowVragenlijstenIdRoute,
   AuthenticatedOrganisatieBehandelaarsIdRoute:
@@ -873,6 +917,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthIndexRoute: AuthIndexRoute,
   ApiPublicEkisExportRoute: ApiPublicEkisExportRoute,
   ApiPublicStatsRoute: ApiPublicStatsRoute,
+  ApiPublicJobsMailRemindersRoute: ApiPublicJobsMailRemindersRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

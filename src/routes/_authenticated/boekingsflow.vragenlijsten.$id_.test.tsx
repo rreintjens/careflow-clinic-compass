@@ -12,7 +12,7 @@ import { QuestionnaireRunner } from "@/features/questionnaire/QuestionnaireRunne
 
 export const Route = createFileRoute("/_authenticated/boekingsflow/vragenlijsten/$id_/test")({
   head: () => ({ meta: [{ title: "Testmodus vragenlijst · Beheer · The Body Clinic" }, { name: "robots", content: "noindex" }] }),
-  validateSearch: (s: Record<string, unknown>): { pagina?: string } => (typeof s["pagina"] === "string" ? { pagina: s["pagina"] } : {}),
+  validateSearch: (s: Record<string, unknown>): { pagina?: string; versie?: string } => ({ ...(typeof s["pagina"] === "string" ? { pagina: s["pagina"] } : {}), ...(typeof s["versie"] === "string" ? { versie: s["versie"] } : {}) }),
   loader: ({ context }) => Promise.all([context.queryClient.ensureQueryData(questionnairesQuery), context.queryClient.ensureQueryData(orgQuery)]),
   component: TestMode,
 });
@@ -22,12 +22,12 @@ const TEST_VARS = { voornaam: "Sanne", behandelaar_voornaam: "Feikje", dag: "din
 
 function TestMode() {
   const { id } = Route.useParams();
-  const { pagina } = Route.useSearch();
+  const { pagina, versie } = Route.useSearch();
   const { data } = useSuspenseQuery(questionnairesQuery);
   const { data: org } = useSuspenseQuery(orgQuery);
   const q = data.questionnaires.find((x) => x.id === id);
   const versions = q ? versionsOf(data, q.id) : [];
-  const [versionId, setVersionId] = useState(q ? (workingVersion(data, q.id)?.id ?? "") : "");
+  const [versionId, setVersionId] = useState(q ? (versions.find((v) => v.id === versie)?.id ?? workingVersion(data, q.id)?.id ?? "") : "");
   const [run, setRun] = useState(0);
   const [result, setResult] = useState<{ answers: Answers; red?: RedOutcome } | null>(null);
   const def = defOf(versions.find((v) => v.id === versionId));

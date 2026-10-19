@@ -91,7 +91,8 @@ export const signInStaff = createServerFn({ method: "POST" })
       const { data: ms } = await db
         .from("tenant_memberships")
         .select("tenant_id, tenants(sort), roles(key)")
-        .eq("user_id", auth.user.id);
+        .eq("user_id", auth.user.id)
+        .eq("active", true);
       memberships = (ms ?? []).map((m) => ({
         tenantId: m.tenant_id,
         sort: (m.tenants as { sort: number } | null)?.sort ?? 0,
@@ -187,7 +188,7 @@ async function demoAccount() {
   if (!email) return null;
   const { data: profile } = await db.from("profiles").select("id, blocked").ilike("email", email).maybeSingle();
   if (!profile || profile.blocked) return null;
-  const { data: ms } = await db.from("tenant_memberships").select("tenant_id, tenants(sort)").eq("user_id", profile.id);
+  const { data: ms } = await db.from("tenant_memberships").select("tenant_id, tenants(sort)").eq("user_id", profile.id).eq("active", true);
   const memberships = (ms ?? []).map((m) => ({ tenantId: m.tenant_id, sort: (m.tenants as { sort: number } | null)?.sort ?? 0 }));
   const tenantId = pickActiveTenant(memberships, null);
   if (!tenantId) return null;

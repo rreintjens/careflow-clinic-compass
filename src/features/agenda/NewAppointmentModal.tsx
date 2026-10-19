@@ -7,11 +7,67 @@ import { PillButton } from "@/components/PillButton";
 import { Select } from "@/components/Select";
 import { patientSearchQuery, type AgendaRef } from "@/data/agenda";
 import type { Dossier } from "@/data/patients";
-import { createStaffAppointment, getStaffSlots } from "@/data/agenda.functions";
+import { createStaffAppointment, createStaffPatient, getStaffSlots } from "@/data/agenda.functions";
+import { TextField } from "@/components/Field";
+import { DobField } from "@/features/questionnaire/QuestionnaireRunner";
 import { fmtTime } from "@/domain/slots";
 import { cn } from "@/lib/utils";
 
 type Ref = AgendaRef;
+type Hit = { id: string; patient_number: number | null; first_name: string; last_name: string; date_of_birth: string | null; email?: string | null };
+const today = () => new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Amsterdam" });
+const dobT = (k: string, e?: Record<string, string | number>) => (k === "dd" ? "dd" : k === "mm" ? "mm" : k === "yyyy" ? "jjjj" : k === "age_shown" ? `${e?.["age"]} jaar` : k);
+
+/** First name, last name, date of birth, e-mail, phone; offers an existing patient when it looks like a duplicate. */
+function NewPatientForm({ initial, onDone, onCancel }: { initial: string; onDone: (p: Hit) => void; onCancel: () => void }) {
+  const createFn = useServerFn(createStaffPatient);
+  const words = /^\d+$/.test(initial.trim()) || initial.includes("@") ? [] : initial.trim().split(/\s+/);
+  const [f, setF] = useState({ firstName: words[0] ?? "", lastName: words.slice(1).join(" "), dateOfBirth: "", email: initial.includes("@") ? initial.trim() : "", phone: "" });
+  const [dups, setDups] = useState<{ list: Hit[]; emailTaken: boolean } | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const ok = f.firstName.trim() && f.lastName.trim() && f.dateOfBirth && /^\S+@\S+\.\S+$/.test(f.email);
+  const save = async (force: boolean) => {
+    setBusy(true); setErr(null);
+    try {
+      const r = await createFn({ data: { ...f, force } });
+      if (r.ok) onDone(r.patient);
+      else if ("failed" in r && r.failed) setErr("Aanmaken is niet gelukt.");
+      else setDups({ list: r.duplicates, emailTaken: r.emailTaken });
+    } catch { setErr("Aanmaken is niet gelukt."); }
+    setBusy(false);
+  };
+  return (
+    <div className="flex flex-col gap-3 rounded-[16px] bg-background p-4 ring-1 ring-mist">
+      <p className="text-[14px] font-semibold">Nieuwe patiënt</p>
+      <div className="grid grid-cols-2 gap-3">
+        <TextField label="Voornaam" value={f.firstName} onChange={(e) => setF({ ...f, firstName: e.target.value })} />
+        <TextField label="Achternaam" value={f.lastName} onChange={(e) => setF({ ...f, lastName: e.target.value })} />
+      </div>
+      <div><p className="mb-2 text-[13px] font-medium">Geboortedatum</p><DobField value={f.dateOfBirth} onChange={(v) => setF({ ...f, dateOfBirth: v })} t={dobT} today={today()} /></div>
+      <div className="grid grid-cols-2 gap-3">
+        <TextField label="E-mail" type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} />
+        <TextField label="Telefoon" inputMode="tel" value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} />
+      </div>
+      {dups && (
+        <div role="alert" className="flex flex-col gap-2 rounded-[14px] bg-signal p-3 ring-1 ring-signal-border">
+          <p className="text-[13px]">{dups.emailTaken ? "Er is al een patiënt met dit e-mailadres. Kies die patiënt:" : "Deze patiënt bestaat misschien al. Bedoel je:"}</p>
+          {dups.list.map((p) => (
+            <button key={p.id} type="button" onClick={() => onDone(p)} className="flex items-center justify-between rounded-[12px] bg-background px-3 py-2 text-left text-[13px] ring-1 ring-mist">
+              <span>{p.first_name} {p.last_name} · {p.patient_number} · {dmy(p.date_of_birth)}{p.email ? ` · ${p.email}` : ""}</span><span className="text-primary">Deze patiënt kiezen</span>
+            </button>
+          ))}
+          {!dups.emailTaken && <button type="button" className="self-start text-[13px] text-primary underline" onClick={() => void save(true)}>Nee, toch een nieuwe patiënt aanmaken</button>}
+        </div>
+      )}
+      {err && <p className="text-[13px] text-warning">{err}</p>}
+      <div className="flex gap-2">
+        <PillButton size="sm" disabled={!ok || busy} onClick={() => void save(false)}>Patiënt aanmaken en verder</PillButton>
+        <PillButton size="sm" variant="outline" onClick={onCancel}>Annuleren</PillButton>
+      </div>
+    </div>
+  );
+}
 const initials = (a: string, b: string) => `${a.charAt(0)}${b.charAt(0)}`.toUpperCase();
 const dmy = (d: string | null) => (d ? d.split("-").reverse().join("-") : "");
 
@@ -31,6 +87,8 @@ export function NewAppointmentModal({ open, onOpenChange, data, onPickInAgenda, 
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [created, setCreated] = useState<Hit | null>(null);
   const { data: hits = [] } = useQuery({ ...patientSearchQuery(q), enabled: !fixedPatient && q.trim().length >= 2 });
 
   const locKind = (id: string) => data.locations.find((l) => l.id === id)?.kind;
@@ -51,14 +109,14 @@ export function NewAppointmentModal({ open, onOpenChange, data, onPickInAgenda, 
   });
   useEffect(() => setSlot(slots[0] ?? null), [slots]);
 
-  const reset = () => { setQ(""); setPatient(fixedPatient?.id ?? null); setTreatment(""); setSlot(null); setReason(""); setError(null); };
+  const reset = () => { setAdding(false); setCreated(null); setQ(""); setPatient(fixedPatient?.id ?? null); setTreatment(""); setSlot(null); setReason(""); setError(null); };
   const submit = async () => {
     if (!patient || !treatment || !loc || !prac || !slot) { setError("Kies een patiënt, behandeling, behandelaar en moment."); return; }
     setBusy(true);
     const r = await create({ data: { patientId: patient, treatmentId: treatment, locationId: loc, practitionerId: prac, date: slot.date, start: slot.start, notify, reason: reason || null } });
     setBusy(false);
     if (!r.ok) { setError(r.reason === "taken" ? "Dit moment is net bezet. Kies een ander moment." : "Inplannen is niet gelukt."); void qc.invalidateQueries({ queryKey: ["staff-slots"] }); return; }
-    await Promise.all([qc.invalidateQueries({ queryKey: ["agenda-appts"] }), qc.invalidateQueries({ queryKey: ["dossier", patient] }), qc.invalidateQueries({ queryKey: ["patient-list"] })]);
+    await Promise.all([qc.invalidateQueries({ queryKey: ["agenda-appts"] }), qc.invalidateQueries({ queryKey: ["dossier"] }), qc.invalidateQueries({ queryKey: ["patient-list"] })]);
     reset();
     onOpenChange(false);
   };
@@ -68,7 +126,8 @@ export function NewAppointmentModal({ open, onOpenChange, data, onPickInAgenda, 
     return `${wd.charAt(0).toUpperCase()}${wd.slice(1)} ${x.getUTCDate()} ${x.toLocaleDateString("nl-NL", { month: "short", timeZone: "UTC" }).replace(".", "")} ${fmtTime(m)}`;
   };
   const opt = (k: string) => data.options.filter((o) => o.list_key === k).map((o) => ({ value: o.value, label: o.label_nl }));
-  const chosen = hits.find((h) => h.id === patient);
+  const chosen = hits.find((h) => h.id === patient) ?? (created?.id === patient ? created : undefined);
+  const pick = (p: Hit) => { setCreated(p); setPatient(p.id); setAdding(false); };
 
   return (
     <Modal open={open} onOpenChange={(o) => { if (!o) reset(); onOpenChange(o); }} title={fixedPatient ? "Afspraak inplannen" : "Afspraak maken"} width="lg"
@@ -80,7 +139,8 @@ export function NewAppointmentModal({ open, onOpenChange, data, onPickInAgenda, 
             <img src="/ui-icons/zoeken.svg" alt="" className="size-4" />
             <input id="who" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Zoek op naam, patiëntnummer of e-mail" className="h-full flex-1 bg-transparent text-[14px] outline-none" />
           </div>
-          {(chosen ? [chosen, ...hits.filter((h) => h.id !== chosen.id)] : hits).map((h) => (
+          {adding ? <NewPatientForm initial={q} onDone={pick} onCancel={() => setAdding(false)} /> : !chosen && <button type="button" onClick={() => setAdding(true)} className="self-start text-[13px] text-primary underline">Nieuwe patiënt</button>}
+          {!adding && (chosen ? [chosen, ...hits.filter((h) => h.id !== chosen.id)] : hits).map((h) => (
             <button key={h.id} type="button" onClick={() => setPatient(h.id)} className={cn("flex items-center gap-3 rounded-[14px] px-4 py-2.5 text-left ring-1", patient === h.id ? "bg-teal-light ring-primary" : "bg-background ring-mist")}>
               <span className="flex size-8 items-center justify-center rounded-full bg-sand text-[11px] font-semibold">{initials(h.first_name, h.last_name)}</span>
               <span className="flex-1"><span className="block text-[14px]">{h.first_name} {h.last_name}</span><span className="block text-[12px] text-muted-foreground">{h.patient_number} · {dmy(h.date_of_birth)}</span></span>

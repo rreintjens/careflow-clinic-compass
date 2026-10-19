@@ -14,7 +14,8 @@ export const Route = createFileRoute("/_authenticated/patienten/$id/tijdlijn")({
 const FILTERS: Array<[TimelineKind | "all", string]> = [["all", "Alles"], ["appointments", "Afspraken en consulten"], ["questionnaires", "Vragenlijsten"], ["contact", "E-mails en contact"], ["treatment", "Behandeling en metingen"], ["system", "Systeem"]];
 
 function Timeline() {
-  const { id } = Route.useParams();
+  const { id: key } = Route.useParams();
+  const id = useSuspenseQuery(dossierQuery(key)).data.patient?.id ?? "";
   const d = useSuspenseQuery(dossierQuery(id)).data;
   const { data: consults = [] } = useQuery(standaloneConsultsQuery(id));
   const { data: measurements = [] } = useQuery(measurementsQuery(id));

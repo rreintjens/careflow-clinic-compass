@@ -20,7 +20,8 @@ const when = (s: string) => new Date(s).toLocaleString("nl-NL", { weekday: "long
 const STATUS: Record<string, string> = { booked: "Bevestigd", cancelled: "Geannuleerd", no_show: "Niet verschenen", completed: "Afgerond" };
 
 function Treatment() {
-  const { id } = Route.useParams();
+  const { id: key } = Route.useParams();
+  const id = useSuspenseQuery(dossierQuery(key)).data.patient?.id ?? "";
   const d = useSuspenseQuery(dossierQuery(id)).data;
   const qc = useQueryClient();
   const { data } = useQuery({

@@ -158,7 +158,7 @@ export function ActiveConsultMode() {
         <span className="whitespace-nowrap text-[13px] opacity-80">{next ? `Volgende: ${hm(next.starts_at)} ${next.patient?.first_name ?? ""} ${next.patient?.last_name ?? ""}` : "Geen volgende afspraak vandaag"}</span>
         <div className="ml-auto flex gap-2">
           {online && a.meet_link && <a href={a.meet_link} target="_blank" rel="noreferrer"><PillButton size="sm" className="bg-background text-primary hover:bg-background"><UiIcon name="videogesprek" className="size-4" />Meet</PillButton></a>}
-          <Link to="/patienten/$id" params={{ id: p.id }}><PillButton size="sm" variant="outline" className="border-primary-foreground/60 bg-transparent text-primary-foreground">Dossier</PillButton></Link>
+          <Link to="/patienten/$id" params={{ id: p.patient_number ?? p.id }}><PillButton size="sm" variant="outline" className="border-primary-foreground/60 bg-transparent text-primary-foreground">Dossier</PillButton></Link>
           <Link to="/agenda/mijn-dag"><PillButton size="sm" variant="outline" className="border-primary-foreground/60 bg-transparent text-primary-foreground">Agenda</PillButton></Link>
         </div>
       </div>
@@ -178,7 +178,7 @@ export function ActiveConsultMode() {
             <p className="px-5 pt-1 text-[12px] text-muted-foreground">Alles wat je hier typt wordt direct bewaard, ook als je naar een ander tabblad, de agenda of een andere patiënt gaat. Het paneel blijft staan tot je het consult afrondt.</p>
             <div className="mx-5 mt-3 flex rounded-full bg-background p-1">
               {([["notes", "Notities"], ["steps", "Stappen"]] as const).map(([k, l]) => <button key={k} type="button" onClick={() => savePrefs({ tab: k })} className={cn("flex-1 rounded-full py-1.5 text-[13px]", prefs.tab === k ? "bg-primary text-primary-foreground" : "")}>{l}</button>)}
-              <Link to="/patienten/$id" params={{ id: p.id }} className="flex-1 rounded-full py-1.5 text-center text-[13px]">Dossier</Link>
+              <Link to="/patienten/$id" params={{ id: p.patient_number ?? p.id }} className="flex-1 rounded-full py-1.5 text-center text-[13px]">Dossier</Link>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto px-5 py-3">
               {prefs.tab === "notes" ? SOEP.map(([k, l]) => (
@@ -225,7 +225,7 @@ function FinishModal({ note, patient, appt, steps, onClose, onDone }: { note: No
       <div className="flex flex-col gap-2">
         {row(filled === 4, "Consultverslag", filled === 4 ? "Subjectief, objectief, evaluatie en plan ingevuld" : `${filled} van 4 velden ingevuld`)}
         {row(done === steps.length, "Stappen", `${done} van ${steps.length} afgevinkt`)}
-        {row(!!plan, "Behandelplan en medicatie", plan ? "Ingevuld" : "Nog leeg. Zonder plan kan de apotheek niets klaarzetten.", !plan && <Link to="/patienten/$id/behandeling" params={{ id: patient.id }} onClick={onClose} className="text-[13px] text-primary underline">Nu maken</Link>)}
+        {row(!!plan, "Behandelplan en medicatie", plan ? "Ingevuld" : "Nog leeg. Zonder plan kan de apotheek niets klaarzetten.", !plan && <Link to="/patienten/$id/behandeling" params={{ id: patient.patient_number ?? patient.id }} onClick={onClose} className="text-[13px] text-primary underline">Nu maken</Link>)}
       </div>
       <p className="mt-4 text-[12px] text-muted-foreground">Afronden zet het verslag vast in het dossier en sluit het notitiepaneel. Het Meet-gesprek sluit je zelf.</p>
     </Modal>

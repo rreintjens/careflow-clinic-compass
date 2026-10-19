@@ -1,0 +1,4 @@
+## Questionnaire rules
+- Questionnaires: frozen published jsonb versions; flow settings/formulas and `field_names` maps in `questionnaire_flows.document`. Engine alone owns routing/red/signals; situations round-trip conditions. Builder domain targets page/item visibility and source-answer examples; names stay separate from identifiers. EN texts use `*_en`; import/export retains all configuration.
+- Patient questionnaire UI is one component (`src/features/questionnaire/QuestionnaireRunner.tsx`); fixed screen texts come from option list `questionnaire_ui`.
+- Questionnaire builder opens the live version read-only; editing happens only in the single concept (Aanpassen), with row labels and publish summaries derived from `describeChanges`/`rowChange` so the builder and publish dialog cannot disagree.

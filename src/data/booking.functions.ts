@@ -4,6 +4,7 @@
  * (no patient data, no staff e-mail, no internal notes).
  */
 import { createServerFn } from "@tanstack/react-start";
+import { safeQueue } from "./mailer.server";
 import { z } from "zod";
 
 import type { Slot } from "@/domain/slots";
@@ -248,5 +249,6 @@ export const confirmBooking = createServerFn({ method: "POST" })
     if (data.triageKey && data.triageAnswers) {
       await db.from("answer_sets").insert({ tenant_id: tenant.id, patient_id: patientId, appointment_id: appt.id, questionnaire_key: data.triageKey, answers: data.triageAnswers as never, status: "completed", completed_at: new Date().toISOString() });
     }
+    await safeQueue(db, appt.id, "confirmation", { dedupe: `confirmation-${appt.id}` });
     return { ok: true as const, manageToken: appt.manage_token, meetLink: meeting?.link ?? null };
   });

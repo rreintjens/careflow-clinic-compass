@@ -12,7 +12,8 @@ import { TimelineList } from "@/features/dossier/TimelineList";
 export const Route = createFileRoute("/_authenticated/patienten/$id/")({ head: () => ({ meta: [{ title: "Overzicht · Dossier · The Body Clinic" }, { name: "description", content: "Patiëntoverzicht en laatste gebeurtenissen in het dossier." }, { property: "og:title", content: "Dossieroverzicht · The Body Clinic" }, { property: "og:description", content: "Patiëntoverzicht en laatste gebeurtenissen in het dossier." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { name: "robots", content: "noindex" }] }), component: Overview });
 
 function Overview() {
-  const { id } = Route.useParams();
+  const { id: key } = Route.useParams();
+  const id = useSuspenseQuery(dossierQuery(key)).data.patient?.id ?? "";
   const d = useSuspenseQuery(dossierQuery(id)).data;
   const { data: consults = [] } = useQuery(standaloneConsultsQuery(id));
   const { data: measurements = [] } = useQuery(measurementsQuery(id));
@@ -45,7 +46,7 @@ function Overview() {
       <dl className="mt-5">{rows.map(([k, v]) => <div key={k} className="grid grid-cols-[220px_1fr] gap-4 border-b border-mist py-3 text-[14px]"><dt className="whitespace-nowrap text-muted-foreground">{k}</dt><dd>{v}</dd></div>)}</dl>
       <p className="mb-4 mt-6 text-[14px] font-semibold">Laatste gebeurtenissen</p>
       <TimelineList events={buildTimeline(d, consults, measurements).slice(0, 3)} />
-      <Link to="/patienten/$id/tijdlijn" params={{ id }} className="text-[14px] text-primary underline">Volledige tijdlijn</Link>
+      <Link to="/patienten/$id/tijdlijn" params={{ id: key }} className="text-[14px] text-primary underline">Volledige tijdlijn</Link>
     </section>
   );
 }

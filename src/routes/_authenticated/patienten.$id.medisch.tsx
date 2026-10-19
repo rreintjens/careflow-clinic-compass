@@ -41,7 +41,8 @@ function useMedical(id: string) {
 }
 
 function Medical() {
-  const { id } = Route.useParams();
+  const { id: key } = Route.useParams();
+  const id = useSuspenseQuery(dossierQuery(key)).data.patient?.id ?? "";
   const d = useSuspenseQuery(dossierQuery(id)).data;
   const versionIds = [...new Set(d.sets.map((s) => s.version_id).filter(Boolean))] as string[];
   const { data: defs = {} } = useQuery({

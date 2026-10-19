@@ -1,3 +1,4 @@
+import type { Tables } from "@/integrations/supabase/types";
 import { queryOptions } from "@tanstack/react-query";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -43,18 +44,19 @@ export async function searchPatients(q: string) {
     .or(`first_name.ilike.%${like}%,last_name.ilike.%${like}%,email.ilike.%${like}%${num}`).limit(10));
 }
 
-/** Everything the record header and its five tabs need. */
-async function loadDossier(id: string) {
-  {
-    {
-      const [p, appts, sets] = await Promise.all([
-        supabase.from("patients").select("*").eq("id", id).maybeSingle(),
-        supabase.from("appointments").select(APPT).eq("patient_id", id).neq("status", "hold").order("starts_at", { ascending: false }),
-        supabase.from("answer_sets").select("id, appointment_id, questionnaire_key, version_id, status, completed_at, created_at, updated_at, signals, answers").eq("patient_id", id).order("created_at", { ascending: false }),
-      ]);
-      return { patient: must(p), appointments: must(appts), sets: must(sets) };
-    }
-  }
+/** Everything the record header and its five tabs need. `key` is the patient number (URLs) or, for old links, the id. */
+async function loadDossier(key: string) {
+  const p: Tables<"patients"> | null = /^\d+$/.test(key)
+    ? must(await supabase.from("patients").select("*").eq("patient_number", Number(key)).maybeSingle())
+    : must(await supabase.from("patients").select("*").eq("id", key).maybeSingle());
+  if (!p) return { patient: null, appointments: [] as Array<never>, sets: [] as Array<never> };
+  const [appts, sets] = await Promise.all([
+    supabase.from("appointments").select(APPT).eq("patient_id", p.id).neq("status", "hold").order("starts_at", { ascending: false }),
+    supabase.from("answer_sets").select("id, appointment_id, questionnaire_key, version_id, status, completed_at, created_at, updated_at, signals, answers").eq("patient_id", p.id).order("created_at", { ascending: false }),
+  ]);
+  return { patient: p, appointments: must(appts), sets: must(sets) };
 }
+/** URL segment for a record: always the patient number when there is one. */
+export const recordKey = (p: { id: string; patient_number?: number | string | null }) => String(p.patient_number ?? p.id);
 export type Dossier = Awaited<ReturnType<typeof loadDossier>>;
 export const dossierQuery = (id: string) => queryOptions({ queryKey: ["dossier", id], queryFn: () => loadDossier(id) });

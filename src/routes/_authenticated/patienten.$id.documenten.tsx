@@ -1,3 +1,5 @@
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { dossierQuery } from "@/data/patients";
 import { DocumentModal } from "@/features/dossier/DocumentModal";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
@@ -17,7 +19,8 @@ async function bucket() {
 }
 
 function Documents() {
-  const { id } = Route.useParams();
+  const { id: key } = Route.useParams();
+  const id = useSuspenseQuery(dossierQuery(key)).data.patient?.id ?? "";
   const [open, setOpen] = useState(false);
   const { data: docs = [] } = useQuery({
     queryKey: ["documents", id],

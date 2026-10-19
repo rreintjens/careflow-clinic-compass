@@ -3,13 +3,14 @@ import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { VersionPill } from "@/features/questionnaire/VersionPill";
 import { PlusIcon, SearchField, StatusMark, Tag, TextField, thCls, tdCls } from "@/components/Field";
 import { Modal } from "@/components/Modal";
 import { PageHeader } from "@/components/PageHeader";
 import { PillButton } from "@/components/PillButton";
 import { Select } from "@/components/Select";
 import { opts, optLabel, orgQuery } from "@/data/organisation";
-import { createQuestionnaire, defOf, importFlow, publishedOf, questionnairesQuery, workingVersion } from "@/data/questionnaires";
+import { createQuestionnaire, defOf, draftOf, importFlow, publishedOf, questionnairesQuery, workingVersion } from "@/data/questionnaires";
 import { questionCount, type FlowFile } from "@/domain/questionnaire/engine";
 
 export const Route = createFileRoute("/_authenticated/boekingsflow/vragenlijsten/")({
@@ -73,7 +74,7 @@ function Page() {
                   <td className={tdCls}>{ts.length === 0 ? "Nog niet gekoppeld" : ts.length === 1 ? ts[0]?.name_nl : `${ts[0]?.name_nl} en ${ts.length - 1} andere`}</td>
                   <td className={tdCls}>{def ? `${questionCount(def)} vragen` : ""}</td>
                   <td className={tdCls}>{x.moment === "after_booking" ? "Naar het dossier" : "Groen of rood"}</td>
-                  <td className={tdCls}><span className="flex items-center gap-2"><StatusMark kind={pub ? "ok" : "warn"} />{optLabel(org, "questionnaire_status", pub ? "published" : "draft")}</span></td>
+                  <td className={tdCls}><span className="flex flex-wrap items-center gap-1.5">{pub && <VersionPill tone="live">Live v{pub.version_no}</VersionPill>}{draftOf(data, x.id) && <VersionPill tone="draft">Concept v{draftOf(data, x.id)?.version_no}</VersionPill>}</span></td>
                   <td className={tdCls}><Link to="/boekingsflow/vragenlijsten/$id" params={{ id: x.id }} className="text-primary underline">Wijzig</Link></td>
                 </tr>
               );

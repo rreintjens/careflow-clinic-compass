@@ -54,3 +54,25 @@ export function changesSentence(changes: string[]): string {
   const s = changes.join("; ");
   return `${s.charAt(0).toUpperCase()}${s.slice(1)}.`;
 }
+
+/** Row label in the concept: "new" when the page/question is not in the live version, "changed" when it differs. */
+export function rowChange(live: QuestionnaireDef | null, page: Page, item?: { id: string }): "new" | "changed" | null {
+  if (!live) return null;
+  if (item) {
+    const old = live.pages.flatMap((p) => p.items ?? []).find((i) => i.id === item.id);
+    const cur = page.items?.find((i) => i.id === item.id);
+    if (!old) return "new";
+    return same(old, cur) ? null : "changed";
+  }
+  const old = live.pages.find((p) => p.id === page.id);
+  if (!old) return (page.items ?? []).every((i) => !live.pages.some((p) => p.items?.some((x) => x.id === i.id))) ? "new" : "changed";
+  return same(old, page) ? null : "changed";
+}
+
+/** New rows from the compact add list go before the final page (the closing page stays last). */
+export function insertBeforeLast<T>(pages: readonly T[], page: T): { pages: T[]; index: number } {
+  const index = pages.length > 1 ? pages.length - 1 : pages.length;
+  const next = [...pages];
+  next.splice(index, 0, page);
+  return { pages: next, index };
+}
