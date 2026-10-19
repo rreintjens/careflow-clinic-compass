@@ -82,7 +82,7 @@ function compactRow(r: Row, ctx: CondCtx): string {
     const red = a.red || b.red ? ` (${a.red ?? a.std} en ${b.red ?? b.std})` : "";
     return `${field} tussen ${a.std} en ${b.std}${red}`;
   }
-  return `${field} ${SHORT_OPS[r.op] ?? r.op} ${a.std}${a.red ? ` (${a.red})` : ""}${f?.unit ? ` ${f.unit}` : ""}`;
+  return `${field} ${SHORT_OPS[r.op] ?? r.op} ${a.std}${a.red ? ` (${a.red})` : ""}${f?.unit && /^[\d,]+$/.test(a.std) ? ` ${f.unit}` : ""}`;
 }
 /** Short line under a builder row, with the numbers filled in: "BMI tussen 25 en 30 (23 en 27,5)". */
 export function compactConditionText(c: Condition | Leaf | undefined, ctx: CondCtx): string {
