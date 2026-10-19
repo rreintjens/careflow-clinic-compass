@@ -64,6 +64,16 @@ function Builder() {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [sel, setSel] = useState<number | null>(null);
   const { data: icons = [] } = useQuery(iconsQuery);
+  const counts = useQuery({
+    queryKey: ["answer-counts", id], enabled: edit?.kind === "publish",
+    queryFn: async () => {
+      const ids = (q ? versionsOf(data, q.id) : []).map((v) => v.id);
+      const { data: rows } = await supabase.from("answer_sets").select("version_id, status").in("version_id", ids);
+      const out: Record<string, { all: number; open: number }> = {};
+      for (const r of rows ?? []) { if (!r.version_id) continue; const c = (out[r.version_id] ??= { all: 0, open: 0 }); c.all += 1; if (r.status !== "completed") c.open += 1; }
+      return out;
+    },
+  });
   const refresh = () => qc.invalidateQueries({ queryKey: questionnairesQuery.queryKey });
 
   const mut = useMutation({
@@ -188,6 +198,16 @@ function Builder() {
     } catch { return "–"; }
   };
 
+  const today = new Date().toISOString().slice(0, 10);
+  const overview = def.pages.find((p) => p.type === "flow_overview");
+  const medical = (() => {
+    const mq = data.questionnaires.find((x) => x.flow_id === q.flow_id && x.moment === "after_booking");
+    const md = mq ? defOf(publishedOf(data, mq.id) ?? workingVersion(data, mq.id)) : null;
+    const page = md?.pages.find((p) => (p.items?.length ?? 0) > 1 && p.items?.some((i) => i.show_if)) ?? md?.pages.find((p) => (p.items?.length ?? 0) > 1);
+    return md && page ? { def: md, page } : null;
+  })();
+  const changes = draft ? describeChanges(defOf(pub), defOf(draft) as QuestionnaireDef) : [];
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -209,6 +229,8 @@ function Builder() {
         {!editable && <p className="mt-3 rounded-[12px] bg-signal px-4 py-3 text-sm">Je bekijkt de actieve versie; die patiënten nu krijgen en die daarom niet verandert. Klik rechtsboven op “Nieuwe versie maken” om te wijzigen; daarna publiceer je die versie.</p>}
       </div>
 
+      <div className="grid grid-cols-[minmax(0,1fr)_300px] items-start gap-6">
+      <div className="flex min-w-0 flex-col gap-6">
       <Card title="Opbouw van de vragenlijst" description="Vragen en pagina’s in de volgorde die de patiënt ziet. Sleep om de volgorde te wijzigen, ook vragen binnen een vragenpagina; klik op het pijltje om een vragenpagina in te klappen. Een pijl onder een regel betekent: alleen onder een voorwaarde.">
         <div className="flex flex-col gap-2">
           {def.pages.map((p, pi) => {
@@ -300,8 +322,44 @@ function Builder() {
         </table>
       </Card>
 
+      </div>
+      <aside className="flex flex-col gap-6">
+        {overview && (
+          <PreviewCard title={`Voorbeeld: pagina ${questionNumbers(def)[overview.id] ?? ""}, ${pageTypeLabel("flow_overview").toLowerCase()}`}
+            text="De stappen komen uit de flow zelf: afspraak, de onderdelen van deze vragenlijst, gegevens en bevestiging. Alleen de titel en de tekst zijn te bewerken; zo blijft het overzicht altijd kloppen, ook als je het vaker gebruikt.">
+            <QuestionnaireRunner key={JSON.stringify(overview)} flow={{ settings, computed_fields: computed }} def={def} ui={data.uiTexts} today={today} startPageId={overview.id} />
+          </PreviewCard>
+        )}
+        {medical && (
+          <PreviewCard title="Voorbeeld: vragenpagina uit de medische vragenlijst"
+            text="Een vraag met een voorwaarde verschijnt pas als die van toepassing is; anders blijft de pagina korter. Een lange medische vragenlijst deel je zo in zoveel schermen als je zelf wilt.">
+            <QuestionnaireRunner key={medical.page.id} flow={{ settings, computed_fields: computed }} def={medical.def} ui={data.uiTexts} today={today} startPageId={medical.page.id} />
+          </PreviewCard>
+        )}
+      </aside>
+      </div>
+
+      {edit?.kind === "add" && (
+        <AddChooser itemTypes={opts(org, "questionnaire_item_type")} pageTypes={opts(org, "questionnaire_page_type")}
+          afterLabel={sel === null ? "Komt onderaan de vragenlijst." : "Komt na de geselecteerde regel."}
+          onClose={() => setEdit(null)}
+          onPick={(c) => setEdit(c.kind === "item" ? { kind: "item", page: null, item: null, type: c.type } : c.type === "boodschap" ? { kind: "boodschap", index: null } : { kind: "page", index: null, type: c.type })} />
+      )}
+      {edit?.kind === "boodschap" && (() => {
+        const nums = questionNumbers(def);
+        const current = edit.index === null ? null : (def.pages[edit.index] ?? null);
+        const prev = edit.index === null ? (sel === null ? def.pages.at(-1)?.id : def.pages[sel]?.id) : def.pages[edit.index - 1]?.id;
+        const pr = org.practitioners.find((x) => x.status === "active");
+        return (
+          <BoodschapModal page={current} after={prev ?? START} positions={flowPositions(def, nums, current?.id)} forms={opts(org, "boodschap_form")} images={opts(org, "questionnaire_image")} buttons={opts(org, "questionnaire_button")}
+            ctx={ctx} questionnaireName={def.name} def={def} flow={{ settings, computed_fields: computed }} ui={data.uiTexts}
+            practitioner={{ name: pr ? `${pr.first_name} ${pr.last_name}` : "", text: pr?.bio_nl ?? "" }}
+            onClose={() => setEdit(null)} onSave={(p, after) => saveBoodschap(p, edit.index, after)}
+            onDelete={edit.index === null ? undefined : () => setPages(def.pages.filter((_, i) => i !== edit.index))} />
+        );
+      })()}
       {edit?.kind === "page" && (
-        <PageModal page={edit.index === null ? null : (def.pages[edit.index] ?? null)} pageTypes={opts(org, "questionnaire_page_type")} sections={sections} icons={ICONS} ctx={ctx} questionnaireName={def.name}
+        <PageModal page={edit.index === null ? null : (def.pages[edit.index] ?? null)} initialType={edit.type} pageTypes={opts(org, "questionnaire_page_type").filter((o) => o.value !== "boodschap")} sections={sections} icons={icons} iconCategories={opts(org, "icon_category")} ctx={ctx} questionnaireName={def.name}
           onSave={(p) => savePage(p, edit.index)} onClose={() => setEdit(null)}
           onDelete={edit.index === null ? undefined : () => setPages(def.pages.filter((_, i) => i !== edit.index))} />
       )}
@@ -309,7 +367,7 @@ function Builder() {
         const p = edit.page === null ? undefined : def.pages[edit.page];
         const item = p && edit.item !== null ? (p.items?.[edit.item] ?? null) : null;
         return (
-          <ItemModal item={item} number={item ? (questionNumbers(def)[item.id] ?? 0) : Object.keys(questionNumbers(def)).length + 1} questionnaireName={def.name} questionnaireId={q.id} def={def} page={p}
+          <ItemModal item={item} initialType={edit.type} number={item ? (questionNumbers(def)[item.id] ?? 0) : Object.keys(questionNumbers(def)).length + 1} questionnaireName={def.name} questionnaireId={q.id} def={def} page={p}
             flow={{ settings, computed_fields: computed }} ui={data.uiTexts} images={opts(org, "questionnaire_image")} itemTypes={opts(org, "questionnaire_item_type")} sections={sections} section={p?.section} rejections={rejections} ctx={ctx}
             onSave={(i, s, pageCondition) => saveItem(i, s, edit.page, edit.item, pageCondition)} onClose={() => setEdit(null)}
             onDelete={edit.page === null || edit.item === null ? undefined : () => {
@@ -328,9 +386,27 @@ function Builder() {
           onDelete={edit.name ? () => { const c = { ...computed }, labels = { ...names.computed }; delete c[edit.name as string]; delete labels[edit.name as string]; mut.mutate(() => saveFlowDocument(flow.id, { ...doc, computed_fields: c, field_names: { ...names, computed: labels } })); } : undefined} />
       )}
       {edit?.kind === "publish" && draft && (
-        <PublishModal versionNo={draft.version_no} busy={mut.isPending} changes={pub ? `Versie ${pub.version_no} is nu actief.` : "Er is nog geen actieve versie."} onClose={() => setEdit(null)}
+        <PublishModal name={def.name} draftNo={draft.version_no} liveNo={pub?.version_no ?? null} busy={mut.isPending}
+          versions={versions.map((v) => ({ id: v.id, version_no: v.version_no, status: v.status, note: v.note, published_at: v.published_at, updated_at: v.updated_at, answers: counts.data?.[v.id]?.all ?? 0 }))}
+          running={pub ? (counts.data?.[pub.id]?.open ?? 0) : 0}
+          changes={changesSentence(changes)} changeCount={changes.length}
+          testLink={<Link to="/boekingsflow/vragenlijsten/$id/test" params={{ id: q.id }} target="_blank"><PillButton variant="outline">Eerst testen als patiënt</PillButton></Link>}
+          onExport={download}
+          onImport={(f) => mut.mutate(async () => { const json = JSON.parse(await f.text()) as FlowFile; await importFlow(json, flow?.key ?? "flow", false); toast.success("Geïmporteerd als concept"); })}
+          onDiscard={pub ? () => mut.mutate(() => discardDraft(draft.id)) : undefined}
+          onClose={() => setEdit(null)}
           onPublish={() => mut.mutate(async () => { await publishVersion(q.id, draft.id); toast.success(`Versie ${draft.version_no} is gepubliceerd`); })} />
       )}
     </div>
+  );
+}
+
+function PreviewCard({ title, text, children }: { title: string; text: string; children: ReactNode }) {
+  return (
+    <Card title={title} description={text}>
+      <div className="h-[560px] w-[252px] overflow-hidden rounded-[18px]">
+        <div className="pointer-events-auto origin-top-left scale-[0.646]">{children}</div>
+      </div>
+    </Card>
   );
 }
