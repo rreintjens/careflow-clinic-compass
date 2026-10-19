@@ -140,6 +140,10 @@ export function ActiveConsultMode() {
   const recordMatch = pathname.match(/^\/patienten\/([^/]+)/);
   const otherRecord = !!recordMatch && recordMatch[1] !== p.id && recordMatch[1] !== p.patient_number;
 
+  // Keep the panel on screen whatever the window size; stored offsets are relative to the top-right corner.
+  const vw = typeof window === "undefined" ? 1440 : window.innerWidth, vh = typeof window === "undefined" ? 900 : window.innerHeight;
+  const top = Math.min(Math.max(8, 24 + prefs.y), vh - 80);
+  const right = Math.min(Math.max(8, 24 - prefs.x), Math.max(8, vw - prefs.w - 8));
   const onDown = (e: React.PointerEvent) => { drag.current = { sx: e.clientX, sy: e.clientY, ox: prefs.x, oy: prefs.y }; (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); };
   const onMove = (e: React.PointerEvent) => { const d = drag.current; if (d) setPrefs((x) => ({ ...x, x: d.ox + e.clientX - d.sx, y: d.oy + e.clientY - d.sy })); };
   const onUp = () => { if (drag.current) { drag.current = null; savePrefs({}); } };
@@ -160,11 +164,10 @@ export function ActiveConsultMode() {
       </div>
 
       <div ref={panel} aria-label={`Consultnotities voor ${name}`} role="complementary"
-        className={cn("fixed right-6 top-6 z-40 flex flex-col overflow-hidden rounded-[20px] bg-sand shadow-[0_8px_24px_rgba(57,51,46,0.16)] ring-1", otherRecord ? "ring-2 ring-warning" : "ring-primary", !prefs.min && "resize")}
-        style={{ transform: `translate(${prefs.x}px, ${prefs.y}px)`, width: prefs.w, ...(prefs.min ? {} : { height: prefs.h || "calc(100vh - 48px)" }), minWidth: 300, maxHeight: "calc(100vh - 24px)" }}>
-        <div className="flex cursor-move touch-none items-center gap-2 px-5 pt-4" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp}>
-          <span className="text-muted-foreground" aria-hidden="true">⋮⋮</span>
-          <span className="min-w-0 truncate text-[14px] font-semibold">Consultnotities · {name}</span>
+        className={cn("fixed z-40 flex flex-col overflow-hidden rounded-[20px] bg-sand shadow-[0_8px_24px_rgba(57,51,46,0.16)] ring-1", otherRecord ? "ring-2 ring-warning" : "ring-primary", !prefs.min && "resize")}
+        style={{ top, right, width: prefs.w, ...(prefs.min ? {} : { height: prefs.h ? `min(${prefs.h}px, calc(100vh - ${top + 16}px))` : `calc(100vh - ${top + 24}px)` }), minWidth: 300, minHeight: prefs.min ? undefined : 260, maxHeight: `calc(100vh - ${top + 16}px)` }}>
+        <div className="flex cursor-move touch-none select-none items-center gap-2 px-5 pt-4" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp}>
+          <span className="min-w-0"><span className="block text-[14px] font-semibold">Consultnotities</span><span className={cn("block truncate text-[12px]", otherRecord ? "text-warning" : "text-muted-foreground")}>{name} · {p.patient_number}</span></span>
           {savedAt && <span className="ml-auto flex shrink-0 items-center gap-1 whitespace-nowrap text-[12px] text-primary"><UiIcon name="vinkje" className="size-3" />opgeslagen {savedAt}</span>}
           <button type="button" aria-label={prefs.min ? "Openklappen" : "Inklappen"} onPointerDown={(e) => e.stopPropagation()} onClick={() => savePrefs({ min: !prefs.min })} className={cn("flex size-7 shrink-0 items-center justify-center rounded-full bg-background", !savedAt && "ml-auto")}><UiIcon name={prefs.min ? "plus" : "min"} className="size-3.5" /></button>
         </div>
