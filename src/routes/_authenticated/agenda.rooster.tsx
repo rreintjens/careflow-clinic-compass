@@ -6,7 +6,7 @@ import { z } from "zod";
 
 import { Avatar } from "@/components/Avatar";
 import { Card } from "@/components/Card";
-import { PlusIcon, StatusMark, TextField, TextLink, tdCls, thCls } from "@/components/Field";
+import { PlusIcon, StatusMark, TextField, TextLink, Toggle, tdCls, thCls } from "@/components/Field";
 import { Modal } from "@/components/Modal";
 import { PillButton } from "@/components/PillButton";
 import { Select } from "@/components/Select";
@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 const search = z.object({ practitioner: z.string().optional(), from: z.string().optional() });
 
 export const Route = createFileRoute("/_authenticated/agenda/rooster")({
-  head: () => ({ meta: [{ title: "Rooster bewerken · Agenda · The Body Clinic" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Rooster bewerken · Agenda · The Body Clinic" }, { name: "description", content: "Werkblokken en gemengde consulten bij The Body Clinic." }, { property: "og:title", content: "Rooster bewerken · The Body Clinic" }, { property: "og:description", content: "Werkblokken en gemengde consulten bij The Body Clinic." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { name: "robots", content: "noindex" }] }),
   validateSearch: search,
   loaderDeps: ({ search: s }) => ({ practitioner: s.practitioner }),
   loader: async ({ context, deps }) => {
@@ -121,7 +121,7 @@ function SchedulePage() {
 
       <div className="grid grid-cols-[minmax(0,1fr)_300px] items-start gap-6">
         <div className="flex min-w-0 flex-col gap-6">
-          <Card title="Herhalend rooster" description="Elk blok herhaalt zich: elke week, elke 2 weken of elke maand. Het label rechtsboven in een blok laat dat zien. Een online blok kan midden in een kliniekdag staan. Klik een blok om het te wijzigen.">
+          <Card title="Herhalend rooster" description="Elk blok herhaalt zich: elke week, elke 2 weken of elke maand. Het label rechtsboven in een blok laat dat zien. Online consulten kunnen in vrije tijd van een kliniekblok worden geboekt. Klik een blok om het te wijzigen.">
             <div className="mb-4 flex flex-wrap items-center gap-4 text-[13px]">
               <span className="flex items-center gap-2"><span className="h-4 w-4 rounded bg-teal-light" />Online</span>
               <span className="flex items-center gap-2"><span className="h-4 w-4 rounded bg-sand" />In de kliniek</span>
@@ -157,7 +157,7 @@ function SchedulePage() {
                           style={{ top: top + 1, height: h - 2 }}
                         >
                           <span className="absolute right-1.5 top-1.5"><RecurBadge r={b.recurrence} /></span>
-                          <span className="max-w-full truncate text-xs">{locName(org, b.location_id)}</span>
+                          <span className="flex max-w-full items-center gap-1 text-xs"><span className="truncate">{locName(org, b.location_id)}</span>{!isOnline && b.allows_online && <img src="/ui-icons/videogesprek.svg" alt="Online consulten tussendoor" className="size-3.5 shrink-0" />}</span>
                           <span className="text-[11px] text-muted-foreground">{hhmm(b.starts)} – {hhmm(b.ends)}</span>
                         </button>
                       );
@@ -239,6 +239,7 @@ function BlockModal({ org, practitionerId, weekStart, block, weekday, onClose, o
   const times = quarterTimes(7, 22).map((t) => ({ value: t, label: t }));
   const [day, setDay] = useState(String(block?.weekday ?? weekday));
   const [loc, setLoc] = useState(block?.location_id ?? work[0] ?? "");
+  const [allowsOnline, setAllowsOnline] = useState(block?.allows_online ?? true);
   const [from, setFrom] = useState(hhmm(block?.starts) || "09:00");
   const [to, setTo] = useState(hhmm(block?.ends) || "17:00");
   const [rec, setRec] = useState(block?.recurrence ?? "weekly");
@@ -250,7 +251,7 @@ function BlockModal({ org, practitionerId, weekStart, block, weekday, onClose, o
   const next = nextOccurrences(Number(day), rec as Recurrence, validFrom, validUntil || null, iso(new Date()) > validFrom ? iso(new Date()) : validFrom);
   const save = useMutation({
     mutationFn: () => saveBlock(block?.id ?? null, {
-      practitioner_id: practitionerId, weekday: Number(day), location_id: loc, starts: from, ends: to, recurrence: rec,
+      practitioner_id: practitionerId, weekday: Number(day), location_id: loc, starts: from, ends: to, recurrence: rec, allows_online: allowsOnline,
       valid_from: validFrom, valid_until: validUntil || null, treatment_ids: scope === "all" ? null : [scope],
     }),
     onSuccess: async () => { await onSaved(); toast.success("Blok opgeslagen"); onClose(); },
@@ -273,6 +274,7 @@ function BlockModal({ org, practitionerId, weekStart, block, weekday, onClose, o
       <div className="grid grid-cols-2 gap-4">
         <Select label="Dag" value={day} onChange={setDay} options={DAYS.map((d, i) => ({ value: String(i + 1), label: d }))} />
         <Select label="Locatie" value={loc} onChange={setLoc} options={work.map((l) => ({ value: l, label: locName(org, l) }))} />
+        {org.locations.find((l) => l.id === loc)?.kind === "clinic" && <div className="col-span-2 flex items-start justify-between gap-4"><div><p className="text-[13px] font-medium">Online consulten tussendoor</p><p className="mt-1 text-xs text-muted-foreground">Online consulten kunnen in vrije tijd van dit blok worden geboekt.</p></div><Toggle label="Online consulten tussendoor" checked={allowsOnline} onChange={setAllowsOnline} /></div>}
         <Select label="Van" value={from} onChange={setFrom} options={times} help="Per kwartier." />
         <Select label="Tot" value={to} onChange={setTo} options={times} />
         <Select label="Herhaling" value={rec} onChange={setRec} options={opts(org, "recurrence")} help="Elke week, elke 2 weken, elke maand op deze weekdag, of eenmalig." />

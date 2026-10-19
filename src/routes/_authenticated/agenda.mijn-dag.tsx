@@ -134,7 +134,7 @@ function Page() {
                     <span className={cn("h-[70%] w-[3px] rounded-full", a.online ? "bg-primary" : "bg-warning")} />
                     <span className="min-w-0 flex-1">
                       <span className="block whitespace-nowrap text-[14px] font-semibold">{fmtTime(a.start)} · {a.patient?.first_name} {a.patient?.last_name}</span>
-                      <span className="block truncate text-[12px] text-muted-foreground">{tName(a.treatment_id)} · {a.patient?.patient_number} · {a.new_patient ? "nieuw" : "vervolg"}</span>
+                      <span className="block truncate text-[12px] text-muted-foreground">{tName(a.treatment_id)} · {a.patient?.patient_number} · {a.new_patient ? "nieuw" : "vervolg"}{a.online ? " · Online" : ""}</span>
                     </span>
                     {n > 0 && <span className="whitespace-nowrap rounded-full bg-signal px-2.5 py-0.5 text-[11px] ring-1 ring-signal-border">{n} {n === 1 ? "signaal" : "signalen"}</span>}
                     {done(i) ? <img src="/ui-icons/vinkje.svg" alt="Vragenlijst ingevuld" className="size-4" /> : <img src="/ui-icons/waarschuwing.svg" alt="Vragenlijst nog niet ingevuld" className="size-4" />}

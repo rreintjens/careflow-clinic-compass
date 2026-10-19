@@ -2324,6 +2324,7 @@ export type Database = {
       }
       schedule_blocks: {
         Row: {
+          allows_online: boolean
           created_at: string
           created_by: string | null
           ends: string
@@ -2341,6 +2342,7 @@ export type Database = {
           weekday: number
         }
         Insert: {
+          allows_online?: boolean
           created_at?: string
           created_by?: string | null
           ends: string
@@ -2358,6 +2360,7 @@ export type Database = {
           weekday: number
         }
         Update: {
+          allows_online?: boolean
           created_at?: string
           created_by?: string | null
           ends?: string

@@ -12,7 +12,7 @@ export async function loadAgendaRef() {
   {
     const [prac, blocks, exc, locs, treats, cats, links, pt, pl, tl, opts] = await Promise.all([
       supabase.from("practitioners").select("id, first_name, last_name, photo_path, status").eq("status", "active"),
-      supabase.from("schedule_blocks").select("practitioner_id, weekday, location_id, starts, ends, recurrence, valid_from, valid_until, treatment_ids"),
+      supabase.from("schedule_blocks").select("practitioner_id, weekday, location_id, starts, ends, recurrence, valid_from, valid_until, treatment_ids, allows_online"),
       supabase.from("schedule_exceptions").select("practitioner_id, kind, date_from, date_to, starts, ends, location_id"),
       supabase.from("locations").select("id, name, kind").order("sort"),
       supabase.from("treatments").select("id, name_nl, duration_min, status").eq("status", "active").order("name_nl"),

@@ -13,7 +13,7 @@
 - Read the design package rules first: binding engineering/security directive overrides defaults; build phases in order; the owner asked not to pause for confirmation between phases.
 - TanStack Start (not React Router); app-internal server logic in `createServerFn`, never new Edge Functions — platform stack.
 - Pure business logic in `src/domain/` with table-driven tests; typed queries in `src/data/`; shared UI in `src/components/` (one PillButton, Card, Select, SegmentedControl, Modal, Sidebar…) — no duplicates, add a prop instead.
-- Agenda day/week and personal-day routes share AgendaToolbar so navigation and date controls keep identical layout tracks.
+- Agenda routes share AgendaToolbar for stable controls; public and staff booking share slots domain with online-location IDs and block flags so mixed-consult conflicts cannot diverge.
 - Configuration (settings, option lists, texts, roles, permissions, landing pages) lives in DB rows; code never contains those values.
 - Staff area = `_authenticated` layout: session + aal2 + active role; RLS on every table requires `is_aal2()` + `has_permission()` — MFA enforced server-side, never bypassed.
 - Password step runs in a server function so lockout cannot be skipped; auth events are written by server functions, row changes by the `audit_row_change` trigger; `audit_log` is append-only by trigger.

@@ -2,6 +2,9 @@
 
 Owner asked to continue through all phases without pausing for confirmation.
 
+- [x] Online consult during clinic time: default-on block switch and roster video icon, mixed availability shared by patient/staff booking, practitioner-wide conflicts, online labels/icons and existing Meet actions; 49 tests passed. Patient flow booked Dilan Aydin on 19 October at 15:30 with Meet link; stored booking confirmed inside 09:00–17:00 clinic block.
+- [ ] Mixed-consult staff verification: blocked by authenticator enrollment rejecting the fresh managed session. Doctor day/week, switch save/reload and staff booking cannot be verified in the browser until normal staff MFA succeeds; no clinic appointments currently surround the chosen test doctor's booking.
+
 - [x] Agenda: clickable practitioner headers open their personal day; shared fixed-position Dag/Week/Mijn dag controls verified after signing in as Rob, all four transitions keep x=1068/y=100; 18 relevant tests passed.
 - [x] Changed password for rob@bodyclinic.nl to the privately supplied value; verified through the normal sign-in screen.
 
