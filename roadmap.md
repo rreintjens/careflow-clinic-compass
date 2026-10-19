@@ -146,5 +146,5 @@ Keuzekaartcontrole als Rob: aanbevolen online kaart zandkleur; muis verandert na
 Verificatie 19-10: alle vijf punten op 1000007 als Rob doorlopen; 58 gerichte tests groen, build OK. Bestaande sign-in-queryannulering (CancelledError in auth.2fa goLanding) waargenomen bij login; geen fout in de vijf gecontroleerde dossier/agenda-resultaten.
 
 ## Dossier en gegroepeerde tabellen 19-10 16:27–16:28 UTC
-- [ ] Anamnese en behandelplan: inhoud aanklikbaar met chevron/toetsenbord, pop-up focust gekozen veld, bestaande opslag behouden; Eva 1000007 als Rob controleren, alle dossiertabs controleren op Wijzig
-- [ ] Apparatuur: vaste gedeelde kolombreedtes tussen locatiegroepen; Amsterdam Buitenveldert/Amsterdam-Zuid en andere gegroepeerde lijsten controleren
+- [x] Anamnese en behandelplan: gedeelde aanklikbare veldrijen met chevron en focusring; alle 12 anamnesevelden en 6 behandelplanvelden op Eva 1000007 als Rob met Enter/Spatie geopend en juiste focus gecontroleerd. Beide bestaande opslagacties met wijziging/heropenen/terugzetten geverifieerd; vijf dossiertabs zonder Wijzig-knop of -link. Consultopslag ongewijzigd.
+- [x] Apparatuur: gedeelde vaste kolomindeling; zeven gevulde locatiegroepen identiek uitgelijnd, inclusief Amsterdam Buitenveldert/Amsterdam-Zuid, als Rob gecontroleerd. Ook basissjablonen/afwijkingen dezelfde gedeelde indeling en echte rijen gecontroleerd; behandelingen gebruiken al vaste gedeelde grids, rollen één tabel. Build OK.
