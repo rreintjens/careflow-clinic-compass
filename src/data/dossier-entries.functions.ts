@@ -8,7 +8,7 @@ export const entryOptions = createServerFn({method:"POST"}).middleware([requireS
  const [opts,members,doctors]=await Promise.all([db.from("option_lists").select("list_key,value,label_nl").in("list_key",["dossier_entry_ui","contact_kind","contact_direction","request_kind","request_duration","request_destination","request_status"]).order("sort"), db.from("tenant_memberships").select("user_id").eq("active",true),db.from("practitioners").select("id,first_name,last_name").eq("status","active")]);
  if(opts.error || members.error || doctors.error) throw new Error("Laden is niet gelukt");
  const names=await db.rpc("staff_names",{_ids:(members.data??[]).map(x=>x.user_id)});
- return {options:opts.data??[],staff:names.data??[],doctors:doctors.data??[]};
+ return {options:opts.data??[],staff:(names.data??[]).map(x=>({...x,full_name:x.id===context.userId?`${x.full_name} (jij)`:x.full_name})),doctors:doctors.data??[]};
 });
 async function permitted(context: {supabase: import("@supabase/supabase-js").SupabaseClient}) {
  if(!(await context.supabase.rpc("has_permission",{_perm:"patients.edit"})).data || !(await context.supabase.rpc("is_aal2")).data) throw new Error("Je hebt geen toegang tot deze actie");
