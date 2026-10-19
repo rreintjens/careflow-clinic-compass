@@ -21,12 +21,15 @@ async function load(merk: string | undefined, token: string) {
   if (!t?.post_questionnaire_key) return null;
   const q = (await db.from("questionnaires").select("id, key, flow_id").eq("tenant_id", tenant.id).eq("key", t.post_questionnaire_key).maybeSingle()).data;
   if (!q) return null;
+  const existing = (await db.from("answer_sets").select("version_id").eq("appointment_id", appt.id).eq("questionnaire_key", q.key).maybeSingle()).data;
   const [v, f] = await Promise.all([
-    db.from("questionnaire_versions").select("id, definition").eq("questionnaire_id", q.id).eq("status", "published").maybeSingle(),
+    existing?.version_id
+      ? db.from("questionnaire_versions").select("id, definition, version_config").eq("questionnaire_id", q.id).eq("id", existing.version_id).maybeSingle()
+      : db.from("questionnaire_versions").select("id, definition, version_config").eq("questionnaire_id", q.id).eq("status", "published").maybeSingle(),
     db.from("questionnaire_flows").select("document").eq("id", q.flow_id).maybeSingle(),
   ]);
   if (!v.data) return null;
-  return { tenant, db, appt, q, version: v.data, rawFlow: f.data?.document ?? {}, flow: (f.data?.document ?? {}) as unknown as FlowFile, triageKey: t.pre_questionnaire_key };
+  return { tenant, db, appt, q, version: v.data, rawFlow: v.data.version_config, flow: v.data.version_config as unknown as FlowFile, triageKey: t.pre_questionnaire_key };
 }
 
 export const getPatientQuestionnaire = createServerFn({ method: "POST" })

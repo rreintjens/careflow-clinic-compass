@@ -7,6 +7,9 @@ import { PillButton } from "@/components/PillButton";
 import { PageHeader } from "@/components/PageHeader";
 import { Select } from "@/components/Select";
 import { agendaApptsQuery, agendaRefQuery } from "@/data/agenda";
+import { externalBusyQuery } from "@/data/external-busy";
+import { ExternalBusyBlock } from "@/features/agenda/ExternalBusyBlocks";
+import { FollowUps } from "@/features/dossier/FollowUps";
 import { daySegments, hourRange, nowAndNext } from "@/domain/agenda";
 import type { SlotBlock, SlotException } from "@/domain/slots";
 import { fmtTime } from "@/domain/slots";
@@ -42,6 +45,7 @@ function Page() {
   const now = useNow();
   const date = s.datum ?? now.date;
   const { data: ref } = useQuery(agendaRefQuery);
+  const { data: external } = useQuery(externalBusyQuery);
   const { data: me } = useQuery({ queryKey: ["me-practitioner"], queryFn: async () => {
     const { data: u } = await supabase.auth.getUser();
     return (await supabase.from("practitioners").select("id").eq("user_id", u.user?.id ?? "").maybeSingle()).data?.id ?? null;
@@ -88,6 +92,7 @@ function Page() {
           <button type="button" aria-label="Volgende dag" onClick={() => go({ datum: shift(date, 1), afspraak: undefined })} className="flex size-9 items-center justify-center rounded-full bg-sand"><img src="/ui-icons/pijl-rechts.svg" alt="" className="size-4" /></button>
           {!isToday && <PillButton variant="ghost" size="sm" onClick={() => go({ datum: undefined, afspraak: undefined })}>Vandaag</PillButton>}
         </>} />
+      <FollowUps />
 
       {nn && (nn.current || nn.next) && (
         <div className="grid grid-cols-2 gap-4">
@@ -143,6 +148,10 @@ function Page() {
                       : <span className="flex h-8 items-center gap-1.5 whitespace-nowrap rounded-full px-3 text-[12px] ring-1 ring-mist"><img src="/ui-icons/locatie.svg" alt="" className="size-3.5" />{a.locName}</span>}
                   </button>
                 );
+              })}
+              {external?.visible && external.periods.filter((b) => b.practitioner_id === pid && local(b.starts_at).date === date).map((b) => {
+                const start = local(b.starts_at).minute, end = local(b.ends_at).minute;
+                return <ExternalBusyBlock key={b.id} start={start} end={end} top={14 + (start - view.range[0] * 60) / 60 * HOUR} height={(end - start) / 60 * HOUR} className="left-[60px] right-3" />;
               })}
               {isToday && now.minute >= view.range[0] * 60 && now.minute <= view.range[1] * 60 && (
                 <div className="pointer-events-none absolute inset-x-0 flex items-center" style={{ top: 14 + ((now.minute - view.range[0] * 60) / 60) * HOUR }}>

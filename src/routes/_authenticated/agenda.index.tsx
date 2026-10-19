@@ -8,6 +8,8 @@ import { PageHeader } from "@/components/PageHeader";
 import { PillButton } from "@/components/PillButton";
 import { Select } from "@/components/Select";
 import { agendaApptsQuery, agendaRefQuery } from "@/data/agenda";
+import { externalBusyQuery } from "@/data/external-busy";
+import { ExternalBusyBlock } from "@/features/agenda/ExternalBusyBlocks";
 import { daySegments, freePlaces, hourRange, weekStart, type Segment } from "@/domain/agenda";
 import type { SlotBlock, SlotException } from "@/domain/slots";
 import { fmtTime } from "@/domain/slots";
@@ -47,7 +49,8 @@ function Page() {
   const monday = weekStart(date);
   const days = week ? Array.from({ length: 7 }, (_, i) => shift(monday, i)) : [date];
   const { data: ref } = useQuery(agendaRefQuery);
-  const { data: rawAppts } = useQuery(agendaApptsQuery(`${shift(days[0]!, -1)}T00:00:00Z`, `${shift(days[days.length - 1]!, 2)}T00:00:00Z`));
+  const { data: external } = useQuery(externalBusyQuery);
+    const { data: rawAppts } = useQuery(agendaApptsQuery(`${shift(days[0] ?? date, -1)}T00:00:00Z`, `${shift(days[days.length - 1] ?? date, 2)}T00:00:00Z`));
   const go = (patch: Partial<typeof s>) => void navigate({ search: (p) => ({ ...p, ...patch }) });
   const practitionerId = s.behandelaar ?? (week ? ref?.practitioners[0]?.id : undefined);
 
@@ -126,7 +129,7 @@ function Page() {
             </div>
           ) : <p className="text-[13px] text-muted-foreground">{view.cols.length} behandelaars ingeroosterd op deze dag</p>}
           <div className="overflow-x-auto">
-            <div className="grid min-w-max" style={{ gridTemplateColumns: `56px repeat(${Math.max(1, view.cols.length)}, minmax(${week ? 160 : 260}px, 1fr))` }}>
+            <div className="grid min-w-max" style={{ gridTemplateColumns: `56px repeat(${Math.max(1, view.cols.length)}, minmax(340px, 1fr))` }}>
               <span />
               {view.cols.map((c) => week
                 ? <p key={c.key} className={cn("px-2 pb-3 text-[14px]", c.today && "font-semibold text-primary")}>{c.title}</p>
@@ -143,16 +146,23 @@ function Page() {
                 <div key={c.key} className="relative border-l border-mist" style={{ height: (view.range[1] - view.range[0]) * HOUR }}>
                   {Array.from({ length: view.range[1] - view.range[0] }, (_, i) => <span key={i} className="absolute inset-x-0 border-t border-mist/60" style={{ top: i * HOUR }} />)}
                   {c.segs.map((g, i) => <SegBox key={i} g={g} top0={view.range[0]} name={g.locationId ? view.locs.get(g.locationId)?.name ?? "" : ""} online={!!g.locationId && view.locs.get(g.locationId)?.kind === "online"} />)}
+                  {external?.visible && external.periods.filter((b) => b.practitioner_id === (week ? practitionerId : c.key) && local(b.starts_at).date === (week ? c.key : date)).map((b) => {
+                    const start = local(b.starts_at).minute, end = local(b.ends_at).minute;
+                    return <ExternalBusyBlock key={b.id} start={start} end={end} top={(start - view.range[0] * 60) / 60 * HOUR} height={(end - start) / 60 * HOUR} />;
+                  })}
                   {c.own.map((a) => {
                     const on = a.id === s.afspraak;
                     const online = view.locs.get(a.location_id)?.kind === "online";
                     const tName = ref?.treatments.find((t) => t.id === a.treatment_id)?.name_nl ?? "";
                     return (
-                      <button key={a.id} type="button" onClick={() => go({ afspraak: a.id })}
-                        className={cn("absolute inset-x-2 overflow-hidden rounded-[8px] px-2.5 py-1 text-left", on ? "bg-primary text-primary-foreground" : "bg-background ring-1 ring-mist")}
+                       <button key={a.id} type="button" onClick={() => go({ afspraak: a.id })}
+                         aria-label={`${fmtTime(a.s.minute)} · ${a.patient?.patient_number ?? ""} · ${tName}${online ? " · Online" : ""}`}
+                         title={`${fmtTime(a.s.minute)} · ${a.patient?.patient_number ?? ""} · ${tName}${online ? " · Online" : ""}`}
+                         className={cn("absolute inset-x-2 flex items-center gap-1 overflow-hidden rounded-[8px] px-2 text-left text-[11px] leading-tight", on ? "bg-primary text-primary-foreground" : "bg-background ring-1 ring-mist")}
                         style={{ top: ((a.s.minute - view.range[0] * 60) / 60) * HOUR + 2, height: Math.max(26, ((a.e.minute - a.s.minute) / 60) * HOUR - 4) }}>
-                        <p className="flex items-center gap-1 whitespace-nowrap text-[12px] font-semibold">{fmtTime(a.s.minute)} · {a.patient?.patient_number ?? ""}{online && <span className={cn("inline-flex items-center gap-1", !on && "text-primary")}><img src="/ui-icons/videogesprek.svg" alt="" className="size-3.5" />Online</span>}</p>
-                        {!week && <p className="truncate text-[11px]">{tName}</p>}
+                         <span className="shrink-0 font-semibold">{fmtTime(a.s.minute)} · {a.patient?.patient_number ?? ""}</span>
+                         <span className="min-w-0 truncate">· {tName}</span>
+                         {online && <img src="/ui-icons/videogesprek.svg" alt="Online" className={cn("size-3.5 shrink-0", on && "invert")} />}
                       </button>
                     );
                   })}

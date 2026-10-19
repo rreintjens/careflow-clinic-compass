@@ -5,7 +5,9 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { Card } from "@/components/Card";
-import { TextField } from "@/components/Field";
+import { TextField, Toggle } from "@/components/Field";
+import { externalBusyQuery } from "@/data/external-busy";
+import { setExternalBusyVisible } from "@/data/external-busy.functions";
 import { Modal } from "@/components/Modal";
 import { PageHeader } from "@/components/PageHeader";
 import { PillButton } from "@/components/PillButton";
@@ -25,10 +27,12 @@ const dayTime = (iso: string | null) => (iso ? new Intl.DateTimeFormat("nl-NL", 
 function KoppelingenPage() {
   const { data: texts } = useSuspenseQuery(uiTextsQuery("koppelingen_ui"));
   const { data: k } = useSuspenseQuery(koppelingenQuery);
+  const { data: busy } = useSuspenseQuery(externalBusyQuery);
   const qc = useQueryClient();
   const navigate = useNavigate();
   const t = (key: string) => textOf(texts, key);
   const refresh = () => qc.invalidateQueries({ queryKey: koppelingenQuery.queryKey });
+  const visibility = useMutation({ mutationFn: (visible: boolean) => setExternalBusyVisible({ data: { visible } }), onSuccess: () => qc.invalidateQueries({ queryKey: externalBusyQuery.queryKey }), onError: () => toast.error("Opslaan is niet gelukt") });
 
   const [accountOpen, setAccountOpen] = useState(false);
   const [keyOpen, setKeyOpen] = useState(false);
@@ -70,6 +74,10 @@ function KoppelingenPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title="Koppelingen" description={t("page_desc")} />
+      <Card title={t("title_ekis_agenda")}>
+        <Rows rows={[[t("lbl_actief"), t("ekis_agenda_status")], [t("ekis_agenda_updated"), dayTime(busy.updatedAt)]]} />
+        <div className="mt-4 flex items-center gap-3"><Toggle label={t("ekis_agenda_visible")} checked={busy.visible} onChange={(v) => !visibility.isPending && visibility.mutate(v)} /><span className="text-sm">{t("ekis_agenda_visible")}</span></div>
+      </Card>
 
       <Card title={t("title_ekis")} description={t("ekis_desc")}>
         <Rows

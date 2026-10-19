@@ -9,6 +9,7 @@ import { optLabel, orgQuery } from "@/data/organisation";
 import { defOf, flowOf, questionnairesQuery, versionsOf, workingVersion } from "@/data/questionnaires";
 import { collectSignals, makeCtx, prefillAnswers, type Answers, type FlowFile, type RedOutcome } from "@/domain/questionnaire/engine";
 import { QuestionnaireRunner } from "@/features/questionnaire/QuestionnaireRunner";
+import { configOfDefinition } from "@/domain/questionnaire/version-config";
 
 export const Route = createFileRoute("/_authenticated/boekingsflow/vragenlijsten/$id_/test")({
   head: () => ({ meta: [{ title: "Testmodus vragenlijst · Beheer · The Body Clinic" }, { name: "robots", content: "noindex" }] }),
@@ -37,7 +38,7 @@ function TestMode() {
   const today = new Date().toISOString().slice(0, 10);
   const initial = useMemo(() => (def && def.prefill_from_triage ? prefillAnswers(def, { sex: "Vrouw", height_cm: 170, weight_kg: 95, conditions: ["Geen van deze"], weightloss_meds_now: "Nee", comorbidities: ["Geen van deze"] }) : {}), [def]);
   if (!q || !def) return <p className="text-sm">Deze vragenlijst bestaat niet.</p>;
-  const signals = result ? collectSignals(def, makeCtx(doc, result.answers, today)) : [];
+  const signals = result ? collectSignals(def, makeCtx(configOfDefinition(def, doc), result.answers, today)) : [];
   return (
     <div className="flex flex-col gap-6">
       <div>

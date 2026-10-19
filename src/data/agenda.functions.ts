@@ -50,7 +50,7 @@ export const createStaffAppointment = createServerFn({ method: "POST" })
       starts_at: startsAt.toISOString(), ends_at: new Date(startsAt.getTime() + (t?.duration_min ?? 30) * 60_000).toISOString(),
       status: "booked", source: "agenda", notify: data.notify, booking_reason: data.reason, new_patient: false,
     }).select("id").single();
-    if (ins.error) return { ok: false as const, reason: "failed" };
+    if (ins.error) return { ok: false as const, reason: ins.error.message.includes("eKis") ? "external_busy" : "failed" };
     await attachMeeting(db, tenant, (ins.data as { id: string }).id);
     await safeQueue(db, (ins.data as { id: string }).id, "confirmation", { dedupe: `confirmation-${(ins.data as { id: string }).id}` });
     return { ok: true as const, id: (ins.data as { id: string }).id };

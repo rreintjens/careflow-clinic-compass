@@ -158,11 +158,11 @@ export const getTriage = createServerFn({ method: "GET" })
     const q = (await db.from("questionnaires").select("id, key, flow_id").eq("tenant_id", tenant.id).eq("key", data.key).maybeSingle()).data;
     if (!q) return null;
     const [v, f] = await Promise.all([
-      db.from("questionnaire_versions").select("definition").eq("questionnaire_id", q.id).eq("status", "published").maybeSingle(),
+      db.from("questionnaire_versions").select("definition, version_config").eq("questionnaire_id", q.id).eq("status", "published").maybeSingle(),
       db.from("questionnaire_flows").select("document").eq("id", q.flow_id).maybeSingle(),
     ]);
     if (!v.data) return null;
-    return { key: q.key, definition: v.data.definition, flow: f.data?.document ?? {} };
+    return { key: q.key, definition: v.data.definition, flow: v.data.version_config };
   });
 
 /** Dutch address from postcode + house number (public PDOK locatieserver). */

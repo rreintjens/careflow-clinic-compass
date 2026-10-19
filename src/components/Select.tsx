@@ -28,7 +28,7 @@ export function Select({ label, options, value, onChange, help, disabled, classN
       <label htmlFor={id} className={cn("text-[13px] font-medium", inline && "sr-only")}>
         {label}
       </label>
-      <RSelect.Root value={value} onValueChange={onChange} disabled={disabled ?? false}>
+      <RSelect.Root value={value || "__empty_option__"} onValueChange={(v) => onChange(v === "__empty_option__" ? "" : v)} disabled={disabled ?? false}>
         <RSelect.Trigger
           id={id}
           className={cn("flex items-center justify-between gap-2.5 text-left data-[disabled]:opacity-60", inline ? "h-9 rounded-[10px] bg-background px-3 text-sm" : "h-12 rounded-[14px] bg-sand px-4 text-[15px]")}
@@ -50,7 +50,7 @@ export function Select({ label, options, value, onChange, help, disabled, classN
               {options.map((o) => (
                 <RSelect.Item
                   key={o.value}
-                  value={o.value}
+                  value={o.value || "__empty_option__"}
                   className="cursor-pointer rounded-[10px] px-3 py-2.5 text-sm outline-none data-[highlighted]:bg-teal-light data-[state=checked]:font-medium data-[state=checked]:text-primary"
                 >
                   <RSelect.ItemText>{o.label}</RSelect.ItemText>

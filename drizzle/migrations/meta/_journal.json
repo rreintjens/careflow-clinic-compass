@@ -288,6 +288,20 @@
       "when": 1792405901965,
       "tag": "0040_staff_names",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1792409380036,
+      "tag": "0041_questionnaire_version_configuration",
+      "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1792409490382,
+      "tag": "0042_external_busy_and_dossier_entries",
+      "breakpoints": true
     }
   ]
 }

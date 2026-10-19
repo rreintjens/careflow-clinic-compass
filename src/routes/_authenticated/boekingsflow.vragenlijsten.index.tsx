@@ -14,7 +14,7 @@ import { createQuestionnaire, defOf, draftOf, importFlow, publishedOf, questionn
 import { questionCount, type FlowFile } from "@/domain/questionnaire/engine";
 
 export const Route = createFileRoute("/_authenticated/boekingsflow/vragenlijsten/")({
-  head: () => ({ meta: [{ title: "Vragenlijsten · Beheer · The Body Clinic" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Vragenlijsten · Beheer · The Body Clinic" }, { name: "description", content: "Live vragenlijsten en conceptversies van The Body Clinic bekijken." }, { property: "og:title", content: "Vragenlijsten · The Body Clinic" }, { property: "og:description", content: "Live vragenlijsten en conceptversies van The Body Clinic bekijken." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { name: "robots", content: "noindex" }] }),
   loader: ({ context }) => Promise.all([context.queryClient.ensureQueryData(questionnairesQuery), context.queryClient.ensureQueryData(orgQuery)]),
   component: Page,
 });
@@ -23,6 +23,7 @@ function Page() {
   const { data } = useSuspenseQuery(questionnairesQuery);
   const { data: org } = useSuspenseQuery(orgQuery);
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [q, setQ] = useState("");
   const [moment, setMoment] = useState("all");
   const [treatment, setTreatment] = useState("all");
@@ -68,14 +69,14 @@ function Page() {
               const ts = linked(x.key, x.moment);
               const pub = publishedOf(data, x.id);
               return (
-                <tr key={x.id}>
+                <tr key={x.id} className="cursor-pointer transition-colors hover:bg-teal-light" onClick={() => void navigate({ to: "/boekingsflow/vragenlijsten/$id", params: { id: x.id } })}>
                   <td className={tdCls}>{x.name}</td>
                   <td className={tdCls}><Tag tone={x.moment === "after_booking" ? "sand" : "teal"}>{optLabel(org, "questionnaire_moment", x.moment)}</Tag></td>
                   <td className={tdCls}>{ts.length === 0 ? "Nog niet gekoppeld" : ts.length === 1 ? ts[0]?.name_nl : `${ts[0]?.name_nl} en ${ts.length - 1} andere`}</td>
                   <td className={tdCls}>{def ? `${questionCount(def)} vragen` : ""}</td>
                   <td className={tdCls}>{x.moment === "after_booking" ? "Naar het dossier" : "Groen of rood"}</td>
                   <td className={tdCls}><span className="flex flex-wrap items-center gap-1.5">{pub && <VersionPill tone="live">Live v{pub.version_no}</VersionPill>}{draftOf(data, x.id) && <VersionPill tone="draft">Concept v{draftOf(data, x.id)?.version_no}</VersionPill>}</span></td>
-                  <td className={tdCls}><Link to="/boekingsflow/vragenlijsten/$id" params={{ id: x.id }} className="text-primary underline">Wijzig</Link></td>
+                  <td className={tdCls}><Link to="/boekingsflow/vragenlijsten/$id" params={{ id: x.id }} onClick={(e) => e.stopPropagation()} className="text-primary underline">Bekijk</Link></td>
                 </tr>
               );
             })}

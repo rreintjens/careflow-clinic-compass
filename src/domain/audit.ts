@@ -28,6 +28,7 @@ const TABS: Record<string, string> = { overzicht: "het dossier", tijdlijn: "de t
 /** Dutch noun for a changed table, never the table name itself. */
 const NOUNS: Record<string, string> = {
   appointments: "een afspraak", patients: "een patiënt", consult_notes: "een consultverslag", measurements: "een meting",
+  patient_contacts: "een contactmoment of notitie", patient_requests: "een aanvraag",
   treatment_plans: "een behandelplan", patient_documents: "een document", roles: "een rol", role_permissions: "de rechten van een rol",
   tenant_memberships: "een gebruiker", profiles: "een gebruiker", settings: "een instelling", holidays: "een feestdag",
   treatments: "een behandeling", practitioners: "een behandelaar", locations: "een locatie", rooms: "een ruimte", equipment: "een apparaat",
