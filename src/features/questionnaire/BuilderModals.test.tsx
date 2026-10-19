@@ -6,6 +6,7 @@ import seed from "@/seed/tbc_flow_medisch_afvallen_v0.2.json";
 
 vi.mock("@tanstack/react-router", () => ({ Link: ({ children }: { children: unknown }) => <a>{children as string}</a> }));
 
+Element.prototype.scrollTo = () => {};
 const { ItemModal } = await import("./BuilderModals");
 const { ConditionModal, fieldInfos, refOptions } = await import("./conditions");
 
