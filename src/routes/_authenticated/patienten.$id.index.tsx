@@ -8,6 +8,7 @@ import { dossierQuery } from "@/data/patients";
 import { signalsOf } from "@/features/agenda/PatientCard";
 import { buildTimeline } from "@/features/dossier/timeline";
 import { TimelineList } from "@/features/dossier/TimelineList";
+import { formatClinicalDate } from "@/domain/time";
 
 export const Route = createFileRoute("/_authenticated/patienten/$id/")({ head: () => ({ meta: [{ title: "Overzicht · Dossier · The Body Clinic" }, { name: "description", content: "Patiëntoverzicht en laatste gebeurtenissen in het dossier." }, { property: "og:title", content: "Dossieroverzicht · The Body Clinic" }, { property: "og:description", content: "Patiëntoverzicht en laatste gebeurtenissen in het dossier." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { name: "robots", content: "noindex" }] }), component: Overview });
 
@@ -21,17 +22,17 @@ function Overview() {
   const triage = d.sets.find((s) => s.questionnaire_key === "triage");
   const medical = d.sets.find((s) => s.questionnaire_key !== "triage");
   const a = (triage?.answers ?? {}) as Record<string, unknown>;
-  const tri = { measured_on: triage?.created_at.slice(0, 10) ?? "", height_cm: Number(a["height_cm"]) || null, weight_kg: Number(a["weight_kg"]) || null };
+  const tri = { measured_on: triage?.completed_at ?? triage?.created_at ?? "", height_cm: Number(a["height_cm"]) || null, weight_kg: Number(a["weight_kg"]) || null };
   const history = [tri, ...measurements];
   const latest = [...history].filter((m) => m.weight_kg !== null).sort((a, b) => b.measured_on.localeCompare(a.measured_on))[0];
   const calculated = latest ? measurementWithBmi(latest, history) : null;
   const h = calculated?.height_cm, w = calculated?.weight_kg;
   const bmi = calculated?.bmi?.toFixed(1).replace(".", ",");
-  const when = (s?: string | null) => (s ? new Date(s).toLocaleString("nl-NL", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" }) : "");
+  const when = (s?: string | null) => (s ? formatClinicalDate(s, true) : "");
   const signals = signalsOf(d.sets);
   const rows: Array<[string, string]> = [
     ["BMI en gewicht", w ? `${bmi ?? "BMI niet bekend"} · ${h ? `${h} cm, ` : ""}${w} kg, ${latest === tri ? "gemeten bij het boeken op" : "gemeten op"} ${when(latest?.measured_on)}` : "Niet bekend"],
-    ["Triage", triage ? (triage.status === "completed" ? `Groen${signals.length ? `; signalen: ${signals.map((s) => s.label.toLowerCase()).join(", ")}` : ""}` : "Gestart, niet afgerond") : "Niet doorlopen"],
+    ["Triage", triage ? (triage.status === "completed" ? `Groen${signals.length ? `, met ${signals.length === 1 ? "signaal" : "signalen"}: ${signals.map((s) => s.label).join(", ")}` : ""}` : "Gestart, niet afgerond") : "Niet doorlopen"],
     ["Medische vragenlijst", medical?.completed_at ? `Ingevuld op ${when(medical.completed_at)}` : medical ? "Gestart, nog niet afgerond" : "Nog niet ingevuld"],
     ["Huisarts", d.patient.gp_name ?? "Niet bekend"],
   ];

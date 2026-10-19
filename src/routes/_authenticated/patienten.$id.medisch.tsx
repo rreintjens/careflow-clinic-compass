@@ -4,30 +4,22 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { TextArea, TextField } from "@/components/Field";
+import { TextArea } from "@/components/Field";
 import { Modal } from "@/components/Modal";
 import { PillButton } from "@/components/PillButton";
 import { dossierQuery } from "@/data/patients";
-import type { Item, QuestionnaireDef } from "@/domain/questionnaire/engine";
+import type { QuestionnaireDef } from "@/domain/questionnaire/engine";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { measurementsQuery } from "@/data/measurements";
 import { measurementWithBmi } from "@/domain/measurements";
+import { answerText } from "@/domain/questionnaire/answers";
+import { formatClinicalDate } from "@/domain/time";
 
 export const Route = createFileRoute("/_authenticated/patienten/$id/medisch")({ head: () => ({ meta: [{ title: "Medisch · Dossier · The Body Clinic" }, { name: "description", content: "Intake, anamnese en metingen in het patiëntendossier." }, { property: "og:title", content: "Medisch dossier · The Body Clinic" }, { property: "og:description", content: "Intake, anamnese en metingen in het patiëntendossier." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { name: "robots", content: "noindex" }] }), component: Medical });
 
 type Sig = { item: string };
-const fmtDate = (s: string) => new Date(s).toLocaleDateString("nl-NL", { day: "numeric", month: "long", timeZone: "Europe/Amsterdam" });
-
-/** Display value of one stored answer, following the item type. */
-function show(it: Item, v: unknown): string {
-  if (v === undefined || v === null || v === "") return "";
-  if (Array.isArray(v)) return v.join(", ");
-  if (typeof v === "boolean") return v ? "Ja" : "Nee";
-  if (typeof v === "object") return Object.entries(v as Record<string, unknown>).map(([k, x]) => `${x}${it.fields?.[k] ? ` ${k.replace(/^.*_/, "")}` : ""}`).join(", ");
-  if (it.type === "date_segmented" && typeof v === "string") return v.split("-").reverse().join("-");
-  return `${String(v)}${it.unit ? ` ${it.unit}` : ""}`;
-}
+const fmtDate = (s: string) => formatClinicalDate(s);
 
 function useMedical(id: string) {
   return useQuery({
@@ -74,15 +66,15 @@ function Medical() {
           const def = s.version_id ? defs[s.version_id] : undefined;
           const ans = (s.answers ?? {}) as Record<string, unknown>;
           const sig = new Set((Array.isArray(s.signals) ? (s.signals as Sig[]) : []).map((x) => x.item));
-          const items = (def?.pages ?? []).flatMap((p) => p.items ?? []).filter((it) => it.type !== "answer_summary" && it.type !== "checkbox_required" && show(it, ans[it.id]) !== "");
+          const items = (def?.pages ?? []).flatMap((p) => p.items ?? []).filter((it) => it.type !== "answer_summary" && it.type !== "checkbox_required" && answerText(it, ans) !== "");
           return (
             <div key={s.id} className="mt-5">
               <p className="mb-2 text-[14px] font-semibold">{def?.name ?? s.questionnaire_key}, {fmtDate(s.completed_at ?? s.created_at)}</p>
-              <dl className="grid grid-cols-2 gap-x-6">
+              <dl className="grid grid-cols-1 gap-x-6">
                 {items.map((it) => (
                   <div key={it.id} className="grid grid-cols-[200px_1fr] gap-4 border-b border-mist py-2.5 text-[13px]">
                     <dt className="text-muted-foreground">{it.text}</dt>
-                    <dd>{show(it, ans[it.id])}{sig.has(it.id) && <span className="ml-2 whitespace-nowrap rounded-full bg-signal px-2.5 py-0.5 text-[11px] ring-1 ring-signal-border">signaal</span>}</dd>
+                    <dd>{answerText(it, ans)}{sig.has(it.id) && <span className="ml-2 whitespace-nowrap rounded-full bg-signal px-2.5 py-0.5 text-[11px] ring-1 ring-signal-border">signaal</span>}</dd>
                   </div>
                 ))}
               </dl>
@@ -107,7 +99,7 @@ function Medical() {
             {rows.map((m) => {
               const calculated = measurementWithBmi(m, rows);
               const bmi = calculated.bmi === null ? "–" : calculated.bmi.toFixed(1).replace(".", ",");
-              return <tr key={m.id} className="border-b border-mist">{[new Date(m.measured_on).toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "numeric" }), m.weight_kg ? `${String(m.weight_kg).replace(".", ",")} kg` : "–", bmi, m.waist_cm ? `${m.waist_cm} cm` : "–", m.bp_systolic ? `${m.bp_systolic}/${m.bp_diastolic ?? ""}` : "–", m.pulse ?? "–", m.source === "triage" ? "Patiënt, bij het boeken" : "Medewerker"].map((v, i) => <td key={i} className="whitespace-nowrap px-2.5 py-3">{v}</td>)}</tr>;
+              return <tr key={m.id} className="border-b border-mist">{[fmtDate(m.measured_on), m.weight_kg ? `${String(m.weight_kg).replace(".", ",")} kg` : "–", bmi, m.waist_cm ? `${m.waist_cm} cm` : "–", m.bp_systolic ? `${m.bp_systolic}/${m.bp_diastolic ?? ""}` : "–", m.pulse ?? "–", m.source === "triage" ? "Patiënt, bij het boeken" : "Medewerker"].map((v, i) => <td key={i} className="whitespace-nowrap px-2.5 py-3">{v}</td>)}</tr>;
             })}
           </tbody>
         </table>

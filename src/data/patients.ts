@@ -2,6 +2,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import { queryOptions } from "@tanstack/react-query";
 
 import { supabase } from "@/integrations/supabase/client";
+import { withAnswerSignals } from "./answer-sets";
 
 function must<D>(r: { data: D | null; error: unknown }): D {
   if (r.error) throw r.error;
@@ -54,7 +55,7 @@ async function loadDossier(key: string) {
     supabase.from("appointments").select(APPT).eq("patient_id", p.id).neq("status", "hold").order("starts_at", { ascending: false }),
     supabase.from("answer_sets").select("id, appointment_id, questionnaire_key, version_id, status, completed_at, created_at, updated_at, signals, answers").eq("patient_id", p.id).order("created_at", { ascending: false }),
   ]);
-  return { patient: p, appointments: must(appts), sets: must(sets) };
+  return { patient: p, appointments: must(appts), sets: await withAnswerSignals(must(sets)) };
 }
 /** URL segment for a record: always the patient number when there is one. */
 export const recordKey = (p: { id: string; patient_number?: number | string | null }) => String(p.patient_number ?? p.id);
