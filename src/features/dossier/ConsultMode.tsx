@@ -167,10 +167,11 @@ export function ActiveConsultMode() {
         className={cn("fixed z-40 flex flex-col overflow-hidden rounded-[20px] bg-sand shadow-[0_8px_24px_rgba(57,51,46,0.16)] ring-1", otherRecord ? "ring-2 ring-warning" : "ring-primary", !prefs.min && "resize")}
         style={{ top, right, width: prefs.w, ...(prefs.min ? {} : { height: prefs.h ? `min(${prefs.h}px, calc(100vh - ${top + 16}px))` : `calc(100vh - ${top + 24}px)` }), minWidth: 300, minHeight: prefs.min ? undefined : 260, maxHeight: `calc(100vh - ${top + 16}px)` }}>
         <div className="flex cursor-move touch-none select-none items-center gap-2 px-5 pt-4" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp}>
-          <span className="min-w-0"><span className="block text-[14px] font-semibold">Consultnotities</span><span className={cn("block truncate text-[12px]", otherRecord ? "text-warning" : "text-muted-foreground")}>{name} · {p.patient_number}</span></span>
+          <span className="text-[14px] font-semibold">Consultnotities</span>
           {savedAt && <span className="ml-auto flex shrink-0 items-center gap-1 whitespace-nowrap text-[12px] text-primary"><UiIcon name="vinkje" className="size-3" />opgeslagen {savedAt}</span>}
           <button type="button" aria-label={prefs.min ? "Openklappen" : "Inklappen"} onPointerDown={(e) => e.stopPropagation()} onClick={() => savePrefs({ min: !prefs.min })} className={cn("flex size-7 shrink-0 items-center justify-center rounded-full bg-background", !savedAt && "ml-auto")}><UiIcon name={prefs.min ? "plus" : "min"} className="size-3.5" /></button>
         </div>
+        <p className={cn("select-none px-5 text-[13px] font-medium", otherRecord ? "text-warning" : "text-primary")}>{name} · {p.patient_number}</p>
         {otherRecord && <p role="alert" className="mx-5 mt-2 rounded-[12px] bg-warning-bg px-3 py-2 text-[12px] text-warning">Je bekijkt een ander dossier. Deze notities horen bij {name} ({p.patient_number}).</p>}
         {prefs.min ? <div className="pb-4" /> : (
           <>
