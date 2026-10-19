@@ -51,3 +51,19 @@ describe("question modal (vraag 7, aandoeningen)", () => {
     expect(screen.getByText("Open het klikbare scherm")).toBeTruthy();
   });
 });
+
+describe("short condition lines under builder rows", () => {
+  it("vraag 7 shows the BMI range with the reduced values in brackets", async () => {
+    const { compactConditionText } = await import("./conditions");
+    const { page } = find("comorbidities");
+    const named = { ...ctx, fields: fieldInfos(triage, flow.computed_fields, { computed: { bmi: "BMI" }, thresholds: {} }) };
+    expect(compactConditionText(page.show_if, named)).toBe("BMI tussen 25 en 30 (23 en 27,5)");
+  });
+  it("the condition window title uses a meaningful short name", () => {
+    const { item, page } = find("comorbidities");
+    render(<ItemModal item={item} number={7} questionnaireName={triage.name} questionnaireId="q" def={triage} page={page} flow={flow} ui={{}} itemTypes={[{ value: "multi_choice", label: "Meer keuzes" }]} sections={["Je gewicht"]} section={page.section} rejections={[]} images={[]} ctx={ctx} onSave={() => {}} onClose={() => {}} />);
+    const tonen = screen.getAllByText("Tonen").at(-1)?.parentElement;
+    fireEvent.click(within(tonen!).getByText("Wijzig"));
+    expect(screen.getByRole("dialog", { name: "Wanneer tonen we vraag 7, aandoeningen?" })).toBeTruthy();
+  });
+});
