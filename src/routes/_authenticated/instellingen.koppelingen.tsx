@@ -17,7 +17,7 @@ import { textOf, uiTextsQuery } from "@/data/ui-texts";
 const koppelingenQuery = queryOptions({ queryKey: ["koppelingen"], queryFn: () => getKoppelingen() });
 
 export const Route = createFileRoute("/_authenticated/instellingen/koppelingen")({
-  head: () => ({ meta: [{ title: "Koppelingen · Beheer · The Body Clinic" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Koppelingen · Beheer · The Body Clinic" }, { name: "description", content: "Koppelingen bij The Body Clinic. Beheer en bekijk de bijbehorende gegevens." }, { property: "og:title", content: "Koppelingen · Beheer · The Body Clinic" }, { property: "og:description", content: "Koppelingen bij The Body Clinic. Beheer en bekijk de bijbehorende gegevens." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { name: "robots", content: "noindex" }] }),
   loader: ({ context }) => Promise.all([context.queryClient.ensureQueryData(uiTextsQuery("koppelingen_ui")), context.queryClient.ensureQueryData(koppelingenQuery)]),
   component: KoppelingenPage,
 });

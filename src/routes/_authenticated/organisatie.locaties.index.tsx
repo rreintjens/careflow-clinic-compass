@@ -13,7 +13,7 @@ import { createLocation, opts, orgQuery } from "@/data/organisation";
 import { notBookableAt } from "@/features/organisation/bookability";
 
 export const Route = createFileRoute("/_authenticated/organisatie/locaties/")({
-  head: () => ({ meta: [{ title: "Locaties · Beheer · The Body Clinic" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Locaties · Beheer · The Body Clinic" }, { name: "description", content: "Locaties bij The Body Clinic. Beheer en bekijk de bijbehorende gegevens." }, { property: "og:title", content: "Locaties · Beheer · The Body Clinic" }, { property: "og:description", content: "Locaties bij The Body Clinic. Beheer en bekijk de bijbehorende gegevens." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { name: "robots", content: "noindex" }] }),
   loader: ({ context }) => context.queryClient.ensureQueryData(orgQuery),
   component: LocationsPage,
 });

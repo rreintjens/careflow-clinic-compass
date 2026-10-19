@@ -15,7 +15,7 @@ import { allBlocksQuery, createPractitioner, fullName, locName, opts, orgQuery, 
 import { scheduleStatus } from "@/domain/organisation";
 
 export const Route = createFileRoute("/_authenticated/organisatie/behandelaars/")({
-  head: () => ({ meta: [{ title: "Behandelaars · Beheer · The Body Clinic" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Behandelaars · Beheer · The Body Clinic" }, { name: "description", content: "Behandelaars bij The Body Clinic. Beheer en bekijk de bijbehorende gegevens." }, { property: "og:title", content: "Behandelaars · Beheer · The Body Clinic" }, { property: "og:description", content: "Behandelaars bij The Body Clinic. Beheer en bekijk de bijbehorende gegevens." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { name: "robots", content: "noindex" }] }),
   loader: ({ context }) => Promise.all([context.queryClient.ensureQueryData(orgQuery), context.queryClient.ensureQueryData(allBlocksQuery)]),
   component: PractitionersPage,
 });

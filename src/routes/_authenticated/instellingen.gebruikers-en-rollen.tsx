@@ -17,7 +17,7 @@ import { staffContextQuery } from "@/data/staff";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/instellingen/gebruikers-en-rollen")({
-  head: () => ({ meta: [{ title: "Gebruikers en rollen · The Body Clinic" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Gebruikers en rollen · The Body Clinic" }, { name: "description", content: "Gebruikers en rollen bij The Body Clinic. Beheer en bekijk de bijbehorende gegevens." }, { property: "og:title", content: "Gebruikers en rollen · The Body Clinic" }, { property: "og:description", content: "Gebruikers en rollen bij The Body Clinic. Beheer en bekijk de bijbehorende gegevens." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { name: "robots", content: "noindex" }] }),
   loader: ({ context }) => context.queryClient.ensureQueryData(rolesQuery),
   component: RolesPage,
 });

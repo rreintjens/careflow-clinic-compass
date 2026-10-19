@@ -20,7 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/organisatie/behandelaars/$id")({
-  head: () => ({ meta: [{ title: "Behandelaar · Beheer · The Body Clinic" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Behandelaar · Beheer · The Body Clinic" }, { name: "description", content: "Behandelaar bij The Body Clinic. Beheer en bekijk de bijbehorende gegevens." }, { property: "og:title", content: "Behandelaar · Beheer · The Body Clinic" }, { property: "og:description", content: "Behandelaar bij The Body Clinic. Beheer en bekijk de bijbehorende gegevens." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { name: "robots", content: "noindex" }] }),
   loader: async ({ context, params }) => {
     const org = await context.queryClient.ensureQueryData(orgQuery);
     if (!org.practitioners.some((p) => p.id === params.id)) throw notFound();

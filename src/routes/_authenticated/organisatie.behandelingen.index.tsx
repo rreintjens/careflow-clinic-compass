@@ -21,7 +21,7 @@ import { MailImagePicker } from "@/features/mail/MailImagePicker";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/organisatie/behandelingen/")({
-  head: () => ({ meta: [{ title: "Behandelingen · Beheer · The Body Clinic" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Behandelingen · Beheer · The Body Clinic" }, { name: "description", content: "Behandelingen bij The Body Clinic. Beheer en bekijk de bijbehorende gegevens." }, { property: "og:title", content: "Behandelingen · Beheer · The Body Clinic" }, { property: "og:description", content: "Behandelingen bij The Body Clinic. Beheer en bekijk de bijbehorende gegevens." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { name: "robots", content: "noindex" }] }),
   loader: ({ context }) => Promise.all([context.queryClient.ensureQueryData(orgQuery), context.queryClient.ensureQueryData(generalDefaultsQuery)]),
   component: TreatmentsPage,
 });

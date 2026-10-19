@@ -10,7 +10,7 @@ import { patientListQuery, questionnaireState, searchPatients } from "@/data/pat
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/patienten/")({
-  head: () => ({ meta: [{ title: "Patiënten · Beheer · The Body Clinic" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Patiënten · Beheer · The Body Clinic" }, { name: "description", content: "Patiënten bij The Body Clinic. Beheer en bekijk de bijbehorende gegevens." }, { property: "og:title", content: "Patiënten · Beheer · The Body Clinic" }, { property: "og:description", content: "Patiënten bij The Body Clinic. Beheer en bekijk de bijbehorende gegevens." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { name: "robots", content: "noindex" }] }),
   component: Page,
 });
 

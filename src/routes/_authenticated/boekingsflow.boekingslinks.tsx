@@ -24,7 +24,7 @@ import { absoluteBookingLinkUtm, bookingLinkPath, linkLocations, linkPractitione
 import type { Tables } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/boekingsflow/boekingslinks")({
-  head: () => ({ meta: [{ title: "Boekingslinks · Beheer · The Body Clinic" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Boekingslinks · Beheer · The Body Clinic" }, { name: "description", content: "Boekingslinks bij The Body Clinic. Beheer en bekijk de bijbehorende gegevens." }, { property: "og:title", content: "Boekingslinks · Beheer · The Body Clinic" }, { property: "og:description", content: "Boekingslinks bij The Body Clinic. Beheer en bekijk de bijbehorende gegevens." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { name: "robots", content: "noindex" }] }),
   loader: ({ context }) => Promise.all([context.queryClient.ensureQueryData(bookingLinksQuery), context.queryClient.ensureQueryData(bookingLinkUsageQuery),context.queryClient.ensureQueryData(attributionQuery)]),
   component: BookingLinksPage,
 });

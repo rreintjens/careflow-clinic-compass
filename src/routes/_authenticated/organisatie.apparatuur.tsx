@@ -16,7 +16,7 @@ import { EquipmentKindsModal } from "@/features/organisation/EquipmentKindsModal
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/organisatie/apparatuur")({
-  head: () => ({ meta: [{ title: "Apparatuur · Beheer · The Body Clinic" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Apparatuur · Beheer · The Body Clinic" }, { name: "description", content: "Apparatuur bij The Body Clinic. Beheer en bekijk de bijbehorende gegevens." }, { property: "og:title", content: "Apparatuur · Beheer · The Body Clinic" }, { property: "og:description", content: "Apparatuur bij The Body Clinic. Beheer en bekijk de bijbehorende gegevens." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { name: "robots", content: "noindex" }] }),
   loader: ({ context }) => context.queryClient.ensureQueryData(orgQuery),
   component: EquipmentPage,
 });

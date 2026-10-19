@@ -22,7 +22,7 @@ import { REASON_TEXT, treatmentBookability } from "@/features/organisation/booka
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/organisatie/behandelingen/$id")({
-  head: () => ({ meta: [{ title: "Behandeling · Beheer · The Body Clinic" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Behandeling · Beheer · The Body Clinic" }, { name: "description", content: "Behandeling bij The Body Clinic. Beheer en bekijk de bijbehorende gegevens." }, { property: "og:title", content: "Behandeling · Beheer · The Body Clinic" }, { property: "og:description", content: "Behandeling bij The Body Clinic. Beheer en bekijk de bijbehorende gegevens." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { name: "robots", content: "noindex" }] }),
   loader: async ({ context, params }) => {
     const [org] = await Promise.all([context.queryClient.ensureQueryData(orgQuery), context.queryClient.ensureQueryData(generalDefaultsQuery)]);
     if (!org.treatments.some((t) => t.id === params.id)) throw notFound();
