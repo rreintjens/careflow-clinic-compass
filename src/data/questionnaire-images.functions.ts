@@ -25,5 +25,5 @@ export const uploadQuestionnaireImage = createServerFn({ method: "POST" })
     const path = `${crypto.randomUUID()}.${kind.extension}`;
     const result = await db.storage.from(bucket).upload(path, bytes, { contentType: kind.contentType, upsert: false });
     if (result.error) throw new Error("Afbeelding uploaden is niet gelukt.");
-    return { url: `${process.env.VITE_SUPABASE_URL}/storage/v1/object/public/${bucket}/${path}` };
+    return { url: `${process.env["VITE_SUPABASE_URL"]}/storage/v1/object/public/${bucket}/${path}` };
   });
