@@ -209,7 +209,7 @@ export async function saveTreatmentOrder(categoryId: string, treatmentIds: strin
 export async function saveCategory(
   id: string | null,
   row: { name_nl: string; name_en: string | null; icon: string | null; cancel_until_hours: number | null; no_show_fee_eur: number | null; mail_image_path: string | null; sort: number },
-  subs: Array<{ id: string | null; name_nl: string }>,
+  subs: Array<{ id: string | null; name_nl: string; icon?: string | null }>,
   existingSubIds: string[],
 ) {
   let catId = id;
@@ -223,9 +223,11 @@ export async function saveCategory(
   const removed = existingSubIds.filter((x) => !keep.includes(x));
   if (removed.length) await ok(supabase.from("treatment_categories").delete().in("id", removed));
   for (let i = 0; i < subs.length; i++) {
-    const s = subs[i] as { id: string | null; name_nl: string };
-    if (s.id) await ok(supabase.from("treatment_categories").update({ name_nl: s.name_nl, sort: i }).eq("id", s.id));
-    else await ok(supabase.from("treatment_categories").insert({ parent_id: catId, name_nl: s.name_nl, sort: i }));
+    const s = subs[i];
+    if (!s) continue;
+    const icon = s.icon && s.icon !== "none" ? s.icon : null;
+    if (s.id) await ok(supabase.from("treatment_categories").update({ name_nl: s.name_nl, icon, sort: i }).eq("id", s.id));
+    else await ok(supabase.from("treatment_categories").insert({ parent_id: catId, name_nl: s.name_nl, icon, sort: i }));
   }
 }
 

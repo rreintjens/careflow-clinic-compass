@@ -264,7 +264,7 @@ function CategoryModal({ org, category, onClose, onSaved }: { org: Org; category
   const [cancel, setCancel] = useState(category?.cancel_until_hours != null ? String(category.cancel_until_hours) : "default");
   const [fee, setFee] = useState(category?.no_show_fee_eur != null ? String(category.no_show_fee_eur) : "default");
   const [mailImage, setMailImage] = useState(category?.mail_image_path ?? "");
-  const [subs, setSubs] = useState(existingSubs.map((s) => ({ id: s.id as string | null, name_nl: s.name_nl })));
+  const [subs, setSubs] = useState(existingSubs.map((s) => ({ id: s.id as string | null, name_nl: s.name_nl, icon: s.icon ?? "none" })));
   const save = useMutation({
     mutationFn: () =>
       saveCategory(
@@ -309,11 +309,12 @@ function CategoryModal({ org, category, onClose, onSaved }: { org: Org; category
         <span className="text-[13px] font-medium">Subcategorieën</span>
         {subs.map((s, i) => (
           <div key={s.id ?? `new-${i}`} className="flex items-center gap-2">
-            <input aria-label="Subcategorie" className="h-11 flex-1 rounded-[14px] bg-sand px-4 text-sm outline-none" value={s.name_nl} onChange={(e) => setSubs(subs.map((x, j) => (j === i ? { ...x, name_nl: e.target.value } : x)))} />
-            <button type="button" className="text-sm text-warning underline" onClick={() => setSubs(subs.filter((_, j) => j !== i))}>Verwijderen</button>
+            <input aria-label="Subcategorie" className="h-11 min-w-0 flex-1 rounded-[14px] bg-sand px-4 text-sm outline-none" value={s.name_nl} onChange={(e) => setSubs(subs.map((x, j) => (j === i ? { ...x, name_nl: e.target.value } : x)))} />
+            <Select label="" aria-label="Icoon subcategorie" className="w-44 shrink-0 [&_label:empty]:hidden" value={s.icon} onChange={(v) => setSubs(subs.map((x, j) => (j === i ? { ...x, icon: v } : x)))} options={[{ value: "none", label: "Icoon van categorie" }, ...CATEGORY_ICONS.map((ic) => ({ value: ic, label: ic.replace(/-/g, " ").replace(/^./, (c) => c.toUpperCase()) }))]} />
+            <button type="button" className="shrink-0 text-sm text-warning underline" onClick={() => setSubs(subs.filter((_, j) => j !== i))}>Verwijderen</button>
           </div>
         ))}
-        <div><PillButton variant="outline" onClick={() => setSubs([...subs, { id: null, name_nl: "" }])}><PlusIcon />Subcategorie toevoegen</PillButton></div>
+        <div><PillButton variant="outline" onClick={() => setSubs([...subs, { id: null, name_nl: "", icon: "none" }])}><PlusIcon />Subcategorie toevoegen</PillButton></div>
       </div>
     </Modal>
   );
