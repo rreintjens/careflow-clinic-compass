@@ -58,6 +58,39 @@ export function conditionText(c: Condition | Leaf | undefined, fields: FieldInfo
   return parts.length > 1 ? parts.map((p) => `(${p})`).join(" of ") : (parts[0] ?? "");
 }
 
+const SHORT_OPS: Record<string, string> = { eq: "=", not_eq: "niet", lt: "onder", lte: "maximaal", gt: "boven", gte: "vanaf", between: "tussen", contains: "bevat" };
+/** A threshold value as the design shows it: standard, with the reduced value in brackets when the field switches between two settings. */
+function thresholdPair(v: unknown, ctx: CondCtx): { std: string; red?: string } {
+  if (typeof v === "number") return { std: fmtNum(v) };
+  if (typeof v !== "string") return { std: String(v) };
+  if (v.startsWith("settings.")) return { std: fmtNum(setting(v, ctx.settings)) };
+  const m = ctx.computed[v]?.match(/^\s*\w+\s*\?\s*(settings\.[\w.]+)\s*:\s*(settings\.[\w.]+)\s*$/);
+  if (m) return { std: fmtNum(setting(m[2] as string, ctx.settings)), red: fmtNum(setting(m[1] as string, ctx.settings)) };
+  if (v in ctx.computed) return { std: ctx.names?.computed[v] || "berekend veld" };
+  return { std: answerLabel(v) };
+}
+function compactRow(r: Row, ctx: CondCtx): string {
+  const f = ctx.fields.find((x) => x.value === r.field);
+  const field = f?.number ? `vraag ${f.number}` : f?.label ?? "veld";
+  if (f?.options || Array.isArray(r.value) || typeof r.value === "boolean") {
+    const vals = (Array.isArray(r.value) ? r.value : [r.value]).map((x) => (typeof x === "boolean" ? (x ? "ja" : "nee") : answerLabel(String(x))));
+    return `${field} ${SHORT_OPS[r.op] ?? r.op} ${vals.join(" of ")}`;
+  }
+  const a = thresholdPair(r.value, ctx);
+  if (r.op === "between") {
+    const b = thresholdPair(r.value2, ctx);
+    const red = a.red || b.red ? ` (${a.red ?? a.std} en ${b.red ?? b.std})` : "";
+    return `${field} tussen ${a.std} en ${b.std}${red}`;
+  }
+  return `${field} ${SHORT_OPS[r.op] ?? r.op} ${a.std}${a.red ? ` (${a.red})` : ""}${f?.unit ? ` ${f.unit}` : ""}`;
+}
+/** Short line under a builder row, with the numbers filled in: "BMI tussen 25 en 30 (23 en 27,5)". */
+export function compactConditionText(c: Condition | Leaf | undefined, ctx: CondCtx): string {
+  if (!c) return "";
+  const parts = toSituations(isLeaf(c) ? { all: [c] } : c).map((rows) => rows.map((r) => compactRow(r, ctx)).join(" en "));
+  return parts.length > 1 ? parts.map((p) => `(${p})`).join(" of ") : (parts[0] ?? "");
+}
+
 /** Values a numeric test can compare with: settings thresholds and computed fields. */
 export function refOptions(settings: Record<string, unknown>, computed: Record<string, string>, names?: FieldNames) {
   const out: Opt[] = [];
