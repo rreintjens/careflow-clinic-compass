@@ -2,7 +2,7 @@
 
 Owner asked to continue through all phases without pausing for confirmation.
 
-- [x] Demo sign-in shortcut “Inloggen als Rob” prefills the requested email and focuses password; existing password, lockout and MFA flow unchanged. Shortcut only shown in development preview.
+- [x] Demo sign-in shortcut “Inloggen als Rob” sits above the login form, prefills the requested email and focuses password; existing password, lockout and MFA flow unchanged. Shortcut only shown in development preview.
 - [x] Questionnaire review implementation: effective page/item Tonen and correct save target; flow-stored editable names; Dutch situation sentences; source-answer examples and resolved thresholds; unclipped language labels. 122 targeted tests passed; build OK. Passwordless/MFA-free demo superadmin excluded by mandatory staff security.
 - [ ] Questionnaire preview verification of questions 7, 8, 9 and question 8 signal: blocked because restored managed session reaches /auth/2fa; normal MFA-verified owner sign-in required. UI save targeting tested, authenticated save/reload and visual comparison remain unverified.
 - [x] Owner follow-up investigated: existing sessions already persist; no proven update-triggered logout. No automatic login as Rob added because it would bypass required password/MFA authentication.

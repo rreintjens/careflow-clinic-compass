@@ -56,13 +56,12 @@ function LoginPage() {
 
   return (
     <AuthLayout>
-      <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
-        <h2 className="text-[26px] font-semibold tracking-tight">Inloggen</h2>
         {import.meta.env.DEV && (
           <PillButton
             variant="outline"
             size="lg"
             block
+            className="mb-6"
             disabled={formState.isSubmitting}
             onClick={() => {
               setError(null);
@@ -73,6 +72,8 @@ function LoginPage() {
             Inloggen als Rob
           </PillButton>
         )}
+      <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
+        <h2 className="text-[26px] font-semibold tracking-tight">Inloggen</h2>
         <div className="flex flex-col gap-2">
           <label htmlFor="email" className="text-[13px] font-medium">E-mailadres</label>
           <input id="email" type="email" autoComplete="username" className={inputCls} {...register("email")} />
