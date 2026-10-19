@@ -3,6 +3,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { TextField, TextLink } from "@/components/Field";
+import { rowOpen, RowChevron } from "@/components/ListPage";
 import { Modal } from "@/components/Modal";
 import { MultiSelect } from "@/components/MultiSelect";
 import { PillButton } from "@/components/PillButton";
@@ -87,16 +88,16 @@ export function EquipmentKindsModal({ org, onClose, onCreated }: { org: Org; onC
     <Modal open onOpenChange={(o) => !o && onClose()} width="lg" title="Soorten apparatuur" description={`${org.equipmentKinds.length} soorten · gebruikt in Behandelingen en Apparatuur`}
       footer={<><PillButton variant="outline" onClick={onClose}>Annuleren</PillButton><PillButton onClick={onClose}>Sluiten</PillButton></>}>
       <p className="text-[13px] leading-[1.6]">Een soort is wat een behandeling nodig heeft, los van merk of exemplaar. Een soort verwijderen kan alleen als geen behandeling en geen apparaat hem gebruikt.</p>
-      <div className="mt-4 flex flex-col gap-2">
+      <div className="mt-4 flex flex-col gap-2" onClick={rowOpen}>
         {org.equipmentKinds.map((k) => {
           const u = usage(org, k);
           return (
-            <div key={k.id} className={cn("flex items-center gap-3 rounded-[12px] bg-sand px-3 py-2.5", editing?.id === k.id && "ring-1 ring-primary")}>
+            <div key={k.id} data-list-row className={cn("flex items-center gap-3 rounded-[12px] bg-sand px-3 py-2.5", editing?.id === k.id && "ring-1 ring-primary")}>
               <div className="min-w-0 flex-1">
                 <div className="truncate whitespace-nowrap text-sm">{k.name}</div>
                 <div className="truncate whitespace-nowrap text-xs text-muted-foreground">{u.devices} {u.devices === 1 ? "apparaat" : "apparaten"} · vereist door {requiredBy(org, k, u.treatmentIds)}</div>
               </div>
-              <TextLink onClick={() => startEdit(k)}>Wijzig</TextLink>
+              <button type="button" data-row-action onClick={() => startEdit(k)} className="text-primary" aria-label={`${k.name} wijzigen`}><RowChevron /></button>
             </div>
           );
         })}

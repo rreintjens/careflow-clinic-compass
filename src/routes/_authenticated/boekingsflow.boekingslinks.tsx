@@ -1,12 +1,12 @@
 import { ListPage,DataTable,RowChevron } from "@/components/ListPage";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute,Link as RouteLink } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { Card } from "@/components/Card";
-import { Chip, SearchField, PlusIcon, StatusMark, TextField } from "@/components/Field";
+import { SearchField, PlusIcon, StatusMark, TextField, tdCls, thCls } from "@/components/Field";
 import { Modal } from "@/components/Modal";
 import { PageHeader } from "@/components/PageHeader";
 import { PillButton } from "@/components/PillButton";
@@ -59,12 +59,16 @@ function BookingLinksPage() {
   const [search,setSearch]=useState("");
   const [channelFilter,setChannelFilter]=useState("all");const [campaignFilter,setCampaignFilter]=useState("all");
   const [editing, setEditing] = useState<Link | "new" | null>(null);
-  const modeLabel = (v: string | null) => d.options.find((o) => o.value === v)?.label_nl ?? "Uit de behandeling";
   const nameOf = (id: string | null) => (id ? d.treatments.find((t) => t.id === id)?.name_nl ?? "–" : "Patiënt kiest zelf");
-  const pracName = (id: string | null) => {
-    const p = d.practitioners.find((x) => x.id === id);
-    return p ? `${p.first_name} ${p.last_name}` : "–";
+  const locSummary = (ids: string[]) => {
+    if (!ids.length) return "–";
+    const online = ids.some((id) => d.locations.find((x) => x.id === id)?.kind === "online");
+    const clinics = ids.length - (online ? 1 : 0);
+    if (online && clinics === 0) return "Alleen online";
+    const c = `${clinics} ${clinics === 1 ? "kliniek" : "klinieken"}`;
+    return online ? `Online en ${c}` : c;
   };
+  const shown = d.links.filter(l=>l.name.toLowerCase().includes(search.toLowerCase())&&(channelFilter==="all"||l.channel_id===channelFilter)&&(campaignFilter==="all"||l.campaign_id===campaignFilter));
 
   return (
     <ListPage>
@@ -73,31 +77,30 @@ function BookingLinksPage() {
         description="Een boekingslink brengt een patiënt direct naar de juiste behandeling, locatie en taal. De bron gaat mee met elke boeking, zodat je de instroom per kanaal ziet."
         actions={<PillButton onClick={() => setEditing("new")}><PlusIcon />Nieuwe boekingslink</PillButton>}
       />
-      <div className="flex flex-wrap items-end gap-3"><SearchField aria-label="Zoek boekingslink" placeholder="Zoek boekingslink" value={search} onChange={e=>setSearch(e.target.value)}/><RouteLink to="/boekingsflow/kanalen-en-campagnes" className="text-sm text-primary">Kanalen en campagnes</RouteLink><Select label="Kanaal" value={channelFilter} onChange={setChannelFilter} options={[{value:"all",label:"Alle kanalen"},...attribution.channels.map(c=>({value:c.id,label:c.name}))]}/><Select label="Campagne" value={campaignFilter} onChange={setCampaignFilter} options={[{value:"all",label:"Alle campagnes"},...attribution.campaigns.map(c=>({value:c.id,label:c.name}))]}/></div>
-      <DataTable count={d.links.length} label="boekingslinks">
-        <div className="overflow-x-auto">
-          <div className="grid min-w-[900px] grid-cols-[minmax(0,1fr)_150px_minmax(0,1fr)_minmax(0,1fr)_150px_90px_110px] gap-x-2 px-1 pb-2 text-xs text-muted-foreground">
-            <span>Naam</span><span>Kanaal / Campagne</span><span>Behandeling</span><span>Locaties</span><span>Behandelaar</span><span>Boekingen</span><span />
-          </div>
-          {d.links.filter(l=>l.name.toLowerCase().includes(search.toLowerCase())&&(channelFilter==="all"||l.channel_id===channelFilter)&&(campaignFilter==="all"||l.campaign_id===campaignFilter)).map((l) => (
-            <div key={l.id} onClick={()=>setEditing(l)} className="list-item grid min-w-[900px] grid-cols-[minmax(0,1fr)_150px_minmax(0,1fr)_minmax(0,1fr)_150px_90px_110px] items-center gap-x-2 border-t border-line px-1 py-3">
-              <div className="min-w-0">
-                <div className="truncate text-sm">{l.name}</div>
-                <div className="truncate text-xs text-muted-foreground">{bookingLinkPath(l.hash)}</div>
-              </div>
-              <span className="truncate text-sm text-muted-foreground">{attribution.channels.find(c=>c.id===l.channel_id)?.name??"Overig"}<span className="block text-xs">{attribution.campaigns.find(c=>c.id===l.campaign_id)?.name}</span></span>
-              <span className="truncate text-sm">{[...l.category_ids.map(id=>d.categories.find(c=>c.id===id)?.name_nl),...l.treatment_ids.map(id=>nameOf(id))].filter(Boolean).join(", ") || "Alle behandelingen"}</span>
-              <span className="truncate text-sm text-muted-foreground">{l.location_ids.length ? l.location_ids.map((id) => d.locations.find((x) => x.id === id)?.name ?? "?").join(", ") : "–"}</span>
-              <span className="truncate text-sm text-muted-foreground">{l.practitioner_scope === "selected" ? `${l.practitioner_ids.length} behandelaars` : "Alle behandelaars"}</span>
-              <span className="text-sm">{usage.get(l.id) ?? 0}</span>
-              <span className="flex items-center justify-end gap-3 whitespace-nowrap">
-                <StatusMark kind={l.status === "active" ? "ok" : "none"} />
-                <button type="button" onClick={() => setEditing(l)} className="text-[13px] text-primary hover:text-primary-hover" aria-label="Boekingslink openen"><RowChevron/></button>
-              </span>
-            </div>
-          ))}
-          {d.links.length === 0 && <p className="border-t border-line py-6 text-sm text-muted-foreground">Nog geen boekingslinks. Maak er één aan voor een kanaal, campagne of samenwerking.</p>}
-        </div>
+      <div className="flex flex-wrap items-center gap-2.5"><SearchField aria-label="Zoek boekingslink" placeholder="Zoek boekingslink" value={search} onChange={e=>setSearch(e.target.value)} className="w-[300px]"/><Select label="Kanaal" value={channelFilter} onChange={setChannelFilter} options={[{value:"all",label:"Alle kanalen"},...attribution.channels.map(c=>({value:c.id,label:c.name}))]} className="w-[180px] [&>label]:sr-only"/><Select label="Campagne" value={campaignFilter} onChange={setCampaignFilter} options={[{value:"all",label:"Alle campagnes"},...attribution.campaigns.map(c=>({value:c.id,label:c.name}))]} className="w-[180px] [&>label]:sr-only"/><span className="ml-auto text-xs text-muted-foreground">{shown.length} boekingslinks</span></div>
+      <DataTable count={shown.length} label="boekingslinks">
+        <table className="w-full min-w-[960px]">
+          <thead>
+            <tr className="border-b border-line">
+              <th className={thCls}>Naam</th><th className={thCls}>Kanaal</th><th className={thCls}>Behandelingen</th><th className={thCls}>Locaties</th><th className={thCls}>Behandelaars</th><th className={thCls}>Boekingen</th><th className={thCls}>Status</th><th className={thCls} />
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-line">
+            {shown.map((l) => (
+              <tr key={l.id} data-list-row>
+                <td className={tdCls}><div className="max-w-[260px] truncate text-sm">{l.name}</div><div className="max-w-[260px] truncate text-xs text-muted-foreground">{bookingLinkPath(l.hash)}</div></td>
+                <td className={tdCls}><div className="text-sm">{attribution.channels.find(c=>c.id===l.channel_id)?.name??"Overig"}</div><div className="text-xs text-muted-foreground">{attribution.campaigns.find(c=>c.id===l.campaign_id)?.name}</div></td>
+                <td className={tdCls}><span className="block max-w-[220px] truncate">{[...l.category_ids.map(id=>d.categories.find(c=>c.id===id)?.name_nl),...l.treatment_ids.map(id=>nameOf(id))].filter(Boolean).join(", ") || "Alle behandelingen"}</span></td>
+                <td className={`${tdCls} whitespace-nowrap text-muted-foreground`}>{locSummary(l.location_ids)}</td>
+                <td className={`${tdCls} whitespace-nowrap text-muted-foreground`}>{l.practitioner_scope === "selected" ? `${l.practitioner_ids.length} behandelaars` : "Alle behandelaars"}</td>
+                <td className={tdCls}>{usage.get(l.id) ?? 0}</td>
+                <td className={tdCls}><span className="flex items-center gap-2 whitespace-nowrap"><StatusMark kind={l.status === "active" ? "ok" : "none"} />{l.status === "active" ? "Actief" : "Inactief"}</span></td>
+                <td className={tdCls}><button type="button" data-row-action onClick={() => setEditing(l)} className="text-primary" aria-label={`Boekingslink ${l.name} openen`}><RowChevron/></button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {d.links.length === 0 && <p className="py-6 text-sm text-muted-foreground">Nog geen boekingslinks. Maak er één aan voor een kanaal, campagne of samenwerking.</p>}
       </DataTable>
       {editing && (
         <LinkModal d={d} link={editing === "new" ? null : editing} onClose={() => setEditing(null)} />

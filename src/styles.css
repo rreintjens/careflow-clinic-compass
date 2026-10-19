@@ -164,9 +164,9 @@
 .admin-list-page th {height:40px;padding:10px 12px;font-size:12px;font-weight:400;text-align:left;color:var(--muted-foreground);border-bottom:1px solid var(--line);}
 .admin-list-page tbody tr {min-height:56px;border-bottom:1px solid var(--line);}
 .admin-list-page td {padding:14px 12px;font-size:13px;}
-.admin-list-page [data-list-row],.admin-list-page .list-item {cursor:pointer;transition:background-color 140ms;}
-.admin-list-page [data-list-row]:hover,.admin-list-page .list-item:hover {background-color:var(--sand);}
-.admin-list-page [data-list-row]:focus-within {outline:2px solid var(--primary);outline-offset:-2px;}
+[data-list-row],.admin-list-page .list-item {cursor:pointer;transition:background-color 140ms;}
+[data-list-row]:hover,.admin-list-page .list-item:hover {background-color:var(--sand);}
+[data-list-row]:focus-within {outline:2px solid var(--primary);outline-offset:-2px;}
 .admin-list-page .list-item {border-bottom:1px solid var(--line);}
 
 .admin-list-page h1 {letter-spacing:0;}

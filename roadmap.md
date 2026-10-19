@@ -129,3 +129,16 @@ Keuzekaartcontrole als Rob: aanbevolen online kaart zandkleur; muis verandert na
 
 - Taak 7 geverifieerd als Rob: drie tabs, globale zoekterm verzet vindt Afspraak verzet, rij opent editor, basissjabloon opgeslagen/herladen, afwijkingspicker kiest behandeling, Per behandeling toont Categorie Medisch afvallen als winnaar met voorbeeld, verzonden bevestiging opent patiëntvoorbeeld. 70 gerichte tests groen en actuele build OK.
 - Pickervervanging: gedeelde Select/MultiSelect omvat boekingslink-behandelingen/categorieën/locaties/behandelaars, Afspraak maken, agenda/roosterfilters, behandelaar- en behandeling-koppelingen, apparatuur, vragenlijst Gekoppeld aan, e-mail Geldt voor en behandeling/categorie, dossier Aanvraag arts en vervolgactie Voor wie, gekoppelde behandelaar bij gebruikers, lijstfilters.
+
+## Eigenaar-review lijstpatroon 19-10 14:57 UTC
+- [ ] Boekingslinks-overzicht als echte tabel (Naam+linkcode, Kanaal+campagne, Behandelingen, Locaties kort, Behandelaars, Boekingen, Status); link "Kanalen en campagnes" uit filterrij
+- [ ] Apparatuur op gedeeld ListPage: één tabel gegroepeerd per locatie (groepskop met locatie, kamertal, "+ Kamer"), kolommen Apparaat/Soort/Kamer/Vast of verplaatsbaar/Onderhoud, rij opent apparaat-pop-up
+- [ ] Rij-klik ook op detailpagina's: rooster-uitzonderingen, kamers op locatie, behandelingen bij behandelaar, behandelaars bij behandeling, berekende velden en overige vragenlijstbouwer-tabellen; resterende Wijzig-links weg
+- [ ] Dubbele telling weg (bv. "55 behandelaars" twee keer): alleen telling in filterrij
+
+## Dokterskant end-to-end-test 19-10 (patiënt 1000007 Eva Proefrun)
+- [ ] Dossier › Medisch › intake toont alle triage-antwoorden in vraagvolgorde met signalen (nu alleen kop)
+- [ ] Signaal zichtbaar: Overzicht "Groen, met signaal: vergrote buikomvang (95 cm)", pil in dossierkop, patiëntkaart agenda en Mijn dag
+- [ ] Tijdzone-fix: "bij het boeken ... om 02:00" moet Nederlandse tijd zijn; andere datum-only/UTC-weergaven controleren
+- [ ] Consultpaneel vergelijkt patiëntnummer met UUID: zelfde identifier vergelijken
+- [ ] Consultbalk countdown: voor starttijd "Begint morgen om 11:00" / "over X minuten", pas aftellen vanaf start

@@ -54,6 +54,7 @@ export function SentMailList({embedded=false}:{embedded?:boolean}) {
         <Select inline label="Moment" value={f.moment} onChange={(moment) => set({ moment })} options={[{ value: "all", label: "Alle momenten" }, ...moments.map((m) => ({ value: m.value, label: m.label_nl }))]} />
         <Select inline label="Status" value={f.status} onChange={(status) => set({ status })} options={[{ value: "all", label: "Alle statussen" }, ...Object.entries(OUTBOX_STATUS).map(([value, l]) => ({ value, label: l }))]} />
         <SearchField aria-label="Patiëntnummer" placeholder="Patiëntnummer" inputMode="numeric" value={f.patient} onChange={(e) => set({ patient: e.target.value.replace(/\D/g, "") })} className="w-[240px]" />
+        <span className="ml-auto text-xs text-muted-foreground">{data?.count ?? 0} e-mails</span>
       </div>
       <DataTable count={data?.count??0} label="e-mails" loading={!data}>
         {!data?.rows.length && <p className="py-8 text-sm text-muted-foreground">Nog geen mails in deze selectie.</p>}

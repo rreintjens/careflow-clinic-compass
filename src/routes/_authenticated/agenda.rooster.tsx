@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import { Avatar } from "@/components/Avatar";
 import { Card } from "@/components/Card";
+import { rowOpen, RowChevron } from "@/components/ListPage";
 import { PlusIcon, StatusMark, TextField, TextLink, Toggle, tdCls, thCls } from "@/components/Field";
 import { Modal } from "@/components/Modal";
 import { PillButton } from "@/components/PillButton";
@@ -171,15 +172,15 @@ function SchedulePage() {
           </Card>
 
           <Card title="Uitzonderingen op het rooster" description="Vakantie, een cursus of een extra dag. Een uitzondering gaat voor op het herhalende rooster.">
-            <table className="w-full">
+            <table className="w-full" onClick={rowOpen}>
               <thead><tr className="border-b border-line"><th className={thCls}>Wanneer</th><th className={thCls}>Wat</th><th className={thCls}>Gevolg</th><th className={thCls} /></tr></thead>
               <tbody className="divide-y divide-line">
                 {sched.exceptions.map((e) => (
-                  <tr key={e.id}>
+                  <tr key={e.id} data-list-row>
                     <td className={tdCls}>{whenText(e)}</td>
                     <td className={tdCls}>{whatText(org, e)}</td>
                     <td className={tdCls}>{effectText(e)}</td>
-                    <td className={tdCls}><TextLink onClick={() => setExcModal(e)}>Wijzig</TextLink></td>
+                    <td className={tdCls}><button type="button" data-row-action onClick={() => setExcModal(e)} className="text-primary" aria-label="Uitzondering wijzigen"><RowChevron /></button></td>
                   </tr>
                 ))}
               </tbody>

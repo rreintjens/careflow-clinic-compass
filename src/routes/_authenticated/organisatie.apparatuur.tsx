@@ -1,15 +1,15 @@
 import { ListPage,DataTable,RowChevron } from "@/components/ListPage";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
-import { PlusIcon, SearchField, Tag, TextField, TextLink, thCls } from "@/components/Field";
+import { PlusIcon, SearchField, TextField, TextLink, tdCls, thCls } from "@/components/Field";
 import { Modal } from "@/components/Modal";
 import { PageHeader } from "@/components/PageHeader";
 import { PillButton } from "@/components/PillButton";
 import { Select } from "@/components/Select";
-import { deleteEquipment, kindOpts, locName, opts, orgQuery, saveEquipment, saveEquipmentType, saveRoom, type Org, type Room } from "@/data/organisation";
+import { deleteEquipment, kindOpts, opts, orgQuery, saveEquipment, saveEquipmentType, saveRoom, type Org, type Room } from "@/data/organisation";
 import { addMonths, type Placement } from "@/domain/equipment";
 import { brandType, deviceNames, kindOfType, previewName, roomNumber, roomsOf, type Device } from "@/features/organisation/devices";
 import { EquipmentKindsModal } from "@/features/organisation/EquipmentKindsModal";
@@ -24,34 +24,11 @@ export const Route = createFileRoute("/_authenticated/organisatie/apparatuur")({
 const DAYS = ["Ma", "Di", "Wo", "Do", "Vr", "Za"];
 const DAYS_LONG = ["Maandag", "Dinsdag", "Woensdag", "Donderdag", "Vrijdag", "Zaterdag"];
 
-function BuildingIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="4" y="3" width="16" height="18" rx="1.5" /><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2M10 21v-3h4v3" />
-    </svg>
-  );
-}
-function DeviceIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <circle cx="12" cy="12" r="3" /><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8" />
-    </svg>
-  );
-}
-function Chevron({ open }: { open: boolean }) {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={cn("text-primary transition-transform", open && "rotate-180")}>
-      <path d="M6 9l6 6 6-6" />
-    </svg>
-  );
-}
-const IconBox = ({ children, className }: { children: ReactNode; className?: string }) => (
-  <span className={cn("inline-flex shrink-0 items-center justify-center rounded-[10px] bg-background text-primary", className)}>{children}</span>
-);
-
 type Draft = { device: Device | null; placement?: Placement; locationId?: string; roomId?: string };
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+const fmtDay = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 
 function EquipmentPage() {
   const { data: org } = useSuspenseQuery(orgQuery);
@@ -59,8 +36,6 @@ function EquipmentPage() {
   const [q, setQ] = useState("");
   const [locFilter, setLocFilter] = useState("all");
   const [kindFilter, setKindFilter] = useState("all");
-  const firstClinic = org.locations.find((l) => l.name === "Amsterdam-Zuid")?.id ?? org.locations.find((l) => l.kind === "clinic")?.id ?? "";
-  const [open, setOpen] = useState<Set<string>>(new Set([firstClinic]));
   const [draft, setDraft] = useState<Draft | null>(null);
   const [kindsOpen, setKindsOpen] = useState(false);
   const [roomModal, setRoomModal] = useState<{ locationId: string; room: Room | null } | null>(null);
@@ -69,140 +44,101 @@ function EquipmentPage() {
   const matches = (d: Device) =>
     (kindFilter === "all" || kindOfType(org, d.type_id)?.key === kindFilter) &&
     (!ql || (names.get(d.id) ?? "").toLowerCase().includes(ql) || (kindOfType(org, d.type_id)?.name ?? "").toLowerCase().includes(ql));
-  const roomMatches = (r: Room) => !ql || r.name.toLowerCase().includes(ql) || r.purpose.toLowerCase().includes(ql);
-  const filtering = !!ql || kindFilter !== "all";
+  const shown = org.equipment.filter(matches);
+  const atLocation = (locationId: string) => shown.filter((d) => d.location_id === locationId && d.placement !== "travelling");
+  const travelling = shown.filter((d) => d.placement === "travelling");
+  const locations = org.locations
+    .filter((l) => locFilter === "all" || l.id === locFilter)
+    .filter((l) => l.kind === "clinic" || atLocation(l.id).length > 0)
+    .sort((a, b) => Number(a.kind === "online") - Number(b.kind === "online") || a.name.localeCompare(b.name, "nl"));
 
-  const located = org.equipment.filter((d) => d.placement !== "travelling");
-  const travelling = org.equipment.filter((d) => d.placement === "travelling" && matches(d));
-  const locations = org.locations.filter((l) => locFilter === "all" || l.id === locFilter).sort((a, b) => Number(a.kind === "online") - Number(b.kind === "online"));
-  const clinicCount = org.locations.filter((l) => l.kind === "clinic").length;
-  const toggle = (id: string) => setOpen((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
-
-  const row = (d: Device, compact = false) => {
-    const kind = kindOfType(org, d.type_id);
-    return (
-      <div key={d.id} className="list-item flex items-center gap-3 px-3 py-3" onClick={()=>setDraft({device:d})}>
-        <IconBox className="h-8 w-8"><DeviceIcon /></IconBox>
-        <div className="min-w-0 flex-1">
-          <div className="truncate whitespace-nowrap text-[13px]">{brandType(org, d.type_id)}</div>
-          <div className="truncate whitespace-nowrap text-[11px] text-muted-foreground">{kind?.name}{d.status !== "in_use" ? ` · ${opts(org, "equipment_status").find((o) => o.value === d.status)?.label ?? ""}` : ""}</div>
-        </div>
-        {d.placement === "fixed_room" ? <span className="whitespace-nowrap text-xs">Vast</span> : <Tag>Verplaatsbaar</Tag>}
-        <TextLink onClick={() => setDraft({ device: d })}><RowChevron/></TextLink>
-        {compact && null}
-      </div>
-    );
+  const statusLabel = (d: Device) => (d.status !== "in_use" ? opts(org, "equipment_status").find((o) => o.value === d.status)?.label ?? "" : "");
+  const roomText = (d: Device) => {
+    if (d.placement !== "fixed_room" || !d.room_id) return "–";
+    const room = org.rooms.find((r) => r.id === d.room_id);
+    return room ? `Kamer ${roomNumber(org, room.id) ?? ""} · ${room.name}` : "–";
   };
+  const placementText = (d: Device) => (d.placement === "fixed_room" ? "Vast" : d.placement === "movable_location" ? "Verplaatsbaar" : "Reizend");
 
   return (
     <ListPage>
       <PageHeader
         title="Apparatuur"
-        description="Per locatie: de kamers met wat erin staat. Een apparaat heeft een soort; de soort bepaalt welke behandelingen in die kamer kunnen. Namen zijn de soort plus een nummer, je verzint ze niet zelf."
+        description="Per locatie: welke apparatuur er staat. Een apparaat heeft een soort; de soort bepaalt welke behandelingen ermee kunnen. Namen zijn de soort plus een nummer, je verzint ze niet zelf."
         actions={<div className="flex gap-3"><PillButton size="lg" variant="outline" onClick={() => setKindsOpen(true)}>Soorten beheren</PillButton><PillButton size="lg" onClick={() => setDraft({ device: null })}><PlusIcon />Apparaat toevoegen</PillButton></div>}
       />
-      <div className="flex items-center gap-3">
-        <SearchField className="w-[300px]" placeholder="Zoek een apparaat of kamer" value={q} onChange={(e) => setQ(e.target.value)} />
+      <div className="flex items-center gap-2.5">
+        <SearchField className="w-[300px]" placeholder="Zoek een apparaat" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Zoek een apparaat" />
         <InlineSelect value={locFilter} onChange={setLocFilter} options={[{ value: "all", label: "Alle locaties" }, ...org.locations.map((l) => ({ value: l.id, label: l.name }))]} />
         <InlineSelect value={kindFilter} onChange={setKindFilter} options={[{ value: "all", label: "Alle soorten" }, ...kindOpts(org)]} />
-        <span className="ml-auto whitespace-nowrap text-[13px] text-muted-foreground">
-          {plural(clinicCount, "locatie", "locaties")} · {plural(org.rooms.length, "kamer", "kamers")} · {plural(org.equipment.length, "apparaat", "apparaten")}
-        </span>
+        <span className="ml-auto whitespace-nowrap text-xs text-muted-foreground">{plural(shown.length, "apparaat", "apparaten")}</span>
       </div>
 
       {locations.map((l) => {
         const rooms = roomsOf(org, l.id);
-        const here = located.filter((d) => d.location_id === l.id);
-        const isOpen = open.has(l.id) || (filtering && here.some(matches));
-        const summary = l.kind === "online" ? "Geen kamers; Google Meet" : `${plural(rooms.length, "kamer", "kamers")} · ${plural(here.length, "apparaat", "apparaten")}`;
-        if (!isOpen)
-          return (
-            <button key={l.id} type="button" onClick={() => toggle(l.id)} className="flex items-center justify-between rounded-[18px] border border-line bg-background px-6 py-4 text-left">
-              <span className="whitespace-nowrap text-[15px] font-semibold">{l.name}</span>
-              <span className="flex items-center gap-4 whitespace-nowrap text-[13px] text-muted-foreground">{summary}<Chevron open={false} /></span>
-            </button>
-          );
-        const movable = here.filter((d) => d.placement === "movable_location" && matches(d));
+        const devs = atLocation(l.id);
         return (
-          <section key={l.id} className="rounded-[20px] border border-line bg-background p-6">
-            <div className="flex items-center gap-4">
-              <IconBox className="h-11 w-11 bg-sand"><BuildingIcon /></IconBox>
-              <div className="min-w-0 flex-1">
-                <div className="whitespace-nowrap text-[17px] font-semibold">{l.name}</div>
-                <div className="whitespace-nowrap text-[13px] text-muted-foreground">{l.kind === "online" ? summary : `${l.address ?? ""} · ${summary}`}</div>
-              </div>
+          <section key={l.id} className="overflow-hidden rounded-[16px] border border-line">
+            <div className="list-group flex items-center gap-3 bg-sand px-4 py-2.5">
+              <span className="text-sm font-medium">{l.name}</span>
+              <span className="text-xs text-muted-foreground">{l.kind === "online" ? "Online" : plural(rooms.length, "kamer", "kamers")}</span>
               {l.kind === "clinic" && (
-                <>
-                  <PillButton variant="outline" onClick={() => setRoomModal({ locationId: l.id, room: null })}><PlusIcon />Kamer toevoegen</PillButton>
-                  <PillButton variant="outline" onClick={() => setDraft({ device: null, locationId: l.id })}><PlusIcon />Apparaat toevoegen</PillButton>
-                </>
+                <button type="button" onClick={() => setRoomModal({ locationId: l.id, room: null })} className="ml-auto flex items-center gap-1 text-xs text-primary"><PlusIcon />Kamer</button>
               )}
-              <button type="button" aria-label="Inklappen" onClick={() => toggle(l.id)} className="p-2"><Chevron open /></button>
             </div>
-            {l.kind === "clinic" && (
-              <>
-                <div className="mt-5 grid grid-cols-3 gap-3">
-                  {rooms.filter((r) => roomMatches(r) || here.some((d) => d.room_id === r.id && matches(d)) || !filtering).map((r, i) => {
-                    const devs = here.filter((d) => d.placement === "fixed_room" && d.room_id === r.id && (matches(d) || !filtering));
-                    return (
-                      <div key={r.id} className={cn("rounded-[16px] border border-line p-4", devs.length > 2 && "col-span-3")}>
-                        <div className="flex items-start gap-3">
-                          <button type="button" className="min-w-0 flex-1 text-left" onClick={() => setRoomModal({ locationId: l.id, room: r })}>
-                            <div className="truncate whitespace-nowrap text-sm font-semibold">Kamer {(roomNumber(org, r.id) ?? i + 1)} · {r.name}</div>
-                            <div className="truncate whitespace-nowrap text-xs text-muted-foreground">{r.purpose}</div>
-                          </button>
-                          <button type="button" aria-label="Apparaat in deze kamer toevoegen" onClick={() => setDraft({ device: null, placement: "fixed_room", locationId: l.id, roomId: r.id })} className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-dashed border-primary text-primary"><PlusIcon /></button>
-                        </div>
-                        <div className="mt-3 flex flex-col gap-2">
-                          {devs.length ? devs.map((d) => row(d)) : <p className="text-xs text-muted-foreground">Geen apparatuur; alleen consulten en injectables</p>}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                {movable.length > 0 && (
-                  <div className="mt-5">
-                    <div className="mb-2 text-[13px]">Verplaatsbaar binnen {l.name}</div>
-                    <div className="grid grid-cols-2 gap-3">{movable.map((d) => row(d))}</div>
-                  </div>
-                )}
-              </>
-            )}
+            <DataTable>
+              {devs.length ? (
+                <table>
+                  <thead><tr><th className={thCls}>Apparaat</th><th className={thCls}>Soort</th><th className={thCls}>Kamer</th><th className={thCls}>Vast of verplaatsbaar</th><th className={thCls}>Onderhoud</th><th className={thCls} /></tr></thead>
+                  <tbody className="divide-y divide-line">
+                    {devs.map((d) => (
+                      <tr key={d.id} data-list-row>
+                        <td className={tdCls}><div className="whitespace-nowrap text-sm">{names.get(d.id)}</div><div className="whitespace-nowrap text-xs text-muted-foreground">{brandType(org, d.type_id)}{statusLabel(d) ? ` · ${statusLabel(d)}` : ""}</div></td>
+                        <td className={tdCls}>{kindOfType(org, d.type_id)?.name}</td>
+                        <td className={`${tdCls} whitespace-nowrap`}>{roomText(d)}</td>
+                        <td className={`${tdCls} whitespace-nowrap`}>{placementText(d)}</td>
+                        <td className={`${tdCls} whitespace-nowrap`}>{d.next_maintenance_on ? fmtDay(d.next_maintenance_on) : "–"}</td>
+                        <td className={tdCls}><button type="button" data-row-action onClick={() => setDraft({ device: d })} className="text-primary" aria-label={`${names.get(d.id)} openen`}><RowChevron /></button></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p className="px-4 py-6 text-sm text-muted-foreground">Geen apparatuur{ql || kindFilter !== "all" ? " voor dit filter" : ""}.</p>
+              )}
+            </DataTable>
           </section>
         );
       })}
 
-      <section className="rounded-[20px] border border-line bg-sand p-6">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h2 className="text-[17px] font-semibold">Reist tussen locaties</h2>
-            <p className="text-[13px] text-muted-foreground">Apparatuur die per dag op een andere locatie staat. Het weekschema bepaalt waar een behandeling boekbaar is.</p>
+      {travelling.length > 0 && (
+        <section className="overflow-hidden rounded-[16px] border border-line">
+          <div className="list-group flex items-center gap-3 bg-sand px-4 py-2.5">
+            <span className="text-sm font-medium">Reist tussen locaties</span>
+            <span className="text-xs text-muted-foreground">{plural(travelling.length, "apparaat", "apparaten")} · het weekschema bepaalt waar een behandeling boekbaar is</span>
+            <button type="button" onClick={() => setDraft({ device: null, placement: "travelling" })} className="ml-auto flex items-center gap-1 text-xs text-primary"><PlusIcon />Reizend apparaat</button>
           </div>
-          <PillButton variant="outline" onClick={() => setDraft({ device: null, placement: "travelling" })}><PlusIcon />Reizend apparaat toevoegen</PillButton>
-        </div>
-        <div className="mt-4 overflow-x-auto">
-          <DataTable><table className="w-full">
-            <thead><tr className="border-b border-line"><th className={thCls}>Apparaat</th>{DAYS.map((d) => <th key={d} className={thCls}>{d}</th>)}<th className={thCls} /></tr></thead>
-            <tbody className="divide-y divide-line">
-              {travelling.map((d) => (
-                <tr key={d.id} onClick={()=>setDraft({device:d})} data-list-row>
-                  <td className="px-2.5 py-3">
-                    <div className="flex items-center gap-3">
-                      <IconBox className="h-8 w-8"><DeviceIcon /></IconBox>
-                      <div><div className="whitespace-nowrap text-sm font-semibold">{names.get(d.id)}</div><div className="whitespace-nowrap text-xs text-muted-foreground">{kindOfType(org, d.type_id)?.name}</div></div>
-                    </div>
-                  </td>
-                  {DAYS.map((_, i) => {
-                    const s = org.dayLocations.find((x) => x.equipment_id === d.id && x.weekday === i + 1);
-                    return <td key={i} className="whitespace-nowrap px-2.5 py-3 text-sm">{s?.location_id ? locName(org, s.location_id) : "–"}</td>;
-                  })}
-                  <td className="px-2.5 py-3"><TextLink onClick={() => setDraft({ device: d })}><RowChevron/></TextLink></td>
-                </tr>
-              ))}
-            </tbody>
-          </table></DataTable>
-        </div>
-      </section>
+          <DataTable>
+            <table>
+              <thead><tr><th className={thCls}>Apparaat</th><th className={thCls}>Soort</th>{DAYS.map((d) => <th key={d} className={thCls}>{d}</th>)}<th className={thCls}>Onderhoud</th><th className={thCls} /></tr></thead>
+              <tbody className="divide-y divide-line">
+                {travelling.map((d) => (
+                  <tr key={d.id} data-list-row>
+                    <td className={tdCls}><div className="whitespace-nowrap text-sm">{names.get(d.id)}</div><div className="whitespace-nowrap text-xs text-muted-foreground">{brandType(org, d.type_id)}{statusLabel(d) ? ` · ${statusLabel(d)}` : ""}</div></td>
+                    <td className={tdCls}>{kindOfType(org, d.type_id)?.name}</td>
+                    {DAYS.map((_, i) => {
+                      const s = org.dayLocations.find((x) => x.equipment_id === d.id && x.weekday === i + 1);
+                      return <td key={i} className={`${tdCls} whitespace-nowrap`}>{s?.location_id ? org.locations.find((x) => x.id === s.location_id)?.name ?? "–" : "–"}</td>;
+                    })}
+                    <td className={`${tdCls} whitespace-nowrap`}>{d.next_maintenance_on ? fmtDay(d.next_maintenance_on) : "–"}</td>
+                    <td className={tdCls}><button type="button" data-row-action onClick={() => setDraft({ device: d })} className="text-primary" aria-label={`${names.get(d.id)} openen`}><RowChevron /></button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </DataTable>
+        </section>
+      )}
 
       {kindsOpen && <EquipmentKindsModal org={org} onClose={() => setKindsOpen(false)} />}
       {draft && <DeviceModal org={org} draft={draft} onClose={() => setDraft(null)} />}
@@ -360,7 +296,7 @@ function RoomModal({ org, locationId, room, onClose }: { org: Org; locationId: s
     onError: () => toast.error("Opslaan is niet gelukt"),
   });
   return (
-    <Modal open onOpenChange={(o) => !o && onClose()} title={room ? `Kamer ${roomNumber(org, room.id)} wijzigen` : "Kamer toevoegen"} description={locName(org, locationId)}
+    <Modal open onOpenChange={(o) => !o && onClose()} title={room ? `Kamer ${roomNumber(org, room.id)} wijzigen` : "Kamer toevoegen"} description={org.locations.find((l) => l.id === locationId)?.name ?? ""}
       footer={<><PillButton variant="outline" onClick={onClose}>Annuleren</PillButton><PillButton disabled={!name.trim() || save.isPending} onClick={() => save.mutate()}>Opslaan</PillButton></>}>
       <div className="grid grid-cols-2 gap-4">
         <TextField label="Naam" value={name} onChange={(e) => setName(e.target.value)} />
