@@ -23,6 +23,11 @@ export type SignInInput = z.infer<typeof signInSchema>;
 
 export const PASSWORD_MIN_LENGTH = 12;
 
+/** Factor enrollment requires a registered session, not only an identity token. */
+export function hasRegisteredAuthSession(claims: Record<string, unknown> | null | undefined): boolean {
+  return typeof claims?.["session_id"] === "string" && z.string().uuid().safeParse(claims["session_id"]).success;
+}
+
 export type LockState = { failedCount: number; lockedUntil: string | null };
 
 export function isLocked(state: LockState | null, now: Date): boolean {
