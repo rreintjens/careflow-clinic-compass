@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import type { Condition, FlowFile, Item, Page } from "@/domain/questionnaire/engine";
@@ -27,6 +27,20 @@ describe("condition modal (vraag 8, buikomvang)", () => {
 });
 
 describe("question modal (vraag 7, aandoeningen)", () => {
+  it("saves a single-question page visibility change without adding an item rule", () => {
+    const { item, page } = find("comorbidities");
+    const save = vi.fn();
+    render(<ItemModal item={item} number={7} questionnaireName={triage.name} questionnaireId="q" def={triage} page={page} flow={flow} ui={{}} itemTypes={[{ value: "multi_choice", label: "Meer keuzes" }]} sections={["Je gewicht"]} section={page.section} rejections={[]} images={[]} ctx={ctx} onSave={save} onClose={() => {}} />);
+    const tonen = screen.getByText("Tonen").parentElement;
+    if (!tonen) throw new Error("Missing visibility control");
+    fireEvent.click(within(tonen).getByText("Wijzig"));
+    const conditionDialog = screen.getByRole("dialog", { name: /Wanneer tonen we vraag 7/ });
+    fireEvent.click(within(conditionDialog).getByRole("radio", { name: "Altijd tonen" }));
+    fireEvent.click(within(conditionDialog).getByRole("button", { name: "Opslaan" }));
+    fireEvent.click(screen.getByRole("button", { name: "Opslaan" }));
+    expect(save).toHaveBeenCalledWith(expect.objectContaining({ id: "comorbidities" }), "Je gewicht", { value: undefined });
+    expect(save.mock.calls[0]?.[0].show_if).toBeUndefined();
+  });
   it("shows one row per answer with outcome and exclusive pill", () => {
     const { item, page } = find("comorbidities");
     render(<ItemModal item={item} number={7} questionnaireName={triage.name} questionnaireId="q" def={triage} page={page} flow={flow} ui={{}} itemTypes={[{ value: "multi_choice", label: "Meer keuzes" }]} sections={["Je gewicht"]} section={page.section} rejections={[]} images={[]} ctx={ctx} onSave={() => {}} onClose={() => {}} />);

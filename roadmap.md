@@ -2,6 +2,9 @@
 
 Owner asked to continue through all phases without pausing for confirmation.
 
+- [ ] Questionnaire modal review: effective page/item Tonen; stored readable names; Dutch situation sentences; condition-specific examples; unclipped language labels; verify questions 7, 8, 9 and question 8 signal. Passwordless/MFA-free demo superadmin is excluded because mandatory staff security cannot be bypassed.
+- [ ] Owner follow-up: inspect preserving Rob's existing signed-in session after preview updates; no automatic identity impersonation or password/MFA bypass.
+
 - [x] Repair MFA enrollment recovery: identity-only preview sessions lacked session_id and cannot enroll factors; now return to password sign-in, with restart action for other failures. Browser confirmed /auth without enrollment alert; 17 tests passed; build OK.
 - [ ] Verify full password + TOTP sign-in after recovery: requires owner signing in normally; managed identity-only session cannot enroll MFA, and no current password is available to the test runner.
 

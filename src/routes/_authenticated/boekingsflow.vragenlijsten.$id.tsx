@@ -12,6 +12,7 @@ import { opts, optLabel, orgQuery } from "@/data/organisation";
 import {
   createDraft, defOf, discardDraft, draftOf, exportFlow, flowOf, linkTreatments, publishVersion, publishedOf, questionnairesQuery, saveDraft, saveFlowDocument, versionsOf, workingVersion,
 } from "@/data/questionnaires";
+import { effectiveVisibility, readFieldNames } from "@/domain/questionnaire/builder";
 import { makeCtx, type Item, type Page, type QuestionnaireDef } from "@/domain/questionnaire/engine";
 import { evaluate } from "@/domain/questionnaire/expr";
 import { ComputedModal, ItemModal, PageModal, PublishModal, ThresholdsModal } from "@/features/questionnaire/BuilderModals";
@@ -19,7 +20,7 @@ import { conditionText, fieldInfos, questionNumbers, refOptions } from "@/featur
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/boekingsflow/vragenlijsten/$id")({
-  head: () => ({ meta: [{ title: "Vragenlijst bewerken · Beheer · The Body Clinic" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Vragenlijst bewerken · Beheer · The Body Clinic" }, { name: "description", content: "Vragen, voorwaarden en grenswaarden beheren voor The Body Clinic." }, { property: "og:title", content: "Vragenlijst bewerken · The Body Clinic" }, { property: "og:description", content: "Vragen, voorwaarden en grenswaarden beheren voor The Body Clinic." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { name: "robots", content: "noindex" }] }),
   loader: ({ context }) => Promise.all([context.queryClient.ensureQueryData(questionnairesQuery), context.queryClient.ensureQueryData(orgQuery)]),
   component: Builder,
 });
@@ -48,6 +49,7 @@ function Builder() {
   const def = defOf(working);
   const flow = q ? flowOf(data, q.flow_id) : undefined;
   const doc = (flow?.document ?? {}) as Record<string, unknown>;
+  const names = readFieldNames(doc);
   const settings = (doc["settings"] ?? {}) as Record<string, unknown>;
   const computed = (doc["computed_fields"] ?? {}) as Record<string, string>;
   const [edit, setEdit] = useState<Edit | null>(null);
@@ -68,11 +70,11 @@ function Builder() {
     if (!draft) { toast.error("Maak eerst een nieuwe versie om te wijzigen"); return; }
     mut.mutate(() => saveDraft(draft.id, next));
   };
-  const fields = fieldInfos(def, computed);
+  const fields = fieldInfos(def, computed, names);
   const opsList = opts(org, "questionnaire_op");
   const opsMap = Object.fromEntries(opsList.map((o) => [o.value, o.label]));
-  const refs = refOptions(settings, computed);
-  const ctx = { fields, ops: opsList, refs, settings, computed };
+  const refs = refOptions(settings, computed, names);
+  const ctx = { fields, ops: opsList, refs, settings, computed, names };
   const sections = [...new Set(def.pages.map((p) => p.section).filter(Boolean))] as string[];
   const cond = (c: Parameters<typeof conditionText>[0]) => conditionText(c, fields, opsMap, settings);
   const typeLabel = (t: string) => optLabel(org, "questionnaire_item_type", t);
@@ -92,7 +94,7 @@ function Builder() {
 
   const setPages = (pages: Page[]) => writeDef({ ...def, pages });
   const savePage = (p: Page, index: number | null) => setPages(index === null ? [...def.pages, p] : def.pages.map((x, i) => (i === index ? ({ ...p, ...(x.items ? { items: x.items } : {}) } as Page) : x)));
-  const saveItem = (item: Item, section: string | undefined, pageIdx: number | null, itemIdx: number | null) => {
+  const saveItem = (item: Item, section: string | undefined, pageIdx: number | null, itemIdx: number | null, pageCondition?: { value: Page["show_if"] }) => {
     if (pageIdx === null) {
       setPages([...def.pages, { id: `p_${item.id}`, ...(section ? { section } : {}), items: [item] }]);
       return;
@@ -101,7 +103,9 @@ function Builder() {
       if (i !== pageIdx) return p;
       const items = [...(p.items ?? [])];
       if (itemIdx === null) items.push(item); else items[itemIdx] = item;
-      return { ...p, ...(section ? { section } : {}), items };
+      const next = { ...p, ...(section ? { section } : {}), items };
+      if (pageCondition) { if (pageCondition.value) next.show_if = pageCondition.value; else delete next.show_if; }
+      return next;
     }));
   };
   const move = (from: number, to: number) => {
@@ -192,7 +196,7 @@ function Builder() {
             if (!items.length) return row("Pagina", p.title ?? "", [pageTypeLabel(p.type ?? "text"), p.body?.slice(0, 80)].filter(Boolean).join(" · "), p.show_if ? cond(p.show_if) : null, () => setEdit({ kind: "page", index: pi }), { pageIdx: pi });
             if (items.length === 1 && !p.title) {
               const i = items[0] as Item;
-              return row("Vraag", i.text, itemSummary(p, i), p.show_if ? cond(p.show_if) : i.show_if ? cond(i.show_if) : null, () => setEdit({ kind: "item", page: pi, item: 0 }), { pageIdx: pi });
+              return row("Vraag", i.text, itemSummary(p, i), effectiveVisibility(p, i) ? cond(effectiveVisibility(p, i)) : null, () => setEdit({ kind: "item", page: pi, item: 0 }), { pageIdx: pi });
             }
             return (
               <div key={p.id} draggable={editable} onDragStart={() => setDrag(pi)} onDragOver={(e) => e.preventDefault()} onDrop={() => { if (drag !== null && drag !== pi) move(drag, pi); setDrag(null); }}
@@ -208,7 +212,7 @@ function Builder() {
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">{items.length} vragen op één scherm{p.show_if ? ` · alleen als ${cond(p.show_if)}` : ""}{p.red_if ? ` · rood als ${cond(p.red_if)}` : ""}</p>
                 {!collapsed.has(p.id) && <div className="mt-2 flex flex-col gap-2">
-                  {items.map((i, ii) => row("Vraag", i.text, itemSummary(p, i), i.show_if ? cond(i.show_if) : null, () => setEdit({ kind: "item", page: pi, item: ii }), { item: { page: pi, idx: ii } }))}
+                  {items.map((i, ii) => row("Vraag", i.text, itemSummary(p, i), effectiveVisibility(p, i) ? cond(effectiveVisibility(p, i)) : null, () => setEdit({ kind: "item", page: pi, item: ii }), { item: { page: pi, idx: ii } }))}
                 </div>}
                 {collapsed.has(p.id) && ((n += items.length), null)}
                 {editable && !collapsed.has(p.id) && <div className="mt-2"><TextLink onClick={() => setEdit({ kind: "item", page: pi, item: null })}>Vraag aan deze pagina toevoegen</TextLink></div>}
@@ -242,7 +246,7 @@ function Builder() {
             <tbody className="divide-y divide-line">
               {THRESHOLDS.map((r) => {
                 const v = (p: string) => String(p.split(".").reduce<unknown>((o, k) => (o as Record<string, unknown>)?.[k], settings) ?? "–").replace(".", ",");
-                return <tr key={r.label}><td className={tdCls}>{r.label}</td><td className={tdCls}>{v(r.std)}{r.unit ?? ""}</td><td className={tdCls}>{v(r.red)}{r.unit ?? ""}</td></tr>;
+                return <tr key={r.label}><td className={tdCls}>{names.thresholds[r.std] || r.label}</td><td className={tdCls}>{v(r.std)}{r.unit ?? ""}</td><td className={tdCls}>{v(r.red)}{r.unit ?? ""}</td></tr>;
               })}
             </tbody>
           </table>
@@ -255,7 +259,7 @@ function Builder() {
           <thead><tr className="border-b border-line"><th className={thCls}>Veld</th><th className={thCls}>Formule</th><th className={thCls}>Voorbeeld</th><th className={thCls} /></tr></thead>
           <tbody className="divide-y divide-line">
             {Object.entries(computed).map(([k, f]) => (
-              <tr key={k}><td className={tdCls}>{k}</td><td className={cn(tdCls, "font-mono text-xs")}>{f}</td><td className={tdCls}>{sample(f)}</td><td className={tdCls}><TextLink onClick={() => setEdit({ kind: "computed", name: k })}>Wijzig</TextLink></td></tr>
+              <tr key={k}><td className={tdCls}>{names.computed[k] || "Berekend veld zonder naam"}</td><td className={cn(tdCls, "font-mono text-xs")}>{f}</td><td className={tdCls}>{sample(f)}</td><td className={tdCls}><TextLink onClick={() => setEdit({ kind: "computed", name: k })}>Wijzig</TextLink></td></tr>
             ))}
           </tbody>
         </table>
@@ -290,7 +294,7 @@ function Builder() {
         return (
           <ItemModal item={item} number={item ? (questionNumbers(def)[item.id] ?? 0) : Object.keys(questionNumbers(def)).length + 1} questionnaireName={def.name} questionnaireId={q.id} def={def} page={p}
             flow={{ settings, computed_fields: computed }} ui={data.uiTexts} images={opts(org, "questionnaire_image")} itemTypes={opts(org, "questionnaire_item_type")} sections={sections} section={p?.section} rejections={rejections} ctx={ctx}
-            onSave={(i, s) => saveItem(i, s, edit.page, edit.item)} onClose={() => setEdit(null)}
+            onSave={(i, s, pageCondition) => saveItem(i, s, edit.page, edit.item, pageCondition)} onClose={() => setEdit(null)}
             onDelete={edit.page === null || edit.item === null ? undefined : () => {
               const pi = edit.page as number, ii = edit.item as number;
               const pages = def.pages.map((x, i) => (i === pi ? { ...x, items: (x.items ?? []).filter((_, j) => j !== ii) } : x)).filter((x, i) => i !== pi || (x.items?.length ?? 0) > 0 || x.title);
@@ -299,12 +303,12 @@ function Builder() {
         );
       })()}
       {edit?.kind === "thresholds" && flow && (
-        <ThresholdsModal settings={settings} rows={THRESHOLDS} onClose={() => setEdit(null)} onSave={(s) => mut.mutate(() => saveFlowDocument(flow.id, { ...doc, settings: s }))} />
+        <ThresholdsModal settings={settings} rows={THRESHOLDS} names={names.thresholds} onClose={() => setEdit(null)} onSave={(s, labels) => mut.mutate(() => saveFlowDocument(flow.id, { ...doc, settings: s, field_names: { ...names, thresholds: labels } }))} />
       )}
       {edit?.kind === "computed" && flow && (
-        <ComputedModal name={edit.name} formula={edit.name ? (computed[edit.name] ?? "") : ""} sample={sample} onClose={() => setEdit(null)}
-          onSave={(name, f) => mut.mutate(() => saveFlowDocument(flow.id, { ...doc, computed_fields: { ...computed, [name]: f } }))}
-          onDelete={edit.name ? () => { const c = { ...computed }; delete c[edit.name as string]; mut.mutate(() => saveFlowDocument(flow.id, { ...doc, computed_fields: c })); } : undefined} />
+        <ComputedModal name={edit.name} displayName={edit.name ? names.computed[edit.name] ?? "" : ""} formula={edit.name ? (computed[edit.name] ?? "") : ""} sample={sample} onClose={() => setEdit(null)}
+          onSave={(name, f, label) => mut.mutate(() => saveFlowDocument(flow.id, { ...doc, computed_fields: { ...computed, [name]: f }, field_names: { ...names, computed: { ...names.computed, [name]: label } } }))}
+          onDelete={edit.name ? () => { const c = { ...computed }, labels = { ...names.computed }; delete c[edit.name as string]; delete labels[edit.name as string]; mut.mutate(() => saveFlowDocument(flow.id, { ...doc, computed_fields: c, field_names: { ...names, computed: labels } })); } : undefined} />
       )}
       {edit?.kind === "publish" && draft && (
         <PublishModal versionNo={draft.version_no} busy={mut.isPending} changes={pub ? `Versie ${pub.version_no} is nu actief.` : "Er is nog geen actieve versie."} onClose={() => setEdit(null)}

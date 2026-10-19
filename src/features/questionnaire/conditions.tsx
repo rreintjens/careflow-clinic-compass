@@ -5,15 +5,16 @@ import { Modal } from "@/components/Modal";
 import { PillButton } from "@/components/PillButton";
 import { SegmentedControl } from "@/components/SegmentedControl";
 import { Select } from "@/components/Select";
-import { evalCondition, isLeaf, makeCtx, type Condition, type Leaf, type QuestionnaireDef } from "@/domain/questionnaire/engine";
+import { evalCondition, isLeaf, resolveValue, type Condition, type Leaf, type QuestionnaireDef } from "@/domain/questionnaire/engine";
 import { fromSituations, toSituations, type Row, type RowOp, type Situations } from "@/domain/questionnaire/situations";
+import { conditionExample, type FieldNames } from "@/domain/questionnaire/builder";
 import { cn } from "@/lib/utils";
 
-export interface FieldInfo { value: string; label: string; options?: string[] | undefined; kind: "answer" | "computed"; multi?: boolean }
+export interface FieldInfo { value: string; label: string; options?: string[] | undefined; kind: "answer" | "computed"; multi?: boolean; number?: number | undefined; unit?: string | undefined; exclusive?: string | undefined }
 type Opt = { value: string; label: string };
 
 /** Everything a condition needs: fields, comparison labels, thresholds and the flow for the worked example. */
-export interface CondCtx { fields: FieldInfo[]; ops: Opt[]; refs: Opt[]; settings: Record<string, unknown>; computed: Record<string, string> }
+export interface CondCtx { fields: FieldInfo[]; ops: Opt[]; refs: Opt[]; settings: Record<string, unknown>; computed: Record<string, string>; names?: FieldNames }
 
 /** Builder numbering: a text page counts once, every question counts once. */
 export function questionNumbers(def: QuestionnaireDef): Record<string, number> {
@@ -27,35 +28,36 @@ export function questionNumbers(def: QuestionnaireDef): Record<string, number> {
 }
 
 /** Every field a condition can test: answers of all items plus computed fields. */
-export function fieldInfos(def: QuestionnaireDef, computed: Record<string, string>): FieldInfo[] {
+export function fieldInfos(def: QuestionnaireDef, computed: Record<string, string>, names?: FieldNames): FieldInfo[] {
   const out: FieldInfo[] = [];
   const nums = questionNumbers(def);
   for (const p of def.pages) for (const i of p.items ?? []) {
     if (i.type === "height_weight") {
       out.push({ value: "height_cm", label: "Lengte (cm)", kind: "answer" }, { value: "weight_kg", label: "Gewicht (kg)", kind: "answer" });
     } else if (i.type !== "answer_summary") {
-      const options = i.type === "yes_no" ? ["yes", "no"] : i.options ? [...i.options, ...(i.exclusive_option ? [i.exclusive_option] : [])] : i.allow_unknown ? ["unknown"] : undefined;
-      out.push({ value: i.id, label: `Vraag ${nums[i.id]} ${short(i.text, 32)}`, options, kind: "answer", multi: i.type === "multi_choice" });
+      const options = i.type === "yes_no" ? ["yes", "no"] : i.options ? [...i.options, ...(i.exclusive_option ? [i.exclusive_option] : [])] : undefined;
+      out.push({ value: i.id, label: `Vraag ${nums[i.id]} ${short(i.text, 32)}`, options, kind: "answer", multi: i.type === "multi_choice", number: nums[i.id], unit: i.unit, exclusive: i.exclusive_option });
     }
   }
-  for (const k of Object.keys(computed)) out.push({ value: k, label: k, kind: "computed" });
+  for (const k of Object.keys(computed)) out.push({ value: k, label: names?.computed[k] || "Berekend veld zonder naam", kind: "computed" });
   return out;
 }
 
 const fmtNum = (v: unknown) => (typeof v === "number" ? (Number.isInteger(v) ? String(v) : v.toFixed(1)).replace(".", ",") : String(v));
 const setting = (v: string, settings: Record<string, unknown>) => v.slice(9).split(".").reduce<unknown>((o, k) => (o && typeof o === "object" ? (o as Record<string, unknown>)[k] : undefined), settings);
 const answerLabel = (o: string) => (o === "yes" ? "ja" : o === "no" ? "nee" : o === "unknown" ? "weet ik niet" : o.toLowerCase());
-const valueText = (v: unknown, settings: Record<string, unknown>): string => {
-  if (Array.isArray(v)) return v.map((x) => valueText(x, settings)).join(" of ");
+const valueText = (v: unknown, settings: Record<string, unknown>, fields: FieldInfo[] = []): string => {
+  if (Array.isArray(v)) return v.map((x) => valueText(x, settings, fields)).join(" of ");
   if (typeof v === "string" && v.startsWith("settings.")) return fmtNum(setting(v, settings));
-  if (typeof v === "string") return answerLabel(v);
+  if (typeof v === "boolean") return v ? "ja" : "nee";
+  if (typeof v === "string") return fields.find((f) => f.value === v)?.label ?? answerLabel(v);
   return fmtNum(v);
 };
 const short = (s: string, n = 40) => (s.length > n ? `${s.slice(0, n - 2)}…` : s);
-const fieldName = (field: string, fields: FieldInfo[]) => fields.find((x) => x.value === field)?.label ?? field;
+const fieldName = (field: string, fields: FieldInfo[]) => fields.find((x) => x.value === field)?.label ?? "Veld zonder naam";
 
 const rowText = (r: Row, fields: FieldInfo[], ops: Record<string, string>, settings: Record<string, unknown>) =>
-  `${fieldName(r.field, fields)} ${ops[r.op] ?? r.op} ${valueText(r.value, settings)}${r.op === "between" ? ` en ${valueText(r.value2, settings)}` : ""}`;
+  `${fieldName(r.field, fields)} ${ops[r.op] ?? r.op} ${valueText(r.value, settings, fields)}${r.op === "between" ? ` en ${valueText(r.value2, settings, fields)}` : ""}`;
 
 /** Plain-language sentence for a condition: situations joined by "of", rows by "en". */
 export function conditionText(c: Condition | Leaf | undefined, fields: FieldInfo[], ops: Record<string, string>, settings: Record<string, unknown>): string {
@@ -66,14 +68,14 @@ export function conditionText(c: Condition | Leaf | undefined, fields: FieldInfo
 }
 
 /** Values a numeric test can compare with: settings thresholds and computed fields. */
-export function refOptions(settings: Record<string, unknown>, computed: Record<string, string>) {
+export function refOptions(settings: Record<string, unknown>, computed: Record<string, string>, names?: FieldNames) {
   const out: Opt[] = [];
   const walk = (o: unknown, p: string) => {
-    if (typeof o === "number") out.push({ value: `settings.${p}`, label: `${fmtNum(o)} (${p})` });
+    if (typeof o === "number") out.push({ value: `settings.${p}`, label: `${fmtNum(o)} (${names?.thresholds[p] || "Grenswaarde zonder naam"})` });
     else if (o && typeof o === "object" && !Array.isArray(o)) for (const [k, v] of Object.entries(o)) walk(v, p ? `${p}.${k}` : k);
   };
   walk(settings, "");
-  for (const k of Object.keys(computed)) out.push({ value: k, label: k });
+  for (const k of Object.keys(computed)) out.push({ value: k, label: names?.computed[k] || "Berekend veld zonder naam" });
   return out;
 }
 
@@ -93,34 +95,58 @@ export function ConditionLine({ label, value, empty, onEdit, help, ctx }: { labe
 }
 
 const DESIGN_OPS: RowOp[] = ["eq", "not_eq", "gte", "lt", "between", "contains"];
-const SAMPLE = { height_cm: 178, weight_kg: 88, date_of_birth: "1988-03-14" };
+/** A situation describes the meaning, rather than repeating the editor's comparisons. */
+export function situationSentence(rows: Row[], ctx: CondCtx): string {
+  const example = conditionExample(fromSituations([rows]), ctx.settings, ctx.computed, "2026-10-19", ctx.fields.filter((f) => f.multi).map((f) => f.value));
+  const value = (v: unknown) => valueText(resolveValue(v, example.ctx), ctx.settings, ctx.fields);
+  const parts = rows.map((r) => {
+    const field = ctx.fields.find((f) => f.value === r.field);
+    const name = fieldName(r.field, ctx.fields);
+    if (typeof r.value === "boolean" && r.op === "eq") return `${r.value ? "Wel" : "Geen"} ${name.toLowerCase()}`;
+    if (field?.multi && r.op === "eq" && (Array.isArray(r.value) ? r.value.length === 1 && r.value[0] === field.exclusive : r.value === field.exclusive)) return `bij vraag ${field.number} geen aandoening aangevinkt`;
+    if (r.op === "between") return `${name} van ${value(r.value)} tot ${value(r.value2)}${field?.unit ? ` ${field.unit}` : ""}`;
+    if (r.op === "eq" && r.value === "unknown") return `${name} is niet bekend`;
+    const suffix = field?.unit ? ` ${field.unit}` : "";
+    const phrase = r.op === "gte" ? "van minstens" : r.op === "gt" ? "boven" : r.op === "lt" ? "onder" : r.op === "lte" ? "van maximaal" : r.op === "not_eq" ? "is niet" : r.op === "contains" ? "met" : "is";
+    return `${name} ${phrase} ${value(r.value)}${suffix}`;
+  });
+  const body = parts.length > 1 ? `${parts.slice(0, -1).join(", ")}, en ${parts.at(-1)}` : parts[0] ?? "";
+  return `${body.charAt(0).toUpperCase()}${body.slice(1)}.`;
+}
 
 /** The condition modal: Altijd | Alleen als, situations (of) of rows (en). */
-export function ConditionModal({ title, description, alwaysLabel, value, ctx, onSave, onClose }: {
+export function ConditionModal({ title, description, alwaysLabel, value, ctx, onSave, onClose, outcome = "show" }: {
   title: string; description: string; alwaysLabel: string; value: Condition | undefined; ctx: CondCtx;
-  onSave: (c: Condition | undefined) => void; onClose: () => void;
+  onSave: (c: Condition | undefined) => void; onClose: () => void; outcome?: "show" | "signal" | "red";
 }) {
   const firstField = ctx.fields[0]?.value ?? "";
   const blank = (): Row => ({ field: firstField, op: "eq", value: ctx.fields[0]?.options?.[0] ?? "" });
   const [sits, setSits] = useState<Situations>(() => { const s = toSituations(value); return s.length ? s : [[blank()]]; });
   const [mode, setMode] = useState<"always" | "only">(value ? "only" : "always");
-  const opsMap = Object.fromEntries(ctx.ops.map((o) => [o.value, o.label]));
   const setRow = (si: number, ri: number, r: Row) => setSits(sits.map((s, i) => (i === si ? s.map((x, j) => (j === ri ? r : x)) : s)));
   const removeRow = (si: number, ri: number) => setSits(sits.map((s, i) => (i === si ? s.filter((_, j) => j !== ri) : s)).filter((s) => s.length));
   const result = mode === "always" ? undefined : fromSituations(sits);
 
-  // Worked example: 178 cm / 88 kg, and the answers of situation 1 where it tests an answer with "is".
-  const example: Record<string, unknown> = { ...SAMPLE };
-  for (const r of sits[0] ?? []) {
-    const f = ctx.fields.find((x) => x.value === r.field);
-    if (f?.kind === "answer" && r.op === "eq") example[r.field] = f.multi && !Array.isArray(r.value) ? [r.value] : r.value;
-  }
   const today = new Date().toISOString().slice(0, 10);
-  const exCtx = makeCtx({ settings: ctx.settings, computed_fields: ctx.computed }, example, today);
-  const bmi = exCtx.computed["bmi"];
-  const exAnswers = (sits[0] ?? []).filter((r) => r.op === "eq" && ctx.fields.find((x) => x.value === r.field)?.kind === "answer").map((r) => `${valueText(r.value, ctx.settings)} bij ${fieldName(r.field, ctx.fields).toLowerCase()}`);
-  const shown = result ? evalCondition(result, exCtx) : true;
-  const summary = `Samengevat: ${sits.length > 1 ? `de vraag komt alleen als één van de ${sits.length === 2 ? "twee" : sits.length} situaties klopt. Binnen een situatie moeten alle regels kloppen.` : "de vraag komt alleen als alle regels kloppen."} Met 178 cm en 88 kg${typeof bmi === "number" ? ` (BMI ${fmtNum(Math.round(bmi * 10) / 10)})` : ""}${exAnswers.length ? `, ${exAnswers.join(", ")}` : ""} ${shown ? "klopt de voorwaarde" : "klopt de voorwaarde niet"}.`;
+  const example = conditionExample(result, ctx.settings, ctx.computed, today, ctx.fields.filter((f) => f.multi).map((f) => f.value));
+  const bmi = example.ctx.computed["bmi"];
+  const examples: string[] = [];
+  if (example.fields.includes("bmi")) examples.push(`${fmtNum(example.answers["height_cm"])} cm en ${fmtNum(Math.round(Number(example.answers["weight_kg"]) * 10) / 10)} kg (BMI ${fmtNum(Math.round(Number(bmi) * 10) / 10)})`);
+  for (const f of example.fields.filter((f) => f !== "bmi")) {
+    const info = ctx.fields.find((x) => x.value === f);
+    const v = example.value(f);
+    if (v !== undefined) examples.push(`${fieldName(f, ctx.fields)}: ${valueText(v, ctx.settings, ctx.fields)}${info?.unit ? ` ${info.unit}` : ""}`);
+  }
+  for (const row of sits[0] ?? []) for (const reference of [row.value, row.value2]) {
+    if (typeof reference === "string" && (reference in ctx.computed || reference.startsWith("settings."))) {
+      const label = ctx.fields.find((f) => f.value === reference)?.label ?? ctx.refs.find((r) => r.value === reference)?.label ?? "Grenswaarde";
+      const text = `${label}: ${valueText(resolveValue(reference, example.ctx), ctx.settings, ctx.fields)}${row.field === "waist_cm" ? " cm" : ""}`;
+      if (!examples.includes(text)) examples.push(text);
+    }
+  }
+  const matches = evalCondition(result, example.ctx);
+  const outcomeText = outcome === "signal" ? (matches ? "krijgt de arts een signaal" : "krijgt de arts geen signaal") : outcome === "red" ? (matches ? "wordt de uitkomst rood" : "wordt de uitkomst niet rood") : (matches ? "wordt de vraag getoond" : "wordt de vraag niet getoond");
+  const summary = `Samengevat: ${sits.length > 1 ? "één van de situaties moet kloppen; binnen een situatie moeten alle voorwaarden kloppen." : "alle voorwaarden moeten kloppen."} Bijvoorbeeld, met ${examples.join(", ")} ${outcomeText}.`;
 
   return (
     <Modal open width="lg" onOpenChange={(o) => !o && onClose()} title={title} description={description}
@@ -145,7 +171,7 @@ export function ConditionModal({ title, description, alwaysLabel, value, ctx, on
                   ))}
                 </div>
                 <div className="mt-2 pl-8"><TextLink onClick={() => setSits(sits.map((x, i) => (i === si ? [...x, blank()] : x)))}>+ nog een regel (en)</TextLink></div>
-                <p className="mt-3 border-t border-line pt-3 text-[13px]">{s.map((r) => rowText(r, ctx.fields, opsMap, ctx.settings)).join(", en ")}.</p>
+                <p className="mt-3 border-t border-line pt-3 text-[13px]">{situationSentence(s, ctx)}</p>
               </div>
             </div>
           ))}
@@ -167,6 +193,7 @@ function RowEditor({ row, ctx, onChange }: { row: Row; ctx: CondCtx; onChange: (
   const ops = ctx.ops.filter((o) => DESIGN_OPS.includes(o.value as RowOp) || o.value === row.op);
   const fieldOpts = withCurrent(ctx.fields.map((x) => ({ value: x.value, label: x.label })), row.field);
   const value = (v: unknown, set: (x: unknown) => void, label: string) => {
+    if (typeof v === "boolean") return <Select inline label={label} value={v ? "true" : "false"} onChange={(x) => set(x === "true")} options={[{ value: "true", label: "Ja" }, { value: "false", label: "Nee" }]} />;
     if (f?.options) {
       const cur = Array.isArray(v) ? String(v[0] ?? "") : String(v ?? "");
       const opts = f.options.map((o) => ({ value: o, label: answerLabel(o) }));
@@ -175,7 +202,7 @@ function RowEditor({ row, ctx, onChange }: { row: Row; ctx: CondCtx; onChange: (
     const numeric = typeof v === "number";
     return (
       <span className="inline-flex items-center gap-2">
-        <Select inline label={label} value={numeric ? "__num" : String(v ?? "")} onChange={(x) => set(x === "__num" ? 0 : x)} options={[...withCurrent(ctx.refs, numeric ? "" : String(v ?? "")), { value: "__num", label: "Vast getal" }]} />
+        <Select inline label={label} value={numeric ? "__num" : String(v ?? "")} onChange={(x) => set(x === "__num" ? 0 : x)} options={[...withCurrent([...ctx.refs, ...(row.field === "waist_cm" ? [{ value: "unknown", label: "Weet ik niet" }] : [])], numeric ? "" : String(v ?? "")), { value: "__num", label: "Vast getal" }]} />
         {numeric && <input inputMode="decimal" aria-label={`${label}, getal`} className="h-9 w-20 rounded-[10px] bg-background px-3 text-sm outline-none" value={fmtNum(v)} onChange={(e) => { const n = Number(e.target.value.replace(",", ".")); if (!Number.isNaN(n)) set(n); }} />}
       </span>
     );
@@ -189,4 +216,4 @@ function RowEditor({ row, ctx, onChange }: { row: Row; ctx: CondCtx; onChange: (
     </div>
   );
 }
-const withCurrent = (o: Opt[], cur: string) => (cur && !o.some((x) => x.value === cur) ? [{ value: cur, label: cur }, ...o] : o);
+const withCurrent = (o: Opt[], cur: string) => (cur && !o.some((x) => x.value === cur) ? [{ value: cur, label: "Waarde zonder naam" }, ...o] : o);
