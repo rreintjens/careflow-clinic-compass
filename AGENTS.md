@@ -10,6 +10,7 @@
 <!-- LOVABLE:END -->
 
 ## Architecture rules (The Body Clinic)
+- `src/features/questionnaire/` and `src/features/mail/` have their own `AGENTS.md`; read them before changing questionnaires or mails.
 - Read the design package first; its security rules override defaults. Build phases in order without confirmation pauses.
 - TanStack Start (not React Router); app-internal server logic in `createServerFn`, never new Edge Functions — platform stack.
 - Pure business logic in `src/domain/` with table-driven tests; typed queries in `src/data/`; shared UI in `src/components/` (one PillButton, Card, Select, SegmentedControl, Modal, Sidebar…) — no duplicates, add a prop instead.
@@ -26,14 +27,7 @@
 - Shared group data (permissions, option_lists, languages, group_settings) is editable only by `group_admins`; storage buckets are per tenant (`<name>-<slug>`).
 - Tenancy/RLS proof: `TEST_STAFF_PASSWORD=… bunx vitest run src/test/tenancy.integration.test.ts` (run files one at a time; they share test accounts).
 - Equipment: device kind comes from `equipment_types` → `equipment_kinds`; names are generated (`src/domain/equipment.ts`), never stored as truth; availability per room/day only via `roomsForKind` — one tested rule.
-- Questionnaires: frozen published jsonb versions; flow settings/formulas and `field_names` maps in `questionnaire_flows.document`. Engine alone owns routing/red/signals; situations round-trip conditions. Builder domain targets page/item visibility and source-answer examples; names stay separate from identifiers. EN texts use `*_en`; import/export retains all configuration.
-- Patient questionnaire UI is one component (`src/features/questionnaire/QuestionnaireRunner.tsx`); fixed screen texts come from option list `questionnaire_ui`.
 - Standalone consultations use the shared dossier modal, shared Zod validation and authenticated server save; option rows configure selections, while existing medical RLS governs access.
 - Measurements share one query across record views; BMI derives from source weight and previously known height through domain functions, and measurement writes use shared server/client validation.
 - Dossier add actions reuse the agenda appointment modal and shared consultation, measurement and document modals; a fixed patient cannot be changed in the appointment modal to prevent cross-record mistakes.
-- Email templates store tenant-scoped content and ordered blocks in the database; shared domain resolution selects treatment before category before base, and authenticated saves validate configured options to keep preview and delivery rules consistent.
-- Mail artwork uses tenant-private storage with server-sniffed uploads and UUID paths in template blocks; signed preview URLs expire after ten minutes to avoid persisting temporary access links.
-- Mail HTML is produced by one escaped table-based domain renderer, shared with a script-disabled preview; its palette comes from global mail tokens, ordered leading blocks share the introduction surface, and online/clinic copy uses configured conditional blocks so preview and future delivery cannot diverge.
 - Public booking (`/boeken`) reads via `src/data/booking.functions.ts` server functions with the admin client after resolving the brand from the host (`?merk=` only for brands in test mode); they return display data only. Step order lives in `src/domain/booking.ts`, free times in `src/domain/slots.ts` — both tested.
-- Mail moments render server-side via `src/data/mailer.server.ts` into `mail_outbox` with the shared renderer; only allowlist-setting addresses are marked for real delivery, so demo data never reaches patients.
-- Questionnaire builder opens the live version read-only; editing happens only in the single concept (Aanpassen), with row labels and publish summaries derived from `describeChanges`/`rowChange` so the builder and publish dialog cannot disagree.
