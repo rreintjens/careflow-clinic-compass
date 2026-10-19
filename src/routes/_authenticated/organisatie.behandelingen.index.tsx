@@ -13,7 +13,7 @@ import {
   createTreatment, generalDefaultsQuery, mainCategories, opts, orgQuery, saveCategory, saveCategoryOrder, saveTreatmentOrder, subCategories,
   type Category, type Org,
 } from "@/data/organisation";
-import { durationOptions } from "@/domain/organisation";
+import { durationOptions, TREATMENT_ICONS } from "@/domain/organisation";
 import { offeredSummary, treatmentBookability } from "@/features/organisation/bookability";
 import { EquipmentKindsModal } from "@/features/organisation/EquipmentKindsModal";
 import { MailImagePicker } from "@/features/mail/MailImagePicker";

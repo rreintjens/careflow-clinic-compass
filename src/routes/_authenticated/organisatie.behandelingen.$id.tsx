@@ -15,7 +15,7 @@ import {
   orgQuery, removePractitionerTreatment, roleName, saveRequirement, saveTreatment, setPractitionerTreatmentExclusions, subCategories,
   treatmentMainCategoryIds, workLocationIds, type Org, type Requirement, kindName, kindOpts,
 } from "@/data/organisation";
-import { durationOptions, practitionerExcludedHere, practitionerTreatmentLocations } from "@/domain/organisation";
+import { durationOptions, practitionerExcludedHere, practitionerTreatmentLocations, TREATMENT_ICONS } from "@/domain/organisation";
 import { REASON_TEXT, treatmentBookability } from "@/features/organisation/bookability";
 import { cn } from "@/lib/utils";
 
@@ -62,6 +62,7 @@ function TreatmentForm({ org, defaults, onSaved, onCancel }: { org: Org; default
   const [cancel, setCancel] = useState(t.cancel_until_hours != null ? String(t.cancel_until_hours) : "default");
   const [fee, setFee] = useState(t.no_show_fee_eur != null ? String(t.no_show_fee_eur) : "default");
   const [status, setStatus] = useState(t.status);
+  const [icon, setIcon] = useState(t.icon ?? "none");
   const [locs, setLocs] = useState(offeredLocationIds(org, id));
   const [pre, setPre] = useState(t.pre_questionnaire_key ?? "none");
   const [post, setPost] = useState(t.post_questionnaire_key ?? "none");
@@ -95,6 +96,7 @@ function TreatmentForm({ org, defaults, onSaved, onCancel }: { org: Org; default
           cancel_until_hours: cancel === "default" ? null : Number(cancel),
           no_show_fee_eur: fee === "default" ? null : Number(fee),
           status,
+          icon: icon === "none" ? null : icon,
           pre_questionnaire_key: pre === "none" ? null : pre,
           post_questionnaire_key: post === "none" ? null : post,
           questionnaire_minutes: Math.min(60, Math.max(1, Number(qmin) || 8)),
@@ -163,6 +165,8 @@ function TreatmentForm({ org, defaults, onSaved, onCancel }: { org: Org; default
               <Select label="No-showbedrag" value={fee} onChange={setFee} options={[{ value: "default", label: `Standaard uit Algemeen (${defaults.noShowCents ? `€${defaults.noShowCents / 100}` : "geen"})` }, ...opts(org, "no_show_fee_eur")]} help="Bij te laat annuleren of niet verschijnen." />
               <Select label="Status" value={status} onChange={setStatus} options={opts(org, "treatment_status")} />
               <TextField label="Naam (Engels)" value={nameEn} onChange={(e) => setNameEn(e.target.value)} help="Leeg laten: de patiënt ziet de Nederlandse naam." />
+              <Select label="Icoon" value={icon} onChange={setIcon} options={[{ value: "none", label: "Icoon van de categorie" }, ...TREATMENT_ICONS.map((i) => ({ value: i, label: i.replace(/-/g, " ").replace(/^./, (c) => c.toUpperCase()) }))]} help="Leeg: de patiënt ziet het icoon van de (sub)categorie." />
+              <div className="flex items-end pb-1">{icon !== "none" && <img src={`/treatment-icons/${icon}.png`} alt="" className="h-11 w-11" />}</div>
             </div>
           </Card>
 
