@@ -3,7 +3,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { measurementWithBmi } from "@/domain/measurements";
 
 export type TimelineKind = "appointments" | "questionnaires" | "contact" | "treatment" | "system";
-export interface TimelineEvent { at: string; kind: TimelineKind; icon: string; title: string; body: string; who: string; meet?: string | null; entry?: { kind: "contact" | "request"; id: string } }
+export interface TimelineEvent { at: string; kind: TimelineKind; icon: string; title: string; body: string; who: string; meet?: string | null; entry?: { kind: "contact" | "request"; id: string }; noteId?: string }
 
 const STATUS: Record<string, string> = { booked: "", cancelled: " · geannuleerd", no_show: " · niet verschenen", completed: " · afgerond" };
 
@@ -25,7 +25,7 @@ export function buildTimeline(d: Dossier, consults: ReadonlyArray<Database["publ
   }
   for (const n of consults) {
     if (n.status !== "final" || n.appointment_id !== null) continue;
-    out.push({ at: n.occurred_at ?? n.created_at, kind: "appointments", icon: "document", title: "Consult vastgelegd", body: [n.time_and_duration, n.reason, n.subjective, n.objective, n.evaluation, n.plan].filter(Boolean).join(" · "), who: "Behandelaar" });
+    out.push({ at: n.occurred_at ?? n.created_at, kind: "appointments", icon: "document", title: "Consult vastgelegd", body: [n.time_and_duration, n.reason, n.subjective, n.objective, n.evaluation, n.plan].filter(Boolean).join(" · "), who: "Behandelaar", noteId: n.id });
   }
   for (const m of measurements) {
     const bmi = measurementWithBmi(m, measurements).bmi;

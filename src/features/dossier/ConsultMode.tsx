@@ -158,6 +158,8 @@ export function ActiveConsultMode() {
         <span className="whitespace-nowrap text-[13px] opacity-80">{next ? `Volgende: ${hm(next.starts_at)} ${next.patient?.first_name ?? ""} ${next.patient?.last_name ?? ""}` : "Geen volgende afspraak vandaag"}</span>
         <div className="ml-auto flex gap-2">
           {online && a.meet_link && <a href={a.meet_link} target="_blank" rel="noreferrer"><PillButton size="sm" className="bg-background text-primary hover:bg-background"><UiIcon name="videogesprek" className="size-4" />Meet</PillButton></a>}
+          <PillButton size="sm" variant="outline" className="border-primary-foreground/60 bg-transparent text-primary-foreground" onClick={() => savePrefs({ min: !prefs.min })}>Notities</PillButton>
+          <Link to="/patienten/$id/consult/$apptId" params={{ id: recordKey(p), apptId: a.id }}><PillButton size="sm" variant="outline" className="border-primary-foreground/60 bg-transparent text-primary-foreground">Stappen</PillButton></Link>
           <Link to="/patienten/$id" params={{ id: recordKey(p) }}><PillButton size="sm" variant="outline" className="border-primary-foreground/60 bg-transparent text-primary-foreground">Dossier</PillButton></Link>
           <Link to="/agenda/mijn-dag"><PillButton size="sm" variant="outline" className="border-primary-foreground/60 bg-transparent text-primary-foreground">Agenda</PillButton></Link>
         </div>
