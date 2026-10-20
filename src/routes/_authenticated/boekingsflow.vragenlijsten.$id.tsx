@@ -19,6 +19,8 @@ import { makeCtx, type FlowFile, type Item, type ItemType, type Page, type PageT
 import { evaluate } from "@/domain/questionnaire/expr";
 import { configurationChanges, versionConfig } from "@/domain/questionnaire/version-config";
 import { AddList, type AddChoice } from "@/features/questionnaire/AddChooser";
+import { libraryItem } from "@/domain/dossier-templates";
+import { libraryQuery } from "@/data/dossier";
 import { DiscardDialog, PublishDialog, VersionsDialog, changesCount, livePeriod, longDate, whenSaved } from "@/features/questionnaire/VersionDialogs";
 import { VersionPill } from "@/features/questionnaire/VersionPill";
 import { BoodschapModal, START, flowPositions } from "@/features/questionnaire/BoodschapModal";
@@ -58,6 +60,7 @@ function Builder() {
   const pub = q ? publishedOf(data, q.id) : undefined;
   const versions = q ? versionsOf(data, q.id) : [];
   const [editing, setEditing] = useState(false);
+  const { data: library = [] } = useQuery(libraryQuery);
   const [archiveId, setArchiveId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -176,7 +179,7 @@ function Builder() {
   const toggleGroup = (id: string) => setCollapsed((c) => { const x = new Set(c); if (x.has(id)) x.delete(id); else x.add(id); return x; });
 
   let n = 0;
-  const row = (label: string, title: string, sub: string, show: string | null, onEdit: () => void, extra?: { pageIdx?: number; item?: { page: number; idx: number }; badge?: React.ReactNode }) => {
+  const row = (label: string, title: string, sub: string, show: string | null, onEdit: () => void, extra?: { pageIdx?: number; item?: { page: number; idx: number }; badge?: React.ReactNode; linked?: boolean }) => {
     n += 1;
     const it = extra?.item;
     const selIdx = extra?.pageIdx ?? it?.page;
@@ -193,7 +196,7 @@ function Builder() {
         <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-sand text-xs">{n}</span>
         <Tag tone={label === "Vraag" ? "teal" : "sand"}>{label}</Tag>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 text-sm">{title}{extra?.badge}</div>
+          <div className="flex items-center gap-2 text-sm">{extra?.linked && <UiIcon name="link" className="size-3.5 shrink-0 text-primary" aria-label="Uit de bibliotheek" />}{title}{extra?.badge}</div>
           <div className="text-xs text-muted-foreground">{sub}</div>
           {show && <div className="mt-1 flex items-center gap-1.5 text-xs text-primary"><UiIcon name="route" className="size-3.5" />Alleen als {show}</div>}
         </div>
@@ -226,6 +229,7 @@ function Builder() {
   };
   const blank = (c: AddChoice): Page => {
     const uid = Date.now().toString(36);
+    if (c.kind === "library") return { id: `p_q_${uid}`, items: [libraryItem(c.question, `q_${uid}`)] };
     if (c.kind === "item") return { id: `p_q_${uid}`, items: [{ id: `q_${uid}`, type: c.type, text: "Nieuwe vraag", ...(c.type === "single_choice" || c.type === "multi_choice" ? { options: [] } : {}) }] };
     return { id: `p_${uid}`, type: c.type, title: c.type === "question_page" ? "Nieuwe vragenpagina" : "Nieuwe pagina", ...(c.type === "question_page" ? { items: [] } : {}) };
   };
@@ -313,7 +317,7 @@ function Builder() {
             if (!items.length) return row("Pagina", p.title ?? "", [pageTypeLabel(p.type ?? "text"), p.body?.slice(0, 80)].filter(Boolean).join(" · "), p.show_if ? short(p.show_if) : null, () => setEdit(p.type === "boodschap" ? { kind: "boodschap", index: pi } : { kind: "page", index: pi }), { pageIdx: pi, badge: badge(p) });
             if (items.length === 1 && !p.title) {
               const i = items[0] as Item;
-              return row("Vraag", i.text, itemSummary(p, i), effectiveVisibility(p, i) ? short(effectiveVisibility(p, i)) : null, () => setEdit({ kind: "item", page: pi, item: 0 }), { pageIdx: pi, badge: badge(p, i) });
+              return row("Vraag", i.text, itemSummary(p, i), effectiveVisibility(p, i) ? short(effectiveVisibility(p, i)) : null, () => setEdit({ kind: "item", page: pi, item: 0 }), { pageIdx: pi, badge: badge(p, i), linked: !!i["library_code"] });
             }
             return (
               <div key={p.id} draggable={editable} onDragStart={() => setDrag(pi)} onDragOver={(e) => e.preventDefault()} onDrop={() => { if (drag !== null && drag !== pi) move(drag, pi); setDrag(null); }}
@@ -329,7 +333,7 @@ function Builder() {
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">{items.length} vragen op één scherm{p.show_if ? ` · alleen als ${short(p.show_if)}` : ""}{p.red_if ? ` · rood als ${cond(p.red_if)}` : ""}</p>
                 {!collapsed.has(p.id) && <div className="mt-2 flex flex-col gap-2">
-                  {items.map((i, ii) => row("Vraag", i.text, itemSummary(p, i), i.show_if ? short(i.show_if) : null, () => setEdit({ kind: "item", page: pi, item: ii }), { item: { page: pi, idx: ii }, badge: badge(p, i) }))}
+                  {items.map((i, ii) => row("Vraag", i.text, itemSummary(p, i), i.show_if ? short(i.show_if) : null, () => setEdit({ kind: "item", page: pi, item: ii }), { item: { page: pi, idx: ii }, badge: badge(p, i), linked: !!i["library_code"] }))}
                 </div>}
                 {collapsed.has(p.id) && ((n += items.length), null)}
                 {editable && !collapsed.has(p.id) && <div className="mt-2"><TextLink onClick={() => setEdit({ kind: "item", page: pi, item: null })}>Vraag aan deze pagina toevoegen</TextLink></div>}
@@ -340,7 +344,7 @@ function Builder() {
         {editable && (
           <div className="mt-4 flex flex-col gap-3">
             <div><PillButton variant="outline" onClick={() => setAdding((a) => !a)} aria-expanded={adding}><PlusIcon />Vraag of pagina toevoegen</PillButton></div>
-            {adding && <AddList itemTypes={opts(org, "questionnaire_item_type")} pageTypes={opts(org, "questionnaire_page_type")} onPick={addRow} />}
+            {adding && <AddList itemTypes={opts(org, "questionnaire_item_type")} pageTypes={opts(org, "questionnaire_page_type")} onPick={addRow} library={library} />}
           </div>
         )}
       </Card>
