@@ -1,5 +1,5 @@
 import { useQuery, useSuspenseQuery, queryOptions } from "@tanstack/react-query";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
@@ -19,12 +19,17 @@ import { DobField, QuestionnaireRunner } from "@/features/questionnaire/Question
 import { Select } from "@/components/Select";
 import { TextArea, TextField } from "@/components/Field";
 import type { Answers, FlowFile, QuestionnaireDef } from "@/domain/questionnaire/engine";
+import { supabase } from "@/integrations/supabase/client";
+import { bookingPatientContext, sendPortalLink } from "@/data/portal.functions";
+import { patientInitials } from "@/domain/portal";
+import { UserRound, Mail } from "lucide-react";
 
 const search = z.object({
   merk: z.string().optional(), lang: z.enum(["nl", "en"]).optional(), bron: z.string().optional(), link: z.string().optional(),
   utm_source: z.string().max(80).optional(), utm_medium: z.string().max(80).optional(), utm_campaign: z.string().max(80).optional(),
   cat: z.string().optional(), sub: z.string().optional(), t: z.string().optional(), l: z.string().optional(),
   p: z.string().optional(), d: z.string().optional(), tijd: z.string().optional(), stap: z.string().optional(),
+  inloggen: z.enum(["nee"]).optional(),
 });
 type Search = z.infer<typeof search>;
 
@@ -82,6 +87,18 @@ function Booking() {
     return () => window.clearTimeout(t);
   }, [stepKey]);
   const guard = settling ? "pointer-events-none" : undefined;
+
+  // A Mijn omgeving session hides the login bar, presets the patient's own practitioner and prefills the details.
+  const [me, setMe] = useState<Awaited<ReturnType<typeof bookingPatientContext>> | null>(null);
+  useEffect(() => {
+    let on = true;
+    void (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session || !on) return;
+      try { const r = await bookingPatientContext({ data: { merk: s.merk } }); if (on && r.patient) setMe(r); } catch { /* not a patient session */ }
+    })();
+    return () => { on = false; };
+  }, [s.merk]);
 
   if (!("categories" in data) || !data.tenant) return <Shell lang={lang} onLang={() => go({ lang: lang === "nl" ? "en" : "nl" })}><p className="pt-10 text-[15px]">{tx("unknown_brand")}</p></Shell>;
   const original = data as Full;
