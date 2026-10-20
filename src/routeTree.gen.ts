@@ -19,6 +19,7 @@ import { Route as PatientMijnRouteRouteImport } from './routes/_patient/mijn/rou
 import { Route as AfspraakTokenRouteImport } from './routes/afspraak.$token'
 import { Route as AuthIndexRouteImport } from './routes/auth.index'
 import { Route as Auth2faRouteImport } from './routes/auth.2fa'
+import { Route as BoekenInloggenRouteImport } from './routes/boeken_.inloggen'
 import { Route as MijnIndexRouteImport } from './routes/mijn.index'
 import { Route as VragenlijstTokenRouteImport } from './routes/vragenlijst.$token'
 import { Route as AuthenticatedAgendaIndexRouteImport } from './routes/_authenticated/agenda.index'
@@ -113,6 +114,11 @@ const AuthIndexRoute = AuthIndexRouteImport.update({
 const Auth2faRoute = Auth2faRouteImport.update({
   id: '/auth/2fa',
   path: '/auth/2fa',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BoekenInloggenRoute = BoekenInloggenRouteImport.update({
+  id: '/boeken_/inloggen',
+  path: '/boeken/inloggen',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MijnIndexRoute = MijnIndexRouteImport.update({
@@ -392,6 +398,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/afspraak/$token': typeof AfspraakTokenRoute
   '/auth/2fa': typeof Auth2faRoute
+  '/boeken/inloggen': typeof BoekenInloggenRoute
   '/vragenlijst/$token': typeof VragenlijstTokenRoute
   '/auth/': typeof AuthIndexRoute
   '/mijn/': typeof MijnIndexRoute
@@ -448,6 +455,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/afspraak/$token': typeof AfspraakTokenRoute
   '/auth/2fa': typeof Auth2faRoute
+  '/boeken/inloggen': typeof BoekenInloggenRoute
   '/vragenlijst/$token': typeof VragenlijstTokenRoute
   '/auth': typeof AuthIndexRoute
   '/agenda/mijn-dag': typeof AuthenticatedAgendaMijnDagRoute
@@ -506,6 +514,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/afspraak/$token': typeof AfspraakTokenRoute
   '/auth/2fa': typeof Auth2faRoute
+  '/boeken_/inloggen': typeof BoekenInloggenRoute
   '/vragenlijst/$token': typeof VragenlijstTokenRoute
   '/auth/': typeof AuthIndexRoute
   '/mijn/': typeof MijnIndexRoute
@@ -564,6 +573,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/afspraak/$token'
     | '/auth/2fa'
+    | '/boeken/inloggen'
     | '/vragenlijst/$token'
     | '/auth/'
     | '/mijn/'
@@ -620,6 +630,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/afspraak/$token'
     | '/auth/2fa'
+    | '/boeken/inloggen'
     | '/vragenlijst/$token'
     | '/auth'
     | '/agenda/mijn-dag'
@@ -677,6 +688,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/afspraak/$token'
     | '/auth/2fa'
+    | '/boeken_/inloggen'
     | '/vragenlijst/$token'
     | '/auth/'
     | '/mijn/'
@@ -735,6 +747,7 @@ export interface RootRouteChildren {
   MijnRoute: typeof MijnRouteWithChildren
   AfspraakTokenRoute: typeof AfspraakTokenRoute
   Auth2faRoute: typeof Auth2faRoute
+  BoekenInloggenRoute: typeof BoekenInloggenRoute
   VragenlijstTokenRoute: typeof VragenlijstTokenRoute
   AuthIndexRoute: typeof AuthIndexRoute
   ApiPublicEkisExportRoute: typeof ApiPublicEkisExportRoute
@@ -812,6 +825,13 @@ declare module '@tanstack/react-router' {
       path: '/auth/2fa'
       fullPath: '/auth/2fa'
       preLoaderRoute: typeof Auth2faRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/boeken_/inloggen': {
+      id: '/boeken_/inloggen'
+      path: '/boeken/inloggen'
+      fullPath: '/boeken/inloggen'
+      preLoaderRoute: typeof BoekenInloggenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mijn/': {
@@ -1313,6 +1333,7 @@ const rootRouteChildren: RootRouteChildren = {
   MijnRoute: MijnRouteWithChildren,
   AfspraakTokenRoute: AfspraakTokenRoute,
   Auth2faRoute: Auth2faRoute,
+  BoekenInloggenRoute: BoekenInloggenRoute,
   VragenlijstTokenRoute: VragenlijstTokenRoute,
   AuthIndexRoute: AuthIndexRoute,
   ApiPublicEkisExportRoute: ApiPublicEkisExportRoute,
