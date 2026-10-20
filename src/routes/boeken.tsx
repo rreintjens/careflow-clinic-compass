@@ -146,7 +146,7 @@ function Booking() {
   return (
     <Shell lang={lang} progress={progress} onBack={back} onClose={close} onLang={step.kind === "category" ? () => go({ lang: lang === "nl" ? "en" : "nl" }, true) : undefined}
       bar={showBar ? <LoginBar tx={tx} onClick={openLogin} /> : undefined}
-      footer={step.kind === "category" && phone ? <div className="flex items-center justify-center gap-3"><img src={JOYCE_PHOTO} alt="" className="size-11 shrink-0 rounded-full object-cover" style={{ objectPosition: "50% 18%" }} /><span className="text-[13px] text-muted-foreground"><span className="block">{tx("call")} <a href={`tel:${phone}`} className="text-primary underline">{phone}</a></span><span className="block">{tx("call_team")}</span></span></div> : null}>
+      footer={step.kind === "category" && phone ? <CallFooter phone={phone} tx={tx} /> : null}>
       <div className={guard}>
       {step.kind === "none" && <p className="pt-10 text-[15px]">{tx("nothing_bookable")}</p>}
       {step.kind === "category" && (
