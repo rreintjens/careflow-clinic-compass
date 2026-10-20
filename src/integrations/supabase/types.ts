@@ -14,6 +14,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      address_book: {
+        Row: {
+          city: string
+          created_at: string
+          created_by: string | null
+          id: string
+          kind: string
+          name: string
+          phone: string
+          send_channel: string
+          tenant_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          city?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind: string
+          name: string
+          phone?: string
+          send_channel?: string
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          city?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind?: string
+          name?: string
+          phone?: string
+          send_channel?: string
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "address_book_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       anamnesis: {
         Row: {
           created_at: string
@@ -129,6 +179,51 @@ export type Database = {
           },
         ]
       }
+      appointment_status_history: {
+        Row: {
+          appointment_id: string
+          changed_by: string | null
+          created_at: string
+          from_status: string | null
+          id: string
+          tenant_id: string
+          to_status: string
+        }
+        Insert: {
+          appointment_id: string
+          changed_by?: string | null
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          tenant_id?: string
+          to_status: string
+        }
+        Update: {
+          appointment_id?: string
+          changed_by?: string | null
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          tenant_id?: string
+          to_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointment_status_history_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointment_status_history_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       appointments: {
         Row: {
           booking_attribution: Json | null
@@ -146,6 +241,7 @@ export type Database = {
           hold_expires_at: string | null
           hold_token: string | null
           id: string
+          kind: string | null
           language: string
           location_id: string
           manage_token: string
@@ -156,6 +252,7 @@ export type Database = {
           patient_id: string | null
           patient_note: string | null
           practitioner_id: string
+          reception_note: string | null
           referral_source: string | null
           room_id: string | null
           source: string | null
@@ -182,6 +279,7 @@ export type Database = {
           hold_expires_at?: string | null
           hold_token?: string | null
           id?: string
+          kind?: string | null
           language?: string
           location_id: string
           manage_token?: string
@@ -192,6 +290,7 @@ export type Database = {
           patient_id?: string | null
           patient_note?: string | null
           practitioner_id: string
+          reception_note?: string | null
           referral_source?: string | null
           room_id?: string | null
           source?: string | null
@@ -218,6 +317,7 @@ export type Database = {
           hold_expires_at?: string | null
           hold_token?: string | null
           id?: string
+          kind?: string | null
           language?: string
           location_id?: string
           manage_token?: string
@@ -228,6 +328,7 @@ export type Database = {
           patient_id?: string | null
           patient_note?: string | null
           practitioner_id?: string
+          reception_note?: string | null
           referral_source?: string | null
           room_id?: string | null
           source?: string | null
@@ -671,6 +772,7 @@ export type Database = {
           practitioner_id: string | null
           reason: string
           status: string
+          step_data: Json
           subjective: string
           template_version_ids: string[]
           tenant_id: string
@@ -696,6 +798,7 @@ export type Database = {
           practitioner_id?: string | null
           reason?: string
           status?: string
+          step_data?: Json
           subjective?: string
           template_version_ids?: string[]
           tenant_id?: string
@@ -721,6 +824,7 @@ export type Database = {
           practitioner_id?: string | null
           reason?: string
           status?: string
+          step_data?: Json
           subjective?: string
           template_version_ids?: string[]
           tenant_id?: string
@@ -757,6 +861,64 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "tenants"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      consult_photos: {
+        Row: {
+          consult_note_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          image: string
+          patient_id: string
+          shared_with_patient: boolean
+          slot: string
+          tenant_id: string
+        }
+        Insert: {
+          consult_note_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          image: string
+          patient_id: string
+          shared_with_patient?: boolean
+          slot?: string
+          tenant_id?: string
+        }
+        Update: {
+          consult_note_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          image?: string
+          patient_id?: string
+          shared_with_patient?: boolean
+          slot?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consult_photos_consult_note_id_fkey"
+            columns: ["consult_note_id"]
+            isOneToOne: false
+            referencedRelation: "consult_notes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consult_photos_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consult_photos_tenant_id_patient_id_fkey"
+            columns: ["tenant_id", "patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["tenant_id", "id"]
           },
         ]
       }
@@ -2353,7 +2515,9 @@ export type Database = {
           house_number: string | null
           house_suffix: string | null
           id: string
+          labels: string[]
           last_name: string
+          online_booking_blocked: boolean
           patient_number: number
           phone: string | null
           phone_country: string | null
@@ -2378,7 +2542,9 @@ export type Database = {
           house_number?: string | null
           house_suffix?: string | null
           id?: string
+          labels?: string[]
           last_name: string
+          online_booking_blocked?: boolean
           patient_number?: number
           phone?: string | null
           phone_country?: string | null
@@ -2403,7 +2569,9 @@ export type Database = {
           house_number?: string | null
           house_suffix?: string | null
           id?: string
+          labels?: string[]
           last_name?: string
+          online_booking_blocked?: boolean
           patient_number?: number
           phone?: string | null
           phone_country?: string | null
@@ -2459,6 +2627,57 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: []
+      }
+      photo_upload_tokens: {
+        Row: {
+          consult_note_id: string
+          created_at: string
+          created_by: string | null
+          expires_at: string
+          id: string
+          slot: string
+          tenant_id: string
+          token: string
+          used_at: string | null
+        }
+        Insert: {
+          consult_note_id: string
+          created_at?: string
+          created_by?: string | null
+          expires_at: string
+          id?: string
+          slot?: string
+          tenant_id?: string
+          token: string
+          used_at?: string | null
+        }
+        Update: {
+          consult_note_id?: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          id?: string
+          slot?: string
+          tenant_id?: string
+          token?: string
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "photo_upload_tokens_consult_note_id_fkey"
+            columns: ["consult_note_id"]
+            isOneToOne: false
+            referencedRelation: "consult_notes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "photo_upload_tokens_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       portal_config: {
         Row: {
@@ -2918,6 +3137,95 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "tenants"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      prescriptions: {
+        Row: {
+          consult_note_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          medication: string
+          patient_id: string
+          pharmacy_id: string | null
+          r_text: string
+          s_text: string
+          sent_at: string | null
+          signature: string | null
+          signed_at: string | null
+          signed_by: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          consult_note_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          medication: string
+          patient_id: string
+          pharmacy_id?: string | null
+          r_text?: string
+          s_text?: string
+          sent_at?: string | null
+          signature?: string | null
+          signed_at?: string | null
+          signed_by?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          consult_note_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          medication?: string
+          patient_id?: string
+          pharmacy_id?: string | null
+          r_text?: string
+          s_text?: string
+          sent_at?: string | null
+          signature?: string | null
+          signed_at?: string | null
+          signed_by?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prescriptions_consult_note_id_fkey"
+            columns: ["consult_note_id"]
+            isOneToOne: false
+            referencedRelation: "consult_notes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prescriptions_pharmacy_id_fkey"
+            columns: ["pharmacy_id"]
+            isOneToOne: false
+            referencedRelation: "address_book"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prescriptions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prescriptions_tenant_id_patient_id_fkey"
+            columns: ["tenant_id", "patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["tenant_id", "id"]
           },
         ]
       }
@@ -4127,6 +4435,7 @@ export type Database = {
         Row: {
           aftercare_en: string | null
           aftercare_nl: string | null
+          btw_rate: string | null
           cancel_until_hours: number | null
           created_at: string
           created_by: string | null
@@ -4136,26 +4445,36 @@ export type Database = {
           duration_min: number
           icon: string | null
           id: string
+          lot_required: boolean
+          material_brand: string | null
+          material_unit: string | null
           name_en: string | null
           name_nl: string
           no_show_fee_eur: number | null
+          online_booking: string
           portal_settings: Json
           post_questionnaire_key: string | null
           practitioner_choice: string
           pre_questionnaire_key: string | null
           preparation_en: string | null
           preparation_nl: string | null
+          price_cents: number | null
+          price_per: string | null
           questionnaire_minutes: number
+          reminder_days: number | null
           slug: string
           start_screen: Json | null
           status: string
+          supplier: string | null
           tenant_id: string
           updated_at: string
           updated_by: string | null
+          vat_exemption_possible: boolean
         }
         Insert: {
           aftercare_en?: string | null
           aftercare_nl?: string | null
+          btw_rate?: string | null
           cancel_until_hours?: number | null
           created_at?: string
           created_by?: string | null
@@ -4165,26 +4484,36 @@ export type Database = {
           duration_min: number
           icon?: string | null
           id?: string
+          lot_required?: boolean
+          material_brand?: string | null
+          material_unit?: string | null
           name_en?: string | null
           name_nl: string
           no_show_fee_eur?: number | null
+          online_booking?: string
           portal_settings?: Json
           post_questionnaire_key?: string | null
           practitioner_choice?: string
           pre_questionnaire_key?: string | null
           preparation_en?: string | null
           preparation_nl?: string | null
+          price_cents?: number | null
+          price_per?: string | null
           questionnaire_minutes?: number
+          reminder_days?: number | null
           slug: string
           start_screen?: Json | null
           status?: string
+          supplier?: string | null
           tenant_id?: string
           updated_at?: string
           updated_by?: string | null
+          vat_exemption_possible?: boolean
         }
         Update: {
           aftercare_en?: string | null
           aftercare_nl?: string | null
+          btw_rate?: string | null
           cancel_until_hours?: number | null
           created_at?: string
           created_by?: string | null
@@ -4194,22 +4523,31 @@ export type Database = {
           duration_min?: number
           icon?: string | null
           id?: string
+          lot_required?: boolean
+          material_brand?: string | null
+          material_unit?: string | null
           name_en?: string | null
           name_nl?: string
           no_show_fee_eur?: number | null
+          online_booking?: string
           portal_settings?: Json
           post_questionnaire_key?: string | null
           practitioner_choice?: string
           pre_questionnaire_key?: string | null
           preparation_en?: string | null
           preparation_nl?: string | null
+          price_cents?: number | null
+          price_per?: string | null
           questionnaire_minutes?: number
+          reminder_days?: number | null
           slug?: string
           start_screen?: Json | null
           status?: string
+          supplier?: string | null
           tenant_id?: string
           updated_at?: string
           updated_by?: string | null
+          vat_exemption_possible?: boolean
         }
         Relationships: [
           {
