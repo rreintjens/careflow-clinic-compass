@@ -287,3 +287,78 @@ a.portal-tile:hover {box-shadow:var(--portal-shadow);transform:translateY(-2px);
  .portal-stopped {grid-column:auto;}
 }
 @media(prefers-reduced-motion:reduce){.portal-tile{transition:none;}a.portal-tile:hover{transform:none;}}
+
+/* Portal fase B: kaarten, rijen, ring, sterren, chips — states zonder randen. */
+.portal-card {background:var(--background);border-radius:24px;padding:20px;box-shadow:var(--portal-shadow);display:flex;flex-direction:column;gap:14px;margin-bottom:16px;}
+.portal-card-amber {background:var(--portal-soon-bg);color:var(--portal-soon-text);box-shadow:none;}
+.portal-card-label {font-size:12px;font-weight:500;color:var(--muted-foreground);}
+.portal-card-amber .portal-card-label {color:var(--portal-soon-text);}
+.portal-card-heading {font-size:16px;font-weight:600;}
+.portal-sub {font-size:13px;line-height:1.5;color:var(--muted-foreground);}
+.portal-card-amber .portal-sub {color:var(--portal-soon-text);}
+.portal-row-title {font-size:15px;font-weight:600;color:var(--foreground);}
+.portal-doctor {display:flex;align-items:center;gap:14px;}
+.portal-doctor-second {display:flex;align-items:center;gap:12px;border-top:1px solid var(--portal-row-line);padding-top:14px;}
+.portal-photo {border-radius:50%;object-fit:cover;object-position:50% 18%;flex-shrink:0;}
+.portal-photo-empty {background:var(--mist);display:inline-block;}
+.portal-with-photo {display:flex;align-items:center;gap:6px;}
+.portal-btn-primary {display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--primary);color:var(--primary-foreground);border-radius:99px;padding:13px 20px;font-size:14px;font-weight:500;transition:background-color 140ms;}
+.portal-btn-primary:hover {background:var(--primary-hover);}
+.portal-btn-primary:disabled {opacity:.5;}
+.portal-btn-block {width:100%;}
+.portal-btn-secondary {display:inline-flex;align-items:center;justify-content:center;background:var(--teal-light);color:var(--primary-hover);border-radius:99px;padding:13px 20px;font-size:14px;font-weight:500;}
+.portal-chip {background:var(--teal-light);color:var(--primary-hover);border-radius:99px;padding:8px 16px;font-size:13px;font-weight:500;white-space:nowrap;transition:background-color 140ms;}
+.portal-chip:hover {background:var(--portal-active);}
+.portal-link {color:var(--primary);font-size:14px;font-weight:500;}
+.portal-rows {display:flex;flex-direction:column;}
+.portal-row {display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--portal-row-line);}
+.portal-row:last-child {border-bottom:0;}
+.portal-row-link {border-radius:12px;transition:background-color 140ms;}
+.portal-row-link:hover {background:var(--sand);}
+.portal-chevron {color:var(--muted-foreground);flex-shrink:0;}
+.portal-dot-amber {display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--portal-soon-stroke);margin-right:6px;}
+.portal-stars {display:flex;gap:8px;color:var(--portal-soon-stroke);}
+.portal-stars a:hover,.portal-stars button:hover {color:var(--primary);}
+.portal-stars-large {justify-content:center;color:var(--mist);}
+.portal-stars-large button[aria-pressed="true"] {color:var(--primary);}
+.portal-feedback-stars {align-items:center;}
+.portal-rating-label {font-size:14px;font-weight:500;text-align:center;}
+.portal-chips {display:flex;flex-wrap:wrap;gap:8px;}
+.portal-chip-select {display:inline-flex;align-items:center;gap:6px;background:var(--portal-page);color:var(--foreground);border-radius:99px;padding:9px 16px;font-size:13px;transition:background-color 140ms;}
+.portal-chip-select:hover {background:var(--mist);}
+.portal-chip-on {background:var(--portal-active);color:var(--primary-hover);}
+.portal-textarea {width:100%;background:var(--portal-page);border-radius:16px;padding:14px 16px;font-size:14px;resize:vertical;}
+.portal-switch {width:46px;height:28px;border-radius:99px;background:var(--mist);position:relative;flex-shrink:0;transition:background-color 140ms;}
+.portal-switch span {position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--background);transition:transform 140ms;}
+.portal-switch-on {background:var(--primary);}
+.portal-switch-on span {transform:translateX(18px);}
+.portal-switch:focus-visible {outline:2px solid var(--primary);outline-offset:2px;}
+.portal-ring {position:relative;width:120px;height:120px;flex-shrink:0;}
+.portal-ring svg {width:100%;height:100%;transform:rotate(-90deg);}
+.portal-ring-track {fill:none;stroke:var(--teal-light);stroke-width:10;}
+.portal-ring-value {fill:none;stroke:var(--primary);stroke-width:10;stroke-linecap:round;}
+.portal-ring-center {position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;}
+.portal-ring-center strong {font-size:20px;font-weight:600;}
+.portal-ring-center span {font-size:11px;color:var(--muted-foreground);}
+.portal-course {display:flex;align-items:center;gap:20px;}
+.portal-course-next {background:var(--teal-light);border-radius:16px;padding:14px 16px;flex:1;min-width:0;}
+.portal-filters {display:flex;gap:8px;overflow-x:auto;margin-bottom:16px;padding-bottom:4px;}
+.portal-filter {background:var(--background);color:var(--foreground);border-radius:99px;padding:8px 16px;font-size:13px;white-space:nowrap;transition:background-color 140ms;}
+.portal-filter-on {background:var(--portal-active);color:var(--primary-hover);}
+.portal-year {font-size:13px;font-weight:500;color:var(--muted-foreground);margin:18px 0 8px;}
+.portal-page-sub {margin:-12px 0 20px;}
+.portal-back {color:var(--primary);font-size:14px;font-weight:500;display:inline-block;margin-bottom:14px;}
+.portal-detail-title {font-size:22px;font-weight:600;margin:0;}
+.portal-detail-section {border-top:1px solid var(--portal-row-line);padding-top:14px;}
+.portal-detail-section h2 {font-size:15px;font-weight:600;margin-bottom:10px;}
+.portal-tips {list-style:none;display:flex;flex-direction:column;gap:10px;font-size:14px;}
+.portal-tips li {display:flex;gap:10px;align-items:flex-start;}
+.portal-tip-check {display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--portal-good-bg);color:var(--portal-good-text);font-size:11px;flex-shrink:0;}
+.portal-detail-actions {display:flex;flex-direction:column;gap:10px;}
+.portal-feedback-mark {display:inline-flex;align-items:center;gap:4px;color:var(--portal-soon-stroke);font-size:12px;font-weight:600;}
+.portal-discover {display:grid;grid-auto-flow:column;grid-auto-columns:minmax(180px,1fr);gap:12px;overflow-x:auto;padding-bottom:6px;}
+.portal-discover-card {background:var(--teal-light);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:6px;transition:background-color 140ms;}
+.portal-discover-card:hover {background:var(--portal-active);}
+.portal-discover-heading {margin:8px 0 12px;}
+.portal-feedback {display:flex;flex-direction:column;gap:14px;max-width:560px;}
+.portal-center {text-align:center;}
