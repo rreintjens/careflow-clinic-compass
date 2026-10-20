@@ -19,6 +19,8 @@ const PAGES: Array<[RegExp, string]> = [
   [/^\/boekingsflow\/boekingslinks/, "de boekingslinks"],
   [/^\/boekingsflow\/e-mails/, "de e-mails en sjablonen"],
   [/^\/boekingsflow/, "de boekingsflow"],
+  [/^\/dossier\/vragenbibliotheek/, "de vragenbibliotheek"],
+  [/^\/dossier/, "de dossiersjablonen"],
   [/^\/instellingen\/logboek/, "het logboek"],
   [/^\/instellingen\/gebruikers/, "gebruikers en rollen"],
   [/^\/instellingen/, "de instellingen"],
@@ -34,6 +36,7 @@ const NOUNS: Record<string, string> = {
   treatments: "een behandeling", practitioners: "een behandelaar", locations: "een locatie", rooms: "een ruimte", equipment: "een apparaat",
   questionnaires: "een vragenlijst", questionnaire_versions: "een vragenlijstversie", mail_templates: "een e-mailsjabloon", booking_links: "een boekingslink",
   schedule_blocks: "een rooster", schedule_exceptions: "een roosteruitzondering", anamnesis: "een anamnese", option_lists: "een keuzelijst",
+  library_questions: "een bibliotheekvraag", dossier_templates: "een dossiersjabloon", dossier_template_versions: "een versie van een dossiersjabloon",
 };
 const VERBS: Record<string, string> = { insert: "heeft toegevoegd:", update: "heeft gewijzigd:", delete: "heeft verwijderd:" };
 

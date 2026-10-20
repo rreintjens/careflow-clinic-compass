@@ -93,7 +93,7 @@ function LibraryModal({ initial, usage, onClose }: { initial: LibraryRow; usage:
       options: hasOptions ? optionsText.split("\n").map((l) => l.trim()).filter(Boolean).map((l, i) => ({ value: f.options[i]?.value ?? String(i + 1), label: l })) : [] } }),
     onSuccess: async (r) => {
       await Promise.all([libraryQuery, libraryUsageQuery, templatesQuery].map((q) => qc.invalidateQueries({ queryKey: q.queryKey })));
-      toast.success(conceptMessage(r.templates, r.questionnaires)?.replace("Wijzigen maakt", "Opgeslagen; er is") .replace(" van ", " gemaakt van ") ?? "Opgeslagen");
+      toast.success(conceptMessage(r.templates, r.questionnaires)?.replace("Wijzigen maakt een concept van", "Opgeslagen. Er is een concept gemaakt van") ?? "Opgeslagen");
       onClose();
     },
     onError: (e) => toast.error(e.message),
