@@ -37,7 +37,7 @@
 - Booking attribution uses tenant-scoped channel/place/campaign rows and immutable in-use codes; appointments snapshot the resolved link attribution at hold creation so later configuration changes cannot rewrite history.
 
 - Patient choices use semantic states; DataTable owns grouped tracks/row actions; Field rows and Modal focus share editing.
-- Frozen answers drive shared appointment preparation/expiry checks; consult domain owns timing/patient keys; date-only data has no time.
+- Frozen answers drive preparation/expiry; dates have no time. Fee tokens expose amount/status only; tenant test mode gates payment with compare-and-set.
 - Portal uses its own patient gate/access rows, atomic hashed-link redemption and RLS reads, never staff memberships; tested landing and one shell keep later phases consistent. Copy is tenant DB configuration.
 - Demo patient shortcuts share DemoPatientLogins and redeem the existing server-gated single-use portal links; profile labels come from portal configuration so no parallel authentication flow is introduced.
 - ActiveConsultMode owns the template workflow beside its unchanged bar and notes panel; legacy consult URLs redirect to the dossier rather than render a second workflow.
