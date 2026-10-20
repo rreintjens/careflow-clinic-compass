@@ -172,3 +172,16 @@ Verificatie 19-10: alle vijf punten op 1000007 als Rob doorlopen; 58 gerichte te
 - [ ] 8. Desktop Start ≥1024px: links behandeltraject, rechts arts+feedback+opnieuw boeken, ontdekken volle breedte eronder
 - [ ] D: medisch-afvallenschermen (Start, Voortgang, Programma, Afspraken) met foto's en visuele regels v0.2
 - [ ] E: bestellen met pakketkiezer-states + afrekenflow (geen outlines; geselecteerd gevuld teal, toegestaan #EEF3F5, twee stappen amber, niet-toegestaan grijs; legenda; kaarten zonder randen)
+
+## Portal review-fixes + fase D/E (20 okt, Rob)
+- [x] Profiel-scherm (avatar SV, account-rijen, uitloggen)
+- [x] Rollen en titels bij behandelaars (Drs. Hugo Ammerlaan, huidtherapeut)
+- [x] Historie-filters op sitecategorieën
+- [x] Iconen met categorie-fallback
+- [x] Ontdek-kaarten alleen voor nog niet gehad
+- [x] Feedbackkaart zichtbaar voor Sanne (testfeedback verwijderd)
+- [x] Boeking-login: header, Terug, Joyce-footer
+- [x] Desktop Start in twee kolommen
+- [x] Fase D: Voortgang (3 tabs), Programma, Afspraken
+- [x] Fase E: Bestellen met pakketkiezer + afrekenflow (demo-betaling)
+- [ ] Open: volledige Betaal-klik door de afrekenflow heen nog eind-tot-eind testen
