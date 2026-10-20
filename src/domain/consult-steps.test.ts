@@ -1,11 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { closeChecklist, emptyStepData, gpLetterText, lineTotal, nextPharmacyStatus, prefillStepData, readStepData } from "./consult-steps";
+import { closeChecklist, emptyStepData, fiscalAnswersComplete, gpLetterText, lineTotal, nextPharmacyStatus, prefillStepData, readStepData } from "./consult-steps";
 import { emptyContent } from "./dossier-templates";
 
 const botox = { ...emptyContent(), steps: ["medische_status", "anamnese", "behandeling", "afronden"], controle: ["L10", "L11"], bespreekpunt: [], diagnoses: [] };
 const ma = { ...emptyContent(), steps: ["medische_status", "anamnese", "diagnose", "plan_recept", "afronden"], diagnoses: ["E66.0"], bespreekpunt: ["L14", "L15"] };
 
 describe("consult steps", () => {
+  it('requires every fiscal question before recording a decision', () => {
+    expect(fiscalAnswersComplete(['L12', 'L13'], { L12: 'ja' })).toBe(false);
+    expect(fiscalAnswersComplete(['L12', 'L13'], { L12: 'ja', L13: 'nee' })).toBe(true);
+  });
   it("prefills diagnoses, aftercare and reminder from the template", () => {
     const d = prefillStepData({ ...ma, aftercare: "Rustig aan", patientNote: "Welkom", reminderDays: 90 });
     expect(d.diagnoses).toEqual(["E66.0"]);

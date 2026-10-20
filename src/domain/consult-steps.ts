@@ -39,6 +39,10 @@ export function prefillStepData(content: TemplateContent): StepData {
 
 export interface CloseItem { key: string; label: string; done: boolean }
 
+export function fiscalAnswersComplete(codes: string[], answers: Record<string, string>): boolean {
+  return codes.length > 0 && codes.every(code => Boolean(answers[code]?.trim()));
+}
+
 /** "Dossier sluiten" checklist, built from the template's required items. */
 export function closeChecklist(content: TemplateContent, data: StepData, opts: { prescriptionSigned: boolean | null; photoCount: number; soepFilled: number }): CloseItem[] {
   const items: CloseItem[] = [];
