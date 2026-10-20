@@ -90,7 +90,7 @@ export function NewAppointmentModal({ open, onOpenChange, data, onPickInAgenda, 
   const [slot, setSlot] = useState<{ date: string; start: number } | null>(null);
   const [notify, setNotify] = useState(appointment?.notify ?? "as_usual");
   const [notificationPlan,setNotificationPlan]=useState<Record<string,{email:boolean;sms:boolean}>>(()=>{const parsed=notificationPlanSchema.safeParse(appointment?.notification_plan);return parsed.success?parsed.data:{};});
-  const moments=data.options.filter(o=>o.list_key==="mail_moment" && ["confirmation","appointment_reminder","questionnaire_reminder","rescheduled","cancelled","no_show"].includes(o.value)).map(o=>({value:o.value,label:o.label_nl}));
+  const moments=data.options.filter(o=>o.list_key==="mail_moment" && ["confirmation","appointment_reminder","questionnaire_reminder","details_reminder","rescheduled","cancelled","no_show"].includes(o.value)).map(o=>({value:o.value,label:o.label_nl}));
   const [reason, setReason] = useState(appointment?.booking_reason ?? "");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -131,7 +131,7 @@ export function NewAppointmentModal({ open, onOpenChange, data, onPickInAgenda, 
     queryFn: () => slotsFn({ data: { treatmentId: treatment, locationId: loc, practitionerId: prac,appointmentId:appointment?.id } }),
   });
   useEffect(() => setSlot(slots[0] ?? null), [slots]);
-  const {data:preparation}=useQuery({queryKey:["appointment-preparation",patient,treatment,slot?.date],enabled:!!patient&&!!treatment&&!!slot,queryFn:()=>{if(!patient||!slot)throw new Error("Kies eerst een patiënt en moment.");return preparationFn({data:{patientId:patient,treatmentId:treatment,at:`${slot.date}T12:00:00Z`}});}});
+  const {data:preparation}=useQuery({queryKey:["appointment-preparation",patient,treatment,slot?.date,appointment?.id],enabled:!!patient&&!!treatment&&!!slot,queryFn:()=>{if(!patient||!slot)throw new Error("Kies eerst een patiënt en moment.");return preparationFn({data:{patientId:patient,treatmentId:treatment,at:`${slot.date}T12:00:00Z`,appointmentId:appointment?.id}});}});
 
   const reset = () => { setAdding(false); setCreated(null); setQ(""); setPatient(fixedPatient?.id ?? null); setTreatment(""); setSlot(null); setReason(""); setError(null); setKind(""); setTentative(false); setRoom(""); setDouble(false); setDoubleReason(""); setManualTime(""); };
   const submit = async () => {
@@ -201,7 +201,7 @@ export function NewAppointmentModal({ open, onOpenChange, data, onPickInAgenda, 
           {how === "clinic" && <Select label="Kamer" value={room} onChange={setRoom} options={[{value:"",label:"Automatisch toewijzen"},...(org?.rooms??[]).filter(r=>r.location_id===loc).map(r=>({value:r.id,label:r.name}))]}/>}
         </div>
         <Checkbox label="Tentatieve afspraak" checked={tentative} onChange={setTentative}/>
-        {preparation && <div className="rounded-[14px] bg-sand p-4 text-sm"><h3 className="font-semibold">Voorbereiding</h3><p className="mt-2">Persoonsgegevens: {preparation.detailsMissing?"nog aanvullen":"compleet"}</p><p>Vragenlijst: {!preparation.questionnaireRequired?"niet nodig":preparation.questionnaireMissing?"nog invullen of vernieuwen":"geldig"}</p>{preparation.consentRequired && <p>Toestemmingsformulier: controleren en ondertekenen bij het consult</p>}</div>}
+        {preparation && <div className="rounded-[14px] bg-sand p-4 text-sm"><h3 className="font-semibold">Voorbereiding</h3><p className="mt-2">Persoonsgegevens: {preparation.detailsMissing?"nog aanvullen":"compleet"}</p><p>Vragenlijst: {!preparation.questionnaireRequired?"niet nodig":preparation.questionnaireMissing?"nog invullen of vernieuwen":"geldig"}</p>{preparation.consentRequired && <p>Toestemmingsformulier: {preparation.consentMissing?"nog ondertekenen of vernieuwen":"geldig"}</p>}</div>}
         <div className="flex flex-col gap-3"><h3 className="text-sm font-semibold">Patiëntberichten</h3>{moments.map(m=><div key={m.value} className="grid grid-cols-[1fr_auto_auto] items-center gap-4 border-b border-line py-2 text-sm"><span>{m.label}</span>{(["email","sms"] as const).map(channel=><Checkbox key={channel} label={channel==="email"?"E-mail":"Sms (demo)"} checked={notificationPlan[m.value]?.[channel]??channel==="email"} onChange={checked=>setNotificationPlan(p=>({...p,[m.value]:{email:p[m.value]?.email??true,sms:p[m.value]?.sms??false,[channel]:checked}}))}/>)}</div>)}</div>
         {canDouble && <><Checkbox label="Dubbel boeken met toestemming" checked={double} onChange={setDouble}/>{double && <div className="grid grid-cols-2 gap-3"><TextField label="Datum dubbelboeking" type="date" value={manualDate} onChange={e=>setManualDate(e.target.value)}/><TextField label="Tijd dubbelboeking" type="time" value={manualTime} onChange={e=>setManualTime(e.target.value)}/><TextArea label="Reden dubbelboeking" value={doubleReason} onChange={e=>setDoubleReason(e.target.value)}/></div>}</>}
         {error && <p className="rounded-[12px] bg-warning-bg px-4 py-3 text-[13px] text-warning">{error}</p>}

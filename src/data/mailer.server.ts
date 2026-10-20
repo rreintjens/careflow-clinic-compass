@@ -7,9 +7,10 @@ import { allowlisted, blocksOf, cancelPolicy, cancelPolicyValues, interpolate, r
 import { renderMailDocument, type MailTheme } from "@/domain/mail-document";
 import { admin } from "./booking.server";
 import {notificationEnabled} from "@/domain/appointment-notifications";
+import {appointmentPreparation} from "./appointment-preparation.server";
 
 type Db = Awaited<ReturnType<typeof admin>>;
-export type MailMoment = "confirmation" | "rescheduled" | "cancelled" | "appointment_reminder" | "questionnaire_reminder" | "no_show" | "follow_up";
+export type MailMoment = "confirmation" | "rescheduled" | "cancelled" | "appointment_reminder" | "questionnaire_reminder" | "details_reminder" | "no_show" | "follow_up";
 
 /** The global mail tokens, read from the same stylesheet the admin preview uses. */
 export function theme(): MailTheme {
@@ -23,9 +24,14 @@ const APP_URL = "https://careflow-clinic-compass.lovable.app";
 /** Renders and stores one mail for an appointment. Returns the outbox status, or null when no template applies. */
 export async function queueAppointmentMail(db: Db, appointmentId: string, moment: MailMoment, opts: { dedupe?: string } = {}) {
   const { data: a } = await db.from("appointments")
-    .select("id, tenant_id, patient_id, treatment_id, practitioner_id, location_id, starts_at, ends_at, meet_link, manage_token, new_patient, notify, notification_plan")
+    .select("id, tenant_id, patient_id, treatment_id, practitioner_id, location_id, starts_at, ends_at, meet_link, manage_token, new_patient, notify, notification_plan,status")
     .eq("id", appointmentId).maybeSingle();
   if (!a?.patient_id) return null;
+  if(moment==="questionnaire_reminder"||moment==="details_reminder"){
+    if(!["booked","tentatief"].includes(a.status))return null;
+    const preparation=await appointmentPreparation(a.tenant_id,a.patient_id,a.treatment_id,a.starts_at,a.id);
+    if(moment==="questionnaire_reminder"?!preparation.questionnaireMissing:!preparation.detailsMissing)return null;
+  }
   if(notificationEnabled(a.notification_plan,moment,"sms",a.notify)) {
     await db.from("sms_outbox").upsert({tenant_id:a.tenant_id,appointment_id:a.id,moment,dedupe_key:`sms-${opts.dedupe??`${a.id}-${moment}`}`},{onConflict:"dedupe_key",ignoreDuplicates:true});
   }
@@ -66,7 +72,7 @@ export async function queueAppointmentMail(db: Db, appointmentId: string, moment
     locatie: online ? "Online" : loc.data?.name ?? "", locatie_naam: loc.data?.name ?? "", adres: [loc.data?.address, loc.data?.postal_city].filter(Boolean).join("\n"),
     maps_link: loc.data?.maps_url ?? "", telefoon: loc.data?.phone ?? (typeof sv("mail_phone") === "string" ? (sv("mail_phone") as string) : ""),
     e_mail: typeof sv("sender_address") === "string" ? (sv("sender_address") as string) : "", meet_link: a.meet_link ?? "",
-    link_wijzigen: `${base}/afspraak/${a.manage_token}`, link_vragenlijst: `${base}/vragenlijst/${a.manage_token}`,
+    link_wijzigen: `${base}/afspraak/${a.manage_token}`, link_vragenlijst: `${base}/vragenlijst/${a.manage_token}`,link_gegevens:`${base}/mijn?returnTo=${encodeURIComponent('/mijn/profiel')}`,
     ...cancelPolicyValues(policy, noShow),
   };
   const situation = { online, existingPatient: !a.new_patient, questionnaire: !!tr.post_questionnaire_key, preparation: !!values["voorbereiding"] };

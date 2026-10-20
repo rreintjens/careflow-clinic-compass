@@ -7,6 +7,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { resolveLinkScope } from "./booking-link-scope.server";
 import { scopePractitioners } from "@/domain/booking-links";
 import { safeQueue } from "./mailer.server";
+import {appointmentPreparation} from "./appointment-preparation.server";
 import { z } from "zod";
 
 import type { Slot } from "@/domain/slots";
@@ -232,7 +233,7 @@ export const confirmBooking = createServerFn({ method: "POST" })
     const tenant = await resolveTenant(data.merk);
     if (!tenant) return { ok: false as const, reason: "failed" };
     const db = await admin();
-    const appt = (await db.from("appointments").select("id, status, hold_expires_at, manage_token").eq("tenant_id", tenant.id).eq("hold_token", data.token).maybeSingle()).data;
+    const appt = (await db.from("appointments").select("id, status, hold_expires_at, manage_token,treatment_id,starts_at").eq("tenant_id", tenant.id).eq("hold_token", data.token).maybeSingle()).data;
     if (!appt || appt.status !== "held" || !appt.hold_expires_at || Date.parse(appt.hold_expires_at) <= Date.now()) return { ok: false as const, reason: "expired" };
     const today = localParts(new Date(), tenant.time_zone).date;
     const [ty, tm, td] = today.split("-").map(Number) as [number, number, number];
@@ -275,5 +276,10 @@ export const confirmBooking = createServerFn({ method: "POST" })
       await db.from("answer_sets").insert({ tenant_id: tenant.id, patient_id: patientId, appointment_id: appt.id, questionnaire_key: data.triageKey, version_id: triageVersion?.id ?? null, answers: data.triageAnswers as never, signals: signals as never, status: "completed", completed_at: new Date().toISOString() });
     }
     await safeQueue(db, appt.id, "confirmation", { dedupe: `confirmation-${appt.id}` });
+    try {
+      const preparation=await appointmentPreparation(tenant.id,patientId,appt.treatment_id,appt.starts_at,appt.id);
+      if(preparation.detailsMissing)await safeQueue(db,appt.id,"details_reminder",{dedupe:`details_reminder-${appt.id}`});
+      if(preparation.questionnaireMissing)await safeQueue(db,appt.id,"questionnaire_reminder",{dedupe:`questionnaire_reminder-${appt.id}`});
+    }catch(e){console.error("[booking] preparation mail check failed",e);}
     return { ok: true as const, manageToken: appt.manage_token, meetLink: meeting?.link ?? null };
   });
