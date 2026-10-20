@@ -120,9 +120,10 @@ export const readPortal=createServerFn({method:'POST'}).middleware([requireSupab
 });
 
 export type PortalAppointment={id:string;treatment_id:string;practitioner_id:string|null;location_id:string|null;starts_at:string;ends_at:string;status:string;meet_link:string|null};
-export type PortalPractitioner={id:string;first_name:string;last_name:string;role_id:string|null;photo:string|null};
+export type PortalPractitioner={id:string;first_name:string;last_name:string;title:string|null;role_id:string|null;photo:string|null};
 export type PortalTreatment={id:string;name_nl:string;icon:string|null;duration_min:number;portal_settings:Json};
-export type PortalExtra={appointments:PortalAppointment[];feedback:{appointment_id:string;rating:number;tags:string[];comment:string;share_with_practitioner:boolean}[];treatments:PortalTreatment[];practitioners:PortalPractitioner[];locations:{id:string;name:string;kind:string}[];roles:{id:string;name:string}[];categories:{id:string;name_nl:string;icon:string|null;parent_id:string|null}[];categoryLinks:{treatment_id:string;category_id:string}[]};
+export type PortalMeasurement={measured_on:string;weight_kg:number|null;waist_cm:number|null;height_cm:number|null};
+export type PortalExtra={appointments:PortalAppointment[];feedback:{appointment_id:string;rating:number;tags:string[];comment:string;share_with_practitioner:boolean}[];treatments:PortalTreatment[];practitioners:PortalPractitioner[];locations:{id:string;name:string;kind:string}[];roles:{id:string;name:string;key:string}[];categories:{id:string;name_nl:string;icon:string|null;parent_id:string|null}[];categoryLinks:{treatment_id:string;category_id:string}[];measurements:PortalMeasurement[]};
 /** History, upcoming appointments, practitioners and treatments for the portal; photos are signed server-side. */
 async function portalHistory(db:{from:(t:string)=>any;storage:any},tenantId:string,patientId:string):Promise<PortalExtra>{
  const [appts,fb,treats,prs,locs,roles,cats,catLinks]=await Promise.all([
