@@ -264,10 +264,10 @@ function LinkModal({ d, link, onClose }: { d: BookingLinksData; link: Link | nul
 
 /** Step 5: whether the booking flow shows the B2 login bar for existing patients. */
 function Step5Login({showLogin,setShowLogin}:{showLogin:boolean;setShowLogin:(v:boolean)=>void}){
- return <Field label='Inloggen voor bestaande patiënten'>
+ return <div><p className='mb-2 text-[13px] font-medium'>Inloggen voor bestaande patiënten</p>
   <div className='flex gap-2'>
    {[true,false].map(v=><button key={String(v)} type='button' onClick={()=>setShowLogin(v)} className={`patient-choice flex-1 rounded-full px-4 py-2.5 text-[14px] font-medium ${showLogin===v?'bg-primary text-primary-foreground':'bg-muted'}`}>{v?'Tonen':'Niet tonen'}</button>)}
   </div>
   <p className='mt-2 text-[12px] text-muted-foreground'>{showLogin?'Bovenaan het eerste scherm en de agenda staat: "Eerder bij ons geweest? Inloggen". Na inloggen komt de patiënt terug in deze flow, met gegevens en eigen arts al ingevuld.':'Iedereen doorloopt de boeking als nieuwe patiënt. Handig voor campagnes die zich op nieuwe patiënten richten.'}</p>
- </Field>;
+ </div>;
 }

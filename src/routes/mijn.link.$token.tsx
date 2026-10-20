@@ -16,7 +16,7 @@ function Redeem(){
  await q.cancelQueries();q.clear();
  const result=await supabase.auth.setSession({access_token:r.access_token,refresh_token:r.refresh_token});if(result.error)throw result.error;
  toast.dismiss();
- if('confirmed' in r&&r.confirmed){await navigate({to:'/mijn/start',search:{bevestigd:'true'},replace:true});return;}
+ if('confirmed' in r&&r.confirmed){await navigate({to:'/mijn/start',search:{bevestigd:true},replace:true});return;}
  if(r.returnTo){if('holdToken' in r&&r.holdToken)sessionStorage.setItem('tbc-booking-hold',JSON.stringify({token:r.holdToken}));window.location.assign(`/boeken?${r.returnTo}`);return;}
  await navigate({to:'/mijn/start',replace:true});
  }catch(e){setError(e instanceof Error?e.message:'De link is ongeldig of verlopen.');}}
