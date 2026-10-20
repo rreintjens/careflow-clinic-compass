@@ -22,6 +22,12 @@ export const Route = createFileRoute("/auth/2fa")({
       await supabase.auth.signOut({ scope: "local" });
       throw redirect({ to: "/auth" });
     }
+    // A patient session (Mijn omgeving) is not a staff login: drop it so the staff sign-in shows.
+    const { data: patientId } = await supabase.rpc("portal_patient_id");
+    if (patientId) {
+      await supabase.auth.signOut({ scope: "local" });
+      throw redirect({ to: "/auth" });
+    }
   },
   component: TwoFactorPage,
 });
