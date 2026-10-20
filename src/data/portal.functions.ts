@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start';
 import { createClient } from '@supabase/supabase-js';
+import { z } from 'zod';
 import { getRequest } from '@tanstack/react-start/server';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { portalEmailSchema, portalTokenSchema, portalLanding, PORTAL_LINK_MINUTES, feedbackSchema } from '@/domain/portal';
@@ -64,8 +65,12 @@ export const readPortal=createServerFn({method:'POST'}).middleware([requireSupab
  return {patient:p.data,access:a.data,landing:portalLanding(pk.data??[],a.data.starter_proposed,today),weight:m.data?.[0]?.weight_kg??null,content:c.data.content,today,...extra};
 });
 
+export type PortalAppointment={id:string;treatment_id:string;practitioner_id:string|null;location_id:string|null;starts_at:string;ends_at:string;status:string;meet_link:string|null};
+export type PortalPractitioner={id:string;first_name:string;last_name:string;role_id:string|null;photo:string|null};
+export type PortalTreatment={id:string;name_nl:string;icon:string|null;duration_min:number;portal_settings:unknown};
+export type PortalExtra={appointments:PortalAppointment[];feedback:{appointment_id:string;rating:number;tags:string[];comment:string;share_with_practitioner:boolean}[];treatments:PortalTreatment[];practitioners:PortalPractitioner[];locations:{id:string;name:string;kind:string}[];roles:{id:string;name:string}[];categories:{id:string;name_nl:string;icon:string|null;parent_id:string|null}[];categoryLinks:{treatment_id:string;category_id:string}[]};
 /** History, upcoming appointments, practitioners and treatments for the portal; photos are signed server-side. */
-async function portalHistory(db:{from:(t:string)=>any;storage:any},tenantId:string,patientId:string){
+async function portalHistory(db:{from:(t:string)=>any;storage:any},tenantId:string,patientId:string):Promise<PortalExtra>{
  const [appts,fb,treats,prs,locs,roles,cats,catLinks]=await Promise.all([
   db.from('appointments').select('id,treatment_id,practitioner_id,location_id,starts_at,ends_at,status,meet_link').eq('tenant_id',tenantId).eq('patient_id',patientId).in('status',['booked']).order('starts_at',{ascending:false}),
   db.from('treatment_feedback').select('appointment_id,rating,tags,comment,share_with_practitioner').eq('tenant_id',tenantId).eq('patient_id',patientId),
