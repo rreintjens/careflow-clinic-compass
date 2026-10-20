@@ -46,7 +46,10 @@ export const consultPageQuery = (noteId: string) => queryOptions({
     const treatmentId = appt?.["treatment_id"] as string | undefined;
     if (treatmentId) {
       const t = await row(supabase.from("treatments").select("dossier_template_override, treatment_category_links(category_id)").eq("id", treatmentId).single());
-      const catIds = ((t?.["treatment_category_links"] as Array<{ category_id: string }> | undefined) ?? []).map((r) => r.category_id).filter(Boolean);
+      const direct = ((t?.["treatment_category_links"] as Array<{ category_id: string }> | undefined) ?? []).map((r) => r.category_id).filter(Boolean);
+      // A treatment in a subcategory also uses the template of the parent category.
+      const parents = direct.length ? await rows(supabase.from("treatment_categories").select("id, parent_id").in("id", direct)) : [];
+      const catIds = [...new Set([...direct, ...parents.map((c) => c["parent_id"] as string).filter(Boolean)])];
       const override = t?.["dossier_template_override"] as string | null | undefined;
       const tpls = await rows(supabase.from("dossier_templates").select("id, name, category_id").in("category_id", catIds.length ? catIds : ["-"]));
       const chosen = override ? tpls.filter((x) => x["id"] === override) : tpls;
