@@ -64,7 +64,11 @@ function LoginPage() {
     </div>
   ) : null;
   return (
-    <Shell lang={lang} onBack={back} footer={!sent ? <PillButton size="lg" className="patient-choice choice-primary w-full" disabled={!ok || busy} onClick={() => void send()}>{tx("login_send")}</PillButton> : undefined}>
+    <Shell lang={lang} onBack={back} onClose={() => window.location.assign(`/boeken${s.ret ? `?${s.ret}` : ""}`)}
+      footer={sent
+        ? (phone ? <CallFooter phone={phone} tx={tx} /> : undefined)
+        : <div className="flex flex-col gap-5"><PillButton size="lg" className="patient-choice choice-primary w-full" disabled={!ok || busy} onClick={() => void send()}>{tx("login_send")}</PillButton>{phone ? <CallFooter phone={phone} tx={tx} /> : null}</div>}>
+      <button type="button" onClick={back} className="mb-4 self-start text-[14px] font-medium text-primary">‹ {tx("back") || "Terug"}</button>
       {sent ? (
         <>
           <span className="mb-6 flex size-[52px] items-center justify-center rounded-full bg-teal-light"><Mail className="size-5 text-primary" strokeWidth={1.7} /></span>
