@@ -79,7 +79,7 @@ const OPTION_KEYS = ["library_question_type", "library_question_group", "library
 export const dossierOptionsQuery = queryOptions({
   queryKey: ["dossier-options"],
   queryFn: async () => {
-    const rows = await ok(supabase.from("option_lists").select("list_key, value, label_nl").in("list_key", [...OPTION_KEYS]).order("sort"));
-    return (key: (typeof OPTION_KEYS)[number]) => rows.filter((r) => r.list_key === key).map((r) => ({ value: r.value, label: r.label_nl }));
+    return ok(supabase.from("option_lists").select("list_key, value, label_nl").in("list_key", [...OPTION_KEYS]).order("sort"));
   },
 });
+export const optsOf = (rows: Array<{ list_key: string; value: string; label_nl: string }>, key: (typeof OPTION_KEYS)[number]) => rows.filter((r) => r.list_key === key).map((r) => ({ value: r.value, label: r.label_nl }));
