@@ -11,6 +11,7 @@ import { staffContextQuery } from "@/data/staff";
 import { AuthLayout } from "@/features/auth/AuthLayout";
 import { demoLoginAvailable, signInDemo, signInStaff } from "@/features/auth/auth.functions";
 import { supabase } from "@/integrations/supabase/client";
+import { DemoPatientLogins } from '@/features/portal/DemoPatientLogins';
 
 export const Route = createFileRoute("/auth/")({
   ssr: false,
@@ -127,6 +128,7 @@ function LoginPage() {
           <Link to="/boeken" className="text-primary underline underline-offset-2">Naar de boekingskalender</Link>
         </p>
       </form>
+      <DemoPatientLogins />
     </AuthLayout>
   );
 }
