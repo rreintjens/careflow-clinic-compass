@@ -48,3 +48,37 @@ describe("ownDoctor", () => {
     expect(ownDoctor(h, ["t9"])).toBeNull();
   });
 });
+
+describe("orderWindow", () => {
+  it("opens 7 days before the package ends and counts down to the opening", () => {
+    const w = orderWindow("2026-08-01", 3, "2026-10-20");
+    expect(w.closes).toBe("2026-11-01");
+    expect(w.opens).toBe("2026-10-25");
+    expect(w.daysUntil).toBe(5);
+    expect(w.canOrder).toBe(false);
+    expect(orderWindow("2026-08-01", 3, "2026-10-26").canOrder).toBe(true);
+    expect(orderWindow("2026-08-01", 3, "2026-11-02").canOrder).toBe(false);
+  });
+});
+describe("package pricing", () => {
+  const cfg = readMaConfig({ strengths: [2.5, 5, 7.5, 10, 12.5, 15], basePrices: [219, 239, 259, 279, 299, 319], discounts: { "1": 0, "2": 10, "3": 20, "6": 30 }, packages: [1, 2, 3, 6], support: [], extras: [], delivery: [], payment: [] })!;
+  it("month price is base minus the package discount", () => {
+    expect(monthPrice(cfg, 0, 1)).toBe(219);
+    expect(monthPrice(cfg, 1, 3)).toBe(219);
+    expect(monthPrice(cfg, 5, 6)).toBe(289);
+  });
+  it("total and savings vs loose months", () => {
+    expect(packageTotal(cfg, [1, 1, 1], 3)).toBe(657);
+    expect(packageSavings(cfg, [1, 1, 1], 3)).toBe(60);
+    expect(packageSavings(cfg, [0], 1)).toBe(0);
+  });
+});
+describe("strengthState", () => {
+  it("same or one step up is allowed, two steps needs the doctor, more is blocked", () => {
+    expect(strengthState(1, 1)).toBe("allowed");
+    expect(strengthState(0, 1)).toBe("allowed");
+    expect(strengthState(2, 1)).toBe("allowed");
+    expect(strengthState(3, 1)).toBe("review");
+    expect(strengthState(4, 1)).toBe("blocked");
+  });
+});
