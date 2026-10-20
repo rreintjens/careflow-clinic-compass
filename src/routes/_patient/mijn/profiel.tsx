@@ -13,7 +13,7 @@ export const Route=createFileRoute('/_patient/mijn/profiel')({head:()=>portalHea
 function Profile(){
  const {data:d}=useSuspenseQuery(portalQuery);const q=useQueryClient(),navigate=useNavigate();
  const c=d.content;
- const rows:string[]=Array.isArray((c as Record<string,unknown>)?.profileRows)?(c as {profileRows:string[]}).profileRows:[];
+ const rows:string[]=Array.isArray((c as Record<string,unknown>)?.['profileRows'])?(c as {profileRows:string[]}).profileRows:[];
  const pending=()=>toast.info(copy(c,'phasePending'));
  return <><h1>Profiel</h1>
  <div className='portal-profile-page'>

@@ -16,7 +16,7 @@ type Draft={months:number;strengths:number[];support:string;extras:string[];rema
 /** Bestellen (v0.1 §6 + v0.2): medicatiekaart, voorbestellen, pakketkiezer met states, afrekenflow. */
 export function PortalOrder(){
  const {d}=usePortalData();const c=d.content;
- const cfg=readMaConfig((c as Record<string,unknown>)?.maConfig);
+ const cfg=readMaConfig((c as Record<string,unknown>)?.['maConfig']);
  const pkg=d.landing.package;
  const [draft,setDraft]=useState<Draft|null>(null);
  if(!cfg||!pkg)return <p className='portal-pending'>{copy(c,'phasePending')}</p>;
@@ -28,11 +28,11 @@ function OrderPicker({cfg,onStart}:{cfg:MaConfig;onStart:(d:Draft)=>void}){
  const {d}=usePortalData();const c=d.content;
  const pkg=d.landing.package!;
  const month=Math.max(1,(Number(d.today.slice(0,4))-Number(pkg.start_date.slice(0,4)))*12+Number(d.today.slice(5,7))-Number(pkg.start_date.slice(5,7))+1);
- const curStrengths=(pkg.strengths as number[]|null)??[];
- const curIdx=Math.max(0,cfg.strengths.indexOf(curStrengths[Math.min(month,curStrengths.length)-1]??cfg.strengths[0]));
+ const curStrengths=((pkg as {strengths?:unknown}).strengths as number[]|null)??[];
+ const curIdx=Math.max(0,cfg.strengths.indexOf(curStrengths[Math.min(month,curStrengths.length)-1]??cfg.strengths[0]??0));
  const med=(d.access.medication??'').replace(/\s*[\d,.]+\s*mg\s*$/i,'').trim()||'Medicatie';
  const facts=(d.access.program_facts??{}) as Record<string,any>;
- const prog=facts.programma as {strengthSince:string;nextStep:string}|undefined;
+ const prog=facts['programma'] as {strengthSince:string;nextStep:string}|undefined;
  const win=orderWindow(pkg.start_date,pkg.months,d.today);
  const [open,setOpen]=useState<number|null>(null);
  const [choice,setChoice]=useState<{months:number;strengths:number[]}|null>(null);

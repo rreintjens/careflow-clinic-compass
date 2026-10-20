@@ -69,10 +69,10 @@ function MedicalStart({historyTile}:{historyTile:React.ReactNode}){
  const win=pkg?orderWindow(pkg.start_date,pkg.months,d.today):null;
  const med=(d.access.medication??'').replace(/\s*[\d,.]+\s*mg\s*$/i,'').trim()||'Medicatie';
  const next=upcoming[0];const nextP=next?prac(next.practitioner_id):null;
- const checkin=facts.checkin as {label:string;daysLeft:number}|undefined;
- const life=facts.lifestyle as {score:number;deltaStart:string}|undefined;
- const heart=facts.heart as {percent:number;level:string}|undefined;
- const tip=facts.weekTip as {title:string;text:string}|undefined;
+ const checkin=facts['checkin'] as {label:string;daysLeft:number}|undefined;
+ const life=facts['lifestyle'] as {score:number;deltaStart:string}|undefined;
+ const heart=facts['heart'] as {percent:number;level:string}|undefined;
+ const tip=facts['weekTip'] as {title:string;text:string}|undefined;
  return <>
  {win&&<Link to='/mijn/bestellen' className='portal-tile portal-status-good portal-order'>
   <span className='portal-tile-head'><span className='portal-icon'><ShoppingCart size={20}/></span><span className='portal-chip portal-chip-white'>{copy(c,'preorder')}</span></span>
@@ -95,7 +95,7 @@ function MedicalStart({historyTile}:{historyTile:React.ReactNode}){
  <div className='portal-start-grid'>
   {life&&<PortalTile icon={Sparkles} label={copy(c,'lifestyleLabel')} value={String(life.score).replace('.',',')} sub={fill(copy(c,'lifestyleSub'),{d:life.deltaStart})} status='soon' to='/mijn/voortgang'/>}
   {heart&&<PortalTile icon={HeartPulse} label={copy(c,'heartLabel')} value={`${heart.percent}%`} sub={heart.level} status='action' to='/mijn/voortgang'/>}
-  {typeof facts.weeksWeighed==='number'&&<PortalTile icon={Scale} label={fill(copy(c,'weeksWeighed'),{n:facts.weeksWeighed})} value={copy(c,'weeksWeighedSub')} to='/mijn/voortgang'/>}
+  {typeof facts['weeksWeighed']==='number'&&<PortalTile icon={Scale} label={fill(copy(c,'weeksWeighed'),{n:facts['weeksWeighed']})} value={copy(c,'weeksWeighedSub')} to='/mijn/voortgang'/>}
   {d.access.cosmetic_history_count>0&&history.length>0&&historyTile}
  </div>
  {tip&&<section className='portal-card'><p className='portal-card-label'>{tip.title}</p><p className='portal-row-title'>{tip.text}</p></section>}

@@ -8,7 +8,7 @@ export function PortalProgram(){
  const {d}=usePortalData();const c=d.content;
  const pkg=d.landing.package;
  const facts=(d.access.program_facts??{}) as Record<string,any>;
- const prog=facts.programma as {monthText:string;strengthSince:string;nextStep:string;injectLink:string;tipCategories:{icon:string;label:string;n:number}[]}|undefined;
+ const prog=facts['programma'] as {monthText:string;strengthSince:string;nextStep:string;injectLink:string;tipCategories:{icon:string;label:string;n:number}[]}|undefined;
  if(!pkg)return <p className='portal-pending'>{copy(c,'phasePending')}</p>;
  const month=Math.max(1,(Number(d.today.slice(0,4))-Number(pkg.start_date.slice(0,4)))*12+Number(d.today.slice(5,7))-Number(pkg.start_date.slice(5,7))+1);
  const week=Math.min(4,Math.max(1,Math.ceil(Number(d.today.slice(8,10))/7)));

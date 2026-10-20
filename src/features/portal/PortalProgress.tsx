@@ -17,8 +17,8 @@ export function PortalProgress(){
   {(['gewicht','leefstijl','hartrisico'] as const).map(t=><button key={t} type='button' role='tab' aria-pressed={tab===t} onClick={()=>setTab(t)}>{copy(c,t==='gewicht'?'tabWeight':t==='leefstijl'?'tabLifestyle':'tabHeart')}</button>)}
  </div>
  {tab==='gewicht'&&<WeightTab/>}
- {tab==='leefstijl'&&<LifestyleTab facts={facts.lifestyle}/>}
- {tab==='hartrisico'&&<HeartTab facts={facts.heart}/>}
+ {tab==='leefstijl'&&<LifestyleTab facts={facts['lifestyle']}/>}
+ {tab==='hartrisico'&&<HeartTab facts={facts['heart']}/>}
  </>;
 }
 
