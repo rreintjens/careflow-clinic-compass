@@ -457,3 +457,5 @@ a.portal-tile:hover {box-shadow:var(--portal-shadow);transform:translateY(-2px);
  .portal-ma-quad .portal-tile{min-height:0;}
 }
 .patient-slot[aria-pressed="true"],.patient-slot[aria-pressed="true"]:enabled:hover,.patient-slot[aria-pressed="true"]:enabled:active{background-color:var(--primary);color:var(--primary-foreground);}
+.portal-tile-sub.portal-with-photo{display:block;}
+.portal-tile-sub .portal-photo{display:inline-block;vertical-align:-4px;margin:0 4px 0 2px;}
