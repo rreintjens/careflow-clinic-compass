@@ -31,7 +31,11 @@ export const sendPortalLink=createServerFn({method:'POST'}).inputValidator((d:un
    if(h.ok){holdToken=h.token;held=true;}
   }
  }
- const rc=draft?{booking:draft.params,holdToken,confirm:draft.confirm===true,triage:draft.triageKey?{key:draft.triageKey,versionId:draft.triageVersionId??null,answers:draft.triageAnswers??{}}:null}:(data.returnTo?{booking:data.returnTo}:null);
+ // Case 4: a held time with nothing left to answer confirms on click, exactly like a login from the details step.
+ let confirmNow=draft?.confirm===true;
+ if(draft&&holdToken&&!confirmNow&&draft.treatmentId){const {data:tr}=await db.from('treatments').select('pre_questionnaire_key').eq('id',draft.treatmentId).maybeSingle();if(tr&&!tr.pre_questionnaire_key)confirmNow=true;}
+ if(draft)draft.confirm=confirmNow;
+ const rc=draft?{booking:draft.params,holdToken,confirm:confirmNow,triage:draft.triageKey?{key:draft.triageKey,versionId:draft.triageVersionId??null,answers:draft.triageAnswers??{}}:null}:(data.returnTo?{booking:data.returnTo}:null);
  const raw=Array.from(crypto.getRandomValues(new Uint8Array(32)),b=>b.toString(16).padStart(2,'0')).join('');
  const {error}=await db.from('portal_login_tokens').insert({tenant_id:t.id,patient_id:p?.id??null,email:data.email,token_hash:await digest(raw),expires_at:new Date(Date.now()+PORTAL_LINK_MINUTES*60000).toISOString(),return_context:rc as never}); if(error)throw new Error('Probeer het later opnieuw.');
  await db.from('audit_log').insert({tenant_id:t.id,action:'portal_link_sent',category:'login',record_type:'patient',record_id:p?.id??null,details:{email_hash:await digest(data.email),duplicate:(ps?.length??0)>1,booking:!!draft}});
