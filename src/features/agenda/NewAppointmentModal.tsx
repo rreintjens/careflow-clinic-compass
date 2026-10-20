@@ -90,7 +90,7 @@ export function NewAppointmentModal({ open, onOpenChange, data, onPickInAgenda, 
   const [slot, setSlot] = useState<{ date: string; start: number } | null>(null);
   const [notify, setNotify] = useState(appointment?.notify ?? "as_usual");
   const [notificationPlan,setNotificationPlan]=useState<Record<string,{email:boolean;sms:boolean}>>(()=>{const parsed=notificationPlanSchema.safeParse(appointment?.notification_plan);return parsed.success?parsed.data:{};});
-  const moments=data.options.filter(o=>o.list_key==="mail_moment" && ["confirmation","appointment_reminder","questionnaire_reminder","rescheduled","cancelled","no_show"].includes(o.value)).map(o=>({value:o.value,label:o.label_nl}));
+  const moments=data.options.filter(o=>o.list_key==="mail_moment" && ["confirmation","appointment_reminder","questionnaire_reminder","details_reminder","rescheduled","cancelled","no_show"].includes(o.value)).map(o=>({value:o.value,label:o.label_nl}));
   const [reason, setReason] = useState(appointment?.booking_reason ?? "");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);

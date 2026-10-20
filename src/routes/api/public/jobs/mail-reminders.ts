@@ -28,6 +28,7 @@ export const Route = createFileRoute("/api/public/jobs/mail-reminders")({
             if (left <= hours("questionnaire_reminder_hours", 48)) {
               const preparation=a.patient_id?await appointmentPreparation(t.id,a.patient_id,a.treatment_id,a.starts_at,a.id):null;
               if (preparation?.questionnaireMissing && (await safeQueue(db, a.id, "questionnaire_reminder", { dedupe: `questionnaire_reminder-${a.id}` }))) queued++;
+              if (preparation?.detailsMissing && (await safeQueue(db, a.id, "details_reminder", { dedupe: `details_reminder-${a.id}` }))) queued++;
             }
           }
         }

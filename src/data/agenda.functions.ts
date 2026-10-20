@@ -107,6 +107,7 @@ export const createStaffAppointment = createServerFn({ method: "POST" })
     try {
       const preparation=await appointmentPreparation(tenant.id,data.patientId,data.treatmentId,startsAt.toISOString(),ins.data.id);
       if(preparation.questionnaireMissing)await safeQueue(db,ins.data.id,"questionnaire_reminder",{dedupe:`questionnaire_reminder-${ins.data.id}`});
+      if(preparation.detailsMissing)await safeQueue(db,ins.data.id,"details_reminder",{dedupe:`details_reminder-${ins.data.id}`});
     }catch(e){console.error("[appointment] preparation mail check failed",e);}
     return { ok: true as const, id: (ins.data as { id: string }).id };
   });

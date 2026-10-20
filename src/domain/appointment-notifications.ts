@@ -1,5 +1,5 @@
 import { z } from "zod";
-export const notificationPlanSchema=z.record(z.enum(["confirmation","rescheduled","appointment_reminder","questionnaire_reminder","cancelled","no_show"]),z.object({email:z.boolean(),sms:z.boolean()}));
+export const notificationPlanSchema=z.record(z.enum(["confirmation","rescheduled","appointment_reminder","questionnaire_reminder","details_reminder","cancelled","no_show"]),z.object({email:z.boolean(),sms:z.boolean()}));
 export function notificationEnabled(plan:unknown,moment:string,channel:"email"|"sms",notify:string|null):boolean {
   if(notify==="none")return false;
   const parsed=notificationPlanSchema.safeParse(plan);
