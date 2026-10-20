@@ -37,9 +37,9 @@ export const pracName=(p:Pick<PortalPractitioner,'first_name'|'last_name'|'title
 export function Photo({src,size,alt=''}:{src:string|null|undefined;size:number;alt?:string}){
  return src?<img src={src} alt={alt} width={size} height={size} className='portal-photo' style={{width:size,height:size}}/>:<span className='portal-photo portal-photo-empty' style={{width:size,height:size}}/>;
 }
-export function Ring({value,max,children}:{value:number;max:number;children:React.ReactNode}){
+export function Ring({value,max,children,size}:{value:number;max:number;children:React.ReactNode;size?:'lg'}){
  const r=52,c=2*Math.PI*r,p=max>0?Math.min(1,value/max):0;
- return <span className='portal-ring'><svg viewBox='0 0 120 120'><circle cx='60' cy='60' r={r} className='portal-ring-track'/><circle cx='60' cy='60' r={r} className='portal-ring-value' strokeDasharray={c} strokeDashoffset={c*(1-p)}/></svg><span className='portal-ring-center'>{children}</span></span>;
+ return <span className={`portal-ring${size==='lg'?' portal-ring-lg':''}`}><svg viewBox='0 0 120 120'><circle cx='60' cy='60' r={r} className='portal-ring-track'/><circle cx='60' cy='60' r={r} className='portal-ring-value' strokeDasharray={c} strokeDashoffset={c*(1-p)}/></svg><span className='portal-ring-center'>{children}</span></span>;
 }
 
 export function PortalStart(){
@@ -57,48 +57,63 @@ export function PortalStart(){
  </div></>;
 }
 
-/** Start medisch afvallen (v0.1 §6): besteltegel, check-in, controle, gewichtsring, leefstijl, hartrisico, tip. */
-function MedicalStart({historyTile}:{historyTile:React.ReactNode}){
- const {d,prac,history,upcoming}=usePortalData();
- const c=d.content;const pkg=d.landing.package;
- const facts=(d.access.program_facts??{}) as Record<string,any>;
- const lost=d.weight!==null&&d.access.initial_weight_kg!==null?d.access.initial_weight_kg-d.weight:0;
- const lostTxt=lost.toLocaleString('nl-NL',{maximumFractionDigits:1});
- const goal=d.access.goal_weight_kg;const toGoal=goal!==null&&d.weight!==null?d.weight-goal:null;
- const goalPct=goal!==null&&d.access.initial_weight_kg!==null&&d.access.initial_weight_kg>goal?Math.round(Math.min(1,Math.max(0,(d.access.initial_weight_kg-(d.weight??d.access.initial_weight_kg))/(d.access.initial_weight_kg-goal)))*100):null;
+/** Besteltegel (groen) met bestelvenster-balk; gedeeld door Start en Bestellen. */
+export function OrderTile({asLink=true}:{asLink?:boolean}){
+ const {d}=usePortalData();const c=d.content;const pkg=d.landing.package;
  const win=pkg?orderWindow(pkg.start_date,pkg.months,d.today):null;
+ if(!win)return null;
  const med=(d.access.medication??'').replace(/\s*[\d,.]+\s*mg\s*$/i,'').trim()||'Medicatie';
- const next=upcoming[0];const nextP=next?prac(next.practitioner_id):null;
+ const body=<>
+  <span className='portal-tile-head'><span className='portal-icon'><ShoppingCart size={20}/></span><span className='portal-chip portal-chip-white'>{copy(c,'preorder')}</span></span>
+  <span className='portal-tile-label'>{fill(copy(c,'orderTile'),{medicijn:med})}</span>
+  <strong className='portal-tile-value'>{win.canOrder?copy(c,'orderNow'):fill(copy(c,'orderIn'),{n:win.daysUntil})}</strong>
+  <span className='portal-tile-sub'>{fill(copy(c,'orderWindow'),{d1:fmtDay(win.opens),d2:fmtDay(win.closes)})}</span>
+  <span className='portal-order-bar'><span style={{width:`${Math.min(100,Math.max(4,100-win.daysUntil/7*100))}%`}}/></span></>;
+ return asLink?<Link to='/mijn/bestellen' className='portal-tile portal-status-good portal-order'>{body}</Link>:<div className='portal-tile portal-status-good portal-order'>{body}</div>;
+}
+
+function agoText(c:Json,iso:string,today:string){
+ const days=Math.max(0,Math.round((Date.parse(`${today}T12:00:00Z`)-Date.parse(`${iso.slice(0,10)}T12:00:00Z`))/86_400_000));
+ if(days===0)return copy(c,'agoToday');if(days===1)return copy(c,'agoYesterday');if(days<7)return fill(copy(c,'agoDays'),{n:days});
+ const w=Math.floor(days/7);return w===1?copy(c,'agoWeek'):fill(copy(c,'agoWeeks'),{n:w});
+}
+
+/** Start medisch afvallen (v0.1 §6, dt-1/ms-01): besteltegel + check-in + controle; gewichtsring + 2x2 raster; historie. */
+function MedicalStart({historyTile}:{historyTile:React.ReactNode}){
+ const {d,prac,loc,history,upcoming}=usePortalData();
+ const c=d.content;
+ const facts=(d.access.program_facts??{}) as Record<string,any>;
+ const start=d.access.initial_weight_kg;const goal=d.access.goal_weight_kg;
+ const lost=d.weight!==null&&start!==null?start-d.weight:0;
+ const kg=(n:number)=>n.toLocaleString('nl-NL',{minimumFractionDigits:1,maximumFractionDigits:1});
+ const goalPct=goal!==null&&start!==null&&start>goal?Math.round(Math.min(1,Math.max(0,lost/(start-goal)))*100):null;
+ const lastM=[...(d.measurements??[])].filter(m=>m.weight_kg!==null).sort((a,b)=>b.measured_on.localeCompare(a.measured_on))[0];
+ const next=upcoming[0];const nextP=next?prac(next.practitioner_id):null;const nextL=next?loc(next.location_id):null;
  const checkin=facts['checkin'] as {label:string;daysLeft:number}|undefined;
  const life=facts['lifestyle'] as {score:number;deltaStart:string}|undefined;
  const heart=facts['heart'] as {percent:number;level:string}|undefined;
  const tip=facts['weekTip'] as {title:string;text:string}|undefined;
  return <>
- {win&&<Link to='/mijn/bestellen' className='portal-tile portal-status-good portal-order'>
-  <span className='portal-tile-head'><span className='portal-icon'><ShoppingCart size={20}/></span><span className='portal-chip portal-chip-white'>{copy(c,'preorder')}</span></span>
-  <span className='portal-tile-label'>{fill(copy(c,'orderTile'),{medicijn:med})}</span>
-  <strong className='portal-tile-value'>{win.canOrder?copy(c,'orderNow'):fill(copy(c,'orderIn'),{n:win.daysUntil})}</strong>
-  <span className='portal-tile-sub'>{fill(copy(c,'orderWindow'),{d1:fmtDay(win.opens),d2:fmtDay(win.closes)})}</span>
-  <span className='portal-order-bar'><span style={{width:`${Math.min(100,Math.max(4,100-win.daysUntil/7*100))}%`}}/></span>
- </Link>}
- <div className='portal-start-grid'>
+ <div className='portal-ma-row1'>
+  <OrderTile/>
   {checkin&&<PortalTile icon={ClipboardCheck} label={checkin.label} value={fill(copy(c,'daysLeft'),{n:checkin.daysLeft})} sub={copy(c,'checkInSub')} status='soon' to='/mijn/voortgang'/>}
-  {next&&<PortalTile icon={CalendarDays} label={copy(c,'doctorReview')} value={fmtDay(next.starts_at)} sub={`${fmtTime(next.starts_at)}${nextP?` · ${nextP.first_name}`:''}`} to='/mijn/afspraken'/>}
+  {next&&<PortalTile icon={CalendarDays} label={copy(c,'doctorReview')} value={fmtDay(next.starts_at)} sub={<>{fmtDay(next.starts_at,{weekday:'short',day:'numeric',month:'short'})}, {fmtTime(next.starts_at)}{nextP&&<> · <Photo src={nextP.photo} size={18}/>{nextP.first_name}{nextL?.kind==='online'?`, ${copy(c,'online')}`:''}</>}</>} to='/mijn/afspraken'/>}
  </div>
- <div className='portal-card portal-weight'>
-  <Ring value={lost} max={goal!==null&&d.access.initial_weight_kg!==null?d.access.initial_weight_kg-goal:Math.max(1,lost)}><strong>{lostTxt} kg</strong><span>{copy(c,'weightLost')}</span></Ring>
-  <div className='portal-weight-side'>
-   {goalPct!==null&&<span className='portal-chip'>{fill(copy(c,'goalChip'),{p:goalPct})}</span>}
-   <Link to='/mijn/voortgang' className='portal-btn-secondary'>+ {copy(c,'update')}</Link>
+ <div className='portal-ma-row2'>
+  <section className='portal-card portal-weight-card'>
+   <Link to='/mijn/voortgang' className='portal-btn-secondary portal-weight-update'>+ {copy(c,'update')}</Link>
+   <Ring size='lg' value={lost} max={goal!==null&&start!==null?start-goal:Math.max(1,lost)}><strong>{kg(lost)} kg</strong><span>{copy(c,'weightLost')}</span>{goalPct!==null&&<span className='portal-chip'>{fill(copy(c,'goalChip'),{p:goalPct})}</span>}</Ring>
+   {start!==null&&<p className='portal-sub portal-center'>{fill(copy(c,'weightLine'),{start:kg(start),nu:d.weight!==null?kg(d.weight):'',doel:goal!==null?goal.toLocaleString('nl-NL'):''})}</p>}
+   {lastM&&<p className='portal-sub portal-center'>{fill(copy(c,'lastWeighed'),{wanneer:agoText(c,lastM.measured_on,d.today)})}</p>}
+  </section>
+  <div className='portal-ma-quad'>
+   {life&&<PortalTile icon={Sparkles} label={copy(c,'lifestyleLabel')} value={String(life.score).replace('.',',')} sub={fill(copy(c,'lifestyleSub'),{d:life.deltaStart})} status='soon' to='/mijn/voortgang'/>}
+   {heart&&<PortalTile icon={HeartPulse} label={copy(c,'heartLabel')} value={`${heart.percent}%`} sub={heart.level} status='action' to='/mijn/voortgang'/>}
+   {typeof facts['weeksWeighed']==='number'&&<PortalTile icon={Scale} label='' value={fill(copy(c,'weeksWeighed'),{n:facts['weeksWeighed']})} sub={copy(c,'weeksWeighedSub')} status='good' to='/mijn/voortgang'/>}
+   {tip&&<div className='portal-tile'><span className='portal-icon'><Star size={20} strokeWidth={1.7}/></span><span className='portal-tile-label'>{tip.title}</span><span className='portal-tile-sub'>{tip.text}</span></div>}
   </div>
  </div>
- <div className='portal-start-grid'>
-  {life&&<PortalTile icon={Sparkles} label={copy(c,'lifestyleLabel')} value={String(life.score).replace('.',',')} sub={fill(copy(c,'lifestyleSub'),{d:life.deltaStart})} status='soon' to='/mijn/voortgang'/>}
-  {heart&&<PortalTile icon={HeartPulse} label={copy(c,'heartLabel')} value={`${heart.percent}%`} sub={heart.level} status='action' to='/mijn/voortgang'/>}
-  {typeof facts['weeksWeighed']==='number'&&<PortalTile icon={Scale} label={fill(copy(c,'weeksWeighed'),{n:facts['weeksWeighed']})} value={copy(c,'weeksWeighedSub')} to='/mijn/voortgang'/>}
-  {d.access.cosmetic_history_count>0&&history.length>0&&historyTile}
- </div>
- {tip&&<section className='portal-card'><p className='portal-card-label'>{tip.title}</p><p className='portal-row-title'>{tip.text}</p></section>}
+ {d.access.cosmetic_history_count>0&&history.length>0&&<div className='portal-ma-history'>{historyTile}</div>}
  </>;
 }
 

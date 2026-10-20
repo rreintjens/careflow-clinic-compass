@@ -26,7 +26,7 @@ export function PortalAppointments(){
  <Link to='/boeken' className='portal-btn-secondary portal-btn-block'>+ {copy(c,'planExtra')}</Link>
  {history.length>0&&<section className='portal-card' style={{marginTop:16}}><h2 className='portal-card-heading'>{copy(c,'earlier')}</h2><div className='portal-rows'>
   {history.slice(0,8).map((a,i)=>{const t=treat(a.treatment_id),p=prac(a.practitioner_id);
-   return <div key={a.id} className='portal-row'><span className='portal-icon' style={{fontSize:13,fontWeight:600,color:'var(--primary-hover)'}}>{history.length-i}</span><div className='min-w-0 flex-1'><p className='portal-row-title'>{t?.name_nl}</p><p className='portal-sub'>{fmtDay(a.starts_at)} · {p?pracName(p):''}{loc(a.location_id)?.kind==='online'?' · video':''}</p></div><span className='portal-tip-check'><Check size={12}/></span></div>;})}
+   return <div key={a.id} className='portal-row'><span className='portal-icon' style={{fontSize:13,fontWeight:600,color:'var(--primary-hover)'}}>{history.length-i}</span><div className='min-w-0 flex-1'><p className='portal-row-title'>{t?.name_nl}</p><p className='portal-sub portal-with-photo'>{fmtDay(a.starts_at)} · {p&&<Photo src={p.photo} size={18}/>}{p?pracName(p):''}{loc(a.location_id)?.kind==='online'?' · video':''}</p></div><span className='portal-tip-check'><Check size={12}/></span></div>;})}
  </div></section>}
  </>;
 }

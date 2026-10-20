@@ -43,7 +43,7 @@ function LoginPage() {
   const keptT = ret.get("t"), keptL = ret.get("l"), keptD = ret.get("d"), keptTijd = ret.get("tijd");
   const treatment = "treatments" in data && keptT ? data.treatments.find((t) => t.id === keptT) : undefined;
   const location = "locations" in data && keptL ? data.locations.find((l) => l.id === keptL) : undefined;
-  const day = keptD ? new Date(`${keptD}T12:00:00Z`).toLocaleDateString(lang === "en" ? "en-GB" : "nl-NL", { timeZone: "UTC", weekday: "long", day: "numeric", month: "long" }) : "";
+  const day = keptD ? new Date(`${keptD}T12:00:00Z`).toLocaleDateString(lang === "en" ? "en-GB" : "nl-NL", { timeZone: "UTC", weekday: "short", day: "numeric", month: "short" }).replace(/\./g, "") : "";
   const hasChoice = !!(keptT || keptL || keptD);
   const [email, setEmail] = useState(""); const [sent, setSent] = useState(false); const [held, setHeld] = useState(false); const [demo, setDemo] = useState<string | null>(null); const [busy, setBusy] = useState(false);
   const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
@@ -60,7 +60,7 @@ function LoginPage() {
     <div className="rounded-[18px] bg-sand p-4">
       <p className="text-[12px] font-medium text-muted-foreground">{tx("choice_kept_title")}</p>
       {treatment && <p className="mt-1.5 text-[15px] font-semibold">{(lang === "en" && treatment.name_en) || treatment.name_nl}</p>}
-      <p className="text-[14px] text-muted-foreground">{[location ? (location.kind === "online" ? tx("online_title") : location.name) : "", day && keptTijd ? `${day} · ${keptTijd}` : day].filter(Boolean).join(" · ")}</p>
+      <p className="text-[14px] text-muted-foreground">{[location ? (location.kind === "online" ? tx("online_title") : location.name) : "", day && keptTijd ? `${day}, ${keptTijd}` : day].filter(Boolean).join(" · ")}</p>
     </div>
   ) : null;
   return (

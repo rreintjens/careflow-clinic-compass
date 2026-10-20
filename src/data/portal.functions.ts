@@ -193,7 +193,7 @@ export const placePortalOrder=createServerFn({method:'POST'}).middleware([requir
  const {data:prev}=await db.from('ma_packages').select('start_date,months').eq('patient_id',pid).in('status',['active','completed']).order('start_date',{ascending:false}).limit(1);
  const start=prev?.[0]?packageEnd(prev[0].start_date,prev[0].months):new Date().toISOString().slice(0,10);
  const {error}=await db.from('ma_packages').insert({tenant_id:p.tenant_id,patient_id:pid,order_id:crypto.randomUUID(),start_date:start,months:data.months,strengths:data.strengths,status:'ordered'});
- if(error)throw new Error('Bestellen is niet gelukt.');
- await db.from('audit_log').insert({tenant_id:p.tenant_id,user_id:context.userId,role_key:'patient',action:'portal_order_placed',category:'patient',record_type:'patient',record_id:pid,details:{months:data.months,strengths:data.strengths,support:data.support,extras:data.extras,mode:data.mode,delivery:data.delivery,payment:data.payment,total:data.total,remark:data.remark||undefined}});
+ if(error){console.error('portal order',error.code);throw new Error('Bestellen is niet gelukt.');}
+ const {admin}=await import('./booking.server'); await (await admin()).from('audit_log').insert({tenant_id:p.tenant_id,user_id:context.userId,role_key:'patient',action:'portal_order_placed',category:'patient',record_type:'patient',record_id:pid,details:{months:data.months,strengths:data.strengths,support:data.support,extras:data.extras,mode:data.mode,delivery:data.delivery,payment:data.payment,total:data.total,remark:data.remark||undefined}});
  return {ok:true};
 });

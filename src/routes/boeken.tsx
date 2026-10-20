@@ -1,3 +1,4 @@
+import joyceAsset from "@/assets/joyce-maas.jpg.asset.json";
 import { useQuery, useSuspenseQuery, queryOptions } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
@@ -214,7 +215,7 @@ function eligiblePractitioners(c: Full, treatmentId: string, locationId: string)
 }
 const roleName = (c: Full, roleId: string | null, lang = "nl") => { const r = c.roles.find((x) => x.id === roleId); return r ? ((lang === "en" && r.name_en) || r.name_nl) : ""; };
 
-const JOYCE_PHOTO = "https://body-clinic.ams3.digitaloceanspaces.com/0010ee8a9603d578d735779d5fd7e35c.jpg";
+const JOYCE_PHOTO = joyceAsset.url;
 
 /** "Liever bellen?"-footer met Joyce's foto, op elk boekingsscherm. */
 export function CallFooter({ phone, tx }: { phone: string; tx: Tx }) {
@@ -401,7 +402,7 @@ function PlannerStep({ c, s, step, tx, lang, go, me, preferredId }: { c: Full; s
                   <div className="grid grid-cols-4 gap-2">
                     {list.map((x) => {
                       const t = fmtTime(x.start);
-                      return <button key={t} type="button" onClick={() => go({ tijd: t }, true)} aria-pressed={s.tijd===t} className="patient-choice h-12 rounded-[12px] text-[15px]">{t}</button>;
+                      return <button key={t} type="button" onClick={() => go({ d: selected, tijd: t }, true)} aria-pressed={s.tijd===t} className="patient-choice patient-slot h-12 rounded-[12px] text-[15px]">{t}</button>;
                     })}
                   </div>
                 )}
