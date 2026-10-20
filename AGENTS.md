@@ -23,7 +23,7 @@
 - Security headers are set in `src/start.ts` middleware (`src/lib/security-headers.ts`); `TBC_LIVE=true` switches framing to 'none'.
 - RLS proof: `src/test/rls-patients.integration.test.ts` with TEST_STAFF_PASSWORD.
 - Multi-tenant (docs/03_MULTI_TENANT.md is binding): every tenant table has non-null `tenant_id` defaulting to `current_tenant()`; every policy ANDs `tenant_id = current_tenant()` — isolation lives in the database.
-- Active tenant = `app_metadata.active_tenant` in the JWT, written only by server functions (`signInStaff`, `switchTenant`) and honoured only with a membership; roles come from `tenant_memberships` (`user_roles` is deprecated). Group admins are the exception: they sign in without a membership, see every tenant in `my_tenants`, and act as `superadmin` in any tenant via fallbacks in `current_role_key`/`has_permission`/`my_staff_context`.
+- Active tenant is the server-written JWT claim `app_metadata.active_tenant`; roles use `tenant_memberships` (`user_roles` deprecated). Group admins need no membership: `my_tenants` lists all; `current_role_key`/`has_permission`/`my_staff_context` supply superadmin fallbacks.
 - Shared group data (permissions, option_lists, languages, group_settings) is editable only by `group_admins`; storage buckets are per tenant (`<name>-<slug>`).
 - Tenancy proof: `src/test/tenancy.integration.test.ts`; run separately with TEST_STAFF_PASSWORD.
 - Equipment: device kind comes from `equipment_types` → `equipment_kinds`; names are generated (`src/domain/equipment.ts`), never stored as truth; availability per room/day only via `roomsForKind` — one tested rule.
@@ -31,13 +31,13 @@
 - Measurements: one shared query; BMI derived in domain from weight + last known height; shared write validation.
 - Dossier add actions reuse the shared appointment/consult/measurement/document modals; a fixed patient is locked in the appointment modal.
 - Public booking (`/boeken`) reads via `src/data/booking.functions.ts` server functions with the admin client after resolving the brand from the host (`?merk=` only for brands in test mode); they return display data only. Step order lives in `src/domain/booking.ts`, free times in `src/domain/slots.ts` — both tested.
-- External busy providers read persisted tenant periods; shared slots and the appointment overlap trigger enforce exclusion independently of the agenda visibility setting.
+- Shared statuses drive agenda/reception/slots; PatientCard owns actions. Triggers protect resources/eKis; audited double books bypass practitioner overlap only. One modal/save creates, reschedules and places waitlist entries with self-exclusion, compare-and-set and preserved preferences.
 - Contact/request entries use shared validated authenticated saves and tenant RLS with patient view/edit permissions; follow-ups, timeline and modal editing read the same stored rows.
 - Select and MultiSelect delegate to SearchablePicker; option metadata and eligibility use shared pure picker rules so keyboard and group selection remain consistent throughout admin.
 - Booking attribution uses tenant-scoped channel/place/campaign rows and immutable in-use codes; appointments snapshot the resolved link attribution at hold creation so later configuration changes cannot rewrite history.
 
 - Patient choices use semantic states; DataTable owns grouped tracks/row actions; Field rows and Modal focus share editing.
-- Answer reads use frozen versions; consult domain owns timing/patient keys; date-only data has no time.
+- Frozen answers drive shared appointment preparation/expiry checks; consult domain owns timing/patient keys; date-only data has no time.
 - Portal uses its own patient gate/access rows, atomic hashed-link redemption and RLS reads, never staff memberships; tested landing and one shell keep later phases consistent. Copy is tenant DB configuration.
 - Demo patient shortcuts share DemoPatientLogins and redeem the existing server-gated single-use portal links; profile labels come from portal configuration so no parallel authentication flow is introduced.
 - ActiveConsultMode owns the template workflow beside its unchanged bar and notes panel; legacy consult URLs redirect to the dossier rather than render a second workflow.

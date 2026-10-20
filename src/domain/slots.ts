@@ -1,5 +1,6 @@
 /** Bookable time slots and slot holds. All times are local clinic time (date YYYY-MM-DD, minutes since midnight). */
 import { isoWeekday, nextOccurrences, type Recurrence } from "./organisation";
+import { blocksAppointment } from "./appointment-status";
 
 export interface SlotBlock {
   practitioner_id: string;
@@ -101,5 +102,5 @@ export function mergeByTime(slots: readonly Slot[], countOf: (practitionerId: st
 
 /** A hold blocks the slot until it expires; afterwards the patient sees "Je tijd is verlopen". */
 export const holdExpiresAt = (nowMs: number, holdMinutes: number) => nowMs + holdMinutes * 60_000;
-export const holdActive = (status: string, expiresAtMs: number | null, nowMs: number) => status === "booked" || (status === "held" && expiresAtMs !== null && expiresAtMs > nowMs);
+export const holdActive = blocksAppointment;
 export const secondsLeft = (expiresAtMs: number, nowMs: number) => Math.max(0, Math.floor((expiresAtMs - nowMs) / 1000));

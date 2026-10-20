@@ -17,6 +17,7 @@ import { appointmentAnswersQuery, PatientCard, signalsOf } from "@/features/agen
 import { AgendaToolbar } from "@/features/agenda/AgendaToolbar";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { AppointmentStatus } from "@/features/agenda/AppointmentActions";
 
 const TZ = "Europe/Amsterdam";
 const local = (iso: string) => {
@@ -58,7 +59,7 @@ function Page() {
   const view = useMemo(() => {
     if (!ref || !raw) return null;
     const locs = new Map(ref.locations.map((l) => [l.id, l]));
-    const appts = raw.map((a) => ({ ...a, s: local(a.starts_at), e: local(a.ends_at) })).filter((a) => a.practitioner_id === pid && a.s.date === date)
+    const appts = raw.map((a) => ({ ...a, s: local(a.starts_at), e: local(a.ends_at) })).filter((a) => !["cancelled", "no_show"].includes(a.status) && a.practitioner_id === pid && a.s.date === date)
       .map((a) => ({ ...a, start: a.s.minute, end: a.e.minute, online: locs.get(a.location_id)?.kind === "online", locName: locs.get(a.location_id)?.name ?? "" })).sort((a, b) => a.start - b.start);
     const breaks = daySegments(pid, date, ref.blocks as SlotBlock[], ref.exceptions as SlotException[]).filter((g) => g.kind === "break");
     const range = hourRange([...appts.flatMap((a) => [a.start, a.end]), ...breaks.flatMap((b) => [b.start, b.end])]);
@@ -142,6 +143,7 @@ function Page() {
                       <span className="block truncate text-[12px] text-muted-foreground">{tName(a.treatment_id)} · {a.patient?.patient_number} · {a.new_patient ? "nieuw" : "vervolg"}{a.online ? " · Online" : ""}</span>
                     </span>
                     {n > 0 && <span className="whitespace-nowrap rounded-full bg-signal px-2.5 py-0.5 text-[11px] ring-1 ring-signal-border">{n} {n === 1 ? "signaal" : "signalen"}</span>}
+                    <AppointmentStatus status={a.status}/>
                     {done(i) ? <img src="/ui-icons/vinkje.svg" alt="Vragenlijst ingevuld" className="size-4" /> : <img src="/ui-icons/waarschuwing.svg" alt="Vragenlijst nog niet ingevuld" className="size-4" />}
                     {a.online
                       ? <span className="flex h-8 items-center gap-1.5 rounded-full bg-primary px-3 text-[12px] text-primary-foreground"><img src="/ui-icons/videogesprek.svg" alt="" className="size-3.5 invert" />Meet</span>

@@ -194,7 +194,7 @@ Verificatie 19-10: alle vijf punten op 1000007 als Rob doorlopen; 58 gerichte te
 
 ## EPD v0.1 — eigenaar 20-10
 - [x] Fase 1: Vragenbibliotheek (codes, soorten/groepen uit keuzelijsten, voorwaarde, "Gebruikt in", wijziging maakt concepten van sjablonen en vragenlijsten), menu-groep Dossier, "Uit de bibliotheek" in de vragenlijstbouwer met link-icoon, Dossiersjablonen met versies (live alleen-lezen, Aanpassen → concept met autosave, publiceren, Versies, archief), seed Medisch afvallen › Consult en Injectables › Botox + 16 voorbeeldvragen, 9 nieuwe rechten
-- [ ] Fase 2: consultstappen in de consultmodus (stepper, medische status, anamnese met sjabloon/dicteer, diagnose/btw, recept, behandeling met lot/foto's/tekening, afronden, dossierkaarten)
+- [x] Fase 2: consultstappen in de consultmodus (stepper, medische status, anamnese met sjabloon/dicteer, diagnose/btw, recept, behandeling met lot/foto's/tekening, afronden, dossierkaarten); Mark en Sanne als Rob geverifieerd, zie reviews hieronder
 - [ ] Fase 3: statussen + no_show-fix, Receptie, Dag per locatie, annuleren, Afspraak maken uitbreiden, Mijn dag, patiëntmails
 - [ ] Fase 4: Afrekenen en factuur
 - [ ] Fase 5: Beheer (behandeling-kaarten, Formulieren en nazorg, Adresboek, Koppelingen-kaarten, Data-API)
@@ -208,3 +208,5 @@ Verificatie 19-10: alle vijf punten op 1000007 als Rob doorlopen; 58 gerichte te
 - [x] Review 21:52, Sanne: Fronsrimpels vandaag 20 oktober 16:00; twee zones, Laatst gebruikt DEMO-FRONS-2026, verse QR-upload zonder login op telefoonformaat, vijf presetpunten, vier controles, klaar voor betaling met receptienotitie. Dubbele testregels opgeruimd tot één regel met twee zones.
 - [x] Review 21:52, Mark: eerste Consult medisch afvallen; twee fiscale vragen opnieuw ingevuld, vrijstellingsbesluit Vastgelegd door Rob Reintjens, 20 oktober om 23:58; na verversen behouden. 18 gerichte consulttests groen.
 - [ ] Volgende ronde: fase 3 uitvoeren (statussen, Receptie, Dag per locatie, Afspraak maken), zonder bevestigingspauze; bestaande vormgeving behouden.
+- [x] Fase 3 deelcontrole: als Rob Gearriveerd opgeslagen/heropend met auteur/tijd/notitie, Sanne bij Klaar voor betaling, online afspraak gemaakt en teruggelezen, toegestane dubbelboeking met reden opgeslagen en audit gecontroleerd; Utrecht-agenda heeft kamer/apparatuurkolommen. 448 tests groen, 22 integratietests overgeslagen, actuele build OK.
+- [ ] Fase 3 resterend: verzetten met automatische resources, wachtlijst-inplannen, geldigheid vragenlijst/toestemming en ontbrekende-gegevensmail, e-mail/SMS-matrix, annuleringskosten/betaallink, Adresboek; daarna rolcontrole en volledige faseverificatie. Eigenaar 22:41: doorgaan zonder pauze.

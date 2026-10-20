@@ -15,10 +15,12 @@ import { Route as PatientRouteRouteImport } from './routes/_patient/route'
 import { Route as BoekenRouteImport } from './routes/boeken'
 import { Route as MijnRouteImport } from './routes/mijn'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedReceptieRouteImport } from './routes/_authenticated/receptie'
 import { Route as PatientMijnRouteRouteImport } from './routes/_patient/mijn/route'
 import { Route as AfspraakTokenRouteImport } from './routes/afspraak.$token'
 import { Route as AuthIndexRouteImport } from './routes/auth.index'
 import { Route as Auth2faRouteImport } from './routes/auth.2fa'
+import { Route as BetalenTokenRouteImport } from './routes/betalen.$token'
 import { Route as BoekenInloggenRouteImport } from './routes/boeken_.inloggen'
 import { Route as FotoTokenRouteImport } from './routes/foto.$token'
 import { Route as MijnIndexRouteImport } from './routes/mijn.index'
@@ -104,6 +106,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedReceptieRoute = AuthenticatedReceptieRouteImport.update({
+  id: '/receptie',
+  path: '/receptie',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const PatientMijnRouteRoute = PatientMijnRouteRouteImport.update({
   id: '/mijn',
   path: '/mijn',
@@ -122,6 +129,11 @@ const AuthIndexRoute = AuthIndexRouteImport.update({
 const Auth2faRoute = Auth2faRouteImport.update({
   id: '/auth/2fa',
   path: '/auth/2fa',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BetalenTokenRoute = BetalenTokenRouteImport.update({
+  id: '/betalen/$token',
+  path: '/betalen/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BoekenInloggenRoute = BoekenInloggenRouteImport.update({
@@ -451,8 +463,10 @@ export interface FileRoutesByFullPath {
   '/boeken': typeof BoekenRoute
   '/mijn': typeof PatientMijnRouteRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/receptie': typeof AuthenticatedReceptieRoute
   '/afspraak/$token': typeof AfspraakTokenRoute
   '/auth/2fa': typeof Auth2faRoute
+  '/betalen/$token': typeof BetalenTokenRoute
   '/boeken/inloggen': typeof BoekenInloggenRoute
   '/foto/$token': typeof FotoTokenRoute
   '/vragenlijst/$token': typeof VragenlijstTokenRoute
@@ -516,8 +530,10 @@ export interface FileRoutesByTo {
   '/boeken': typeof BoekenRoute
   '/mijn': typeof MijnIndexRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/receptie': typeof AuthenticatedReceptieRoute
   '/afspraak/$token': typeof AfspraakTokenRoute
   '/auth/2fa': typeof Auth2faRoute
+  '/betalen/$token': typeof BetalenTokenRoute
   '/boeken/inloggen': typeof BoekenInloggenRoute
   '/foto/$token': typeof FotoTokenRoute
   '/vragenlijst/$token': typeof VragenlijstTokenRoute
@@ -583,8 +599,10 @@ export interface FileRoutesById {
   '/mijn': typeof MijnRouteWithChildren
   '/_patient/mijn': typeof PatientMijnRouteRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/receptie': typeof AuthenticatedReceptieRoute
   '/afspraak/$token': typeof AfspraakTokenRoute
   '/auth/2fa': typeof Auth2faRoute
+  '/betalen/$token': typeof BetalenTokenRoute
   '/boeken_/inloggen': typeof BoekenInloggenRoute
   '/foto/$token': typeof FotoTokenRoute
   '/vragenlijst/$token': typeof VragenlijstTokenRoute
@@ -650,8 +668,10 @@ export interface FileRouteTypes {
     | '/boeken'
     | '/mijn'
     | '/dashboard'
+    | '/receptie'
     | '/afspraak/$token'
     | '/auth/2fa'
+    | '/betalen/$token'
     | '/boeken/inloggen'
     | '/foto/$token'
     | '/vragenlijst/$token'
@@ -715,8 +735,10 @@ export interface FileRouteTypes {
     | '/boeken'
     | '/mijn'
     | '/dashboard'
+    | '/receptie'
     | '/afspraak/$token'
     | '/auth/2fa'
+    | '/betalen/$token'
     | '/boeken/inloggen'
     | '/foto/$token'
     | '/vragenlijst/$token'
@@ -781,8 +803,10 @@ export interface FileRouteTypes {
     | '/mijn'
     | '/_patient/mijn'
     | '/_authenticated/dashboard'
+    | '/_authenticated/receptie'
     | '/afspraak/$token'
     | '/auth/2fa'
+    | '/betalen/$token'
     | '/boeken_/inloggen'
     | '/foto/$token'
     | '/vragenlijst/$token'
@@ -850,6 +874,7 @@ export interface RootRouteChildren {
   MijnRoute: typeof MijnRouteWithChildren
   AfspraakTokenRoute: typeof AfspraakTokenRoute
   Auth2faRoute: typeof Auth2faRoute
+  BetalenTokenRoute: typeof BetalenTokenRoute
   BoekenInloggenRoute: typeof BoekenInloggenRoute
   FotoTokenRoute: typeof FotoTokenRoute
   VragenlijstTokenRoute: typeof VragenlijstTokenRoute
@@ -903,6 +928,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/receptie': {
+      id: '/_authenticated/receptie'
+      path: '/receptie'
+      fullPath: '/receptie'
+      preLoaderRoute: typeof AuthenticatedReceptieRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_patient/mijn': {
       id: '/_patient/mijn'
       path: '/mijn'
@@ -929,6 +961,13 @@ declare module '@tanstack/react-router' {
       path: '/auth/2fa'
       fullPath: '/auth/2fa'
       preLoaderRoute: typeof Auth2faRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/betalen/$token': {
+      id: '/betalen/$token'
+      path: '/betalen/$token'
+      fullPath: '/betalen/$token'
+      preLoaderRoute: typeof BetalenTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/boeken_/inloggen': {
@@ -1360,6 +1399,7 @@ const AuthenticatedPatientenIdRouteWithChildren =
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedReceptieRoute: typeof AuthenticatedReceptieRoute
   AuthenticatedAgendaMijnDagRoute: typeof AuthenticatedAgendaMijnDagRoute
   AuthenticatedAgendaRoosterRoute: typeof AuthenticatedAgendaRoosterRoute
   AuthenticatedBoekingsflowBoekingslinksRoute: typeof AuthenticatedBoekingsflowBoekingslinksRoute
@@ -1393,6 +1433,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedReceptieRoute: AuthenticatedReceptieRoute,
   AuthenticatedAgendaMijnDagRoute: AuthenticatedAgendaMijnDagRoute,
   AuthenticatedAgendaRoosterRoute: AuthenticatedAgendaRoosterRoute,
   AuthenticatedBoekingsflowBoekingslinksRoute:
@@ -1512,6 +1553,7 @@ const rootRouteChildren: RootRouteChildren = {
   MijnRoute: MijnRouteWithChildren,
   AfspraakTokenRoute: AfspraakTokenRoute,
   Auth2faRoute: Auth2faRoute,
+  BetalenTokenRoute: BetalenTokenRoute,
   BoekenInloggenRoute: BoekenInloggenRoute,
   FotoTokenRoute: FotoTokenRoute,
   VragenlijstTokenRoute: VragenlijstTokenRoute,

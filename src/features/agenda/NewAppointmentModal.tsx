@@ -5,13 +5,17 @@ import { useEffect, useMemo, useState } from "react";
 import { Modal } from "@/components/Modal";
 import { PillButton } from "@/components/PillButton";
 import { Select } from "@/components/Select";
-import { patientSearchQuery, type AgendaRef } from "@/data/agenda";
+import { patientSearchQuery, type AgendaAppt, type AgendaRef } from "@/data/agenda";
 import type { Dossier } from "@/data/patients";
-import { createStaffAppointment, createStaffPatient, getStaffSlots } from "@/data/agenda.functions";
-import { TextField } from "@/components/Field";
+import { createStaffAppointment, createStaffPatient, getStaffSlots, getStaffPreparation } from "@/data/agenda.functions";
+import { TextField, Checkbox, TextArea } from "@/components/Field";
+import { orgQuery } from "@/data/organisation";
+import { appointmentStatusOptionsQuery } from "@/data/reception";
+import { supabase } from "@/integrations/supabase/client";
 import { DobField } from "@/features/questionnaire/QuestionnaireRunner";
 import { fmtTime } from "@/domain/slots";
 import { cn } from "@/lib/utils";
+import {notificationPlanSchema} from "@/domain/appointment-notifications";
 
 type Ref = AgendaRef;
 type Hit = { id: string; patient_number: number | null; first_name: string; last_name: string; date_of_birth: string | null; email?: string | null };
@@ -72,23 +76,42 @@ const initials = (a: string, b: string) => `${a.charAt(0)}${b.charAt(0)}`.toUppe
 const dmy = (d: string | null) => (d ? d.split("-").reverse().join("-") : "");
 
 /** "Afspraak maken" from the agenda: choose patient, treatment, way, practitioner, location and a free moment. */
-export function NewAppointmentModal({ open, onOpenChange, data, onPickInAgenda, fixedPatient }: { open: boolean; onOpenChange: (o: boolean) => void; data: Ref; onPickInAgenda: (practitionerId: string) => void; fixedPatient?: NonNullable<Dossier["patient"]> }) {
+export function NewAppointmentModal({ open, onOpenChange, data, onPickInAgenda, fixedPatient, appointment, waitlist }: { open: boolean; onOpenChange: (o: boolean) => void; data: Ref; onPickInAgenda: (practitionerId: string) => void; fixedPatient?: NonNullable<Dossier["patient"]>; appointment?: AgendaAppt; waitlist?: {id:string;patientId:string;treatmentId:string|null;name:string} }) {
   const qc = useQueryClient();
   const slotsFn = useServerFn(getStaffSlots);
   const create = useServerFn(createStaffAppointment);
+  const preparationFn=useServerFn(getStaffPreparation);
   const [q, setQ] = useState("");
-  const [patient, setPatient] = useState<string | null>(fixedPatient?.id ?? null);
-  const [treatment, setTreatment] = useState("");
-  const [how, setHow] = useState<"online" | "clinic">("online");
-  const [prac, setPrac] = useState("");
-  const [loc, setLoc] = useState("");
+  const [patient, setPatient] = useState<string | null>(fixedPatient?.id ?? appointment?.patient?.id ?? waitlist?.patientId ?? null);
+  const [treatment, setTreatment] = useState(appointment?.treatment_id ?? waitlist?.treatmentId ?? "");
+  const [how, setHow] = useState<"online" | "clinic">(appointment && data.locations.find(l=>l.id===appointment.location_id)?.kind!=="online" ? "clinic":"online");
+  const [prac, setPrac] = useState(appointment?.practitioner_id ?? "");
+  const [loc, setLoc] = useState(appointment?.location_id ?? "");
   const [slot, setSlot] = useState<{ date: string; start: number } | null>(null);
-  const [notify, setNotify] = useState("as_usual");
-  const [reason, setReason] = useState("");
+  const [notify, setNotify] = useState(appointment?.notify ?? "as_usual");
+  const [notificationPlan,setNotificationPlan]=useState<Record<string,{email:boolean;sms:boolean}>>(()=>{const parsed=notificationPlanSchema.safeParse(appointment?.notification_plan);return parsed.success?parsed.data:{};});
+  const moments=data.options.filter(o=>o.list_key==="mail_moment" && ["confirmation","appointment_reminder","questionnaire_reminder","rescheduled","cancelled","no_show"].includes(o.value)).map(o=>({value:o.value,label:o.label_nl}));
+  const [reason, setReason] = useState(appointment?.booking_reason ?? "");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [adding, setAdding] = useState(false);
   const [created, setCreated] = useState<Hit | null>(null);
+  const [kind, setKind] = useState(appointment?.kind ?? "");
+  const [tentative, setTentative] = useState(appointment?.status==="tentatief");
+  const [room, setRoom] = useState(appointment?.room_id ?? "");
+  const [double, setDouble] = useState(false);
+  const [doubleReason, setDoubleReason] = useState("");
+  const [manualDate, setManualDate] = useState(today());
+  const [manualTime, setManualTime] = useState("");
+  const {data:canDouble=false}=useQuery({queryKey:["can-double-book"],queryFn:async()=>!!(await supabase.rpc("has_permission",{_perm:"agenda.double_book"})).data});
+  const { data: org } = useQuery(orgQuery);
+  const { data: appointmentOptions = [] } = useQuery(appointmentStatusOptionsQuery);
+  const { data: history } = useQuery({ queryKey: ["booking-patient-history",patient], enabled: !!patient && open, queryFn: async () => {
+    if(!patient) return null;
+    const [p,a] = await Promise.all([supabase.from("patients").select("labels,online_booking_blocked").eq("id",patient).single(),supabase.from("appointments").select("starts_at,status,treatment:treatments(name_nl)").eq("patient_id",patient).order("starts_at",{ascending:false}).limit(3)]);
+    if(p.error || a.error) throw p.error ?? a.error;
+    return {patient:p.data,appointments:a.data};
+  }});
   const { data: hits = [] } = useQuery({ ...patientSearchQuery(q), enabled: !fixedPatient && q.trim().length >= 2 });
 
   const locKind = (id: string) => data.locations.find((l) => l.id === id)?.kind;
@@ -104,19 +127,21 @@ export function NewAppointmentModal({ open, onOpenChange, data, onPickInAgenda, 
   useEffect(() => { if (!locOptions.some((l) => l.id === loc)) setLoc(locOptions[0]?.id ?? ""); }, [locOptions, loc]);
   useEffect(() => { if (!pracOptions.some((p) => p.id === prac)) setPrac(pracOptions[0]?.id ?? ""); }, [pracOptions, prac]);
   const { data: slots = [], isFetching } = useQuery({
-    queryKey: ["staff-slots", treatment, loc, prac], enabled: !!(treatment && loc && prac),
-    queryFn: () => slotsFn({ data: { treatmentId: treatment, locationId: loc, practitionerId: prac } }),
+    queryKey: ["staff-slots", treatment, loc, prac,appointment?.id], enabled: !!(treatment && loc && prac),
+    queryFn: () => slotsFn({ data: { treatmentId: treatment, locationId: loc, practitionerId: prac,appointmentId:appointment?.id } }),
   });
   useEffect(() => setSlot(slots[0] ?? null), [slots]);
+  const {data:preparation}=useQuery({queryKey:["appointment-preparation",patient,treatment,slot?.date],enabled:!!patient&&!!treatment&&!!slot,queryFn:()=>{if(!patient||!slot)throw new Error("Kies eerst een patiënt en moment.");return preparationFn({data:{patientId:patient,treatmentId:treatment,at:`${slot.date}T12:00:00Z`}});}});
 
-  const reset = () => { setAdding(false); setCreated(null); setQ(""); setPatient(fixedPatient?.id ?? null); setTreatment(""); setSlot(null); setReason(""); setError(null); };
+  const reset = () => { setAdding(false); setCreated(null); setQ(""); setPatient(fixedPatient?.id ?? null); setTreatment(""); setSlot(null); setReason(""); setError(null); setKind(""); setTentative(false); setRoom(""); setDouble(false); setDoubleReason(""); setManualTime(""); };
   const submit = async () => {
-    if (!patient || !treatment || !loc || !prac || !slot) { setError("Kies een patiënt, behandeling, behandelaar en moment."); return; }
+    const moment = double ? (/^\d{2}:\d{2}$/.test(manualTime) ? {date:manualDate,start:Number(manualTime.slice(0,2))*60+Number(manualTime.slice(3))} : null) : slot;
+    if (!patient || !treatment || !loc || !prac || !moment || (double && doubleReason.trim().length<3)) { setError("Kies een patiënt, behandeling, behandelaar en moment; geef bij dubbel boeken een reden."); return; }
     setBusy(true);
-    const r = await create({ data: { patientId: patient, treatmentId: treatment, locationId: loc, practitionerId: prac, date: slot.date, start: slot.start, notify, reason: reason || null } });
+    const r = await create({ data: { patientId: patient, treatmentId: treatment, locationId: loc, practitionerId: prac, date: moment.date, start: moment.start, notify, reason: reason || null, kind:kind||undefined, tentative,roomId:how==="clinic"?room||undefined:undefined,doubleBookReason:double?doubleReason:undefined,appointmentId:appointment?.id,expectedStartsAt:appointment?.starts_at,waitlistId:waitlist?.id,notificationPlan } });
     setBusy(false);
-    if (!r.ok) { setError(r.reason === "external_busy" ? "Deze behandelaar is op dit moment bezet in eKis. Kies een ander moment." : r.reason === "taken" ? "Dit moment is bezet, mogelijk in eKis. Kies een ander moment." : "Inplannen is niet gelukt."); void qc.invalidateQueries({ queryKey: ["staff-slots"] }); return; }
-    await Promise.all([qc.invalidateQueries({ queryKey: ["agenda-appts"] }), qc.invalidateQueries({ queryKey: ["dossier"] }), qc.invalidateQueries({ queryKey: ["patient-list"] })]);
+    if (!r.ok) { setError(r.reason === "resources" ? "Er is geen vrije geschikte kamer of apparatuur op dit moment." : r.reason === "forbidden" ? "Inplannen is niet toegestaan voor deze patiënt of medewerker." : r.reason === "external_busy" ? "Deze behandelaar is op dit moment bezet in eKis. Kies een ander moment." : r.reason === "taken" ? "Dit moment is bezet, mogelijk in eKis. Kies een ander moment." : "Inplannen is niet gelukt."); void qc.invalidateQueries({ queryKey: ["staff-slots"] }); return; }
+    await Promise.all(["agenda-appts","dossier","patient-list","reception-tasks","waitlist","staff-slots"].map(key=>qc.invalidateQueries({queryKey:[key]})));
     reset();
     onOpenChange(false);
   };
@@ -130,10 +155,10 @@ export function NewAppointmentModal({ open, onOpenChange, data, onPickInAgenda, 
   const pick = (p: Hit) => { setCreated(p); setPatient(p.id); setAdding(false); };
 
   return (
-    <Modal open={open} onOpenChange={(o) => { if (!o) reset(); onOpenChange(o); }} title={fixedPatient ? "Afspraak inplannen" : "Afspraak maken"} width="lg"
+    <Modal open={open} onOpenChange={(o) => { if (!o) reset(); onOpenChange(o); }} title={appointment?"Afspraak verzetten":fixedPatient ? "Afspraak inplannen" : "Afspraak maken"} width="lg"
       footer={<><PillButton variant="outline" onClick={() => onOpenChange(false)}>Annuleren</PillButton><PillButton onClick={() => void submit()} disabled={busy}>Afspraak inplannen</PillButton></>}>
       <div className="flex flex-col gap-5">
-        {fixedPatient ? <p className="text-[14px] font-medium">{fixedPatient.first_name} {fixedPatient.last_name} · {fixedPatient.patient_number}</p> : <div className="flex flex-col gap-2">
+        {appointment||waitlist ? <p className="text-sm font-medium">{appointment?`${appointment.patient?.first_name} ${appointment.patient?.last_name}`:waitlist?.name}</p> : fixedPatient ? <p className="text-[14px] font-medium">{fixedPatient.first_name} {fixedPatient.last_name} · {fixedPatient.patient_number}</p> : <div className="flex flex-col gap-2">
           <label htmlFor="who" className="text-[13px] font-medium">Voor wie</label>
           <div className="flex h-11 items-center gap-3 rounded-full bg-sand px-4">
             <img src="/ui-icons/zoeken.svg" alt="" className="size-4" />
@@ -148,6 +173,7 @@ export function NewAppointmentModal({ open, onOpenChange, data, onPickInAgenda, 
             </button>
           ))}
         </div>}
+        {history && <div className="flex flex-col gap-2 rounded-[14px] bg-sand p-4"><p className="text-sm font-medium">Patiënthistorie</p>{history.patient.labels.map(l=><span key={l} className="text-xs text-warning">{org?.options.find(o=>o.list_key==="patient_label" && o.value===l)?.label_nl??l}</span>)}{history.patient.online_booking_blocked && <p className="text-xs text-warning">Online boeken geblokkeerd</p>}{history.appointments.map((a,i)=><p key={i} className="text-xs text-muted-foreground">{new Date(a.starts_at).toLocaleDateString("nl-NL",{timeZone:"Europe/Amsterdam"})} · {a.treatment?.name_nl}</p>)}</div>}
         <div className="grid grid-cols-2 gap-4">
           <Select label="Behandeling" value={treatment} onChange={setTreatment} options={data.treatments.map((t) => ({ value: t.id, label: `${t.name_nl}, ${t.duration_min} min` }))} />
           <Select label="Hoe" value={how} onChange={(v) => setHow(v as "online" | "clinic")} disabled={!treatment}
@@ -171,7 +197,13 @@ export function NewAppointmentModal({ open, onOpenChange, data, onPickInAgenda, 
         <div className="grid grid-cols-2 gap-4">
           <Select label="Bevestiging en herinnering" value={notify} onChange={setNotify} options={opt("agenda_notify")} />
           <Select label="Reden" value={reason} onChange={setReason} options={opt("agenda_reason")} />
+          <Select label="Afspraaksoort" value={kind} onChange={setKind} options={appointmentOptions.filter(o=>o.list_key==="appointment_kind").map(o=>({value:o.value,label:o.label_nl}))}/>
+          {how === "clinic" && <Select label="Kamer" value={room} onChange={setRoom} options={[{value:"",label:"Automatisch toewijzen"},...(org?.rooms??[]).filter(r=>r.location_id===loc).map(r=>({value:r.id,label:r.name}))]}/>}
         </div>
+        <Checkbox label="Tentatieve afspraak" checked={tentative} onChange={setTentative}/>
+        {preparation && <div className="rounded-[14px] bg-sand p-4 text-sm"><h3 className="font-semibold">Voorbereiding</h3><p className="mt-2">Persoonsgegevens: {preparation.detailsMissing?"nog aanvullen":"compleet"}</p><p>Vragenlijst: {!preparation.questionnaireRequired?"niet nodig":preparation.questionnaireMissing?"nog invullen of vernieuwen":"geldig"}</p>{preparation.consentRequired && <p>Toestemmingsformulier: controleren en ondertekenen bij het consult</p>}</div>}
+        <div className="flex flex-col gap-3"><h3 className="text-sm font-semibold">Patiëntberichten</h3>{moments.map(m=><div key={m.value} className="grid grid-cols-[1fr_auto_auto] items-center gap-4 border-b border-line py-2 text-sm"><span>{m.label}</span>{(["email","sms"] as const).map(channel=><Checkbox key={channel} label={channel==="email"?"E-mail":"Sms (demo)"} checked={notificationPlan[m.value]?.[channel]??channel==="email"} onChange={checked=>setNotificationPlan(p=>({...p,[m.value]:{email:p[m.value]?.email??true,sms:p[m.value]?.sms??false,[channel]:checked}}))}/>)}</div>)}</div>
+        {canDouble && <><Checkbox label="Dubbel boeken met toestemming" checked={double} onChange={setDouble}/>{double && <div className="grid grid-cols-2 gap-3"><TextField label="Datum dubbelboeking" type="date" value={manualDate} onChange={e=>setManualDate(e.target.value)}/><TextField label="Tijd dubbelboeking" type="time" value={manualTime} onChange={e=>setManualTime(e.target.value)}/><TextArea label="Reden dubbelboeking" value={doubleReason} onChange={e=>setDoubleReason(e.target.value)}/></div>}</>}
         {error && <p className="rounded-[12px] bg-warning-bg px-4 py-3 text-[13px] text-warning">{error}</p>}
         <p className="text-[12px] text-muted-foreground">De afspraak krijgt een Meet-link via het gekoppelde account en komt op de tijdlijn van de patiënt.</p>
       </div>

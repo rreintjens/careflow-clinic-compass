@@ -17,6 +17,10 @@ import { PatientCard } from "@/features/agenda/PatientCard";
 import { AgendaToolbar } from "@/features/agenda/AgendaToolbar";
 import { NewAppointmentModal } from "@/features/agenda/NewAppointmentModal";
 import { cn } from "@/lib/utils";
+import { orgQuery } from "@/data/organisation";
+import { deviceNames, deviceLite } from "@/features/organisation/devices";
+import { weekdayOf, deviceCountsOn } from "@/domain/equipment";
+import { AppointmentStatus } from "@/features/agenda/AppointmentActions";
 
 const TZ = "Europe/Amsterdam";
 const local = (iso: string) => {
@@ -49,6 +53,7 @@ function Page() {
   const monday = weekStart(date);
   const days = week ? Array.from({ length: 7 }, (_, i) => shift(monday, i)) : [date];
   const { data: ref } = useQuery(agendaRefQuery);
+  const { data: org } = useQuery(orgQuery);
   const { data: external } = useQuery(externalBusyQuery);
     const { data: rawAppts } = useQuery(agendaApptsQuery(`${shift(days[0] ?? date, -1)}T00:00:00Z`, `${shift(days[days.length - 1] ?? date, 2)}T00:00:00Z`));
   const go = (patch: Partial<typeof s>) => void navigate({ search: (p) => ({ ...p, ...patch }) });
@@ -59,7 +64,7 @@ function Page() {
     const locs = new Map(ref.locations.map((l) => [l.id, l]));
     const inCat = (tid: string) => !s.categorie || ref.links.some((l) => l.treatment_id === tid && (l.category_id === s.categorie || ref.categories.find((c) => c.id === l.category_id)?.parent_id === s.categorie));
     const appts = rawAppts.map((a) => ({ ...a, s: local(a.starts_at), e: local(a.ends_at) }))
-      .filter((a) => days.includes(a.s.date) && (!s.locatie || a.location_id === s.locatie) && inCat(a.treatment_id));
+      .filter((a) => !["cancelled", "no_show"].includes(a.status) && days.includes(a.s.date) && (!s.locatie || a.location_id === s.locatie) && inCat(a.treatment_id));
     const doesCat = (pid: string) => !s.categorie || ref.pracTreat.some((x) => x.practitioner_id === pid && inCat(x.treatment_id));
     const seg = (pid: string, d: string) => {
       const g = daySegments(pid, d, ref.blocks as SlotBlock[], ref.exceptions as SlotException[]);
@@ -77,6 +82,12 @@ function Page() {
         const where = [...new Set(segs.filter((g) => g.kind === "work").map((g) => (g.locationId && locs.get(g.locationId)?.name) || ""))].filter(Boolean);
         return { key: p.id, title: `${p.first_name} ${p.last_name}`, sub: where.join(" en "), photo: p.photo_path, segs, own: appts.filter((a) => a.practitioner_id === p.id) };
       }).filter((c) => c.segs.some((g) => g.kind === "work") || c.own.length);
+      if (s.locatie && org) {
+        const names = deviceNames(org);
+        const devices = deviceLite(org).filter(d => deviceCountsOn(d, date) && (d.location_id === s.locatie || d.schedule.some(x => x.weekday === weekdayOf(date) && x.location_id === s.locatie)));
+        cols.push(...org.rooms.filter(r => r.location_id === s.locatie).map(r => ({ key: `room:${r.id}`, title: r.name, sub: "Kamer", segs: [], own: appts.filter(a => a.room_id === r.id) })));
+        cols.push(...devices.map(d => ({ key: `equipment:${d.id}`, title: names.get(d.id) ?? "", sub: "Apparatuur", segs: [], own: appts.filter(a => a.equipment_ids.includes(d.id)) })));
+      }
     }
     const mins = cols.flatMap((c) => [...c.segs.flatMap((g) => [g.start, g.end]), ...c.own.flatMap((a) => [a.s.minute, a.e.minute])]);
     const stats = week ? {
@@ -85,7 +96,7 @@ function Page() {
       online: cols.reduce((n, c) => n + c.own.filter((a) => locs.get(a.location_id)?.kind === "online").length, 0),
     } : null;
     return { cols, range: hourRange(mins), locs, all: appts, stats };
-  }, [ref, rawAppts, s.locatie, s.categorie, s.behandelaar, week, practitionerId, date, days.join()]);
+  }, [ref, org, rawAppts, s.locatie, s.categorie, s.behandelaar, week, practitionerId, date, days.join()]);
 
   const label = week
     ? `Week ${isoWeek(monday)} · ${Number(monday.slice(8))} tot ${fmt(shift(monday, 6), { day: "numeric", month: "long", year: "numeric" })}`
@@ -119,6 +130,7 @@ function Page() {
       <div className="flex flex-wrap gap-6 text-[13px]">
         <Legend cls="bg-teal-light" label="Online beschikbaar" /><Legend cls="bg-sand" label="In de kliniek" /><Legend cls="hatch" label={week ? "Geblokkeerd of vrij" : "Geblokkeerd"} /><Legend cls="bg-background ring-1 ring-mist" label="Afspraak" />
       </div>
+      {!week && s.locatie && <div className="flex flex-wrap gap-3">{topCats.map(c => <span key={c.id} className="rounded-full bg-sand px-3 py-1 text-xs">{c.name_nl}</span>)}<span className="hatch rounded-full px-3 py-1 text-xs">Tentatief</span></div>}
       {!view ? <p className="text-[14px] text-muted-foreground">Laden…</p> : (
         <>
           {view.stats ? (
@@ -134,7 +146,7 @@ function Page() {
               {view.cols.map((c) => week
                 ? <p key={c.key} className={cn("px-2 pb-3 text-[14px]", c.today && "font-semibold text-primary")}>{c.title}</p>
                 : (
-                  <Link key={c.key} to="/agenda/mijn-dag" search={{ datum: date, behandelaar: c.key }} aria-label={`Bekijk de dag van ${c.title}`} className="flex items-center gap-3 rounded-[12px] px-2 pb-3 text-left transition-colors hover:bg-teal-light focus-visible:outline-2 focus-visible:outline-primary">
+                  <Link key={c.key} to="/agenda/mijn-dag" disabled={c.key.includes(":")} search={{ datum: date, behandelaar: c.key }} aria-label={`Bekijk de dag van ${c.title}`} className="flex items-center gap-3 rounded-[12px] px-2 pb-3 text-left transition-colors hover:bg-teal-light focus-visible:outline-2 focus-visible:outline-primary">
                     <Avatar path={c.photo ?? null} size={36} />
                     <div className="min-w-0"><p className="whitespace-nowrap text-[14px] font-semibold">{c.title}</p><p className="whitespace-nowrap text-[12px] text-muted-foreground">{c.sub}</p></div>
                   </Link>
@@ -158,7 +170,7 @@ function Page() {
                        <button key={a.id} type="button" onClick={() => go({ afspraak: a.id })}
                          aria-label={`${fmtTime(a.s.minute)} · ${a.patient?.patient_number ?? ""} · ${tName}${online ? " · Online" : ""}`}
                          title={`${fmtTime(a.s.minute)} · ${a.patient?.patient_number ?? ""} · ${tName}${online ? " · Online" : ""}`}
-                         className={cn("absolute inset-x-2 flex items-center gap-1 overflow-hidden rounded-[8px] px-2 text-left text-[11px] leading-tight", on ? "bg-primary text-primary-foreground" : "bg-background ring-1 ring-mist")}
+                         className={cn("absolute inset-x-2 flex items-center gap-1 overflow-hidden rounded-[8px] px-2 text-left text-[11px] leading-tight", on ? "bg-primary text-primary-foreground" : a.status === "tentatief" ? "hatch" : "bg-background ring-1 ring-mist")}
                         style={{ top: ((a.s.minute - view.range[0] * 60) / 60) * HOUR + 2, height: Math.max(26, ((a.e.minute - a.s.minute) / 60) * HOUR - 4) }}>
                          <span className="shrink-0 font-semibold">{fmtTime(a.s.minute)} · {a.patient?.patient_number ?? ""}</span>
                          <span className="min-w-0 truncate">· {tName}</span>
