@@ -25,9 +25,8 @@ export const Route = createFileRoute("/api/public/jobs/mail-reminders")({
           for (const a of appts ?? []) {
             const left = (Date.parse(a.starts_at) - now) / 3600_000;
             if (left <= hours("mail_reminder_hours", 24) && (await safeQueue(db, a.id, "appointment_reminder", { dedupe: `appointment_reminder-${a.id}` }))) queued++;
-            const key = (a.treatment as { post_questionnaire_key: string | null } | null)?.post_questionnaire_key;
-            if (key && left <= hours("questionnaire_reminder_hours", 48)) {
-              const preparation=a.patient_id?await appointmentPreparation(t.id,a.patient_id,a.treatment_id,a.starts_at):null;
+            if (left <= hours("questionnaire_reminder_hours", 48)) {
+              const preparation=a.patient_id?await appointmentPreparation(t.id,a.patient_id,a.treatment_id,a.starts_at,a.id):null;
               if (preparation?.questionnaireMissing && (await safeQueue(db, a.id, "questionnaire_reminder", { dedupe: `questionnaire_reminder-${a.id}` }))) queued++;
             }
           }

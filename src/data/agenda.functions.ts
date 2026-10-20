@@ -39,11 +39,11 @@ export const getStaffSlots = createServerFn({ method: "POST" })
   });
 
 export const getStaffPreparation=createServerFn({method:"POST"}).middleware([requireSupabaseAuth])
- .inputValidator(z.object({patientId:z.string().uuid(),treatmentId:z.string().uuid(),at:z.string().datetime()}))
+ .inputValidator(z.object({patientId:z.string().uuid(),treatmentId:z.string().uuid(),at:z.string().datetime(),appointmentId:z.string().uuid().optional()}))
  .handler(async({data,context})=>{
   const tenant=await staffTenant(context);if(!tenant)throw new Error("Geen toegang.");
   if(!(await context.supabase.from("patients").select("id").eq("id",data.patientId).maybeSingle()).data)throw new Error("Geen toegang.");
-  return appointmentPreparation(tenant.id,data.patientId,data.treatmentId,data.at);
+  return appointmentPreparation(tenant.id,data.patientId,data.treatmentId,data.at,data.appointmentId);
  });
 
 export const createStaffAppointment = createServerFn({ method: "POST" })
@@ -105,7 +105,7 @@ export const createStaffAppointment = createServerFn({ method: "POST" })
     if(data.waitlistId) await userDb.from("waitlist_entries").update({status:"resolved"}).eq("id",data.waitlistId).eq("patient_id",data.patientId);
     await safeQueue(db, ins.data.id, existing?"rescheduled":"confirmation", { dedupe: `${existing?"rescheduled":"confirmation"}-${ins.data.id}-${startsAt.toISOString()}` });
     try {
-      const preparation=await appointmentPreparation(tenant.id,data.patientId,data.treatmentId,startsAt.toISOString());
+      const preparation=await appointmentPreparation(tenant.id,data.patientId,data.treatmentId,startsAt.toISOString(),ins.data.id);
       if(preparation.questionnaireMissing)await safeQueue(db,ins.data.id,"questionnaire_reminder",{dedupe:`questionnaire_reminder-${ins.data.id}`});
     }catch(e){console.error("[appointment] preparation mail check failed",e);}
     return { ok: true as const, id: (ins.data as { id: string }).id };

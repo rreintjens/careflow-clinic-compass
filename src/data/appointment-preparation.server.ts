@@ -16,7 +16,7 @@ export async function appointmentPreparation(tenantId:string,patientId:string,tr
  let templates=db.from("dossier_templates").select("id").eq("tenant_id",tenantId);
  templates=treatment.data.dossier_template_override?templates.eq("id",treatment.data.dossier_template_override):templates.in("category_id",ids);
  const selected=await templates;
- const versions=selected.data?.length?await db.from("dossier_template_versions").select("content").eq("tenant_id",tenantId).in("template_id",selected.data.map(t=>t.id)).eq("status","live"):{data:[]};
+ const versions=selected.data?.length?await db.from("dossier_template_versions").select("content").eq("tenant_id",tenantId).in("template_id",selected.data.map(t=>t.id)).eq("status","live"):{data:[],error:null};
  const template=mergeTemplates((versions.data??[]).map(v=>readContent(v.content)));
  const key=treatment.data.post_questionnaire_key??template.questionnaire.key;
  let answerQuery=db.from("answer_sets").select("completed_at,appointment_id").eq("tenant_id",tenantId).eq("patient_id",patientId).eq("questionnaire_key",key??"").eq("status","completed").lte("completed_at",at).order("completed_at",{ascending:false}).limit(1);

@@ -7,6 +7,7 @@ import { allowlisted, blocksOf, cancelPolicy, cancelPolicyValues, interpolate, r
 import { renderMailDocument, type MailTheme } from "@/domain/mail-document";
 import { admin } from "./booking.server";
 import {notificationEnabled} from "@/domain/appointment-notifications";
+import {appointmentPreparation} from "./appointment-preparation.server";
 
 type Db = Awaited<ReturnType<typeof admin>>;
 export type MailMoment = "confirmation" | "rescheduled" | "cancelled" | "appointment_reminder" | "questionnaire_reminder" | "no_show" | "follow_up";
@@ -23,9 +24,14 @@ const APP_URL = "https://careflow-clinic-compass.lovable.app";
 /** Renders and stores one mail for an appointment. Returns the outbox status, or null when no template applies. */
 export async function queueAppointmentMail(db: Db, appointmentId: string, moment: MailMoment, opts: { dedupe?: string } = {}) {
   const { data: a } = await db.from("appointments")
-    .select("id, tenant_id, patient_id, treatment_id, practitioner_id, location_id, starts_at, ends_at, meet_link, manage_token, new_patient, notify, notification_plan")
+    .select("id, tenant_id, patient_id, treatment_id, practitioner_id, location_id, starts_at, ends_at, meet_link, manage_token, new_patient, notify, notification_plan,status")
     .eq("id", appointmentId).maybeSingle();
   if (!a?.patient_id) return null;
+  if(moment==="questionnaire_reminder"){
+    if(!["booked","tentatief"].includes(a.status))return null;
+    const preparation=await appointmentPreparation(a.tenant_id,a.patient_id,a.treatment_id,a.starts_at,a.id);
+    if(!preparation.questionnaireMissing)return null;
+  }
   if(notificationEnabled(a.notification_plan,moment,"sms",a.notify)) {
     await db.from("sms_outbox").upsert({tenant_id:a.tenant_id,appointment_id:a.id,moment,dedupe_key:`sms-${opts.dedupe??`${a.id}-${moment}`}`},{onConflict:"dedupe_key",ignoreDuplicates:true});
   }
