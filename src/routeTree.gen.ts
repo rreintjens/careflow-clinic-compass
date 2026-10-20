@@ -27,6 +27,7 @@ import { Route as AuthenticatedAgendaMijnDagRouteImport } from './routes/_authen
 import { Route as AuthenticatedAgendaRoosterRouteImport } from './routes/_authenticated/agenda.rooster'
 import { Route as AuthenticatedBoekingsflowBoekingslinksRouteImport } from './routes/_authenticated/boekingsflow.boekingslinks'
 import { Route as AuthenticatedBoekingsflowKanalenEnCampagnesRouteImport } from './routes/_authenticated/boekingsflow.kanalen-en-campagnes'
+import { Route as AuthenticatedDossierVragenbibliotheekRouteImport } from './routes/_authenticated/dossier.vragenbibliotheek'
 import { Route as AuthenticatedInstellingenAlgemeenRouteImport } from './routes/_authenticated/instellingen.algemeen'
 import { Route as AuthenticatedInstellingenGebruikersEnRollenRouteImport } from './routes/_authenticated/instellingen.gebruikers-en-rollen'
 import { Route as AuthenticatedInstellingenKoppelingenRouteImport } from './routes/_authenticated/instellingen.koppelingen'
@@ -159,6 +160,12 @@ const AuthenticatedBoekingsflowKanalenEnCampagnesRoute =
   AuthenticatedBoekingsflowKanalenEnCampagnesRouteImport.update({
     id: '/boekingsflow/kanalen-en-campagnes',
     path: '/boekingsflow/kanalen-en-campagnes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedDossierVragenbibliotheekRoute =
+  AuthenticatedDossierVragenbibliotheekRouteImport.update({
+    id: '/dossier/vragenbibliotheek',
+    path: '/dossier/vragenbibliotheek',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedInstellingenAlgemeenRoute =
@@ -406,6 +413,7 @@ export interface FileRoutesByFullPath {
   '/agenda/rooster': typeof AuthenticatedAgendaRoosterRoute
   '/boekingsflow/boekingslinks': typeof AuthenticatedBoekingsflowBoekingslinksRoute
   '/boekingsflow/kanalen-en-campagnes': typeof AuthenticatedBoekingsflowKanalenEnCampagnesRoute
+  '/dossier/vragenbibliotheek': typeof AuthenticatedDossierVragenbibliotheekRoute
   '/instellingen/algemeen': typeof AuthenticatedInstellingenAlgemeenRoute
   '/instellingen/gebruikers-en-rollen': typeof AuthenticatedInstellingenGebruikersEnRollenRoute
   '/instellingen/koppelingen': typeof AuthenticatedInstellingenKoppelingenRoute
@@ -462,6 +470,7 @@ export interface FileRoutesByTo {
   '/agenda/rooster': typeof AuthenticatedAgendaRoosterRoute
   '/boekingsflow/boekingslinks': typeof AuthenticatedBoekingsflowBoekingslinksRoute
   '/boekingsflow/kanalen-en-campagnes': typeof AuthenticatedBoekingsflowKanalenEnCampagnesRoute
+  '/dossier/vragenbibliotheek': typeof AuthenticatedDossierVragenbibliotheekRoute
   '/instellingen/algemeen': typeof AuthenticatedInstellingenAlgemeenRoute
   '/instellingen/gebruikers-en-rollen': typeof AuthenticatedInstellingenGebruikersEnRollenRoute
   '/instellingen/koppelingen': typeof AuthenticatedInstellingenKoppelingenRoute
@@ -522,6 +531,7 @@ export interface FileRoutesById {
   '/_authenticated/agenda/rooster': typeof AuthenticatedAgendaRoosterRoute
   '/_authenticated/boekingsflow/boekingslinks': typeof AuthenticatedBoekingsflowBoekingslinksRoute
   '/_authenticated/boekingsflow/kanalen-en-campagnes': typeof AuthenticatedBoekingsflowKanalenEnCampagnesRoute
+  '/_authenticated/dossier/vragenbibliotheek': typeof AuthenticatedDossierVragenbibliotheekRoute
   '/_authenticated/instellingen/algemeen': typeof AuthenticatedInstellingenAlgemeenRoute
   '/_authenticated/instellingen/gebruikers-en-rollen': typeof AuthenticatedInstellingenGebruikersEnRollenRoute
   '/_authenticated/instellingen/koppelingen': typeof AuthenticatedInstellingenKoppelingenRoute
@@ -581,6 +591,7 @@ export interface FileRouteTypes {
     | '/agenda/rooster'
     | '/boekingsflow/boekingslinks'
     | '/boekingsflow/kanalen-en-campagnes'
+    | '/dossier/vragenbibliotheek'
     | '/instellingen/algemeen'
     | '/instellingen/gebruikers-en-rollen'
     | '/instellingen/koppelingen'
@@ -637,6 +648,7 @@ export interface FileRouteTypes {
     | '/agenda/rooster'
     | '/boekingsflow/boekingslinks'
     | '/boekingsflow/kanalen-en-campagnes'
+    | '/dossier/vragenbibliotheek'
     | '/instellingen/algemeen'
     | '/instellingen/gebruikers-en-rollen'
     | '/instellingen/koppelingen'
@@ -696,6 +708,7 @@ export interface FileRouteTypes {
     | '/_authenticated/agenda/rooster'
     | '/_authenticated/boekingsflow/boekingslinks'
     | '/_authenticated/boekingsflow/kanalen-en-campagnes'
+    | '/_authenticated/dossier/vragenbibliotheek'
     | '/_authenticated/instellingen/algemeen'
     | '/_authenticated/instellingen/gebruikers-en-rollen'
     | '/_authenticated/instellingen/koppelingen'
@@ -881,6 +894,13 @@ declare module '@tanstack/react-router' {
       path: '/boekingsflow/kanalen-en-campagnes'
       fullPath: '/boekingsflow/kanalen-en-campagnes'
       preLoaderRoute: typeof AuthenticatedBoekingsflowKanalenEnCampagnesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/dossier/vragenbibliotheek': {
+      id: '/_authenticated/dossier/vragenbibliotheek'
+      path: '/dossier/vragenbibliotheek'
+      fullPath: '/dossier/vragenbibliotheek'
+      preLoaderRoute: typeof AuthenticatedDossierVragenbibliotheekRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/instellingen/algemeen': {
@@ -1199,6 +1219,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAgendaRoosterRoute: typeof AuthenticatedAgendaRoosterRoute
   AuthenticatedBoekingsflowBoekingslinksRoute: typeof AuthenticatedBoekingsflowBoekingslinksRoute
   AuthenticatedBoekingsflowKanalenEnCampagnesRoute: typeof AuthenticatedBoekingsflowKanalenEnCampagnesRoute
+  AuthenticatedDossierVragenbibliotheekRoute: typeof AuthenticatedDossierVragenbibliotheekRoute
   AuthenticatedInstellingenAlgemeenRoute: typeof AuthenticatedInstellingenAlgemeenRoute
   AuthenticatedInstellingenGebruikersEnRollenRoute: typeof AuthenticatedInstellingenGebruikersEnRollenRoute
   AuthenticatedInstellingenKoppelingenRoute: typeof AuthenticatedInstellingenKoppelingenRoute
@@ -1229,6 +1250,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedBoekingsflowBoekingslinksRoute,
   AuthenticatedBoekingsflowKanalenEnCampagnesRoute:
     AuthenticatedBoekingsflowKanalenEnCampagnesRoute,
+  AuthenticatedDossierVragenbibliotheekRoute:
+    AuthenticatedDossierVragenbibliotheekRoute,
   AuthenticatedInstellingenAlgemeenRoute:
     AuthenticatedInstellingenAlgemeenRoute,
   AuthenticatedInstellingenGebruikersEnRollenRoute:
