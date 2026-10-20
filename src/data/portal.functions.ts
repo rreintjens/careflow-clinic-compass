@@ -173,3 +173,27 @@ export const readPortalAsPatient=createServerFn({method:'POST'}).middleware([req
  const extra=await portalHistory(db,p.tenant_id,p.id);
  return {patient:p,access:a.data,landing:portalLanding(pk.data??[],a.data.starter_proposed,today),weight:m.data?.[0]?.weight_kg??null,content:c.data.content,today,...extra};
 });
+
+const orderSchema=z.object({months:z.union([z.literal(1),z.literal(2),z.literal(3),z.literal(6)]),strengths:z.array(z.number()).min(1).max(6),support:z.string().max(40),extras:z.array(z.string().max(40)).max(8),remark:z.string().max(1000),mode:z.enum(['deliver','pickup']),delivery:z.string().max(40).nullable(),payment:z.string().max(40),total:z.number().min(0).max(100000)});
+/** Bestelling plaatsen (demo-betaling): nieuw pakket met status 'ordered'; de arts kijkt na. */
+export const placePortalOrder=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator((d:unknown)=>orderSchema.parse(d)).handler(async({data,context})=>{
+ const db=context.supabase; const {data:pid}=await db.rpc('portal_patient_id'); if(!pid)throw new Error('Log in als patiënt.');
+ const {data:p}=await db.from('patients').select('tenant_id').eq('id',pid).single(); if(!p)throw new Error('Bestellen is niet gelukt.');
+ if(data.strengths.length!==data.months)throw new Error('Kies voor elke maand een sterkte.');
+ const {data:cfgRow}=await db.from('portal_config').select('content').eq('tenant_id',p.tenant_id).single();
+ const cfg=readMaConfig(cfgRow?.content&&typeof cfgRow.content==='object'&&!Array.isArray(cfgRow.content)?(cfgRow.content as Record<string,unknown>)['maConfig']:null);
+ if(!cfg)throw new Error('Bestellen is niet gelukt.');
+ // Sterktes en totaal worden server-side opnieuw berekend; de client stuurt alleen keuzes.
+ const idx=data.strengths.map(s=>cfg.strengths.indexOf(s)); if(idx.some(i=>i<0))throw new Error('Kies voor elke maand een sterkte.');
+ const check=data.strengths.length>1?packageTotal(cfg,idx,data.months):packageTotal(cfg,idx,data.months);
+ const support=cfg.support.find(s=>s.key===data.support); const extras=cfg.extras.filter(e=>data.extras.includes(e.key));
+ const delivery=data.mode==='deliver'?cfg.delivery.find(x=>x.key===data.delivery):undefined;
+ const expected=check+(support?.price??0)*data.months+extras.reduce((s,e)=>s+e.price,0)+(delivery?.price??0);
+ if(Math.abs(expected-data.total)>0.01)throw new Error('Het totaal klopt niet meer. Probeer het opnieuw.');
+ const {data:prev}=await db.from('ma_packages').select('start_date,months').eq('patient_id',pid).in('status',['active','completed']).order('start_date',{ascending:false}).limit(1);
+ const start=prev?.[0]?packageEnd(prev[0].start_date,prev[0].months):new Date().toISOString().slice(0,10);
+ const {error}=await db.from('ma_packages').insert({tenant_id:p.tenant_id,patient_id:pid,order_id:crypto.randomUUID(),start_date:start,months:data.months,strengths:data.strengths,status:'ordered'});
+ if(error)throw new Error('Bestellen is niet gelukt.');
+ await db.from('audit_log').insert({tenant_id:p.tenant_id,user_id:context.userId,role_key:'patient',action:'portal_order_placed',category:'patient',record_type:'patient',record_id:pid,details:{months:data.months,strengths:data.strengths,support:data.support,extras:data.extras,mode:data.mode,delivery:data.delivery,payment:data.payment,total:data.total,remark:data.remark||undefined}});
+ return {ok:true};
+});
