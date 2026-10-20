@@ -45,8 +45,8 @@ export const consultPageQuery = (noteId: string) => queryOptions({
     let template: ConsultPageData["template"] = null;
     const treatmentId = appt?.["treatment_id"] as string | undefined;
     if (treatmentId) {
-      const t = await row(supabase.from("treatments").select("dossier_template_override, treatment_category_treatments(treatment_categories(id))").eq("id", treatmentId).single());
-      const catIds = ((t?.["treatment_category_treatments"] as Array<{ treatment_categories: { id: string } | null }> | undefined) ?? []).map((r) => r.treatment_categories?.id).filter(Boolean) as string[];
+      const t = await row(supabase.from("treatments").select("dossier_template_override, treatment_category_links(category_id)").eq("id", treatmentId).single());
+      const catIds = ((t?.["treatment_category_links"] as Array<{ category_id: string }> | undefined) ?? []).map((r) => r.category_id).filter(Boolean);
       const override = t?.["dossier_template_override"] as string | null | undefined;
       const tpls = await rows(supabase.from("dossier_templates").select("id, name, category_id").in("category_id", catIds.length ? catIds : ["-"]));
       const chosen = override ? tpls.filter((x) => x["id"] === override) : tpls;
