@@ -54,6 +54,7 @@ function Layout() {
         <div className="flex gap-2">
           {consultAppt && <StartConsultButton patientId={id} apptId={consultAppt.id} note={note} />}
           <PillButton onClick={() => setAdding(true)}><img src="/ui-icons/plus.svg" alt="" className="size-4 invert" />Toevoegen</PillButton>
+          <Link to="/patienten/$id/portal" params={{ id: key }}><PillButton variant="outline">Bekijk als patiënt</PillButton></Link>
           <PillButton variant="outline" onClick={() => window.print()}>Afdrukken</PillButton>
           <PillButton variant="outline" disabled>Exporteren</PillButton>
         </div>
