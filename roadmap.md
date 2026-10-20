@@ -199,3 +199,4 @@ Verificatie 19-10: alle vijf punten op 1000007 als Rob doorlopen; 58 gerichte te
 - [ ] Fase 4: Afrekenen en factuur
 - [ ] Fase 5: Beheer (behandeling-kaarten, Formulieren en nazorg, Adresboek, Koppelingen-kaarten, Data-API)
 - [ ] Fase 6: Mijn omgeving-blokken + demodata; eindtest Sanne en Mark
+- [ ] Patiënt-loginpagina: directe demo-loginknoppen per profiel (o.a. 2× medisch afvallen), met profielnaam erbij — eigenaar 20-10 22:56
