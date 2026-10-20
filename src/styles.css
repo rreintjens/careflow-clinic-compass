@@ -235,7 +235,7 @@ a.portal-tile:hover {box-shadow:var(--portal-shadow);transform:translateY(-2px);
 .portal-icon {height:36px;width:36px;border-radius:50%;background:var(--background);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .portal-tile-label {font-size:13px;line-height:1.5;margin-top:8px;}
 .portal-tile-value {font-size:28px;line-height:1.2;font-weight:600;color:var(--foreground);overflow-wrap:anywhere;}
-.portal-tile-value-long {font-size:18px;overflow-wrap:normal;}
+.portal-tile-value-long {font-size:16px;overflow-wrap:normal;}
 .portal-tile-sub {font-size:12px;font-weight:500;line-height:1.5;}
 .portal-status-good {background:var(--portal-good-bg);color:var(--portal-good-text);}
 .portal-status-soon {background:var(--portal-soon-bg);color:var(--portal-soon-text);}
