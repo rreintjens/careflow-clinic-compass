@@ -18,6 +18,11 @@ it("consent expires after the template's configured months",()=>{
 });
 it("a later withdrawal overrides earlier consent",()=>expect(consentValid("Botox",[{kind:"Botox",granted:true,created_at:"2026-10-01T12:00:00Z"},{kind:"Botox",granted:false,created_at:"2026-10-20T12:00:00Z"}],12,"2026-10-21T12:00:00Z")).toBe(false));
 it("do not send overrides all channels",()=>expect(notificationEnabled({confirmation:{email:true,sms:true}},"confirmation","sms","none")).toBe(false));
+it("missing-details reminders respect the configured email and SMS choices",()=>{
+ const plan={details_reminder:{email:false,sms:true}};
+ expect(notificationEnabled(plan,"details_reminder","email","as_usual")).toBe(false);
+ expect(notificationEnabled(plan,"details_reminder","sms","as_usual")).toBe(true);
+});
 it("questionnaire validity expires at its configured number of days",()=>{
  expect(validUntil("2026-10-01T12:00:00Z",20,"2026-10-21T12:00:00Z")).toBe(true);
  expect(validUntil("2026-10-01T12:00:00Z",20,"2026-10-21T12:00:01Z")).toBe(false);
