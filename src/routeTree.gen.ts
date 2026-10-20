@@ -20,6 +20,7 @@ import { Route as AfspraakTokenRouteImport } from './routes/afspraak.$token'
 import { Route as AuthIndexRouteImport } from './routes/auth.index'
 import { Route as Auth2faRouteImport } from './routes/auth.2fa'
 import { Route as BoekenInloggenRouteImport } from './routes/boeken_.inloggen'
+import { Route as FotoTokenRouteImport } from './routes/foto.$token'
 import { Route as MijnIndexRouteImport } from './routes/mijn.index'
 import { Route as VragenlijstTokenRouteImport } from './routes/vragenlijst.$token'
 import { Route as AuthenticatedAgendaIndexRouteImport } from './routes/_authenticated/agenda.index'
@@ -65,6 +66,7 @@ import { Route as AuthenticatedOrganisatieLocatiesIdRouteImport } from './routes
 import { Route as AuthenticatedPatientenIdIndexRouteImport } from './routes/_authenticated/patienten.$id.index'
 import { Route as AuthenticatedPatientenIdBehandelingRouteImport } from './routes/_authenticated/patienten.$id.behandeling'
 import { Route as AuthenticatedPatientenIdDocumentenRouteImport } from './routes/_authenticated/patienten.$id.documenten'
+import { Route as AuthenticatedPatientenIdFotosRouteImport } from './routes/_authenticated/patienten.$id.fotos'
 import { Route as AuthenticatedPatientenIdMedischRouteImport } from './routes/_authenticated/patienten.$id.medisch'
 import { Route as AuthenticatedPatientenIdPortalRouteImport } from './routes/_authenticated/patienten.$id.portal'
 import { Route as AuthenticatedPatientenIdTijdlijnRouteImport } from './routes/_authenticated/patienten.$id.tijdlijn'
@@ -72,6 +74,7 @@ import { Route as PatientMijnFeedbackAppointmentIdRouteImport } from './routes/_
 import { Route as PatientMijnHistorieAppointmentIdRouteImport } from './routes/_patient/mijn/historie_.$appointmentId'
 import { Route as ApiPublicJobsMailRemindersRouteImport } from './routes/api/public/jobs/mail-reminders'
 import { Route as AuthenticatedBoekingsflowVragenlijstenIdTestRouteImport } from './routes/_authenticated/boekingsflow.vragenlijsten.$id_.test'
+import { Route as AuthenticatedPatientenIdConsultApptIdRouteImport } from './routes/_authenticated/patienten.$id.consult.$apptId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -124,6 +127,11 @@ const Auth2faRoute = Auth2faRouteImport.update({
 const BoekenInloggenRoute = BoekenInloggenRouteImport.update({
   id: '/boeken_/inloggen',
   path: '/boeken/inloggen',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FotoTokenRoute = FotoTokenRouteImport.update({
+  id: '/foto/$token',
+  path: '/foto/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MijnIndexRoute = MijnIndexRouteImport.update({
@@ -383,6 +391,12 @@ const AuthenticatedPatientenIdDocumentenRoute =
     path: '/documenten',
     getParentRoute: () => AuthenticatedPatientenIdRoute,
   } as any)
+const AuthenticatedPatientenIdFotosRoute =
+  AuthenticatedPatientenIdFotosRouteImport.update({
+    id: '/fotos',
+    path: '/fotos',
+    getParentRoute: () => AuthenticatedPatientenIdRoute,
+  } as any)
 const AuthenticatedPatientenIdMedischRoute =
   AuthenticatedPatientenIdMedischRouteImport.update({
     id: '/medisch',
@@ -425,6 +439,12 @@ const AuthenticatedBoekingsflowVragenlijstenIdTestRoute =
     path: '/boekingsflow/vragenlijsten/$id/test',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedPatientenIdConsultApptIdRoute =
+  AuthenticatedPatientenIdConsultApptIdRouteImport.update({
+    id: '/consult/$apptId',
+    path: '/consult/$apptId',
+    getParentRoute: () => AuthenticatedPatientenIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -434,6 +454,7 @@ export interface FileRoutesByFullPath {
   '/afspraak/$token': typeof AfspraakTokenRoute
   '/auth/2fa': typeof Auth2faRoute
   '/boeken/inloggen': typeof BoekenInloggenRoute
+  '/foto/$token': typeof FotoTokenRoute
   '/vragenlijst/$token': typeof VragenlijstTokenRoute
   '/auth/': typeof AuthIndexRoute
   '/mijn/': typeof MijnIndexRoute
@@ -473,6 +494,7 @@ export interface FileRoutesByFullPath {
   '/organisatie/locaties/$id': typeof AuthenticatedOrganisatieLocatiesIdRoute
   '/patienten/$id/behandeling': typeof AuthenticatedPatientenIdBehandelingRoute
   '/patienten/$id/documenten': typeof AuthenticatedPatientenIdDocumentenRoute
+  '/patienten/$id/fotos': typeof AuthenticatedPatientenIdFotosRoute
   '/patienten/$id/medisch': typeof AuthenticatedPatientenIdMedischRoute
   '/patienten/$id/portal': typeof AuthenticatedPatientenIdPortalRoute
   '/patienten/$id/tijdlijn': typeof AuthenticatedPatientenIdTijdlijnRoute
@@ -487,6 +509,7 @@ export interface FileRoutesByFullPath {
   '/organisatie/locaties/': typeof AuthenticatedOrganisatieLocatiesIndexRoute
   '/patienten/$id/': typeof AuthenticatedPatientenIdIndexRoute
   '/boekingsflow/vragenlijsten/$id/test': typeof AuthenticatedBoekingsflowVragenlijstenIdTestRoute
+  '/patienten/$id/consult/$apptId': typeof AuthenticatedPatientenIdConsultApptIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -496,6 +519,7 @@ export interface FileRoutesByTo {
   '/afspraak/$token': typeof AfspraakTokenRoute
   '/auth/2fa': typeof Auth2faRoute
   '/boeken/inloggen': typeof BoekenInloggenRoute
+  '/foto/$token': typeof FotoTokenRoute
   '/vragenlijst/$token': typeof VragenlijstTokenRoute
   '/auth': typeof AuthIndexRoute
   '/agenda/mijn-dag': typeof AuthenticatedAgendaMijnDagRoute
@@ -533,6 +557,7 @@ export interface FileRoutesByTo {
   '/organisatie/locaties/$id': typeof AuthenticatedOrganisatieLocatiesIdRoute
   '/patienten/$id/behandeling': typeof AuthenticatedPatientenIdBehandelingRoute
   '/patienten/$id/documenten': typeof AuthenticatedPatientenIdDocumentenRoute
+  '/patienten/$id/fotos': typeof AuthenticatedPatientenIdFotosRoute
   '/patienten/$id/medisch': typeof AuthenticatedPatientenIdMedischRoute
   '/patienten/$id/portal': typeof AuthenticatedPatientenIdPortalRoute
   '/patienten/$id/tijdlijn': typeof AuthenticatedPatientenIdTijdlijnRoute
@@ -547,6 +572,7 @@ export interface FileRoutesByTo {
   '/organisatie/locaties': typeof AuthenticatedOrganisatieLocatiesIndexRoute
   '/patienten/$id': typeof AuthenticatedPatientenIdIndexRoute
   '/boekingsflow/vragenlijsten/$id/test': typeof AuthenticatedBoekingsflowVragenlijstenIdTestRoute
+  '/patienten/$id/consult/$apptId': typeof AuthenticatedPatientenIdConsultApptIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -560,6 +586,7 @@ export interface FileRoutesById {
   '/afspraak/$token': typeof AfspraakTokenRoute
   '/auth/2fa': typeof Auth2faRoute
   '/boeken_/inloggen': typeof BoekenInloggenRoute
+  '/foto/$token': typeof FotoTokenRoute
   '/vragenlijst/$token': typeof VragenlijstTokenRoute
   '/auth/': typeof AuthIndexRoute
   '/mijn/': typeof MijnIndexRoute
@@ -599,6 +626,7 @@ export interface FileRoutesById {
   '/_authenticated/organisatie/locaties/$id': typeof AuthenticatedOrganisatieLocatiesIdRoute
   '/_authenticated/patienten/$id/behandeling': typeof AuthenticatedPatientenIdBehandelingRoute
   '/_authenticated/patienten/$id/documenten': typeof AuthenticatedPatientenIdDocumentenRoute
+  '/_authenticated/patienten/$id/fotos': typeof AuthenticatedPatientenIdFotosRoute
   '/_authenticated/patienten/$id/medisch': typeof AuthenticatedPatientenIdMedischRoute
   '/_authenticated/patienten/$id/portal': typeof AuthenticatedPatientenIdPortalRoute
   '/_authenticated/patienten/$id/tijdlijn': typeof AuthenticatedPatientenIdTijdlijnRoute
@@ -613,6 +641,7 @@ export interface FileRoutesById {
   '/_authenticated/organisatie/locaties/': typeof AuthenticatedOrganisatieLocatiesIndexRoute
   '/_authenticated/patienten/$id/': typeof AuthenticatedPatientenIdIndexRoute
   '/_authenticated/boekingsflow/vragenlijsten/$id_/test': typeof AuthenticatedBoekingsflowVragenlijstenIdTestRoute
+  '/_authenticated/patienten/$id/consult/$apptId': typeof AuthenticatedPatientenIdConsultApptIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -624,6 +653,7 @@ export interface FileRouteTypes {
     | '/afspraak/$token'
     | '/auth/2fa'
     | '/boeken/inloggen'
+    | '/foto/$token'
     | '/vragenlijst/$token'
     | '/auth/'
     | '/mijn/'
@@ -663,6 +693,7 @@ export interface FileRouteTypes {
     | '/organisatie/locaties/$id'
     | '/patienten/$id/behandeling'
     | '/patienten/$id/documenten'
+    | '/patienten/$id/fotos'
     | '/patienten/$id/medisch'
     | '/patienten/$id/portal'
     | '/patienten/$id/tijdlijn'
@@ -677,6 +708,7 @@ export interface FileRouteTypes {
     | '/organisatie/locaties/'
     | '/patienten/$id/'
     | '/boekingsflow/vragenlijsten/$id/test'
+    | '/patienten/$id/consult/$apptId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -686,6 +718,7 @@ export interface FileRouteTypes {
     | '/afspraak/$token'
     | '/auth/2fa'
     | '/boeken/inloggen'
+    | '/foto/$token'
     | '/vragenlijst/$token'
     | '/auth'
     | '/agenda/mijn-dag'
@@ -723,6 +756,7 @@ export interface FileRouteTypes {
     | '/organisatie/locaties/$id'
     | '/patienten/$id/behandeling'
     | '/patienten/$id/documenten'
+    | '/patienten/$id/fotos'
     | '/patienten/$id/medisch'
     | '/patienten/$id/portal'
     | '/patienten/$id/tijdlijn'
@@ -737,6 +771,7 @@ export interface FileRouteTypes {
     | '/organisatie/locaties'
     | '/patienten/$id'
     | '/boekingsflow/vragenlijsten/$id/test'
+    | '/patienten/$id/consult/$apptId'
   id:
     | '__root__'
     | '/'
@@ -749,6 +784,7 @@ export interface FileRouteTypes {
     | '/afspraak/$token'
     | '/auth/2fa'
     | '/boeken_/inloggen'
+    | '/foto/$token'
     | '/vragenlijst/$token'
     | '/auth/'
     | '/mijn/'
@@ -788,6 +824,7 @@ export interface FileRouteTypes {
     | '/_authenticated/organisatie/locaties/$id'
     | '/_authenticated/patienten/$id/behandeling'
     | '/_authenticated/patienten/$id/documenten'
+    | '/_authenticated/patienten/$id/fotos'
     | '/_authenticated/patienten/$id/medisch'
     | '/_authenticated/patienten/$id/portal'
     | '/_authenticated/patienten/$id/tijdlijn'
@@ -802,6 +839,7 @@ export interface FileRouteTypes {
     | '/_authenticated/organisatie/locaties/'
     | '/_authenticated/patienten/$id/'
     | '/_authenticated/boekingsflow/vragenlijsten/$id_/test'
+    | '/_authenticated/patienten/$id/consult/$apptId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -813,6 +851,7 @@ export interface RootRouteChildren {
   AfspraakTokenRoute: typeof AfspraakTokenRoute
   Auth2faRoute: typeof Auth2faRoute
   BoekenInloggenRoute: typeof BoekenInloggenRoute
+  FotoTokenRoute: typeof FotoTokenRoute
   VragenlijstTokenRoute: typeof VragenlijstTokenRoute
   AuthIndexRoute: typeof AuthIndexRoute
   ApiPublicEkisExportRoute: typeof ApiPublicEkisExportRoute
@@ -897,6 +936,13 @@ declare module '@tanstack/react-router' {
       path: '/boeken/inloggen'
       fullPath: '/boeken/inloggen'
       preLoaderRoute: typeof BoekenInloggenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/foto/$token': {
+      id: '/foto/$token'
+      path: '/foto/$token'
+      fullPath: '/foto/$token'
+      preLoaderRoute: typeof FotoTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mijn/': {
@@ -1214,6 +1260,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPatientenIdDocumentenRouteImport
       parentRoute: typeof AuthenticatedPatientenIdRoute
     }
+    '/_authenticated/patienten/$id/fotos': {
+      id: '/_authenticated/patienten/$id/fotos'
+      path: '/fotos'
+      fullPath: '/patienten/$id/fotos'
+      preLoaderRoute: typeof AuthenticatedPatientenIdFotosRouteImport
+      parentRoute: typeof AuthenticatedPatientenIdRoute
+    }
     '/_authenticated/patienten/$id/medisch': {
       id: '/_authenticated/patienten/$id/medisch'
       path: '/medisch'
@@ -1263,16 +1316,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBoekingsflowVragenlijstenIdTestRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/patienten/$id/consult/$apptId': {
+      id: '/_authenticated/patienten/$id/consult/$apptId'
+      path: '/consult/$apptId'
+      fullPath: '/patienten/$id/consult/$apptId'
+      preLoaderRoute: typeof AuthenticatedPatientenIdConsultApptIdRouteImport
+      parentRoute: typeof AuthenticatedPatientenIdRoute
+    }
   }
 }
 
 interface AuthenticatedPatientenIdRouteChildren {
   AuthenticatedPatientenIdBehandelingRoute: typeof AuthenticatedPatientenIdBehandelingRoute
   AuthenticatedPatientenIdDocumentenRoute: typeof AuthenticatedPatientenIdDocumentenRoute
+  AuthenticatedPatientenIdFotosRoute: typeof AuthenticatedPatientenIdFotosRoute
   AuthenticatedPatientenIdMedischRoute: typeof AuthenticatedPatientenIdMedischRoute
   AuthenticatedPatientenIdPortalRoute: typeof AuthenticatedPatientenIdPortalRoute
   AuthenticatedPatientenIdTijdlijnRoute: typeof AuthenticatedPatientenIdTijdlijnRoute
   AuthenticatedPatientenIdIndexRoute: typeof AuthenticatedPatientenIdIndexRoute
+  AuthenticatedPatientenIdConsultApptIdRoute: typeof AuthenticatedPatientenIdConsultApptIdRoute
 }
 
 const AuthenticatedPatientenIdRouteChildren: AuthenticatedPatientenIdRouteChildren =
@@ -1281,11 +1343,14 @@ const AuthenticatedPatientenIdRouteChildren: AuthenticatedPatientenIdRouteChildr
       AuthenticatedPatientenIdBehandelingRoute,
     AuthenticatedPatientenIdDocumentenRoute:
       AuthenticatedPatientenIdDocumentenRoute,
+    AuthenticatedPatientenIdFotosRoute: AuthenticatedPatientenIdFotosRoute,
     AuthenticatedPatientenIdMedischRoute: AuthenticatedPatientenIdMedischRoute,
     AuthenticatedPatientenIdPortalRoute: AuthenticatedPatientenIdPortalRoute,
     AuthenticatedPatientenIdTijdlijnRoute:
       AuthenticatedPatientenIdTijdlijnRoute,
     AuthenticatedPatientenIdIndexRoute: AuthenticatedPatientenIdIndexRoute,
+    AuthenticatedPatientenIdConsultApptIdRoute:
+      AuthenticatedPatientenIdConsultApptIdRoute,
   }
 
 const AuthenticatedPatientenIdRouteWithChildren =
@@ -1448,6 +1513,7 @@ const rootRouteChildren: RootRouteChildren = {
   AfspraakTokenRoute: AfspraakTokenRoute,
   Auth2faRoute: Auth2faRoute,
   BoekenInloggenRoute: BoekenInloggenRoute,
+  FotoTokenRoute: FotoTokenRoute,
   VragenlijstTokenRoute: VragenlijstTokenRoute,
   AuthIndexRoute: AuthIndexRoute,
   ApiPublicEkisExportRoute: ApiPublicEkisExportRoute,

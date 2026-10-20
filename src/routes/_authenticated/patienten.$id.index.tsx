@@ -6,6 +6,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { dossierQuery } from "@/data/patients";
 import { signalsOf } from "@/features/agenda/PatientCard";
+import { PatientSideCards } from "@/features/dossier/PatientSideCards";
 import { buildTimeline } from "@/features/dossier/timeline";
 import { TimelineList } from "@/features/dossier/TimelineList";
 import { formatClinicalDate } from "@/domain/time";
@@ -48,6 +49,7 @@ function Overview() {
       <p className="mb-4 mt-6 text-[14px] font-semibold">Laatste gebeurtenissen</p>
       <TimelineList events={buildTimeline(d, consults, measurements).slice(0, 3)} />
       <Link to="/patienten/$id/tijdlijn" params={{ id: key }} className="text-[14px] text-primary underline">Volledige tijdlijn</Link>
+      <PatientSideCards d={d} />
     </section>
   );
 }

@@ -1,11 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { Database, Json } from "@/integrations/supabase/types";
 import { mockPharmacyProvider, mockSecureMailProvider } from "@/domain/consult-providers";
 import { nextPharmacyStatus } from "@/domain/consult-steps";
 
-const medical = async (sb: { rpc: (fn: string, args?: Record<string, unknown>) => PromiseLike<{ data: unknown }> }, perm = "patients.medical") => {
+const medical = async (sb: SupabaseClient<Database>, perm = "patients.medical") => {
   if (!(await sb.rpc("is_aal2")).data || !(await sb.rpc("has_permission", { _perm: perm })).data) throw new Error("Geen toegang");
 };
 
@@ -15,7 +17,7 @@ export const saveStepData = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ noteId: z.string().uuid(), stepData: z.record(z.string(), z.unknown()) }).parse(input))
   .handler(async ({ data, context }) => {
     await medical(context.supabase);
-    const r = await context.supabase.from("consult_notes").update({ step_data: data.stepData }).eq("id", data.noteId).in("status", ["draft", "parked"]);
+    const r = await context.supabase.from("consult_notes").update({ step_data: data.stepData as Json }).eq("id", data.noteId).in("status", ["draft", "parked"]);
     if (r.error) throw new Error("Opslaan is niet gelukt");
     return { ok: true };
   });
@@ -66,7 +68,7 @@ export const recordVatDecision = createServerFn({ method: "POST" })
     await medical(context.supabase, "vat.exemption");
     const name = await context.supabase.from("profiles").select("full_name").eq("id", context.userId).maybeSingle();
     const stepData = { ...data.stepData, vat: { exempt: data.exempt, answers: data.answers, by: name.data?.full_name ?? "arts", at: new Date().toISOString() } };
-    const r = await context.supabase.from("consult_notes").update({ step_data: stepData }).eq("id", data.noteId);
+    const r = await context.supabase.from("consult_notes").update({ step_data: stepData as unknown as Json }).eq("id", data.noteId);
     if (r.error) throw new Error("Vastleggen is niet gelukt");
     return { ok: true };
   });
@@ -117,7 +119,7 @@ export const sendGpLetter = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await medical(context.supabase);
     if (data.channel !== "none") await mockSecureMailProvider().send({ channel: data.channel, recipient: data.recipient, subject: "Brief vanuit het consult", body: data.body });
-    const r = await context.supabase.from("consult_notes").update({ step_data: data.stepData }).eq("id", data.noteId);
+    const r = await context.supabase.from("consult_notes").update({ step_data: data.stepData as Json }).eq("id", data.noteId);
     if (r.error) throw new Error("Versturen is niet gelukt");
     return { ok: true };
   });

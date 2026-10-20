@@ -25,7 +25,7 @@ export const Route = createFileRoute("/_authenticated/patienten/$id")({
 
 const TZ = "Europe/Amsterdam";
 const ageOf = (dob: string) => { const [y, m, d] = dob.split("-").map(Number) as [number, number, number]; const n = new Date(); return n.getFullYear() - y - (n.getMonth() + 1 < m || (n.getMonth() + 1 === m && n.getDate() < d) ? 1 : 0); };
-const TABS = [["/patienten/$id", "Overzicht"], ["/patienten/$id/tijdlijn", "Tijdlijn"], ["/patienten/$id/medisch", "Medisch"], ["/patienten/$id/behandeling", "Behandeling"], ["/patienten/$id/documenten", "Documenten"]] as const;
+const TABS = [["/patienten/$id", "Overzicht"], ["/patienten/$id/tijdlijn", "Tijdlijn"], ["/patienten/$id/medisch", "Medisch"], ["/patienten/$id/behandeling", "Behandeling"], ["/patienten/$id/fotos", "Foto's"], ["/patienten/$id/documenten", "Documenten"]] as const;
 
 function Layout() {
   const { id: key } = Route.useParams();

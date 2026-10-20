@@ -150,7 +150,7 @@ export function ActiveConsultMode() {
 
   return (
     <>
-      <div className="sticky top-0 z-30 -mt-2 mb-6 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-[18px] bg-primary px-5 py-3.5 text-primary-foreground" role="region" aria-label="Consult bezig">
+      <div className="sticky top-0 z-50 -mt-2 mb-6 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-[18px] bg-primary px-5 py-3.5 text-primary-foreground" role="region" aria-label="Consult bezig">
         <span className="flex items-center gap-2 whitespace-nowrap text-[14px] font-semibold"><span className="size-2 rounded-full bg-teal-light" />Consult bezig · {name}</span>
         <span className="whitespace-nowrap text-[13px] opacity-80">{hm(a.starts_at)} tot {hm(a.ends_at)}</span>
         <span className="flex items-center gap-2 whitespace-nowrap rounded-full bg-primary-foreground/15 px-3 py-1 text-[13px]"><b>{timing.label}</b>{timing.phase === "started" && <span className="h-1.5 w-24 rounded-full bg-primary-foreground/25"><span className="block h-full rounded-full bg-teal-light" style={{ width: `${timing.progress}%` }} /></span>}</span>
@@ -158,6 +158,8 @@ export function ActiveConsultMode() {
         <span className="whitespace-nowrap text-[13px] opacity-80">{next ? `Volgende: ${hm(next.starts_at)} ${next.patient?.first_name ?? ""} ${next.patient?.last_name ?? ""}` : "Geen volgende afspraak vandaag"}</span>
         <div className="ml-auto flex gap-2">
           {online && a.meet_link && <a href={a.meet_link} target="_blank" rel="noreferrer"><PillButton size="sm" className="bg-background text-primary hover:bg-background"><UiIcon name="videogesprek" className="size-4" />Meet</PillButton></a>}
+          <PillButton size="sm" variant="outline" className="border-primary-foreground/60 bg-transparent text-primary-foreground" onClick={() => savePrefs({ min: !prefs.min })}>Notities</PillButton>
+          <Link to="/patienten/$id/consult/$apptId" params={{ id: recordKey(p), apptId: a.id }}><PillButton size="sm" variant="outline" className="border-primary-foreground/60 bg-transparent text-primary-foreground">Stappen</PillButton></Link>
           <Link to="/patienten/$id" params={{ id: recordKey(p) }}><PillButton size="sm" variant="outline" className="border-primary-foreground/60 bg-transparent text-primary-foreground">Dossier</PillButton></Link>
           <Link to="/agenda/mijn-dag"><PillButton size="sm" variant="outline" className="border-primary-foreground/60 bg-transparent text-primary-foreground">Agenda</PillButton></Link>
         </div>

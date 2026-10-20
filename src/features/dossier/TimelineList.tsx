@@ -1,7 +1,7 @@
 import { fmtWhen, type TimelineEvent } from "./timeline";
 import { PillButton } from "@/components/PillButton";
 
-export function TimelineList({ events, onEdit }: { events: TimelineEvent[]; onEdit?: (entry: { kind: "contact" | "request"; id: string }) => void }) {
+export function TimelineList({ events, onEdit, onNoteAction }: { events: TimelineEvent[]; onEdit?: (entry: { kind: "contact" | "request"; id: string }) => void; onNoteAction?: (noteId: string) => void }) {
   if (!events.length) return <p className="text-[14px] text-muted-foreground">Nog geen gebeurtenissen.</p>;
   return (
     <ol className="flex flex-col">
@@ -13,7 +13,7 @@ export function TimelineList({ events, onEdit }: { events: TimelineEvent[]; onEd
             {i < events.length - 1 && <span className="w-px flex-1 bg-mist" />}
           </div>
           <div className="pb-6 pt-1.5">
-            {e.entry && onEdit ? <PillButton variant="ghost" className="h-auto justify-start whitespace-normal px-0 py-0 text-left text-[15px] font-semibold" onClick={() => e.entry && onEdit(e.entry)}>{e.title}</PillButton> : <p className="text-[15px] font-semibold">{e.title}</p>}
+            {e.entry && onEdit ? <PillButton variant="ghost" className="h-auto justify-start whitespace-normal px-0 py-0 text-left text-[15px] font-semibold" onClick={() => e.entry && onEdit(e.entry)}>{e.title}</PillButton> : <p className="text-[15px] font-semibold">{e.title}{e.noteId && onNoteAction && <button type="button" onClick={() => onNoteAction(e.noteId!)} className="ml-3 text-[12px] font-normal text-primary underline">Acties</button>}</p>}
             <p className="text-[14px]">{e.body}</p>
             <p className="text-[12px] text-muted-foreground">{e.who}{e.meet && <> · <a href={e.meet} target="_blank" rel="noreferrer" className="text-primary underline">Start Google Meet</a></>}</p>
           </div>
