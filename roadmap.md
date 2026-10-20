@@ -203,3 +203,4 @@ Verificatie 19-10: alle vijf punten op 1000007 als Rob doorlopen; 58 gerichte te
 - [x] Review 21:28: consultstappen binnen ActiveConsultMode direct onder de bestaande balk; geen Stappen-link/aparte pagina, dossier blijft staan. Als Rob op /patienten/1000009 getest.
 - [x] Review 21:28: Sanne vandaag Fronsrimpels; twee zoneregels met DEMO-FRONS-2026, Laatst gebruikt hergebruikt; foto via ingelogde-loze QR-pagina ontvangen, vijf injectiepunten, 4/4 controles, klaar voor betaling met receptienotitie. Als Rob getest.
 - [x] Review 21:28: eerste Consult medisch afvallen van Mark; twee fiscale vragen, artsbesluit en Vastgelegd door Rob Reintjens, 20 oktober om 23:37; ook na verversen geverifieerd.
+- [ ] Review 21:39: directe patiëntinloglink toont ongeldig/verlopen; oorzaak onderzoeken en dezelfde inlogflow opnieuw testen.
