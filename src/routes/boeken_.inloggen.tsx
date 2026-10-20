@@ -8,7 +8,7 @@ import { getBookingCatalog } from "@/data/booking.functions";
 import { sendPortalLink } from "@/data/portal.functions";
 import { PillButton } from "@/components/PillButton";
 import { TextField } from "@/components/Field";
-import { Shell, Title } from "./boeken";
+import { CallFooter, Shell, Title } from "./boeken";
 
 const searchSchema = z.object({ merk: z.string().optional(), lang: z.enum(["nl", "en"]).optional(), link: z.string().optional(), vanaf: z.enum(["start", "planner"]).optional(), ret: z.string().max(600).optional() });
 const catalogQuery = (merk: string | undefined) => queryOptions({ queryKey: ["booking-catalog", merk ?? ""], queryFn: () => getBookingCatalog({ data: { merk } }), staleTime: 60_000 });
