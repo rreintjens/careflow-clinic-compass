@@ -55,6 +55,10 @@ export const readPortal=createServerFn({method:'POST'}).middleware([requireSupab
  const db=context.supabase; const {data:id}=await db.rpc('portal_patient_id'); if(!id)throw new Error('Log in als patiënt om Mijn omgeving te openen.');
  const [p,a,pk,m,c]=await Promise.all([db.from('patients').select('id,first_name,last_name,email,patient_number,tenant_id').eq('id',id).single(),db.from('portal_patient_access').select('*').eq('patient_id',id).single(),db.from('ma_packages').select('*').eq('patient_id',id),db.from('measurements').select('weight_kg,measured_on').eq('patient_id',id).order('measured_on',{ascending:false}).limit(1),db.from('portal_config').select('content').single()]);
  if(p.error||a.error||pk.error||m.error||c.error)throw new Error('Mijn omgeving kon niet worden geladen.');
+ const {admin}=await import('./booking.server');
+ const auditDb=await admin();
+ const audit=await auditDb.from('audit_log').insert({tenant_id:p.data.tenant_id,user_id:context.userId,role_key:'patient',action:'portal_viewed',category:'patient',record_type:'patient',record_id:id});
+ if(audit.error)throw new Error('Mijn omgeving kon niet worden geladen.');
  const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Amsterdam'}).format(new Date());
  return {patient:p.data,access:a.data,landing:portalLanding(pk.data??[],a.data.starter_proposed,today),weight:m.data?.[0]?.weight_kg??null,content:c.data.content,today};
 });
