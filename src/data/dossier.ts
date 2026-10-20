@@ -7,7 +7,7 @@ import { readContent, type LibraryQuestion, type TemplateContent } from "@/domai
 export type LibraryRow = LibraryQuestion & { id: string; is_example: boolean; sort: number };
 export type TemplateVersionRow = { id: string; template_id: string; version: number; status: "concept" | "live" | "archived"; content: TemplateContent; change_note: string | null; published_at: string | null; published_by: string | null; updated_at: string; updated_by: string | null };
 
-const ok = async <T,>(p: PromiseLike<{ data: T; error: { message: string } | null }>) => { const r = await p; if (r.error) throw new Error(r.error.message); return r.data; };
+const ok = async <T,>(p: PromiseLike<{ data: T | null; error: { message: string } | null }>): Promise<T> => { const r = await p; if (r.error) throw new Error(r.error.message); return r.data as T; };
 
 export const libraryQuery = queryOptions({
   queryKey: ["library-questions"],
