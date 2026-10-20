@@ -457,7 +457,7 @@ function CompareModal({ photos, onClose, onShared }: { photos: Array<{ id: strin
   return (
     <Modal open width="lg" onOpenChange={(o) => !o && onClose()} title="Vergelijk over tijd" footer={<PillButton variant="outline" onClick={onClose}>Sluiten</PillButton>}>
       <div className="grid grid-cols-2 gap-4">
-        {[[pa, setA, a], [pb, setB, b]] as const.map(([p, set, v], i) => (
+        {([[pa, setA, a], [pb, setB, b]] as const).map(([p, set, v], i) => (
           <div key={i} className="flex flex-col gap-2">
             <Select label={i === 0 ? "Foto 1" : "Foto 2"} value={v} onChange={set} options={photos.map(opt)} />
             <div className="flex h-56 items-center justify-center overflow-hidden rounded-[14px] bg-sand">{p ? <img src={p.image} alt="" className="size-full object-cover" /> : <span className="text-[12px] text-muted-foreground">Kies een foto</span>}</div>
