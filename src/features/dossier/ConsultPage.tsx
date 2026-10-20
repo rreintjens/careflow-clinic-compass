@@ -205,7 +205,7 @@ function Diagnose({ d, data, patch, lib, content }: { d: ConsultPageData; data: 
   const [exempt, setExempt] = useState(data.vat?.exempt ?? false);
   const saveVat = useMutation({
     mutationFn: () => recordVatDecision({ data: { noteId: d.note.id, exempt, answers: vatAnswers, stepData: { ...data, vat: null } as unknown as Record<string, unknown> } }),
-    onSuccess: () => { patch({ vat: { exempt, answers: vatAnswers, by: "arts", at: new Date().toISOString() } }); toast.success("Btw-besluit vastgelegd"); },
+    onSuccess: (result) => { patch({ vat: result.vat }); toast.success("Btw-besluit vastgelegd"); },
     onError: (e) => toast.error(e.message),
   });
   return (
@@ -249,7 +249,7 @@ function Diagnose({ d, data, patch, lib, content }: { d: ConsultPageData; data: 
                 );
               })}
               <Checkbox checked={exempt} onChange={setExempt} label="Vrijgesteld van btw als medische dienst" />
-              <div><PillButton size="sm" disabled={saveVat.isPending} onClick={() => saveVat.mutate()}>Leg het besluit vast</PillButton></div>
+              <div><PillButton size="sm" disabled={saveVat.isPending || content.fiscaal.some(code => !vatAnswers[code])} onClick={() => saveVat.mutate()}>Leg het besluit vast</PillButton></div>
             </div>
           )}
         </Card>
@@ -428,6 +428,10 @@ function Treatment({ d, data, patch, lib, content }: { d: ConsultPageData; data:
 }
 
 function LotModal({ line, onSave, onClose }: { line: StepData["lines"][number]; onSave: (lot: NonNullable<StepData["lines"][number]["lot"]>) => void; onClose: () => void }) {
+  const { data: previous = [] } = useQuery({ queryKey: ['previous-lots', line.treatmentId], queryFn: async () => {
+    const result = await supabase.from('consult_notes').select('step_data').order('updated_at', { ascending: false }).limit(100);
+    return (result.data ?? []).flatMap(note => readStepData(note.step_data).lines).filter(l => l.treatmentId === line.treatmentId && l.lot);
+  }});
   const [number, setNumber] = useState(line.lot?.number ?? "");
   const [month, setMonth] = useState(line.lot?.expiryMonth ?? "");
   const [year, setYear] = useState(line.lot?.expiryYear ?? "");
@@ -436,6 +440,7 @@ function LotModal({ line, onSave, onClose }: { line: StepData["lines"][number]; 
     <Modal open onOpenChange={(o) => !o && onClose()} title={`Lotnummer · ${line.name}`} description="Verplicht voor deze behandeling."
       footer={<><PillButton variant="outline" onClick={onClose}>Annuleren</PillButton><PillButton disabled={!number.trim() || !month || !year} onClick={() => onSave({ number: number.trim(), expiryMonth: month, expiryYear: year, uniqueCode: code.trim() })}>Opslaan</PillButton></>}>
       <div className="flex flex-col gap-4">
+        {previous[0]?.lot && <PillButton variant="ghost" onClick={() => { const lot = previous[0]?.lot; if (!lot) return; setNumber(lot.number); setMonth(lot.expiryMonth); setYear(lot.expiryYear); setCode(lot.uniqueCode); }}>Laatst gebruikt · {previous[0].lot.number}</PillButton>}
         <TextField label="Lotnummer" value={number} onChange={(e) => setNumber(e.target.value)} />
         <div className="grid grid-cols-2 gap-4">
           <Select label="Vervalmaand" value={month} onChange={setMonth} options={Array.from({ length: 12 }, (_, i) => ({ value: String(i + 1).padStart(2, "0"), label: String(i + 1).padStart(2, "0") }))} />

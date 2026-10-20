@@ -6,6 +6,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database, Json } from "@/integrations/supabase/types";
 import { mockPharmacyProvider, mockSecureMailProvider } from "@/domain/consult-providers";
 import { nextPharmacyStatus } from "@/domain/consult-steps";
+import { readStepData } from '@/domain/consult-steps';
 
 const medical = async (sb: SupabaseClient<Database>, perm = "patients.medical") => {
   if (!(await sb.rpc("is_aal2")).data || !(await sb.rpc("has_permission", { _perm: perm })).data) throw new Error("Geen toegang");
@@ -66,11 +67,15 @@ export const recordVatDecision = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ noteId: z.string().uuid(), exempt: z.boolean(), answers: z.record(z.string(), z.string()), stepData: z.record(z.string(), z.unknown()) }).parse(input))
   .handler(async ({ data, context }) => {
     await medical(context.supabase, "vat.exemption");
+    if (!Object.keys(data.answers).length || Object.values(data.answers).some(v => !v.trim())) throw new Error('Beantwoord eerst alle fiscale vragen');
     const name = await context.supabase.from("profiles").select("full_name").eq("id", context.userId).maybeSingle();
-    const stepData = { ...data.stepData, vat: { exempt: data.exempt, answers: data.answers, by: name.data?.full_name ?? "arts", at: new Date().toISOString() } };
+    const current = await context.supabase.from('consult_notes').select('step_data').eq('id', data.noteId).single();
+    if (current.error) throw new Error('Consult niet gevonden');
+    const vat = { exempt: data.exempt, answers: data.answers, by: name.data?.full_name ?? "arts", at: new Date().toISOString() };
+    const stepData = { ...readStepData(current.data.step_data), vat };
     const r = await context.supabase.from("consult_notes").update({ step_data: stepData as unknown as Json }).eq("id", data.noteId);
     if (r.error) throw new Error("Vastleggen is niet gelukt");
-    return { ok: true };
+    return { ok: true, vat };
   });
 
 /** "Maak foto met je telefoon": a 10-minute upload link tied to this open dossier. */
