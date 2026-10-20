@@ -199,7 +199,7 @@ Verificatie 19-10: alle vijf punten op 1000007 als Rob doorlopen; 58 gerichte te
 - [ ] Fase 4: Afrekenen en factuur
 - [ ] Fase 5: Beheer (behandeling-kaarten, Formulieren en nazorg, Adresboek, Koppelingen-kaarten, Data-API)
 - [ ] Fase 6: Mijn omgeving-blokken + demodata; eindtest Sanne en Mark
-- [ ] Patiënt-loginpagina: directe demo-loginknoppen per profiel (o.a. 2× medisch afvallen), met profielnaam erbij — eigenaar 20-10 22:56
+- [x] Patiënt-loginpagina: gedeelde directe demo-loginknoppen op /auth, /boeken/inloggen en /mijn; Sanne cosmetisch, Mark actief afvallen, Eva gestopt en Sandra starter; alle vier aangeklikt en eigen Mijn omgeving/Profiel geverifieerd
 - [ ] Review 21:28: consultstappen binnen bestaande consultmodus, zonder aparte Stappen-pagina
 - [ ] Review 21:28: Sanne vandaag Fronsrimpels; zones, laatst gebruikt lot, QR-foto, injectiepunten, controles en klaar voor betaling met notitie verifiëren als Rob
 - [ ] Review 21:28: eerste Consult medisch afvallen; fiscale vragen, artsbesluit en Vastgelegd door verifiëren

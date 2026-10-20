@@ -40,3 +40,4 @@
 - Answer reads use frozen versions; consult domain owns timing/patient keys; date-only data has no time.
 - Portal uses its own patient gate/access rows, atomic hashed-link redemption and RLS reads, never staff memberships; tested landing and one shell keep later phases consistent. Copy is tenant DB configuration.
 - Demo patient shortcuts share DemoPatientLogins and redeem the existing server-gated single-use portal links; profile labels come from portal configuration so no parallel authentication flow is introduced.
+- ActiveConsultMode owns the template workflow beside its unchanged bar and notes panel; legacy consult URLs redirect to the dossier rather than render a second workflow.

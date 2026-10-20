@@ -11,6 +11,7 @@ import { consultTiming, isOtherPatientRecord } from "@/domain/consult";
 import { recordKey } from "@/data/patients";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { ConsultPage } from './ConsultPage';
 
 type Note = { id: string; subjective: string; objective: string; evaluation: string; plan: string; checklist: Record<string, boolean>; updated_at: string; status: string };
 type Patient = { id: string; first_name: string; last_name: string; patient_number: string | number | null };
@@ -159,11 +160,14 @@ export function ActiveConsultMode() {
         <div className="ml-auto flex gap-2">
           {online && a.meet_link && <a href={a.meet_link} target="_blank" rel="noreferrer"><PillButton size="sm" className="bg-background text-primary hover:bg-background"><UiIcon name="videogesprek" className="size-4" />Meet</PillButton></a>}
           <PillButton size="sm" variant="outline" className="border-primary-foreground/60 bg-transparent text-primary-foreground" onClick={() => savePrefs({ min: !prefs.min })}>Notities</PillButton>
-          <Link to="/patienten/$id/consult/$apptId" params={{ id: recordKey(p), apptId: a.id }}><PillButton size="sm" variant="outline" className="border-primary-foreground/60 bg-transparent text-primary-foreground">Stappen</PillButton></Link>
           <Link to="/patienten/$id" params={{ id: recordKey(p) }}><PillButton size="sm" variant="outline" className="border-primary-foreground/60 bg-transparent text-primary-foreground">Dossier</PillButton></Link>
           <Link to="/agenda/mijn-dag"><PillButton size="sm" variant="outline" className="border-primary-foreground/60 bg-transparent text-primary-foreground">Agenda</PillButton></Link>
         </div>
       </div>
+
+      <section aria-label={`Consultstappen voor ${name}`} className="mb-8">
+        <ConsultPage key={c.id} noteId={c.id} />
+      </section>
 
       <div ref={panel} aria-label={`Consultnotities voor ${name}`} role="complementary"
         className={cn("fixed z-40 flex flex-col overflow-hidden rounded-[20px] bg-sand shadow-[0_8px_24px_rgba(57,51,46,0.16)] ring-1", otherRecord ? "ring-2 ring-warning" : "ring-primary", !prefs.min && "resize")}
