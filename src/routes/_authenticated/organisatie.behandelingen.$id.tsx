@@ -71,6 +71,11 @@ function TreatmentForm({ org, defaults, onSaved, onCancel }: { org: Org; default
   const [post, setPost] = useState(t.post_questionnaire_key ?? "none");
   const [startScreen,setStartScreen]=useState(readStartScreen(t.start_screen));
   const [qmin, setQmin] = useState(String(t.questionnaire_minutes ?? 8));
+  const ps = readPortalSettings(t.portal_settings);
+  const [courseCount, setCourseCount] = useState(String(ps.course_count ?? 1));
+  const [courseInterval, setCourseInterval] = useState(ps.course_interval ?? "");
+  const [aftercareDays, setAftercareDays] = useState(String(ps.aftercare_days ?? 7));
+  const [reminderWeeks, setReminderWeeks] = useState(String(ps.reminder_weeks ?? 0));
   const [lang, setLang] = useState<"nl" | "en">("nl");
   const [texts, setTexts] = useState({
     description_nl: t.description_nl ?? "", description_en: t.description_en ?? "",
@@ -105,6 +110,7 @@ function TreatmentForm({ org, defaults, onSaved, onCancel }: { org: Org; default
           post_questionnaire_key: post === "none" ? null : post,
           start_screen:startScreen,
           questionnaire_minutes: Math.min(60, Math.max(1, Number(qmin) || 8)),
+          portal_settings: { ...ps, course_count: Number(courseCount), course_interval: courseInterval.trim() || undefined, aftercare_days: Number(aftercareDays) as 3|7|14|30, reminder_weeks: Number(reminderWeeks) as 0|4|8|12|16|24 },
           ...Object.fromEntries(Object.entries(texts).map(([k, v]) => [k, v.trim() || null])),
         },
         { categoryIds: cats, roleIds: roles, locationIds: locs },
