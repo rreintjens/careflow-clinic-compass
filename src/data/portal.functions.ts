@@ -37,13 +37,13 @@ export const redeemPortalLink=createServerFn({method:'POST'}).inputValidator((d:
  const {resolveTenant,admin}=await import('./booking.server'); const t=await resolveTenant(undefined); if(!t)throw new Error('De link is ongeldig of verlopen.'); const db=await admin();
  const {data:rows,error}=await db.rpc('portal_claim_token',{_hash:await digest(data.token),_tenant:t.id}); const tok=rows?.[0]; if(error||!tok?.patient_id)throw new Error('De link is ongeldig of verlopen.');
  const {data:p}=await db.from('patients').select('id,email').eq('tenant_id',t.id).eq('id',tok.patient_id).is('deleted_at',null).single(); if(!p)throw new Error('De link is ongeldig of verlopen.');
- const generated=await db.auth.admin.generateLink({type:'magiclink',email:p.email}); const user=generated.data?.user, otp=generated.data?.properties?.hashed_token; if(generated.error||!user||!otp)throw new Error('Inloggen is niet gelukt.');
+ const generated=await db.auth.admin.generateLink({type:'magiclink',email:p.email}); const user=generated.data?.user, otp=generated.data?.properties?.hashed_token; if(generated.error||!user||!otp){console.error('portal generate',generated.error?.code);throw new Error('Inloggen is niet gelukt.');}
  const [ms,gs]=await Promise.all([db.from('tenant_memberships').select('id').eq('user_id',user.id).limit(1),db.from('group_admins').select('user_id').eq('user_id',user.id).limit(1)]); if(ms.error||gs.error||ms.data?.length||gs.data?.length)throw new Error('Gebruik de medewerkerslogin voor dit account.');
- const access=await db.from('portal_patient_access').upsert({tenant_id:t.id,patient_id:p.id,user_id:user.id},{onConflict:'tenant_id,patient_id'}); if(access.error)throw new Error('Inloggen is niet gelukt.');
- const updated=await db.auth.admin.updateUserById(user.id,{app_metadata:{...user.app_metadata,active_tenant:t.id}}); if(updated.error)throw new Error('Inloggen is niet gelukt.');
+ const access=await db.from('portal_patient_access').upsert({tenant_id:t.id,patient_id:p.id,user_id:user.id},{onConflict:'tenant_id,patient_id'}); if(access.error){console.error('portal access',access.error.code);throw new Error('Inloggen is niet gelukt.');}
+ const updated=await db.auth.admin.updateUserById(user.id,{app_metadata:{...user.app_metadata,active_tenant:t.id}}); if(updated.error){console.error('portal update',updated.error.code);throw new Error('Inloggen is niet gelukt.');}
  const key=process.env['SUPABASE_PUBLISHABLE_KEY']!;
  const client=createClient(process.env['SUPABASE_URL']!,key,{auth:{persistSession:false,autoRefreshToken:false},global:{fetch:(input,init)=>{const h=new Headers(init?.headers);if(key.startsWith('sb_')&&h.get('Authorization')===`Bearer ${key}`)h.delete('Authorization');h.set('apikey',key);return fetch(input,{...init,headers:h});}}});
- const verified=await client.auth.verifyOtp({token_hash:otp,type:'magiclink'}); if(!verified.data.session)throw new Error('Inloggen is niet gelukt.');
+ const verified=await client.auth.verifyOtp({token_hash:otp,type:'magiclink'}); if(!verified.data.session){console.error('portal verify',verified.error?.code);throw new Error('Inloggen is niet gelukt.');}
  await db.from('audit_log').insert(['portal_link_used','portal_login'].map(action=>({tenant_id:t.id,user_id:user.id,role_key:'patient',action,category:'login',record_type:'patient',record_id:p.id})));
  return {access_token:verified.data.session.access_token,refresh_token:verified.data.session.refresh_token};
 });
