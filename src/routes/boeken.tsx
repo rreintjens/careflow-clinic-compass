@@ -1,5 +1,5 @@
 import { useQuery, useSuspenseQuery, queryOptions } from "@tanstack/react-query";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
@@ -153,6 +153,9 @@ function Shell({ children, footer, progress = 0, onBack, onClose, onLang, lang }
         <div className="h-[3px] bg-muted"><div className="h-full bg-primary transition-all" style={{ width: `${Math.round(progress * 100)}%` }} /></div>
         <main className="flex flex-1 flex-col px-5 pb-6 pt-8">{children}</main>
         {footer && <footer className="px-5 pb-6">{footer}</footer>}
+        <div className="pb-4 text-center">
+          <Link to="/auth" className="text-[12px] text-muted-foreground underline decoration-transparent transition-colors hover:decoration-current">{lang === "nl" ? "Inloggen medewerkers" : "Staff sign in"}</Link>
+        </div>
     </PatientFrame>
   );
 }
