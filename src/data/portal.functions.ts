@@ -15,7 +15,7 @@ export const portalLoginInfo = createServerFn({method:'GET'}).handler(async()=>{
 });
 export const sendPortalLink=createServerFn({method:'POST'}).inputValidator((d:unknown)=>portalEmailSchema.parse(d)).handler(async({data})=>{
  const {resolveTenant,admin}=await import('./booking.server'); const t=await resolveTenant(data.merk);
- const result={message:'Check je mail',demoLink:null as string|null}; if(!t)return result; const db=await admin();
+ const result={message:'Check je mail',demoLink:null as string|null,held:false}; if(!t)return result; const db=await admin();
  const {count}=await db.from('portal_login_tokens').select('id',{count:'exact',head:true}).eq('tenant_id',t.id).eq('email',data.email).gte('created_at',new Date(Date.now()-600000).toISOString()); if((count??0)>=5)return result;
   const {data:ps}=await db.from('patients').select('id').eq('tenant_id',t.id).ilike('email',data.email).is('deleted_at',null).order('created_at',{ascending:false}); const p=ps?.[0];
  // Booking draft: the exact flow state travels with the token, so the link restores it in any browser.
@@ -33,7 +33,7 @@ export const sendPortalLink=createServerFn({method:'POST'}).inputValidator((d:un
  }
  const rc=draft?{booking:draft.params,holdToken,confirm:draft.confirm===true,triage:draft.triageKey?{key:draft.triageKey,versionId:draft.triageVersionId??null,answers:draft.triageAnswers??{}}:null}:(data.returnTo?{booking:data.returnTo}:null);
  const raw=Array.from(crypto.getRandomValues(new Uint8Array(32)),b=>b.toString(16).padStart(2,'0')).join('');
- const {error}=await db.from('portal_login_tokens').insert({tenant_id:t.id,patient_id:p?.id??null,email:data.email,token_hash:await digest(raw),expires_at:new Date(Date.now()+PORTAL_LINK_MINUTES*60000).toISOString(),return_context:rc}); if(error)throw new Error('Probeer het later opnieuw.');
+ const {error}=await db.from('portal_login_tokens').insert({tenant_id:t.id,patient_id:p?.id??null,email:data.email,token_hash:await digest(raw),expires_at:new Date(Date.now()+PORTAL_LINK_MINUTES*60000).toISOString(),return_context:rc as never}); if(error)throw new Error('Probeer het later opnieuw.');
  await db.from('audit_log').insert({tenant_id:t.id,action:'portal_link_sent',category:'login',record_type:'patient',record_id:p?.id??null,details:{email_hash:await digest(data.email),duplicate:(ps?.length??0)>1,booking:!!draft}});
  if(p){
  const {data:cfg}=await db.from('portal_config').select('content').eq('tenant_id',t.id).single(); const c=cfg?.content;
