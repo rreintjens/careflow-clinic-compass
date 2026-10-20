@@ -1,5 +1,12 @@
 # Roadmap
 
+## Mijn omgeving v0.1 — eigenaar 20-10
+- [ ] A: gedeeld mobiel/desktopkader, tokens, afzonderlijke patiëntlogin via tienminutenlink, landingsregel, navigatie en vier demopatiënten; testen op 390px/1440px; stoppen voor go.
+- [ ] B: cosmetische schermen en behandelinstellingen — wacht op go na A.
+- [ ] C: inloggen vanuit boeking en bevestigen — wacht op go na B.
+- [ ] D: medisch-afvallenschermen — wacht op go na C.
+- [ ] E: bestellen en demo-afrekenen — wacht op go na D.
+
 ## Uitvoervolgorde eigenaar 19-10 13:19 UTC
 1. Gedeelde doorzoekbare picker
 2. Boekingslinks met meerdere behandelingen en behandelaars
