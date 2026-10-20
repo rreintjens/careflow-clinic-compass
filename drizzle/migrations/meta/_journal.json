@@ -379,6 +379,13 @@
       "when": 1792500199631,
       "tag": "0054_portal_ma_start_texts",
       "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1792500938979,
+      "tag": "0055_portal_order_insert_policy",
+      "breakpoints": true
     }
   ]
 }
