@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -121,6 +121,10 @@ function LoginPage() {
         </PillButton>
         <p className="text-xs leading-relaxed text-muted-foreground">
           Na 5 mislukte pogingen wordt het account 15 minuten geblokkeerd. Beheerders kunnen een gebruiker direct blokkeren bij Gebruikers en rollen.
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Patiënt afspaken?{" "}
+          <Link to="/boeken" className="text-primary underline underline-offset-2">Naar de boekingskalender</Link>
         </p>
       </form>
     </AuthLayout>
