@@ -43,8 +43,8 @@ function OrderPicker({cfg,onStart}:{cfg:MaConfig;onStart:(d:Draft)=>void}){
  <section className='portal-card'>
   <p className='portal-card-label'>{copy(c,'yourMedication')}</p>
   <p className='portal-detail-title'>{med}</p>
-  <p className='portal-sub'>{prog?.strengthSince?fill(copy(c,'strengthSince'),{s:mg(cfg.strengths[curIdx]!),datum:prog.strengthSince.replace(/^.*?sinds /,'')}):''}</p>
-  {prog?.nextStep&&<p className='portal-sub'>{fill(copy(c,'checkinNote'),{s:mg(cfg.strengths[curIdx]!),n:prog.nextStep.replace(/,.*/,'')})}</p>}
+  <p className='portal-sub'>{prog?.strengthSince?fill(copy(c,'strengthSince'),{s:String(cfg.strengths[curIdx]!).replace('.',','),datum:prog.strengthSince.replace(/^.*?sinds /,'')}):''}</p>
+  {prog?.nextStep&&<p className='portal-sub'>{fill(copy(c,'checkinNote'),{s:String(cfg.strengths[curIdx]!).replace('.',','),n:prog.nextStep.match(/^[\d,]+/)?.[0]??''})}</p>}
  </section>
  <section className='portal-card portal-status-good'>
   <div className='portal-tile-head'><span className='portal-icon'><ShoppingCart size={18}/></span><span className='portal-chip portal-chip-white'>{win.canOrder?copy(c,'orderNow'):fill(copy(c,'orderIn'),{n:win.daysUntil})}</span></div>
