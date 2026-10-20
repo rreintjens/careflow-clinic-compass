@@ -74,3 +74,12 @@ export const libraryUsageQuery = queryOptions({
     return { questionnaires: qs, versions: qv };
   },
 });
+
+const OPTION_KEYS = ["library_question_type", "library_question_group", "library_condition_field", "library_condition_value", "dossier_step", "reask_days", "resign_months", "reminder_days"] as const;
+export const dossierOptionsQuery = queryOptions({
+  queryKey: ["dossier-options"],
+  queryFn: async () => {
+    const rows = await ok(supabase.from("option_lists").select("list_key, value, label_nl").in("list_key", [...OPTION_KEYS]).order("sort"));
+    return (key: (typeof OPTION_KEYS)[number]) => rows.filter((r) => r.list_key === key).map((r) => ({ value: r.value, label: r.label_nl }));
+  },
+});
