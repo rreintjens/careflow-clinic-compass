@@ -10,6 +10,7 @@ export const bookingLinkSchema = z
   .object({
     id: z.string().uuid().nullable(),
     slug: z.string().regex(/^[a-z0-9][a-z0-9-]{1,39}$/, "Gebruik kleine letters, cijfers en streepjes."),
+  show_patient_login: z.boolean().default(true),
     name: z.string().trim().min(1, "Vul een naam in.").max(80),
     source: z.string().trim().max(60),
     treatment_id: z.string().uuid().nullable(),

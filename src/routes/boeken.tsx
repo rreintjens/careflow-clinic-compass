@@ -336,7 +336,7 @@ function Card({ avatar, title, sub, when, onClick }: { avatar: React.ReactNode; 
   );
 }
 
-function PlannerStep({ c, s, step, tx, lang, go }: { c: Full; s: Search; step: Extract<ReturnType<typeof nextStep>, { kind: "planner" }>; tx: Tx; lang: string; go: (p: Partial<Search>, replace?: boolean) => void }) {
+function PlannerStep({ c, s, step, tx, lang, go, me, preferredId }: { c: Full; s: Search; step: Extract<ReturnType<typeof nextStep>, { kind: "planner" }>; tx: Tx; lang: string; go: (p: Partial<Search>, replace?: boolean) => void; me?: Awaited<ReturnType<typeof bookingPatientContext>> | null; preferredId?: string | null }) {
   const today = todayLocal();
   const horizon = c.maxAheadWeeks * 7;
   const q = useSlots(c, s, step.treatment, step.location, step.practitioner ? [step.practitioner] : [], today, horizon);

@@ -97,8 +97,8 @@ export const redeemPortalLink=createServerFn({method:'POST'}).inputValidator((d:
 });
 
 /** Booking-flow context for a logged-in patient: prefill details and past visits for the practitioner preset. Staff get patient:null. */
-export const bookingPatientContext=createServerFn({method:'POST'}).inputValidator((d:unknown)=>z.object({merk:z.string().max(60).optional()}).parse(d)).handler(async({data,context})=>{
- const db=context!.supabase; const {data:pid}=await db.rpc('portal_patient_id'); if(!pid) return {patient:null,visits:[] as {treatment_id:string;practitioner_id:string|null;starts_at:string}[]};
+export const bookingPatientContext=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator((d:unknown)=>z.object({merk:z.string().max(60).optional()}).parse(d)).handler(async({data,context})=>{
+ const db=context.supabase; const {data:pid}=await db.rpc('portal_patient_id'); if(!pid) return {patient:null,visits:[] as {treatment_id:string;practitioner_id:string|null;starts_at:string}[]};
  const {resolveTenant,admin}=await import('./booking.server'); const t=await resolveTenant(data.merk); if(!t) return {patient:null,visits:[] as {treatment_id:string;practitioner_id:string|null;starts_at:string}[]};
  const adb=await admin();
  const {data:p}=await adb.from('patients').select('id,first_name,last_name,email,phone,phone_country,date_of_birth,salutation,country,postcode,house_number,house_suffix,street,city').eq('id',pid).eq('tenant_id',t.id).is('deleted_at',null).single();
@@ -107,7 +107,7 @@ export const bookingPatientContext=createServerFn({method:'POST'}).inputValidato
  return {patient:p,visits:visits??[]};
 });
 export const readPortal=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).handler(async({context})=>{
- const db=context!.supabase; const {data:id}=await db.rpc('portal_patient_id'); if(!id)throw new Error('Log in als patiënt om Mijn omgeving te openen.');
+ const db=context.supabase; const {data:id}=await db.rpc('portal_patient_id'); if(!id)throw new Error('Log in als patiënt om Mijn omgeving te openen.');
  const [p,a,pk,m,c]=await Promise.all([db.from('patients').select('id,first_name,last_name,email,patient_number,tenant_id').eq('id',id).single(),db.from('portal_patient_access').select('*').eq('patient_id',id).single(),db.from('ma_packages').select('*').eq('patient_id',id),db.from('measurements').select('weight_kg,measured_on').eq('patient_id',id).order('measured_on',{ascending:false}).limit(1),db.from('portal_config').select('content').single()]);
  if(p.error||a.error||pk.error||m.error||c.error)throw new Error('Mijn omgeving kon niet worden geladen.');
  const {admin}=await import('./booking.server');
@@ -148,7 +148,7 @@ async function portalHistory(db:{from:(t:string)=>any;storage:any},tenantId:stri
 }
 
 export const sendFeedback=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator((d:unknown)=>feedbackSchema.parse(d)).handler(async({data,context})=>{
- const db=context!.supabase; const {data:pid}=await db.rpc('portal_patient_id'); if(!pid)throw new Error('Log in als patiënt.');
+ const db=context.supabase; const {data:pid}=await db.rpc('portal_patient_id'); if(!pid)throw new Error('Log in als patiënt.');
  const {data:appt}=await db.from('appointments').select('id,tenant_id,practitioner_id,starts_at').eq('id',data.appointmentId).eq('patient_id',pid).single();
  if(!appt||Date.parse(appt.starts_at)>Date.now())throw new Error('Deze behandeling is niet gevonden.');
  const {error}=await db.from('treatment_feedback').insert({appointment_id:data.appointmentId,patient_id:pid,practitioner_id:appt.practitioner_id,rating:data.rating,tags:data.tags,comment:data.comment,share_with_practitioner:data.share_with_practitioner});
