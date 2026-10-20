@@ -9,7 +9,7 @@ import { sendFeedback } from '@/data/portal.functions';
 import { portalQuery } from '@/data/portal';
 
 /** Feedback screen (v0.2 §6): stars, chips, comment, share toggle. */
-export function PortalFeedback({appointmentId,rating:initial}:{appointmentId:string;rating?:number}){
+export function PortalFeedback({appointmentId,rating:initial}:{appointmentId:string;rating?:number|undefined}){
  const {d,treat,prac,history}=usePortalData();
  const c=d.content;
  const a=history.find(x=>x.id===appointmentId);
