@@ -60,6 +60,7 @@ import { Route as AuthenticatedPatientenIdIndexRouteImport } from './routes/_aut
 import { Route as AuthenticatedPatientenIdBehandelingRouteImport } from './routes/_authenticated/patienten.$id.behandeling'
 import { Route as AuthenticatedPatientenIdDocumentenRouteImport } from './routes/_authenticated/patienten.$id.documenten'
 import { Route as AuthenticatedPatientenIdMedischRouteImport } from './routes/_authenticated/patienten.$id.medisch'
+import { Route as AuthenticatedPatientenIdPortalRouteImport } from './routes/_authenticated/patienten.$id.portal'
 import { Route as AuthenticatedPatientenIdTijdlijnRouteImport } from './routes/_authenticated/patienten.$id.tijdlijn'
 import { Route as PatientMijnFeedbackAppointmentIdRouteImport } from './routes/_patient/mijn/feedback.$appointmentId'
 import { Route as PatientMijnHistorieAppointmentIdRouteImport } from './routes/_patient/mijn/historie.$appointmentId'
@@ -347,6 +348,12 @@ const AuthenticatedPatientenIdMedischRoute =
     path: '/medisch',
     getParentRoute: () => AuthenticatedPatientenIdRoute,
   } as any)
+const AuthenticatedPatientenIdPortalRoute =
+  AuthenticatedPatientenIdPortalRouteImport.update({
+    id: '/portal',
+    path: '/portal',
+    getParentRoute: () => AuthenticatedPatientenIdRoute,
+  } as any)
 const AuthenticatedPatientenIdTijdlijnRoute =
   AuthenticatedPatientenIdTijdlijnRouteImport.update({
     id: '/tijdlijn',
@@ -421,6 +428,7 @@ export interface FileRoutesByFullPath {
   '/patienten/$id/behandeling': typeof AuthenticatedPatientenIdBehandelingRoute
   '/patienten/$id/documenten': typeof AuthenticatedPatientenIdDocumentenRoute
   '/patienten/$id/medisch': typeof AuthenticatedPatientenIdMedischRoute
+  '/patienten/$id/portal': typeof AuthenticatedPatientenIdPortalRoute
   '/patienten/$id/tijdlijn': typeof AuthenticatedPatientenIdTijdlijnRoute
   '/mijn/feedback/$appointmentId': typeof PatientMijnFeedbackAppointmentIdRoute
   '/mijn/historie/$appointmentId': typeof PatientMijnHistorieAppointmentIdRoute
@@ -474,6 +482,7 @@ export interface FileRoutesByTo {
   '/patienten/$id/behandeling': typeof AuthenticatedPatientenIdBehandelingRoute
   '/patienten/$id/documenten': typeof AuthenticatedPatientenIdDocumentenRoute
   '/patienten/$id/medisch': typeof AuthenticatedPatientenIdMedischRoute
+  '/patienten/$id/portal': typeof AuthenticatedPatientenIdPortalRoute
   '/patienten/$id/tijdlijn': typeof AuthenticatedPatientenIdTijdlijnRoute
   '/mijn/feedback/$appointmentId': typeof PatientMijnFeedbackAppointmentIdRoute
   '/mijn/historie/$appointmentId': typeof PatientMijnHistorieAppointmentIdRoute
@@ -533,6 +542,7 @@ export interface FileRoutesById {
   '/_authenticated/patienten/$id/behandeling': typeof AuthenticatedPatientenIdBehandelingRoute
   '/_authenticated/patienten/$id/documenten': typeof AuthenticatedPatientenIdDocumentenRoute
   '/_authenticated/patienten/$id/medisch': typeof AuthenticatedPatientenIdMedischRoute
+  '/_authenticated/patienten/$id/portal': typeof AuthenticatedPatientenIdPortalRoute
   '/_authenticated/patienten/$id/tijdlijn': typeof AuthenticatedPatientenIdTijdlijnRoute
   '/_patient/mijn/feedback/$appointmentId': typeof PatientMijnFeedbackAppointmentIdRoute
   '/_patient/mijn/historie/$appointmentId': typeof PatientMijnHistorieAppointmentIdRoute
@@ -590,6 +600,7 @@ export interface FileRouteTypes {
     | '/patienten/$id/behandeling'
     | '/patienten/$id/documenten'
     | '/patienten/$id/medisch'
+    | '/patienten/$id/portal'
     | '/patienten/$id/tijdlijn'
     | '/mijn/feedback/$appointmentId'
     | '/mijn/historie/$appointmentId'
@@ -643,6 +654,7 @@ export interface FileRouteTypes {
     | '/patienten/$id/behandeling'
     | '/patienten/$id/documenten'
     | '/patienten/$id/medisch'
+    | '/patienten/$id/portal'
     | '/patienten/$id/tijdlijn'
     | '/mijn/feedback/$appointmentId'
     | '/mijn/historie/$appointmentId'
@@ -701,6 +713,7 @@ export interface FileRouteTypes {
     | '/_authenticated/patienten/$id/behandeling'
     | '/_authenticated/patienten/$id/documenten'
     | '/_authenticated/patienten/$id/medisch'
+    | '/_authenticated/patienten/$id/portal'
     | '/_authenticated/patienten/$id/tijdlijn'
     | '/_patient/mijn/feedback/$appointmentId'
     | '/_patient/mijn/historie/$appointmentId'
@@ -1088,6 +1101,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPatientenIdMedischRouteImport
       parentRoute: typeof AuthenticatedPatientenIdRoute
     }
+    '/_authenticated/patienten/$id/portal': {
+      id: '/_authenticated/patienten/$id/portal'
+      path: '/portal'
+      fullPath: '/patienten/$id/portal'
+      preLoaderRoute: typeof AuthenticatedPatientenIdPortalRouteImport
+      parentRoute: typeof AuthenticatedPatientenIdRoute
+    }
     '/_authenticated/patienten/$id/tijdlijn': {
       id: '/_authenticated/patienten/$id/tijdlijn'
       path: '/tijdlijn'
@@ -1130,6 +1150,7 @@ interface AuthenticatedPatientenIdRouteChildren {
   AuthenticatedPatientenIdBehandelingRoute: typeof AuthenticatedPatientenIdBehandelingRoute
   AuthenticatedPatientenIdDocumentenRoute: typeof AuthenticatedPatientenIdDocumentenRoute
   AuthenticatedPatientenIdMedischRoute: typeof AuthenticatedPatientenIdMedischRoute
+  AuthenticatedPatientenIdPortalRoute: typeof AuthenticatedPatientenIdPortalRoute
   AuthenticatedPatientenIdTijdlijnRoute: typeof AuthenticatedPatientenIdTijdlijnRoute
   AuthenticatedPatientenIdIndexRoute: typeof AuthenticatedPatientenIdIndexRoute
 }
@@ -1141,6 +1162,7 @@ const AuthenticatedPatientenIdRouteChildren: AuthenticatedPatientenIdRouteChildr
     AuthenticatedPatientenIdDocumentenRoute:
       AuthenticatedPatientenIdDocumentenRoute,
     AuthenticatedPatientenIdMedischRoute: AuthenticatedPatientenIdMedischRoute,
+    AuthenticatedPatientenIdPortalRoute: AuthenticatedPatientenIdPortalRoute,
     AuthenticatedPatientenIdTijdlijnRoute:
       AuthenticatedPatientenIdTijdlijnRoute,
     AuthenticatedPatientenIdIndexRoute: AuthenticatedPatientenIdIndexRoute,
