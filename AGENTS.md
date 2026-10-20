@@ -44,3 +44,4 @@
 - Answer reads use frozen versions; consult domain owns timing/patient keys; date-only data has no time.
 
 - Portal uses its own patient gate/access rows, atomic hashed-link redemption and RLS reads, never staff memberships; tested landing and one shell keep later phases consistent. Copy is tenant DB configuration.
+- Library questions are referenced by code from dossier template versions and questionnaire items (`library_code`); saving one runs `saveLibraryQuestion`, which creates concepts for every user — template merge/sync rules live in `src/domain/dossier-templates.ts` so builder and consult cannot diverge.

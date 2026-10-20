@@ -191,3 +191,11 @@ Verificatie 19-10: alle vijf punten op 1000007 als Rob doorlopen; 58 gerichte te
 - [x] "Je keuze blijft bewaard" shows day + time
 - [x] Planner selected slot/day filled teal, white text
 - [x] Profiel "Bewerken" light-teal pill, no border
+
+## EPD v0.1 — eigenaar 20-10
+- [x] Fase 1: Vragenbibliotheek (codes, soorten/groepen uit keuzelijsten, voorwaarde, "Gebruikt in", wijziging maakt concepten van sjablonen en vragenlijsten), menu-groep Dossier, "Uit de bibliotheek" in de vragenlijstbouwer met link-icoon, Dossiersjablonen met versies (live alleen-lezen, Aanpassen → concept met autosave, publiceren, Versies, archief), seed Medisch afvallen › Consult en Injectables › Botox + 16 voorbeeldvragen, 9 nieuwe rechten
+- [ ] Fase 2: consultstappen in de consultmodus (stepper, medische status, anamnese met sjabloon/dicteer, diagnose/btw, recept, behandeling met lot/foto's/tekening, afronden, dossierkaarten)
+- [ ] Fase 3: statussen + no_show-fix, Receptie, Dag per locatie, annuleren, Afspraak maken uitbreiden, Mijn dag, patiëntmails
+- [ ] Fase 4: Afrekenen en factuur
+- [ ] Fase 5: Beheer (behandeling-kaarten, Formulieren en nazorg, Adresboek, Koppelingen-kaarten, Data-API)
+- [ ] Fase 6: Mijn omgeving-blokken + demodata; eindtest Sanne en Mark
