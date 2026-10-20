@@ -478,6 +478,7 @@ export type Database = {
           practitioner_ids: string[]
           practitioner_mode: string | null
           practitioner_scope: string
+          show_patient_login: boolean
           slug: string
           sort: number
           source: string
@@ -507,6 +508,7 @@ export type Database = {
           practitioner_ids?: string[]
           practitioner_mode?: string | null
           practitioner_scope?: string
+          show_patient_login?: boolean
           slug: string
           sort?: number
           source?: string
@@ -536,6 +538,7 @@ export type Database = {
           practitioner_ids?: string[]
           practitioner_mode?: string | null
           practitioner_scope?: string
+          show_patient_login?: boolean
           slug?: string
           sort?: number
           source?: string
@@ -3642,6 +3645,83 @@ export type Database = {
           },
         ]
       }
+      treatment_feedback: {
+        Row: {
+          appointment_id: string
+          comment: string
+          created_at: string
+          created_by: string | null
+          id: string
+          patient_id: string
+          practitioner_id: string | null
+          rating: number
+          share_with_practitioner: boolean
+          tags: string[]
+          tenant_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          appointment_id: string
+          comment?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          patient_id: string
+          practitioner_id?: string | null
+          rating: number
+          share_with_practitioner?: boolean
+          tags?: string[]
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          appointment_id?: string
+          comment?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          patient_id?: string
+          practitioner_id?: string | null
+          rating?: number
+          share_with_practitioner?: boolean
+          tags?: string[]
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "treatment_feedback_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: true
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "treatment_feedback_practitioner_id_fkey"
+            columns: ["practitioner_id"]
+            isOneToOne: false
+            referencedRelation: "practitioners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "treatment_feedback_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "treatment_feedback_tenant_id_patient_id_fkey"
+            columns: ["tenant_id", "patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["tenant_id", "id"]
+          },
+        ]
+      }
       treatment_locations: {
         Row: {
           created_at: string
@@ -3873,6 +3953,7 @@ export type Database = {
           name_en: string | null
           name_nl: string
           no_show_fee_eur: number | null
+          portal_settings: Json
           post_questionnaire_key: string | null
           practitioner_choice: string
           pre_questionnaire_key: string | null
@@ -3900,6 +3981,7 @@ export type Database = {
           name_en?: string | null
           name_nl: string
           no_show_fee_eur?: number | null
+          portal_settings?: Json
           post_questionnaire_key?: string | null
           practitioner_choice?: string
           pre_questionnaire_key?: string | null
@@ -3927,6 +4009,7 @@ export type Database = {
           name_en?: string | null
           name_nl?: string
           no_show_fee_eur?: number | null
+          portal_settings?: Json
           post_questionnaire_key?: string | null
           practitioner_choice?: string
           pre_questionnaire_key?: string | null
