@@ -734,3 +734,80 @@ function ConfirmedStep({ c, s, treatmentId, locationId, practitionerId, manageTo
     </Shell>
   );
 }
+
+/** Logged-in patient: the details form is skipped; the last step is the check with "Bevestig je afspraak". */
+function CheckStep({ c, s, token, treatmentId, locationId, practitionerId, tx, lang, me, triageKey, triageVersionId, triageAnswers, onExpired, onEdit, onDone }: {
+  c: Full; s: Search; token: string; treatmentId: string; locationId: string; practitionerId: string; tx: Tx; lang: string;
+  me: NonNullable<Awaited<ReturnType<typeof bookingPatientContext>>>;
+  triageKey?: string | null; triageVersionId?: string | undefined; triageAnswers?: Answers;
+  onExpired: () => void; onEdit: () => void; onDone: (manageToken: string, meetLink: string | null) => void;
+}) {
+  const confirm = useServerFn(confirmBooking);
+  const [busy, setBusy] = useState(false); const [error, setError] = useState("");
+  const p = me.patient!;
+  const t = c.treatments.find((x) => x.id === treatmentId);
+  const l = c.locations.find((x) => x.id === locationId);
+  const pr = c.practitioners.find((x) => x.id === practitionerId);
+  const tName = t ? ((lang === "en" && t.name_en) || t.name_nl) : "";
+  const submit = async () => {
+    setBusy(true); setError("");
+    try {
+      // Fallbacks satisfy the shared form schema; for an existing patient these fields are only used for the match, never stored.
+      const r = await confirm({ data: { merk: s.merk, token, existing: true, salutation: p.salutation ?? "", firstName: p.first_name, lastName: p.last_name, dateOfBirth: p.date_of_birth, email: p.email, phoneCountry: p.phone_country ?? "+31", phone: p.phone ?? "0600000000", country: p.country ?? "NL", postcode: p.postcode ?? "0000AA", houseNumber: p.house_number ?? "0", suffix: p.house_suffix ?? undefined, street: p.street ?? "-", city: p.city ?? "-", consentPrivacy: true, consentGp: false, consentLsp: false, consentMarketing: false, triageKey: triageKey ?? undefined, triageVersionId, triageAnswers } });
+      if (r.ok) onDone(r.manageToken, r.meetLink); else if (r.reason === "expired") onExpired(); else setError(tx("d_failed"));
+    } catch { setError(tx("d_failed")); } finally { setBusy(false); }
+  };
+  return (
+    <Shell lang={lang} progress={0.95}
+      footer={<>{error && <p role="alert" className="mb-3 text-center text-[14px] text-warning">{error}</p>}<PillButton size="lg" className="patient-choice choice-primary w-full" disabled={busy} onClick={() => void submit()}>{tx("check_confirm")}</PillButton></>}>
+      <Title>{tx("check_title")}</Title>
+      <div className="rounded-[18px] bg-teal-light p-4">
+        <div className="flex items-center gap-4">
+          <Avatar src={pr?.photo ?? null} size={56} />
+          <div className="min-w-0"><p className="text-[16px] font-semibold first-letter:uppercase">{fmtLong(s.d ?? "", lang)}, {s.tijd}</p><p className="text-[14px]">{tName}{pr ? ` · ${pr.first_name} ${pr.last_name}` : ""}</p><p className="text-[14px] text-muted-foreground">{l?.kind === "online" ? tx("d_online_meet") : l?.name}</p></div>
+        </div>
+      </div>
+      <div className="mt-4 rounded-[18px] bg-sand p-4">
+        <p className="text-[12px] text-muted-foreground">{tx("check_details")}</p>
+        <p className="mt-1 text-[15px] font-semibold">{p.first_name} {p.last_name}</p>
+        <p className="text-[14px]">{p.email}</p>
+        {p.phone && <p className="text-[14px]">{p.phone}</p>}
+        <button type="button" onClick={onEdit} className="mt-2 text-[13px] text-primary underline">{tx("change")}</button>
+      </div>
+    </Shell>
+  );
+}
+
+/** Details-step login (v0.1 §2): the mailed link confirms the held booking the moment the patient clicks it. */
+function QuickLogin({ s, tx, token, triageKey, triageVersionId, triageAnswers }: { s: Search; tx: Tx; token: string; triageKey?: string | null; triageVersionId?: string | undefined; triageAnswers?: Answers }) {
+  const [email, setEmail] = useState(""); const [sent, setSent] = useState(false); const [busy, setBusy] = useState(false); const [demo, setDemo] = useState<string | null>(null);
+  const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const send = async () => {
+    if (!ok || busy) return; setBusy(true);
+    try {
+      const params = new URLSearchParams(Object.entries(s).filter(([k, v]) => v != null && v !== "" && k !== "inloggen" && k !== "stap") as [string, string][]).toString();
+      const r = await sendPortalLink({ data: { email: email.trim(), merk: s.merk, draft: { params, treatmentId: s.t, locationId: s.l, practitionerId: s.p, date: s.d, time: s.tijd, confirm: true, holdToken: token, triageKey: triageKey ?? undefined, triageVersionId, triageAnswers } } });
+      setDemo(r.demoLink); setSent(true);
+    } finally { setBusy(false); }
+  };
+  if (sent) return (
+    <div className="mt-4 rounded-[18px] bg-teal-light p-5">
+      <p className="text-[16px] font-semibold text-primary">{tx("login_sent_title")}</p>
+      <p className="mt-2 text-[14px] leading-[1.6]">{tx("quick_login_sent", { email: email.trim() })}</p>
+      <p className="booking-note-amber mt-3">{tx("hold_note", { n: 15 })}</p>
+      <button type="button" onClick={() => void send()} className="mt-3 text-[13px] text-primary underline">{tx("resend")}</button>
+      {demo && <a href={demo} className="portal-demo-link mt-2 block text-[13px] text-primary underline">Demo: open de inloglink</a>}
+    </div>
+  );
+  return (
+    <div className="mt-4 rounded-[18px] bg-teal-light p-5">
+      <p className="text-[16px] font-semibold text-primary">{tx("quick_login_title")}</p>
+      <p className="mt-1 text-[14px] leading-[1.6]">{tx("quick_login_body")}</p>
+      <div className="mt-3 flex items-end gap-2">
+        <span className="flex-1"><TextField label={tx("d_email")} type="email" inputMode="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} /></span>
+        <PillButton disabled={!ok || busy} onClick={() => void send()}>{tx("quick_login_send")}</PillButton>
+      </div>
+      <p className="mt-3 text-[13px] text-muted-foreground">{tx("no_login")}</p>
+    </div>
+  );
+}

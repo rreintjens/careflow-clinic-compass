@@ -91,7 +91,9 @@ export const redeemPortalLink=createServerFn({method:'POST'}).inputValidator((d:
   const params=new URLSearchParams(draft.booking??'');params.delete('tijd');params.delete('stap');
   return {...session,returnTo:params.toString(),holdToken:null,holdExpired:true as const};
  }
- return {...session,returnTo:draft?.booking??null,holdToken:draft?.holdToken??null};
+ let returnTo=draft?.booking??null;
+ if(returnTo&&draft?.holdToken){const qp=new URLSearchParams(returnTo);if(qp.get('d')&&qp.get('tijd')){qp.set('stap','vasthouden');returnTo=qp.toString();}}
+ return {...session,returnTo,holdToken:draft?.holdToken??null};
 });
 
 /** Booking-flow context for a logged-in patient: prefill details and past visits for the practitioner preset. Staff get patient:null. */
