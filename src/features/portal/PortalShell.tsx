@@ -4,6 +4,7 @@ import { Home, History, CalendarDays, ChartNoAxesCombined, ShoppingCart, Message
 import { Logo } from '@/components/Logo';
 import { PillButton } from '@/components/PillButton';
 import { portalQuery } from '@/data/portal';
+import { patientInitials } from '@/domain/portal';
 import type { Json } from '@/integrations/supabase/types';
 
 export const copy=(c:Json,k:string):string=>c&&typeof c==='object'&&!Array.isArray(c)&&typeof c[k]==='string'?String(c[k]):'';
@@ -13,7 +14,7 @@ export function PortalShell(){
  const {data:d}=useSuspenseQuery(portalQuery);const medical=d.landing.kind==='active'||d.landing.kind==='starter';
  const items=nav.filter(n=>medical?['start','voortgang','afspraken','bestellen'].includes(n.key):['start','historie','afspraak-maken'].includes(n.key));
  const path=useRouterState({select:s=>s.location.pathname});const key=path.split('/').at(-1)??'start';
- const initials=d.patient.first_name[0]+(d.patient.last_name[0]??'');
+ const initials=patientInitials(d.patient.first_name,d.patient.last_name);
  const profile=<Link to='/mijn/profiel' className='portal-profile'><span className='portal-avatar'>{initials}</span><span className='portal-user'><strong>{d.patient.first_name} {d.patient.last_name}</strong><small>{copy(d.content,'profileSettings')}</small></span></Link>;
  const chat=<Link to='/mijn/berichten' aria-label='Berichten' className='portal-chat'><MessageSquare size={19} strokeWidth={1.7}/><span className='portal-badge'/></Link>;
  const links=items.map(n=><Link key={n.key} to={n.to} className='portal-nav-link' activeProps={{className:'portal-nav-active'}}><n.icon size={20} strokeWidth={1.7}/><span>{navCopy(d.content,n.key)}</span></Link>);
