@@ -361,6 +361,11 @@ function PlannerStep({ c, s, step, tx, lang, go, me, preferredId }: { c: Full; s
   const roleLabel = roles.length === 1 ? (roles[0] ?? "") : tx("practitioner");
   return (
     <>
+      {me?.patient && <div className="-mt-4 mb-6 flex items-center gap-3 rounded-[16px] bg-teal-light px-4 py-3">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-[14px] font-semibold text-primary-foreground">{patientInitials(me.patient.first_name, me.patient.last_name)}</span>
+        <span className="min-w-0 flex-1"><span className="block text-[15px] font-semibold">{tx("welcome_back", { voornaam: me.patient.first_name })}</span><span className="block text-[13px] text-muted-foreground">{tx("welcome_ready")}</span></span>
+        <a href="/mijn/start" className="whitespace-nowrap text-[14px] text-primary underline">{tx("welcome_portal")}</a>
+      </div>}
       <Title>{tx("q_when")}</Title>
       {step.canChoose && (
         <button type="button" onClick={() => go({ stap: "wie" })} className="patient-choice mb-6 flex items-center gap-3 rounded-[16px] bg-sand px-4 py-3 text-left">
@@ -490,6 +495,12 @@ function HoldStep({ c, s, me, treatmentId, locationId, practitionerId, tx, lang,
   );
   if (state.kind === "loading" || initial === null || (triageKey && triage.isLoading && phase === "triage")) return <Shell lang={lang} progress={0.5}><div className="h-40 animate-pulse rounded-[16px] bg-sand" /></Shell>;
   if (phase === "confirmed" && confirmed) return <ConfirmedStep c={c} s={s} treatmentId={treatmentId} locationId={locationId} practitionerId={state.kind === "held" ? state.practitionerId : practitionerId} manageToken={confirmed} meetLink={meet} tx={tx} lang={lang} />;
+  if (state.kind === "held" && me?.patient && (phase === "details" || !triageKey || !triage.data)) return (
+    <ReviewStep c={c} s={s} me={me.patient} token={state.token} treatmentId={treatmentId} locationId={locationId} practitionerId={state.practitionerId} tx={tx} lang={lang} again={again}
+      triageKey={triageKey} triageVersionId={triage.data?.versionId} triageAnswers={readJson<Answers>(ANSWERS_KEY) ?? undefined}
+      onExpired={() => setState({ kind: "expired", minutes: state.minutes })}
+      onDone={(m, meeting) => { confirmedRef.current = true; sessionStorage.removeItem(ANSWERS_KEY); sessionStorage.removeItem(HOLD_KEY); setConfirmed(m); setMeet(meeting ?? null); setPhase("confirmed"); }} />
+  );
   if (state.kind === "held" && (phase === "details" || !triageKey || !triage.data)) return (
     <DetailsStep c={c} s={s} token={state.token} treatmentId={treatmentId} locationId={locationId} practitionerId={state.practitionerId} tx={tx} lang={lang} again={again}
       triageKey={triageKey} triageVersionId={triage.data?.versionId} triageAnswers={readJson<Answers>(ANSWERS_KEY) ?? undefined}
@@ -524,6 +535,40 @@ function AppointmentSummary({ c, s, treatmentId, locationId, practitionerId, tx,
       <p className="text-[14px]">{[l?.kind === "online" ? tx("d_online_meet") : l?.name, p ? `${p.first_name} ${p.last_name}` : ""].filter(Boolean).join(" · ")}</p>
       {onChange && <button type="button" onClick={onChange} className="mt-2 text-[13px] text-primary underline">{tx("d_change")}</button>}
     </div>
+  );
+}
+
+type MePatient = NonNullable<Awaited<ReturnType<typeof bookingPatientContext>>["patient"]>;
+/** "Klopt alles?": a signed-in patient skips the details form and confirms with the record we already know. */
+function ReviewStep({ c, s, me, token, treatmentId, locationId, practitionerId, tx, lang, again, triageKey, triageVersionId, triageAnswers, onExpired, onDone }: {
+  c: Full; s: Search; me: MePatient; token: string; treatmentId: string; locationId: string; practitionerId: string; tx: Tx; lang: string; again: () => void;
+  triageKey: string | null; triageVersionId: string | undefined; triageAnswers: Answers | undefined; onExpired: () => void; onDone: (manageToken: string, meetLink: string | null) => void;
+}) {
+  const confirm = useServerFn(confirmBooking);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const p = c.practitioners.find((x) => x.id === practitionerId);
+  const submit = async () => {
+    setBusy(true); setError("");
+    try {
+      const r = await confirm({ data: { merk: s.merk, token, existing: true, salutation: me.salutation ?? "", firstName: me.first_name, lastName: me.last_name, dateOfBirth: me.date_of_birth, email: me.email, phoneCountry: me.phone_country ?? "+31", phone: me.phone ?? "0600000000", country: me.country ?? "NL", postcode: me.postcode ?? "0000AA", houseNumber: me.house_number ?? "0", suffix: me.house_suffix ?? undefined, street: me.street ?? "-", city: me.city ?? "-", consentPrivacy: true, consentGp: false, consentLsp: false, consentMarketing: false, triageKey: triageKey ?? undefined, triageVersionId, triageAnswers } as never });
+      if (r.ok) onDone(r.manageToken, r.meetLink ?? null);
+      else if (r.reason === "expired") onExpired();
+      else setError(tx("d_failed"));
+    } catch { setError(tx("d_failed")); } finally { setBusy(false); }
+  };
+  return (
+    <Shell lang={lang} progress={0.9} onBack={again} footer={<div className="flex flex-col gap-3">{error && <p role="alert" className="text-[14px] text-warning">{error}</p>}<PillButton size="lg" className="patient-choice choice-primary w-full" disabled={busy} onClick={() => void submit()}>{tx("review_confirm")}</PillButton></div>}>
+      <Title>{tx("review_title")}</Title>
+      <AppointmentSummary c={c} s={s} treatmentId={treatmentId} locationId={locationId} practitionerId={practitionerId} tx={tx} lang={lang} onChange={again} />
+      {p && <div className="mt-3 flex items-center gap-3 rounded-[16px] bg-sand px-4 py-3"><Avatar src={p.photo} size={44} /><span className="text-[15px]">{p.first_name} {p.last_name}</span></div>}
+      <div className="mt-4 rounded-[18px] bg-sand p-4">
+        <div className="flex items-center justify-between"><p className="text-[12px] font-medium text-muted-foreground">{tx("review_details")}</p><a href="/mijn/profiel" className="text-[13px] text-primary underline">{tx("d_change")}</a></div>
+        <p className="mt-1.5 text-[15px] font-semibold">{me.first_name} {me.last_name}</p>
+        <p className="text-[14px] text-muted-foreground">{me.email}</p>
+        {me.phone && <p className="text-[14px] text-muted-foreground">{me.phone_country} {me.phone}</p>}
+      </div>
+    </Shell>
   );
 }
 
