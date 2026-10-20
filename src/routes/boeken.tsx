@@ -128,12 +128,19 @@ function Booking() {
   const back = step.kind === "category" ? undefined : () => window.history.back();
   const close = () => navigate({ search: { merk: s.merk, lang: s.lang, bron: s.bron } });
   const phone = c.tenant.phone;
+  const loginAllowed = (link?.showPatientLogin ?? true) && s.inloggen !== "nee";
+  const showBar = loginAllowed && !me?.patient && (step.kind === "category" || step.kind === "planner");
+  const preferredId = me?.patient && (step.kind === "planner" || step.kind === "practitioner") ? preferredPractitioner(c, me.visits, step.treatment, step.location) : null;
+  const openLogin = () => {
+    const params = new URLSearchParams(Object.entries(eff).filter(([k, v]) => v != null && v !== "" && k !== "stap" && k !== "inloggen") as [string, string][]).toString();
+    void navigate({ to: "/boeken/inloggen", search: { merk: s.merk, lang: s.lang, link: s.link, vanaf: step.kind === "planner" ? "planner" : "start", ret: step.kind === "planner" ? params : undefined } });
+  };
 
   const startTreatment=c.treatments.find(t=>t.id===link?.treatmentId);
   const startScreen=resolveStartScreen(link?{treatmentId:link.treatmentId,mode:link.startScreenMode,screen:link.startScreen}:null,startTreatment?.start_screen);
   if(startScreen&&!startPassed&&!s.tijd&&!s.stap) {const page=startScreenPage(startScreen,lang);const people=c.practitioners.filter(p=>c.practitionerTreatments.some(pt=>pt.practitioner_id===p.id&&pt.treatment_id===startTreatment?.id));return <Shell lang={lang} footer={<PillButton size="lg" className="patient-choice choice-primary w-full" onClick={()=>setStartPassed(true)}>{page.button}</PillButton>}><Title>{page.title}</Title><p className="text-[15px] leading-relaxed">{page.body}</p>{startScreen.form==="practitioner"?<div className="mt-5 grid grid-cols-2 gap-4">{people.map(p=><div key={p.id} className="flex items-center gap-3"><Avatar src={p.photo} size={40}/><span className="text-sm">{p.first_name} {p.last_name}</span></div>)}</div>:<Boodschap page={page} vars={{}}/>}<div className="mt-6 flex items-center gap-3"><div className="flex -space-x-2">{people.slice(0,4).map(p=><Avatar key={p.id} src={p.photo} size={32}/>)}</div><span className="text-sm text-muted-foreground">{tx("duration_line",{rol:"arts",min:startTreatment?.duration_min??30})}</span></div></Shell>;}
   if (step.kind === "planner" && s.stap === "vasthouden" && s.d && s.tijd) {
-    return <div className={guard}><HoldStep c={c} s={eff} treatmentId={step.treatment} locationId={step.location} practitionerId={step.practitioner ?? "any"} tx={tx} lang={lang} go={go} /></div>;
+    return <div className={guard}><HoldStep c={c} s={eff} me={me} treatmentId={step.treatment} locationId={step.location} practitionerId={step.practitioner ?? "any"} tx={tx} lang={lang} go={go} /></div>;
   }
 
   return (
