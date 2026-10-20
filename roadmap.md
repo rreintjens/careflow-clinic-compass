@@ -5,7 +5,7 @@
   - Afbakening: volledige cosmetische historie/afspraken, behandeltrajecten en programmeerschermen volgen B/D; fase A toont Start-identiteit met demo-aantallen en pakket/meetbronnen, nog geen gefactureerde historische afspraken. Mails blijven demo_only, geen externe bezorging. Geen extra Profiel-tabel; bestaand dossier hergebruikt. Screenshots staan in Files onder Mijn-omgeving-fase-A.
 - [ ] B: cosmetische schermen en behandelinstellingen — wacht op go na A.
 - [ ] C: inloggen vanuit boeking en bevestigen — wacht op go na B.
-- [ ] D: medisch-afvallenschermen — wacht op go na C.
+- [ ] D: medisch-afvallenschermen (wacht op go na B) — wacht op go na C.
 - [ ] E: bestellen en demo-afrekenen — wacht op go na D.
 
 ## Uitvoervolgorde eigenaar 19-10 13:19 UTC
@@ -159,6 +159,6 @@ Verificatie 19-10: alle vijf punten op 1000007 als Rob doorlopen; 58 gerichte te
 
 ## Mijn omgeving v0.2 — eigenaar 20-10 11:15 UTC (alle fasen nu, zonder wachten)
 - [ ] B: cosmetische schermen — nieuwe Start (arts-kaart, behandeltraject, feedbackkaart, Opnieuw boeken, Bekijk deze behandelingen), feedbackscherm /mijn/feedback/$id + treatment_feedback + beheerweergave, behandelaarsfoto's overal (Hugo Ammerlaan, Sophie Verhagen, Simone Mulder), initialen zonder tussenvoegsels, Afspraak maken met foto's, behandelinstellingen + "Bekijk als patiënt"
-- [ ] C: inloggen vanuit boeking — loginblok op startscherm en planner, "Welkom terug"-scherm, terugkeer in flow met eigen arts voorgeselecteerd, booking_links.show_patient_login (stap 5 van 6, &inloggen=nee), "Liever bellen?"-footer met foto Joyce
-- [ ] D: medisch-afvallenschermen met foto's en visuele regels v0.2
-- [ ] E: bestellen met pakketkiezer-states (geen outlines; geselecteerd gevuld teal, toegestaan #EEF3F5, twee stappen amber, niet-toegestaan grijs; legenda; kaarten zonder randen)
+- [ ] C: inloggen vanuit boeking — WACHT op go na B; eigenaar stuurt eerst het definitieve ontwerp van het loginblok (addendum §3). Daarna: loginblok startscherm+planner, "Welkom terug"-scherm, terugkeer in flow met eigen arts, booking_links.show_patient_login (stap 5 van 6, &inloggen=nee), "Liever bellen?"-footer met foto Joyce
+- [ ] D: medisch-afvallenschermen (wacht op go na B) met foto's en visuele regels v0.2
+- [ ] E: bestellen met pakketkiezer-states (wacht op go na B) (geen outlines; geselecteerd gevuld teal, toegestaan #EEF3F5, twee stappen amber, niet-toegestaan grijs; legenda; kaarten zonder randen)
