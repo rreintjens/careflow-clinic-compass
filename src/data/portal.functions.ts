@@ -35,7 +35,7 @@ export const sendPortalLink=createServerFn({method:'POST'}).inputValidator((d:un
  let confirmNow=draft?.confirm===true;
  if(draft&&holdToken&&!confirmNow&&draft.treatmentId){const {data:tr}=await db.from('treatments').select('pre_questionnaire_key').eq('id',draft.treatmentId).maybeSingle();if(tr&&!tr.pre_questionnaire_key)confirmNow=true;}
  if(draft)draft.confirm=confirmNow;
- const rc=draft?{booking:draft.params,holdToken,confirm:confirmNow,triage:draft.triageKey?{key:draft.triageKey,versionId:draft.triageVersionId??null,answers:draft.triageAnswers??{}}:null}:(data.returnTo?{booking:data.returnTo}:null);
+ const rc=draft?{booking:draft.params,holdToken,confirm:confirmNow,triage:draft.triageKey?{key:draft.triageKey,versionId:draft.triageVersionId??null,answers:draft.triageAnswers??{}}:null}:(data.returnTo==='/mijn/profiel'?{portalPath:'/mijn/profiel'}:data.returnTo?{booking:data.returnTo}:null);
  const raw=Array.from(crypto.getRandomValues(new Uint8Array(32)),b=>b.toString(16).padStart(2,'0')).join('');
  const {error}=await db.from('portal_login_tokens').insert({tenant_id:t.id,patient_id:p?.id??null,email:data.email,token_hash:await digest(raw),expires_at:new Date(Date.now()+PORTAL_LINK_MINUTES*60000).toISOString(),return_context:rc as never}); if(error)throw new Error('Probeer het later opnieuw.');
  await db.from('audit_log').insert({tenant_id:t.id,action:'portal_link_sent',category:'login',record_type:'patient',record_id:p?.id??null,details:{email_hash:await digest(data.email),duplicate:(ps?.length??0)>1,booking:!!draft}});
@@ -65,7 +65,7 @@ export const sendPortalLink=createServerFn({method:'POST'}).inputValidator((d:un
 export const redeemPortalLink=createServerFn({method:'POST'}).inputValidator((d:unknown)=>portalTokenSchema.parse(d)).handler(async({data})=>{
  const {resolveTenant,admin}=await import('./booking.server'); const t=await resolveTenant(undefined); if(!t)throw new Error('De link is ongeldig of verlopen.'); const db=await admin();
  const {data:rows,error}=await db.rpc('portal_claim_token',{_hash:await digest(data.token),_tenant:t.id}); const tok=rows?.[0]; if(error||!tok)throw new Error('De link is ongeldig of verlopen.');
- const rcRaw=tok.return_context; const draft=rcRaw&&typeof rcRaw==='object'&&!Array.isArray(rcRaw)?rcRaw as {booking?:string;holdToken?:string|null;confirm?:boolean;triage?:{key:string;versionId:string|null;answers:Record<string,unknown>}|null}:null;
+ const rcRaw=tok.return_context; const draft=rcRaw&&typeof rcRaw==='object'&&!Array.isArray(rcRaw)?rcRaw as {portalPath?:string;booking?:string;holdToken?:string|null;confirm?:boolean;triage?:{key:string;versionId:string|null;answers:Record<string,unknown>}|null}:null;
  if(!tok.patient_id){
   // Unknown address: never log in, send the patient back to the booking as a new patient.
   if(draft?.booking)return {unknownEmail:true as const,returnTo:draft.booking};
@@ -97,7 +97,7 @@ export const redeemPortalLink=createServerFn({method:'POST'}).inputValidator((d:
  }
  let returnTo=draft?.booking??null;
  if(returnTo&&draft?.holdToken){const qp=new URLSearchParams(returnTo);if(qp.get('d')&&qp.get('tijd')){qp.set('stap','vasthouden');returnTo=qp.toString();}}
- return {...session,returnTo,holdToken:draft?.holdToken??null};
+ return {...session,returnTo,portalPath:draft?.portalPath==='/mijn/profiel'?'/mijn/profiel':null,holdToken:draft?.holdToken??null};
 });
 
 /** Booking-flow context for a logged-in patient: prefill details and past visits for the practitioner preset. Staff get patient:null. */
