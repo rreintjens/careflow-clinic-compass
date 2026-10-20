@@ -17,7 +17,7 @@ export const saveStepData = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ noteId: z.string().uuid(), stepData: z.record(z.string(), z.unknown()) }).parse(input))
   .handler(async ({ data, context }) => {
     await medical(context.supabase);
-    const r = await context.supabase.from("consult_notes").update({ step_data: data.stepData }).eq("id", data.noteId).in("status", ["draft", "parked"]);
+    const r = await context.supabase.from("consult_notes").update({ step_data: data.stepData as Json }).eq("id", data.noteId).in("status", ["draft", "parked"]);
     if (r.error) throw new Error("Opslaan is niet gelukt");
     return { ok: true };
   });
@@ -68,7 +68,7 @@ export const recordVatDecision = createServerFn({ method: "POST" })
     await medical(context.supabase, "vat.exemption");
     const name = await context.supabase.from("profiles").select("full_name").eq("id", context.userId).maybeSingle();
     const stepData = { ...data.stepData, vat: { exempt: data.exempt, answers: data.answers, by: name.data?.full_name ?? "arts", at: new Date().toISOString() } };
-    const r = await context.supabase.from("consult_notes").update({ step_data: stepData }).eq("id", data.noteId);
+    const r = await context.supabase.from("consult_notes").update({ step_data: stepData as unknown as Json }).eq("id", data.noteId);
     if (r.error) throw new Error("Vastleggen is niet gelukt");
     return { ok: true };
   });
@@ -119,7 +119,7 @@ export const sendGpLetter = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await medical(context.supabase);
     if (data.channel !== "none") await mockSecureMailProvider().send({ channel: data.channel, recipient: data.recipient, subject: "Brief vanuit het consult", body: data.body });
-    const r = await context.supabase.from("consult_notes").update({ step_data: data.stepData }).eq("id", data.noteId);
+    const r = await context.supabase.from("consult_notes").update({ step_data: data.stepData as Json }).eq("id", data.noteId);
     if (r.error) throw new Error("Versturen is niet gelukt");
     return { ok: true };
   });
