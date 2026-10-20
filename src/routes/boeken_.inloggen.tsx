@@ -48,6 +48,7 @@ function LoginPage() {
   const [email, setEmail] = useState(""); const [sent, setSent] = useState(false); const [held, setHeld] = useState(false); const [demo, setDemo] = useState<string | null>(null); const [busy, setBusy] = useState(false);
   const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   const back = () => { if (s.ret) window.location.assign(`/boeken?${s.ret}`); else window.history.back(); };
+  const phone = "tenant" in data ? data.tenant.phone : undefined;
   const send = async () => {
     if (!ok || busy) return; setBusy(true);
     try {
