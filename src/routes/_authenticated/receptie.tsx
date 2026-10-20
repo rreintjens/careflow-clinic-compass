@@ -18,7 +18,7 @@ import { NewAppointmentModal } from "@/features/agenda/NewAppointmentModal";
 const today = () => new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Amsterdam" });
 const range = (d: string) => { const x = new Date(`${d}T00:00:00Z`); x.setUTCDate(x.getUTCDate() - 1); const y = new Date(x); y.setUTCDate(y.getUTCDate() + 3); return [x.toISOString(), y.toISOString()] as const; };
 const local = (iso: string) => ({ date: new Date(iso).toLocaleDateString("sv-SE", { timeZone: "Europe/Amsterdam" }), minute: Number(new Date(iso).toLocaleTimeString("en-GB", { timeZone: "Europe/Amsterdam", hour: "2-digit" })) * 60 + Number(new Date(iso).toLocaleTimeString("en-GB", { timeZone: "Europe/Amsterdam", minute: "2-digit" })) });
-const title = "Receptie · The Body Clinic";
+const title = "Receptie · The Body Clinic"; // Shared operational appointment view.
 const description = "Aankomst, afspraakstatus en overdracht aan de receptie van The Body Clinic.";
 export const Route = createFileRoute("/_authenticated/receptie")({
   validateSearch: z.object({ datum: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(), locatie: z.string().optional() }),
