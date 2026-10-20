@@ -1,0 +1,19 @@
+import {createFileRoute,Link,redirect} from '@tanstack/react-router';
+import {useState} from 'react';
+import {useForm} from 'react-hook-form';
+import {zodResolver} from '@hookform/resolvers/zod';
+import {toast} from 'sonner';
+import {Mail} from 'lucide-react';
+import {portalLoginInfo,sendPortalLink} from '@/data/portal.functions';
+import {portalEmailSchema} from '@/domain/portal';
+import {Logo} from '@/components/Logo';
+import {PillButton} from '@/components/PillButton';
+import {copy} from '@/features/portal/PortalShell';
+import {portalHead} from '@/features/portal/head';
+import {supabase} from '@/integrations/supabase/client';
+export const Route=createFileRoute('/mijn/')({head:()=>portalHead('Inloggen'),beforeLoad:async()=>{if(typeof window==='undefined')return;const {data}=await supabase.auth.getUser();if(data.user){const {data:id}=await supabase.rpc('portal_patient_id');if(id)throw redirect({to:'/mijn/start'});}},loader:()=>portalLoginInfo(),component:Login});
+function Login(){const d=Route.useLoaderData();const c=d.content;const [sent,setSent]=useState(false),[link,setLink]=useState<string|null>(null),[err,setErr]=useState('');const form=useForm({resolver:zodResolver(portalEmailSchema),defaultValues:{email:''}});
+ const onSubmit=form.handleSubmit(async(values)=>{setErr('');try{const r=await sendPortalLink({data:values});setSent(true);setLink(r.demoLink);if(r.demoLink)toast('Check je mail',{action:{label:'Inloggen',onClick:()=>{window.location.href=r.demoLink??'/mijn';}},duration:10000});}catch{setErr('Probeer het later opnieuw.');}});
+ const patients=Array.isArray(c['demoPatients'])?c['demoPatients']:[];
+ return <div className='portal portal-login'><div className='portal-login-inner'><Logo/><h1>{copy(c,'loginTitle')}</h1>{sent?<div className='portal-sent'><span className='portal-icon'><Mail size={22}/></span><h2>{copy(c,'sent')}</h2>{link&&<Link to='/mijn/link/$token' params={{token:link.split('/').at(-1)??''}} className='portal-demo-link'>Inloggen · demo</Link>}<PillButton variant='ghost' onClick={()=>{setSent(false);setLink(null);}}>Stuur opnieuw</PillButton></div>:<form onSubmit={onSubmit}><label htmlFor='portal-email'>{copy(c,'email')}</label><input id='portal-email' type='email' autoComplete='email' {...form.register('email')}/>{form.formState.errors.email&&<p role='alert'>Vul een geldig e-mailadres in.</p>}<PillButton block type='submit' disabled={form.formState.isSubmitting}>{copy(c,'send')}</PillButton></form>}{err&&<p role='alert'>{err}</p>}{d.demo&&<div className='portal-demo-patients'>{patients.map((p,i)=>{if(!p||typeof p!=='object'||Array.isArray(p))return null;return <PillButton variant='ghost' key={i} onClick={()=>{form.setValue('email',copy(p,'email'));setSent(false);setLink(null);}}>{copy(p,'name')}</PillButton>;})}</div>}</div></div>;
+}

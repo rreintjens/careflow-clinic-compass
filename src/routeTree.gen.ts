@@ -11,11 +11,15 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as PatientRouteRouteImport } from './routes/_patient/route'
 import { Route as BoekenRouteImport } from './routes/boeken'
+import { Route as MijnRouteImport } from './routes/mijn'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as PatientMijnRouteRouteImport } from './routes/_patient/mijn/route'
 import { Route as AfspraakTokenRouteImport } from './routes/afspraak.$token'
 import { Route as AuthIndexRouteImport } from './routes/auth.index'
 import { Route as Auth2faRouteImport } from './routes/auth.2fa'
+import { Route as MijnIndexRouteImport } from './routes/mijn.index'
 import { Route as VragenlijstTokenRouteImport } from './routes/vragenlijst.$token'
 import { Route as AuthenticatedAgendaIndexRouteImport } from './routes/_authenticated/agenda.index'
 import { Route as AuthenticatedAgendaMijnDagRouteImport } from './routes/_authenticated/agenda.mijn-dag'
@@ -29,8 +33,18 @@ import { Route as AuthenticatedInstellingenLogboekRouteImport } from './routes/_
 import { Route as AuthenticatedOrganisatieApparatuurRouteImport } from './routes/_authenticated/organisatie.apparatuur'
 import { Route as AuthenticatedPatientenIndexRouteImport } from './routes/_authenticated/patienten.index'
 import { Route as AuthenticatedPatientenIdRouteImport } from './routes/_authenticated/patienten.$id'
+import { Route as PatientMijnAfspraakMakenRouteImport } from './routes/_patient/mijn/afspraak-maken'
+import { Route as PatientMijnAfsprakenRouteImport } from './routes/_patient/mijn/afspraken'
+import { Route as PatientMijnBerichtenRouteImport } from './routes/_patient/mijn/berichten'
+import { Route as PatientMijnBestellenRouteImport } from './routes/_patient/mijn/bestellen'
+import { Route as PatientMijnHistorieRouteImport } from './routes/_patient/mijn/historie'
+import { Route as PatientMijnProfielRouteImport } from './routes/_patient/mijn/profiel'
+import { Route as PatientMijnProgrammaRouteImport } from './routes/_patient/mijn/programma'
+import { Route as PatientMijnStartRouteImport } from './routes/_patient/mijn/start'
+import { Route as PatientMijnVoortgangRouteImport } from './routes/_patient/mijn/voortgang'
 import { Route as ApiPublicEkisExportRouteImport } from './routes/api/public/ekis-export'
 import { Route as ApiPublicStatsRouteImport } from './routes/api/public/stats'
+import { Route as MijnLinkTokenRouteImport } from './routes/mijn.link.$token'
 import { Route as AuthenticatedBoekingsflowEMailsIndexRouteImport } from './routes/_authenticated/boekingsflow.e-mails.index'
 import { Route as AuthenticatedBoekingsflowEMailsBehandelingRouteImport } from './routes/_authenticated/boekingsflow.e-mails.behandeling'
 import { Route as AuthenticatedBoekingsflowEMailsVerzondenRouteImport } from './routes/_authenticated/boekingsflow.e-mails.verzonden'
@@ -59,15 +73,29 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PatientRouteRoute = PatientRouteRouteImport.update({
+  id: '/_patient',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BoekenRoute = BoekenRouteImport.update({
   id: '/boeken',
   path: '/boeken',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MijnRoute = MijnRouteImport.update({
+  id: '/mijn',
+  path: '/mijn',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const PatientMijnRouteRoute = PatientMijnRouteRouteImport.update({
+  id: '/mijn',
+  path: '/mijn',
+  getParentRoute: () => PatientRouteRoute,
 } as any)
 const AfspraakTokenRoute = AfspraakTokenRouteImport.update({
   id: '/afspraak/$token',
@@ -83,6 +111,11 @@ const Auth2faRoute = Auth2faRouteImport.update({
   id: '/auth/2fa',
   path: '/auth/2fa',
   getParentRoute: () => rootRouteImport,
+} as any)
+const MijnIndexRoute = MijnIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => MijnRoute,
 } as any)
 const VragenlijstTokenRoute = VragenlijstTokenRouteImport.update({
   id: '/vragenlijst/$token',
@@ -161,6 +194,52 @@ const AuthenticatedPatientenIdRoute =
     path: '/patienten/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const PatientMijnAfspraakMakenRoute =
+  PatientMijnAfspraakMakenRouteImport.update({
+    id: '/afspraak-maken',
+    path: '/afspraak-maken',
+    getParentRoute: () => PatientMijnRouteRoute,
+  } as any)
+const PatientMijnAfsprakenRoute = PatientMijnAfsprakenRouteImport.update({
+  id: '/afspraken',
+  path: '/afspraken',
+  getParentRoute: () => PatientMijnRouteRoute,
+} as any)
+const PatientMijnBerichtenRoute = PatientMijnBerichtenRouteImport.update({
+  id: '/berichten',
+  path: '/berichten',
+  getParentRoute: () => PatientMijnRouteRoute,
+} as any)
+const PatientMijnBestellenRoute = PatientMijnBestellenRouteImport.update({
+  id: '/bestellen',
+  path: '/bestellen',
+  getParentRoute: () => PatientMijnRouteRoute,
+} as any)
+const PatientMijnHistorieRoute = PatientMijnHistorieRouteImport.update({
+  id: '/historie',
+  path: '/historie',
+  getParentRoute: () => PatientMijnRouteRoute,
+} as any)
+const PatientMijnProfielRoute = PatientMijnProfielRouteImport.update({
+  id: '/profiel',
+  path: '/profiel',
+  getParentRoute: () => PatientMijnRouteRoute,
+} as any)
+const PatientMijnProgrammaRoute = PatientMijnProgrammaRouteImport.update({
+  id: '/programma',
+  path: '/programma',
+  getParentRoute: () => PatientMijnRouteRoute,
+} as any)
+const PatientMijnStartRoute = PatientMijnStartRouteImport.update({
+  id: '/start',
+  path: '/start',
+  getParentRoute: () => PatientMijnRouteRoute,
+} as any)
+const PatientMijnVoortgangRoute = PatientMijnVoortgangRouteImport.update({
+  id: '/voortgang',
+  path: '/voortgang',
+  getParentRoute: () => PatientMijnRouteRoute,
+} as any)
 const ApiPublicEkisExportRoute = ApiPublicEkisExportRouteImport.update({
   id: '/api/public/ekis-export',
   path: '/api/public/ekis-export',
@@ -170,6 +249,11 @@ const ApiPublicStatsRoute = ApiPublicStatsRouteImport.update({
   id: '/api/public/stats',
   path: '/api/public/stats',
   getParentRoute: () => rootRouteImport,
+} as any)
+const MijnLinkTokenRoute = MijnLinkTokenRouteImport.update({
+  id: '/link/$token',
+  path: '/link/$token',
+  getParentRoute: () => MijnRoute,
 } as any)
 const AuthenticatedBoekingsflowEMailsIndexRoute =
   AuthenticatedBoekingsflowEMailsIndexRouteImport.update({
@@ -283,11 +367,13 @@ const AuthenticatedBoekingsflowVragenlijstenIdTestRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/boeken': typeof BoekenRoute
+  '/mijn': typeof PatientMijnRouteRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/afspraak/$token': typeof AfspraakTokenRoute
   '/auth/2fa': typeof Auth2faRoute
   '/vragenlijst/$token': typeof VragenlijstTokenRoute
   '/auth/': typeof AuthIndexRoute
+  '/mijn/': typeof MijnIndexRoute
   '/agenda/mijn-dag': typeof AuthenticatedAgendaMijnDagRoute
   '/agenda/rooster': typeof AuthenticatedAgendaRoosterRoute
   '/boekingsflow/boekingslinks': typeof AuthenticatedBoekingsflowBoekingslinksRoute
@@ -298,8 +384,18 @@ export interface FileRoutesByFullPath {
   '/instellingen/logboek': typeof AuthenticatedInstellingenLogboekRoute
   '/organisatie/apparatuur': typeof AuthenticatedOrganisatieApparatuurRoute
   '/patienten/$id': typeof AuthenticatedPatientenIdRouteWithChildren
+  '/mijn/afspraak-maken': typeof PatientMijnAfspraakMakenRoute
+  '/mijn/afspraken': typeof PatientMijnAfsprakenRoute
+  '/mijn/berichten': typeof PatientMijnBerichtenRoute
+  '/mijn/bestellen': typeof PatientMijnBestellenRoute
+  '/mijn/historie': typeof PatientMijnHistorieRoute
+  '/mijn/profiel': typeof PatientMijnProfielRoute
+  '/mijn/programma': typeof PatientMijnProgrammaRoute
+  '/mijn/start': typeof PatientMijnStartRoute
+  '/mijn/voortgang': typeof PatientMijnVoortgangRoute
   '/api/public/ekis-export': typeof ApiPublicEkisExportRoute
   '/api/public/stats': typeof ApiPublicStatsRoute
+  '/mijn/link/$token': typeof MijnLinkTokenRoute
   '/agenda/': typeof AuthenticatedAgendaIndexRoute
   '/patienten/': typeof AuthenticatedPatientenIndexRoute
   '/boekingsflow/e-mails/behandeling': typeof AuthenticatedBoekingsflowEMailsBehandelingRoute
@@ -324,6 +420,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/boeken': typeof BoekenRoute
+  '/mijn': typeof MijnIndexRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/afspraak/$token': typeof AfspraakTokenRoute
   '/auth/2fa': typeof Auth2faRoute
@@ -338,8 +435,18 @@ export interface FileRoutesByTo {
   '/instellingen/koppelingen': typeof AuthenticatedInstellingenKoppelingenRoute
   '/instellingen/logboek': typeof AuthenticatedInstellingenLogboekRoute
   '/organisatie/apparatuur': typeof AuthenticatedOrganisatieApparatuurRoute
+  '/mijn/afspraak-maken': typeof PatientMijnAfspraakMakenRoute
+  '/mijn/afspraken': typeof PatientMijnAfsprakenRoute
+  '/mijn/berichten': typeof PatientMijnBerichtenRoute
+  '/mijn/bestellen': typeof PatientMijnBestellenRoute
+  '/mijn/historie': typeof PatientMijnHistorieRoute
+  '/mijn/profiel': typeof PatientMijnProfielRoute
+  '/mijn/programma': typeof PatientMijnProgrammaRoute
+  '/mijn/start': typeof PatientMijnStartRoute
+  '/mijn/voortgang': typeof PatientMijnVoortgangRoute
   '/api/public/ekis-export': typeof ApiPublicEkisExportRoute
   '/api/public/stats': typeof ApiPublicStatsRoute
+  '/mijn/link/$token': typeof MijnLinkTokenRoute
   '/agenda': typeof AuthenticatedAgendaIndexRoute
   '/patienten': typeof AuthenticatedPatientenIndexRoute
   '/boekingsflow/e-mails/behandeling': typeof AuthenticatedBoekingsflowEMailsBehandelingRoute
@@ -365,12 +472,16 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/_patient': typeof PatientRouteRouteWithChildren
   '/boeken': typeof BoekenRoute
+  '/mijn': typeof MijnRouteWithChildren
+  '/_patient/mijn': typeof PatientMijnRouteRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/afspraak/$token': typeof AfspraakTokenRoute
   '/auth/2fa': typeof Auth2faRoute
   '/vragenlijst/$token': typeof VragenlijstTokenRoute
   '/auth/': typeof AuthIndexRoute
+  '/mijn/': typeof MijnIndexRoute
   '/_authenticated/agenda/mijn-dag': typeof AuthenticatedAgendaMijnDagRoute
   '/_authenticated/agenda/rooster': typeof AuthenticatedAgendaRoosterRoute
   '/_authenticated/boekingsflow/boekingslinks': typeof AuthenticatedBoekingsflowBoekingslinksRoute
@@ -381,8 +492,18 @@ export interface FileRoutesById {
   '/_authenticated/instellingen/logboek': typeof AuthenticatedInstellingenLogboekRoute
   '/_authenticated/organisatie/apparatuur': typeof AuthenticatedOrganisatieApparatuurRoute
   '/_authenticated/patienten/$id': typeof AuthenticatedPatientenIdRouteWithChildren
+  '/_patient/mijn/afspraak-maken': typeof PatientMijnAfspraakMakenRoute
+  '/_patient/mijn/afspraken': typeof PatientMijnAfsprakenRoute
+  '/_patient/mijn/berichten': typeof PatientMijnBerichtenRoute
+  '/_patient/mijn/bestellen': typeof PatientMijnBestellenRoute
+  '/_patient/mijn/historie': typeof PatientMijnHistorieRoute
+  '/_patient/mijn/profiel': typeof PatientMijnProfielRoute
+  '/_patient/mijn/programma': typeof PatientMijnProgrammaRoute
+  '/_patient/mijn/start': typeof PatientMijnStartRoute
+  '/_patient/mijn/voortgang': typeof PatientMijnVoortgangRoute
   '/api/public/ekis-export': typeof ApiPublicEkisExportRoute
   '/api/public/stats': typeof ApiPublicStatsRoute
+  '/mijn/link/$token': typeof MijnLinkTokenRoute
   '/_authenticated/agenda/': typeof AuthenticatedAgendaIndexRoute
   '/_authenticated/patienten/': typeof AuthenticatedPatientenIndexRoute
   '/_authenticated/boekingsflow/e-mails/behandeling': typeof AuthenticatedBoekingsflowEMailsBehandelingRoute
@@ -409,11 +530,13 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/boeken'
+    | '/mijn'
     | '/dashboard'
     | '/afspraak/$token'
     | '/auth/2fa'
     | '/vragenlijst/$token'
     | '/auth/'
+    | '/mijn/'
     | '/agenda/mijn-dag'
     | '/agenda/rooster'
     | '/boekingsflow/boekingslinks'
@@ -424,8 +547,18 @@ export interface FileRouteTypes {
     | '/instellingen/logboek'
     | '/organisatie/apparatuur'
     | '/patienten/$id'
+    | '/mijn/afspraak-maken'
+    | '/mijn/afspraken'
+    | '/mijn/berichten'
+    | '/mijn/bestellen'
+    | '/mijn/historie'
+    | '/mijn/profiel'
+    | '/mijn/programma'
+    | '/mijn/start'
+    | '/mijn/voortgang'
     | '/api/public/ekis-export'
     | '/api/public/stats'
+    | '/mijn/link/$token'
     | '/agenda/'
     | '/patienten/'
     | '/boekingsflow/e-mails/behandeling'
@@ -450,6 +583,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/boeken'
+    | '/mijn'
     | '/dashboard'
     | '/afspraak/$token'
     | '/auth/2fa'
@@ -464,8 +598,18 @@ export interface FileRouteTypes {
     | '/instellingen/koppelingen'
     | '/instellingen/logboek'
     | '/organisatie/apparatuur'
+    | '/mijn/afspraak-maken'
+    | '/mijn/afspraken'
+    | '/mijn/berichten'
+    | '/mijn/bestellen'
+    | '/mijn/historie'
+    | '/mijn/profiel'
+    | '/mijn/programma'
+    | '/mijn/start'
+    | '/mijn/voortgang'
     | '/api/public/ekis-export'
     | '/api/public/stats'
+    | '/mijn/link/$token'
     | '/agenda'
     | '/patienten'
     | '/boekingsflow/e-mails/behandeling'
@@ -490,12 +634,16 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/_patient'
     | '/boeken'
+    | '/mijn'
+    | '/_patient/mijn'
     | '/_authenticated/dashboard'
     | '/afspraak/$token'
     | '/auth/2fa'
     | '/vragenlijst/$token'
     | '/auth/'
+    | '/mijn/'
     | '/_authenticated/agenda/mijn-dag'
     | '/_authenticated/agenda/rooster'
     | '/_authenticated/boekingsflow/boekingslinks'
@@ -506,8 +654,18 @@ export interface FileRouteTypes {
     | '/_authenticated/instellingen/logboek'
     | '/_authenticated/organisatie/apparatuur'
     | '/_authenticated/patienten/$id'
+    | '/_patient/mijn/afspraak-maken'
+    | '/_patient/mijn/afspraken'
+    | '/_patient/mijn/berichten'
+    | '/_patient/mijn/bestellen'
+    | '/_patient/mijn/historie'
+    | '/_patient/mijn/profiel'
+    | '/_patient/mijn/programma'
+    | '/_patient/mijn/start'
+    | '/_patient/mijn/voortgang'
     | '/api/public/ekis-export'
     | '/api/public/stats'
+    | '/mijn/link/$token'
     | '/_authenticated/agenda/'
     | '/_authenticated/patienten/'
     | '/_authenticated/boekingsflow/e-mails/behandeling'
@@ -533,7 +691,9 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  PatientRouteRoute: typeof PatientRouteRouteWithChildren
   BoekenRoute: typeof BoekenRoute
+  MijnRoute: typeof MijnRouteWithChildren
   AfspraakTokenRoute: typeof AfspraakTokenRoute
   Auth2faRoute: typeof Auth2faRoute
   VragenlijstTokenRoute: typeof VragenlijstTokenRoute
@@ -559,11 +719,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_patient': {
+      id: '/_patient'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof PatientRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/boeken': {
       id: '/boeken'
       path: '/boeken'
       fullPath: '/boeken'
       preLoaderRoute: typeof BoekenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mijn': {
+      id: '/mijn'
+      path: '/mijn'
+      fullPath: '/mijn'
+      preLoaderRoute: typeof MijnRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/dashboard': {
@@ -572,6 +746,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_patient/mijn': {
+      id: '/_patient/mijn'
+      path: '/mijn'
+      fullPath: '/mijn'
+      preLoaderRoute: typeof PatientMijnRouteRouteImport
+      parentRoute: typeof PatientRouteRoute
     }
     '/afspraak/$token': {
       id: '/afspraak/$token'
@@ -593,6 +774,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/auth/2fa'
       preLoaderRoute: typeof Auth2faRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/mijn/': {
+      id: '/mijn/'
+      path: '/'
+      fullPath: '/mijn/'
+      preLoaderRoute: typeof MijnIndexRouteImport
+      parentRoute: typeof MijnRoute
     }
     '/vragenlijst/$token': {
       id: '/vragenlijst/$token'
@@ -685,6 +873,69 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPatientenIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_patient/mijn/afspraak-maken': {
+      id: '/_patient/mijn/afspraak-maken'
+      path: '/afspraak-maken'
+      fullPath: '/mijn/afspraak-maken'
+      preLoaderRoute: typeof PatientMijnAfspraakMakenRouteImport
+      parentRoute: typeof PatientMijnRouteRoute
+    }
+    '/_patient/mijn/afspraken': {
+      id: '/_patient/mijn/afspraken'
+      path: '/afspraken'
+      fullPath: '/mijn/afspraken'
+      preLoaderRoute: typeof PatientMijnAfsprakenRouteImport
+      parentRoute: typeof PatientMijnRouteRoute
+    }
+    '/_patient/mijn/berichten': {
+      id: '/_patient/mijn/berichten'
+      path: '/berichten'
+      fullPath: '/mijn/berichten'
+      preLoaderRoute: typeof PatientMijnBerichtenRouteImport
+      parentRoute: typeof PatientMijnRouteRoute
+    }
+    '/_patient/mijn/bestellen': {
+      id: '/_patient/mijn/bestellen'
+      path: '/bestellen'
+      fullPath: '/mijn/bestellen'
+      preLoaderRoute: typeof PatientMijnBestellenRouteImport
+      parentRoute: typeof PatientMijnRouteRoute
+    }
+    '/_patient/mijn/historie': {
+      id: '/_patient/mijn/historie'
+      path: '/historie'
+      fullPath: '/mijn/historie'
+      preLoaderRoute: typeof PatientMijnHistorieRouteImport
+      parentRoute: typeof PatientMijnRouteRoute
+    }
+    '/_patient/mijn/profiel': {
+      id: '/_patient/mijn/profiel'
+      path: '/profiel'
+      fullPath: '/mijn/profiel'
+      preLoaderRoute: typeof PatientMijnProfielRouteImport
+      parentRoute: typeof PatientMijnRouteRoute
+    }
+    '/_patient/mijn/programma': {
+      id: '/_patient/mijn/programma'
+      path: '/programma'
+      fullPath: '/mijn/programma'
+      preLoaderRoute: typeof PatientMijnProgrammaRouteImport
+      parentRoute: typeof PatientMijnRouteRoute
+    }
+    '/_patient/mijn/start': {
+      id: '/_patient/mijn/start'
+      path: '/start'
+      fullPath: '/mijn/start'
+      preLoaderRoute: typeof PatientMijnStartRouteImport
+      parentRoute: typeof PatientMijnRouteRoute
+    }
+    '/_patient/mijn/voortgang': {
+      id: '/_patient/mijn/voortgang'
+      path: '/voortgang'
+      fullPath: '/mijn/voortgang'
+      preLoaderRoute: typeof PatientMijnVoortgangRouteImport
+      parentRoute: typeof PatientMijnRouteRoute
+    }
     '/api/public/ekis-export': {
       id: '/api/public/ekis-export'
       path: '/api/public/ekis-export'
@@ -698,6 +949,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/public/stats'
       preLoaderRoute: typeof ApiPublicStatsRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/mijn/link/$token': {
+      id: '/mijn/link/$token'
+      path: '/link/$token'
+      fullPath: '/mijn/link/$token'
+      preLoaderRoute: typeof MijnLinkTokenRouteImport
+      parentRoute: typeof MijnRoute
     }
     '/_authenticated/boekingsflow/e-mails/': {
       id: '/_authenticated/boekingsflow/e-mails/'
@@ -930,10 +1188,63 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
+interface PatientMijnRouteRouteChildren {
+  PatientMijnAfspraakMakenRoute: typeof PatientMijnAfspraakMakenRoute
+  PatientMijnAfsprakenRoute: typeof PatientMijnAfsprakenRoute
+  PatientMijnBerichtenRoute: typeof PatientMijnBerichtenRoute
+  PatientMijnBestellenRoute: typeof PatientMijnBestellenRoute
+  PatientMijnHistorieRoute: typeof PatientMijnHistorieRoute
+  PatientMijnProfielRoute: typeof PatientMijnProfielRoute
+  PatientMijnProgrammaRoute: typeof PatientMijnProgrammaRoute
+  PatientMijnStartRoute: typeof PatientMijnStartRoute
+  PatientMijnVoortgangRoute: typeof PatientMijnVoortgangRoute
+}
+
+const PatientMijnRouteRouteChildren: PatientMijnRouteRouteChildren = {
+  PatientMijnAfspraakMakenRoute: PatientMijnAfspraakMakenRoute,
+  PatientMijnAfsprakenRoute: PatientMijnAfsprakenRoute,
+  PatientMijnBerichtenRoute: PatientMijnBerichtenRoute,
+  PatientMijnBestellenRoute: PatientMijnBestellenRoute,
+  PatientMijnHistorieRoute: PatientMijnHistorieRoute,
+  PatientMijnProfielRoute: PatientMijnProfielRoute,
+  PatientMijnProgrammaRoute: PatientMijnProgrammaRoute,
+  PatientMijnStartRoute: PatientMijnStartRoute,
+  PatientMijnVoortgangRoute: PatientMijnVoortgangRoute,
+}
+
+const PatientMijnRouteRouteWithChildren =
+  PatientMijnRouteRoute._addFileChildren(PatientMijnRouteRouteChildren)
+
+interface PatientRouteRouteChildren {
+  PatientMijnRouteRoute: typeof PatientMijnRouteRouteWithChildren
+}
+
+const PatientRouteRouteChildren: PatientRouteRouteChildren = {
+  PatientMijnRouteRoute: PatientMijnRouteRouteWithChildren,
+}
+
+const PatientRouteRouteWithChildren = PatientRouteRoute._addFileChildren(
+  PatientRouteRouteChildren,
+)
+
+interface MijnRouteChildren {
+  MijnIndexRoute: typeof MijnIndexRoute
+  MijnLinkTokenRoute: typeof MijnLinkTokenRoute
+}
+
+const MijnRouteChildren: MijnRouteChildren = {
+  MijnIndexRoute: MijnIndexRoute,
+  MijnLinkTokenRoute: MijnLinkTokenRoute,
+}
+
+const MijnRouteWithChildren = MijnRoute._addFileChildren(MijnRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  PatientRouteRoute: PatientRouteRouteWithChildren,
   BoekenRoute: BoekenRoute,
+  MijnRoute: MijnRouteWithChildren,
   AfspraakTokenRoute: AfspraakTokenRoute,
   Auth2faRoute: Auth2faRoute,
   VragenlijstTokenRoute: VragenlijstTokenRoute,

@@ -11,7 +11,7 @@ type Db = Awaited<ReturnType<typeof admin>>;
 export type MailMoment = "confirmation" | "rescheduled" | "cancelled" | "appointment_reminder" | "questionnaire_reminder" | "no_show" | "follow_up";
 
 /** The global mail tokens, read from the same stylesheet the admin preview uses. */
-function theme(): MailTheme {
+export function theme(): MailTheme {
   const root = styles.slice(styles.indexOf(":root"));
   const v = (name: string) => root.match(new RegExp(`--${name}:\\s*([^;]+);`))?.[1]?.trim() ?? "#39332E";
   return { background: v("background"), surface: v("mail-surface"), heading: v("mail-heading"), text: v("mail-text"), muted: v("muted-foreground"), panel: v("mail-panel"), button: v("mail-button"), onPanel: v("primary-foreground"), link: v("mail-link") };
