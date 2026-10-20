@@ -28,3 +28,56 @@ export function portalLanding(packages: readonly Package[], proposed: boolean, t
   if (expired) return { kind: "stopped" as const, package: null, stoppedOn: packageEnd(expired.start_date, expired.months) };
   return { kind: "general" as const, package: null, stoppedOn: null };
 }
+
+/** Initials: first letter of the first name plus first letter of the last name, skipping tussenvoegsels. */
+const TUSSENVOEGSELS = new Set(["de", "van", "der", "den", "ten", "ter", "het", "'t"]);
+export function patientInitials(firstName: string, lastName: string) {
+  const parts = lastName.trim().split(/\s+/).filter(p => !TUSSENVOEGSELS.has(p.toLowerCase()));
+  const last = parts[0] ?? lastName.trim();
+  return `${firstName.trim()[0] ?? ""}${last[0] ?? ""}`.toUpperCase();
+}
+
+/** Per-treatment portal settings (nazorg, traject, herinnering), stored in treatments.portal_settings. */
+export const portalSettingsSchema = z.object({
+  course_count: z.number().int().min(1).max(6).optional(),
+  course_interval: z.string().max(200).optional(),
+  aftercare_days: z.union([z.literal(3), z.literal(7), z.literal(14), z.literal(30)]).optional(),
+  reminder_weeks: z.union([z.literal(0), z.literal(4), z.literal(8), z.literal(12), z.literal(16), z.literal(24)]).optional(),
+  aftercare_tips: z.array(z.string().max(300)).max(8).optional(),
+});
+export type PortalSettings = z.infer<typeof portalSettingsSchema>;
+export function readPortalSettings(value: unknown): PortalSettings {
+  const parsed = portalSettingsSchema.safeParse(value ?? {});
+  return parsed.success ? parsed.data : {};
+}
+
+export const feedbackSchema = z.object({
+  appointmentId: z.string().uuid(),
+  rating: z.number().int().min(1).max(5),
+  tags: z.array(z.string().max(60)).max(5),
+  comment: z.string().max(2000),
+  share_with_practitioner: z.boolean(),
+});
+
+export type HistoryItem = { id: string; starts_at: string; treatment_id: string; practitioner_id: string | null };
+/** Most recent completed treatment without feedback, within 30 days. */
+export function feedbackDue(history: readonly HistoryItem[], given: readonly string[], today: string) {
+  const cutoff = Date.parse(`${today}T00:00:00Z`) - 30 * 86_400_000;
+  return [...history]
+    .filter(h => Date.parse(h.starts_at) < Date.parse(`${today}T00:00:00Z`) && Date.parse(h.starts_at) >= cutoff && !given.includes(h.id))
+    .sort((a, b) => b.starts_at.localeCompare(a.starts_at))[0] ?? null;
+}
+export function weeksSince(startsAt: string, today: string) {
+  return Math.floor((Date.parse(`${today}T00:00:00Z`) - Date.parse(startsAt)) / (7 * 86_400_000));
+}
+/** The patient's own practitioner for a category: the one visited most; ties and empty history fall back to the most recent. */
+export function ownDoctor(history: readonly HistoryItem[], categoryTreatmentIds: readonly string[]) {
+  const visits = history.filter(h => h.practitioner_id && categoryTreatmentIds.includes(h.treatment_id));
+  if (!visits.length) return null;
+  const counts = new Map<string, { n: number; last: string }>();
+  for (const v of visits) {
+    const c = counts.get(v.practitioner_id!) ?? { n: 0, last: v.starts_at };
+    counts.set(v.practitioner_id!, { n: c.n + 1, last: c.last > v.starts_at ? c.last : v.starts_at });
+  }
+  return [...counts.entries()].sort((a, b) => b[1].n - a[1].n || b[1].last.localeCompare(a[1].last))[0]![0];
+}

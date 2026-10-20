@@ -19,6 +19,7 @@ import {
   treatmentMainCategoryIds, workLocationIds, type Org, type Requirement, kindName, kindOpts,
 } from "@/data/organisation";
 import { durationOptions, practitionerExcludedHere, practitionerTreatmentLocations, TREATMENT_ICONS } from "@/domain/organisation";
+import { readPortalSettings } from "@/domain/portal";
 import { REASON_TEXT, treatmentBookability } from "@/features/organisation/bookability";
 import { cn } from "@/lib/utils";
 
@@ -71,6 +72,11 @@ function TreatmentForm({ org, defaults, onSaved, onCancel }: { org: Org; default
   const [post, setPost] = useState(t.post_questionnaire_key ?? "none");
   const [startScreen,setStartScreen]=useState(readStartScreen(t.start_screen));
   const [qmin, setQmin] = useState(String(t.questionnaire_minutes ?? 8));
+  const ps = readPortalSettings(t.portal_settings);
+  const [courseCount, setCourseCount] = useState(String(ps.course_count ?? 1));
+  const [courseInterval, setCourseInterval] = useState(ps.course_interval ?? "");
+  const [aftercareDays, setAftercareDays] = useState(String(ps.aftercare_days ?? 7));
+  const [reminderWeeks, setReminderWeeks] = useState(String(ps.reminder_weeks ?? 0));
   const [lang, setLang] = useState<"nl" | "en">("nl");
   const [texts, setTexts] = useState({
     description_nl: t.description_nl ?? "", description_en: t.description_en ?? "",
@@ -105,6 +111,7 @@ function TreatmentForm({ org, defaults, onSaved, onCancel }: { org: Org; default
           post_questionnaire_key: post === "none" ? null : post,
           start_screen:startScreen,
           questionnaire_minutes: Math.min(60, Math.max(1, Number(qmin) || 8)),
+          portal_settings: { ...ps, course_count: Number(courseCount), course_interval: courseInterval.trim() || undefined, aftercare_days: Number(aftercareDays) as 3|7|14|30, reminder_weeks: Number(reminderWeeks) as 0|4|8|12|16|24 },
           ...Object.fromEntries(Object.entries(texts).map(([k, v]) => [k, v.trim() || null])),
         },
         { categoryIds: cats, roleIds: roles, locationIds: locs },
@@ -173,6 +180,15 @@ function TreatmentForm({ org, defaults, onSaved, onCancel }: { org: Org; default
               <TextField label="Naam (Engels)" value={nameEn} onChange={(e) => setNameEn(e.target.value)} help="Leeg laten: de patiënt ziet de Nederlandse naam." />
               <Select label="Icoon" value={icon} onChange={setIcon} options={[{ value: "none", label: "Icoon van de categorie" }, ...TREATMENT_ICONS.map((i) => ({ value: i, label: i.replace(/-/g, " ").replace(/^./, (c) => c.toUpperCase()) }))]} help="Leeg: de patiënt ziet het icoon van de (sub)categorie." />
               <div className="flex items-end pb-1">{icon !== "none" && <img src={`/treatment-icons/${icon}.png`} alt="" className="h-11 w-11" />}</div>
+            </div>
+          </Card>
+
+          <Card title="Mijn omgeving" description="Wat de patiënt in Mijn omgeving ziet: het traject, de nazorg en de herinnering om opnieuw te plannen.">
+            <div className="grid grid-cols-2 gap-4">
+              <Select label="Traject (aantal behandelingen)" value={courseCount} onChange={setCourseCount} options={[1,2,3,4,5,6].map(n=>({value:String(n),label:n===1?"Geen traject":`${n} behandelingen`}))} />
+              <Select label="Nazorg tonen op Start" value={aftercareDays} onChange={setAftercareDays} options={[3,7,14,30].map(n=>({value:String(n),label:`${n} dagen`}))} />
+              <Select label="Herinnering opnieuw plannen" value={reminderWeeks} onChange={setReminderWeeks} options={[[0,"Geen"],[4,"4 weken"],[8,"8 weken"],[12,"12 weken"],[16,"16 weken"],[24,"24 weken"]].map(([v,l])=>({value:String(v),label:String(l)}))} />
+              <TextField label="Interval traject" value={courseInterval} maxLength={200} onChange={(e)=>setCourseInterval(e.target.value)} help="Bijvoorbeeld: Meestal drie behandelingen, met vier tot zes weken ertussen." />
             </div>
           </Card>
 

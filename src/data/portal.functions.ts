@@ -1,8 +1,10 @@
 import { createServerFn } from '@tanstack/react-start';
 import { createClient } from '@supabase/supabase-js';
+import { z } from 'zod';
+import type { Json } from '@/integrations/supabase/types';
 import { getRequest } from '@tanstack/react-start/server';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
-import { portalEmailSchema, portalTokenSchema, portalLanding, PORTAL_LINK_MINUTES } from '@/domain/portal';
+import { portalEmailSchema, portalTokenSchema, portalLanding, PORTAL_LINK_MINUTES, feedbackSchema } from '@/domain/portal';
 
 const digest = async (v: string) => Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(v))), b=>b.toString(16).padStart(2,'0')).join('');
 export const portalLoginInfo = createServerFn({method:'GET'}).handler(async()=>{
@@ -60,5 +62,59 @@ export const readPortal=createServerFn({method:'POST'}).middleware([requireSupab
  const audit=await auditDb.from('audit_log').insert({tenant_id:p.data.tenant_id,user_id:context.userId,role_key:'patient',action:'portal_viewed',category:'patient',record_type:'patient',record_id:id});
  if(audit.error)throw new Error('Mijn omgeving kon niet worden geladen.');
  const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Amsterdam'}).format(new Date());
- return {patient:p.data,access:a.data,landing:portalLanding(pk.data??[],a.data.starter_proposed,today),weight:m.data?.[0]?.weight_kg??null,content:c.data.content,today};
+ const extra=await portalHistory(auditDb,p.data.tenant_id,id);
+ return {patient:p.data,access:a.data,landing:portalLanding(pk.data??[],a.data.starter_proposed,today),weight:m.data?.[0]?.weight_kg??null,content:c.data.content,today,...extra};
+});
+
+export type PortalAppointment={id:string;treatment_id:string;practitioner_id:string|null;location_id:string|null;starts_at:string;ends_at:string;status:string;meet_link:string|null};
+export type PortalPractitioner={id:string;first_name:string;last_name:string;role_id:string|null;photo:string|null};
+export type PortalTreatment={id:string;name_nl:string;icon:string|null;duration_min:number;portal_settings:Json};
+export type PortalExtra={appointments:PortalAppointment[];feedback:{appointment_id:string;rating:number;tags:string[];comment:string;share_with_practitioner:boolean}[];treatments:PortalTreatment[];practitioners:PortalPractitioner[];locations:{id:string;name:string;kind:string}[];roles:{id:string;name:string}[];categories:{id:string;name_nl:string;icon:string|null;parent_id:string|null}[];categoryLinks:{treatment_id:string;category_id:string}[]};
+/** History, upcoming appointments, practitioners and treatments for the portal; photos are signed server-side. */
+async function portalHistory(db:{from:(t:string)=>any;storage:any},tenantId:string,patientId:string):Promise<PortalExtra>{
+ const [appts,fb,treats,prs,locs,roles,cats,catLinks]=await Promise.all([
+  db.from('appointments').select('id,treatment_id,practitioner_id,location_id,starts_at,ends_at,status,meet_link').eq('tenant_id',tenantId).eq('patient_id',patientId).in('status',['booked']).order('starts_at',{ascending:false}),
+  db.from('treatment_feedback').select('appointment_id,rating,tags,comment,share_with_practitioner').eq('tenant_id',tenantId).eq('patient_id',patientId),
+  db.from('treatments').select('id,name_nl,icon,duration_min,portal_settings').eq('tenant_id',tenantId),
+  db.from('practitioners').select('id,first_name,last_name,role_id,photo_path').eq('tenant_id',tenantId).eq('status','active'),
+  db.from('locations').select('id,name,kind').eq('tenant_id',tenantId),
+  db.from('roles').select('id,name').eq('tenant_id',tenantId),
+  db.from('treatment_categories').select('id,name_nl,icon,parent_id').eq('tenant_id',tenantId),
+  db.from('treatment_category_links').select('treatment_id,category_id').eq('tenant_id',tenantId),
+ ]);
+ for(const q of [appts,fb,treats,prs,locs,roles,cats,catLinks]) if(q.error) throw new Error('Mijn omgeving kon niet worden geladen.');
+ const {data:tenant}=await db.from('tenants').select('slug').eq('id',tenantId).single();
+ const bucket=`practitioner-photos-${tenant?.slug??''}`;
+ const photos=await Promise.all((prs.data??[]).map(async(p:{photo_path:string|null})=>{
+  if(!p.photo_path)return null;
+  const {data:s}=await db.storage.from(bucket).createSignedUrl(p.photo_path,3600);
+  return s?.signedUrl??null;
+ }));
+ const photoById=Object.fromEntries((prs.data??[]).map((p:{id:string},i:number)=>[p.id,photos[i]??null]));
+ return {appointments:appts.data??[],feedback:fb.data??[],treatments:treats.data??[],practitioners:(prs.data??[]).map((p:{id:string;first_name:string;last_name:string;role_id:string|null;photo_path:string|null})=>({id:p.id,first_name:p.first_name,last_name:p.last_name,role_id:p.role_id,photo:photoById[p.id]??null})),locations:locs.data??[],roles:roles.data??[],categories:cats.data??[],categoryLinks:catLinks.data??[]};
+}
+
+export const sendFeedback=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator((d:unknown)=>feedbackSchema.parse(d)).handler(async({data,context})=>{
+ const db=context.supabase; const {data:pid}=await db.rpc('portal_patient_id'); if(!pid)throw new Error('Log in als patiënt.');
+ const {data:appt}=await db.from('appointments').select('id,tenant_id,practitioner_id,starts_at').eq('id',data.appointmentId).eq('patient_id',pid).single();
+ if(!appt||Date.parse(appt.starts_at)>Date.now())throw new Error('Deze behandeling is niet gevonden.');
+ const {error}=await db.from('treatment_feedback').insert({appointment_id:data.appointmentId,patient_id:pid,practitioner_id:appt.practitioner_id,rating:data.rating,tags:data.tags,comment:data.comment,share_with_practitioner:data.share_with_practitioner});
+ if(error)throw new Error(error.code==='23505'?'Je hebt voor deze behandeling al feedback gegeven.':'Versturen is niet gelukt.');
+ await db.from('audit_log').insert({tenant_id:appt.tenant_id,user_id:context.userId,role_key:'patient',action:'portal_feedback',category:'patient',record_type:'appointment',record_id:data.appointmentId,details:{rating:data.rating}});
+ return {ok:true};
+});
+
+/** Staff preview: read the portal as a patient, read-only, audited. */
+export const readPortalAsPatient=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator((d:unknown)=>z.object({patientId:z.string().uuid()}).parse(d)).handler(async({data,context})=>{
+ const {data:allowed}=await context.supabase.rpc('has_permission',{_perm:'patients.view'});
+ if(!allowed)throw new Error('Geen toegang.');
+ const {admin}=await import('./booking.server'); const db=await admin();
+ const {data:p}=await db.from('patients').select('id,first_name,last_name,email,patient_number,tenant_id').eq('id',data.patientId).is('deleted_at',null).single();
+ if(!p)throw new Error('Patiënt niet gevonden.');
+ const [a,pk,m,c]=await Promise.all([db.from('portal_patient_access').select('*').eq('patient_id',p.id).maybeSingle(),db.from('ma_packages').select('*').eq('patient_id',p.id),db.from('measurements').select('weight_kg,measured_on').eq('patient_id',p.id).order('measured_on',{ascending:false}).limit(1),db.from('portal_config').select('content').eq('tenant_id',p.tenant_id).single()]);
+ if(!a.data||!c.data)throw new Error('Deze patiënt heeft nog geen Mijn omgeving.');
+ await db.from('audit_log').insert({tenant_id:p.tenant_id,user_id:context.userId,action:'portal_view_as_patient',category:'patient',record_type:'patient',record_id:p.id});
+ const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Amsterdam'}).format(new Date());
+ const extra=await portalHistory(db,p.tenant_id,p.id);
+ return {patient:p,access:a.data,landing:portalLanding(pk.data??[],a.data.starter_proposed,today),weight:m.data?.[0]?.weight_kg??null,content:c.data.content,today,...extra};
 });
