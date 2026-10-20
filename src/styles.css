@@ -400,7 +400,7 @@ a.portal-tile:hover {box-shadow:var(--portal-shadow);transform:translateY(-2px);
 .portal-months{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
 .portal-strength{border-radius:14px;padding:10px 6px;text-align:center;font-size:13px;font-weight:500;background:#EEF3F5;color:var(--foreground);transition:background-color 140ms;cursor:pointer;}
 .portal-strength small{display:block;font-size:11px;font-weight:400;color:var(--muted-foreground);margin-top:2px;}
-.portal-strength:hover{background:var(--portal-active);}
+.portal-strength:not(.portal-strength-selected):not(.portal-strength-review):enabled:hover{background:var(--portal-active);}
 .portal-strength:disabled{background:var(--portal-page);color:var(--muted-foreground);opacity:.55;cursor:not-allowed;}
 .portal-strength-selected{background:var(--primary);color:var(--primary-foreground);}
 .portal-strength-selected small{color:var(--primary-foreground);opacity:.8;}
