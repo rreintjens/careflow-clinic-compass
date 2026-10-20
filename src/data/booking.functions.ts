@@ -233,7 +233,7 @@ export const confirmBooking = createServerFn({ method: "POST" })
     const tenant = await resolveTenant(data.merk);
     if (!tenant) return { ok: false as const, reason: "failed" };
     const db = await admin();
-    const appt = (await db.from("appointments").select("id, status, hold_expires_at, manage_token").eq("tenant_id", tenant.id).eq("hold_token", data.token).maybeSingle()).data;
+    const appt = (await db.from("appointments").select("id, status, hold_expires_at, manage_token,treatment_id,starts_at").eq("tenant_id", tenant.id).eq("hold_token", data.token).maybeSingle()).data;
     if (!appt || appt.status !== "held" || !appt.hold_expires_at || Date.parse(appt.hold_expires_at) <= Date.now()) return { ok: false as const, reason: "expired" };
     const today = localParts(new Date(), tenant.time_zone).date;
     const [ty, tm, td] = today.split("-").map(Number) as [number, number, number];
