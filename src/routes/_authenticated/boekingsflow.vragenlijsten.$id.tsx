@@ -196,7 +196,7 @@ function Builder() {
         <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-sand text-xs">{n}</span>
         <Tag tone={label === "Vraag" ? "teal" : "sand"}>{label}</Tag>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 text-sm">{extra?.linked && <UiIcon name="link" className="size-3.5 shrink-0 text-primary" aria-label="Uit de bibliotheek" />}{title}{extra?.badge}</div>
+          <div className="flex items-center gap-2 text-sm">{extra?.linked && <UiIcon name="link" className="size-3.5 shrink-0 text-primary"/>}{title}{extra?.badge}</div>
           <div className="text-xs text-muted-foreground">{sub}</div>
           {show && <div className="mt-1 flex items-center gap-1.5 text-xs text-primary"><UiIcon name="route" className="size-3.5" />Alleen als {show}</div>}
         </div>
