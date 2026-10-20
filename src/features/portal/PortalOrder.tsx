@@ -4,8 +4,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, ShoppingCart, Check, PartyPopper } from 'lucide-react';
 import { toast } from 'sonner';
 import { copy } from './PortalShell';
-import { usePortalData, fmtDay, fill } from './PortalStart';
-import { orderWindow, readMaConfig, monthPrice, packageTotal, packageSavings, strengthState, type MaConfig } from '@/domain/portal';
+import { usePortalData, fill, OrderTile } from './PortalStart';
+import { readMaConfig, monthPrice, packageTotal, packageSavings, strengthState, type MaConfig } from '@/domain/portal';
 import { placePortalOrder } from '@/data/portal.functions';
 
 const eur=(n:number)=>`€ ${n.toLocaleString('nl-NL',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
@@ -33,7 +33,6 @@ function OrderPicker({cfg,onStart}:{cfg:MaConfig;onStart:(d:Draft)=>void}){
  const med=(d.access.medication??'').replace(/\s*[\d,.]+\s*mg\s*$/i,'').trim()||'Medicatie';
  const facts=(d.access.program_facts??{}) as Record<string,any>;
  const prog=facts['programma'] as {strengthSince:string;nextStep:string}|undefined;
- const win=orderWindow(pkg.start_date,pkg.months,d.today);
  const [open,setOpen]=useState<number|null>(null);
  const [choice,setChoice]=useState<{months:number;strengths:number[]}|null>(null);
  const total=choice?packageTotal(cfg,choice.strengths,choice.months):0;
@@ -46,15 +45,10 @@ function OrderPicker({cfg,onStart}:{cfg:MaConfig;onStart:(d:Draft)=>void}){
   <p className='portal-sub'>{prog?.strengthSince?fill(copy(c,'strengthSince'),{s:String(cfg.strengths[curIdx]!).replace('.',','),datum:prog.strengthSince.replace(/^.*?sinds /,'')}):''}</p>
   {prog?.nextStep&&<p className='portal-sub'>{fill(copy(c,'checkinNote'),{s:String(cfg.strengths[curIdx]!).replace('.',','),n:prog.nextStep.match(/^[\d,]+/)?.[0]??''})}</p>}
  </section>
- <section className='portal-card portal-status-good'>
-  <div className='portal-tile-head'><span className='portal-icon'><ShoppingCart size={18}/></span><span className='portal-chip portal-chip-white'>{win.canOrder?copy(c,'orderNow'):fill(copy(c,'orderIn'),{n:win.daysUntil})}</span></div>
-  <p className='portal-card-label'>{fill(copy(c,'nextOrder'),{medicijn:med})}</p>
-  <p className='portal-row-title'>{copy(c,'preorder')}</p>
-  <p className='portal-tile-sub'>{fill(copy(c,'orderWindow'),{d1:fmtDay(win.opens),d2:fmtDay(win.closes)})} · {fill(copy(c,'packageUntil'),{datum:fmtDay(win.closes)})}</p>
-  <span className='portal-order-bar'><span style={{width:`${Math.min(100,Math.max(4,100-win.daysUntil/7*100))}%`}}/></span>
- </section>
+ <OrderTile asLink={false}/>
  <h2 className='portal-card-heading portal-discover-heading'>{copy(c,'choosePackage')}</h2>
  <p className='portal-sub' style={{marginTop:-8,marginBottom:12}}>{copy(c,'choosePackageSub')}</p>
+ <p className='portal-sub' style={{marginBottom:10}}>{copy(c,'legendSentence')}</p>
  <div className='portal-legend'>
   <span><i className='lg-sel'/>{copy(c,'legendSelected')}</span><span><i className='lg-allow'/>{copy(c,'legendAllowed')}</span><span><i className='lg-review'/>{copy(c,'legendReview')}</span><span><i className='lg-block'/>{copy(c,'legendBlocked')}</span>
  </div>
@@ -109,7 +103,7 @@ function Checkout({draft,setDraft,cfg}:{draft:Draft;setDraft:(d:Draft|null)=>voi
  const delivery=cur.mode==='deliver'?cfg.delivery.find(x=>x.key===cur.delivery):undefined;
  const total=packTotal+(support?.price??0)*cur.months+extras.reduce((s,e)=>s+e.price,0)+(delivery?.price??0);
  const order=useMutation({mutationFn:()=>placePortalOrder({data:{months:cur.months,strengths:cur.strengths.map(i=>cfg.strengths[i]!),support:cur.support,extras:cur.extras,remark:cur.remark,mode:cur.mode,delivery:cur.mode==='deliver'?cur.delivery:null,payment:cur.payment,total}}),
-  onSuccess:async()=>{await qc.invalidateQueries();setStep(8);},onError:e=>toast.error(e.message)});
+  onSuccess:()=>{setStep(8);void qc.invalidateQueries({queryKey:['portal']});},onError:e=>toast.error(e.message)});
  const head=<div className='portal-tile-head' style={{marginBottom:16}}>{step>1?<button type='button' className='portal-link' onClick={()=>setStep(step-1)}>‹ {copy(c,'back')}</button>:<span/>}<span className='portal-sub'>{fill(copy(c,'stepOf'),{n:step,m:7})}</span></div>;
  const next=<button type='button' className='portal-btn-primary portal-btn-block' onClick={()=>setStep(step+1)}>{copy(c,'continueBtn')}</button>;
  if(step===8)return <section className='portal-card portal-center' style={{alignItems:'center',textAlign:'center',padding:'40px 24px'}}>

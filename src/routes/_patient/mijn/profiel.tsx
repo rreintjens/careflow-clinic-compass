@@ -19,7 +19,7 @@ function Profile(){
  <div className='portal-profile-page'>
   <span className='portal-avatar'>{patientInitials(d.patient.first_name,d.patient.last_name)}</span>
   <div><h2>{d.patient.first_name} {d.patient.last_name}</h2><p>{d.patient.email}</p></div>
-  <div><PillButton variant='outline' onClick={pending}>{copy(c,'edit')}</PillButton></div>
+  <div><PillButton variant='ghost' className='bg-teal-light text-primary-hover hover:bg-mist' onClick={pending}>{copy(c,'edit')}</PillButton></div>
  </div>
  <h2 className='portal-card-heading portal-discover-heading'>{copy(c,'account')}</h2>
  <div className='portal-card portal-rows'>

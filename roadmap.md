@@ -185,3 +185,9 @@ Verificatie 19-10: alle vijf punten op 1000007 als Rob doorlopen; 58 gerichte te
 - [x] Fase D: Voortgang (3 tabs), Programma, Afspraken
 - [x] Fase E: Bestellen met pakketkiezer + afrekenflow (demo-betaling)
 - [ ] Open: volledige Betaal-klik door de afrekenflow heen nog eind-tot-eind testen
+
+## Booking flow review 20-10
+- [ ] Joyce + practitioner photos as local files
+- [ ] "Je keuze blijft bewaard" shows day + time
+- [ ] Planner selected slot/day filled teal, white text
+- [ ] Profiel "Bewerken" light-teal pill, no border

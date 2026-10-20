@@ -55,19 +55,36 @@ function WeightTab(){
  </>;
 }
 
+/** Monotone kubische curve (Fritsch–Carlson) door de punten; geen rechte segmenten. */
+export function monotonePath(P:{x:number;y:number}[]){
+ const n=P.length;if(n<2)return '';
+ const dx=P.slice(1).map((p,i)=>p.x-P[i]!.x),sl=P.slice(1).map((p,i)=>(p.y-P[i]!.y)/(dx[i]||1));
+ const m=P.map((_,i)=>i===0?sl[0]!:i===n-1?sl[n-2]!:sl[i-1]!*sl[i]!<=0?0:3*(dx[i-1]!+dx[i]!)/((2*dx[i]!+dx[i-1]!)/sl[i-1]!+(dx[i]!+2*dx[i-1]!)/sl[i]!));
+ let d=`M${P[0]!.x.toFixed(1)},${P[0]!.y.toFixed(1)}`;
+ for(let i=0;i<n-1;i++){const h=dx[i]!/3;d+=` C${(P[i]!.x+h).toFixed(1)},${(P[i]!.y+m[i]!*h).toFixed(1)} ${(P[i+1]!.x-h).toFixed(1)},${(P[i+1]!.y-m[i+1]!*h).toFixed(1)} ${P[i+1]!.x.toFixed(1)},${P[i+1]!.y.toFixed(1)}`;}
+ return d;
+}
+
 function WeightChart({ms,goal}:{ms:{measured_on:string;weight_kg:number|null}[];goal:number|null}){
+ const {d}=usePortalData();const c=d.content;
  const pts=ms.filter(m=>m.weight_kg!==null) as {measured_on:string;weight_kg:number}[];
  if(pts.length<2)return null;
- const w=320,h=120,pad=8;
+ const w=340,h=220,l=40,r=12,t=14,b=26;
  const vals=[...pts.map(p=>p.weight_kg),...(goal!==null?[goal]:[])];
- const min=Math.min(...vals)-2,max=Math.max(...vals)+2;
- const x=(i:number)=>pad+i*(w-2*pad)/(pts.length-1);
- const y=(v:number)=>h-pad-(v-min)/(max-min)*(h-2*pad);
- const line=pts.map((p,i)=>`${i===0?'M':'L'}${x(i).toFixed(1)},${y(p.weight_kg).toFixed(1)}`).join(' ');
- return <svg className='portal-chart' viewBox={`0 0 ${w} ${h}`} role='img' aria-label='Gewichtsverloop'>
-  {goal!==null&&<line x1={pad} x2={w-pad} y1={y(goal)} y2={y(goal)} stroke='var(--portal-good-stroke)' strokeDasharray='4 4' strokeWidth='1.5'/>}
-  <path d={line} fill='none' stroke='var(--primary)' strokeWidth='2.5' strokeLinecap='round'/>
-  {pts.map((p,i)=><circle key={p.measured_on} cx={x(i)} cy={y(p.weight_kg)} r='3.5' fill='var(--primary)'/>)}
+ const min=Math.floor(Math.min(...vals)-2),max=Math.ceil(Math.max(...vals)+2);
+ const t0=Date.parse(pts[0]!.measured_on),t1=Date.parse(pts.at(-1)!.measured_on);
+ const x=(iso:string)=>l+(Date.parse(iso)-t0)/(t1-t0||1)*(w-l-r);
+ const y=(v:number)=>t+(max-v)/(max-min)*(h-t-b);
+ const P=pts.map(p=>({x:x(p.measured_on),y:y(p.weight_kg)}));
+ const step=Math.max(1,Math.round((max-min)/4));const ticks:number[]=[];for(let v=min;v<=max;v+=step)ticks.push(v);
+ const week=(iso:string)=>Math.round((Date.parse(iso)-t0)/(7*86_400_000));
+ const xl=[pts[0]!,pts[Math.floor((pts.length-1)/2)]!,pts.at(-1)!].filter((p,i,a)=>a.findIndex(q=>q.measured_on===p.measured_on)===i);
+ return <svg className='portal-chart portal-chart-weight' viewBox={`0 0 ${w} ${h}`} role='img' aria-label='Gewichtsverloop'>
+  {ticks.map(v=><g key={v}><line x1={l} x2={w-r} y1={y(v)} y2={y(v)} stroke='var(--portal-row-line)'/><text x={l-6} y={y(v)+3} textAnchor='end' fontSize='10' fill='var(--muted-foreground)'>{v} kg</text></g>)}
+  {goal!==null&&<><line x1={l} x2={w-r} y1={y(goal)} y2={y(goal)} stroke='var(--portal-good-stroke)' strokeDasharray='4 4' strokeWidth='1.5'/><text x={w-r} y={y(goal)-5} textAnchor='end' fontSize='10' fontWeight='600' fill='var(--portal-good-text)'>{fill(copy(c,'goalLine'),{g:nl(goal,0)})}</text></>}
+  <path d={monotonePath(P)} fill='none' stroke='var(--primary)' strokeWidth='2.5' strokeLinecap='round'/>
+  {P.map((p,i)=><circle key={i} cx={p.x} cy={p.y} r='3.5' fill='var(--primary)'/>)}
+  {xl.map((p,i)=><text key={p.measured_on} x={x(p.measured_on)} y={h-6} textAnchor={i===0?'start':i===xl.length-1?'end':'middle'} fontSize='10' fill='var(--muted-foreground)'>{i===0?copy(c,'chartStart'):fill(copy(c,'chartWeek'),{n:week(p.measured_on)})}</text>)}
  </svg>;
 }
 
