@@ -63,7 +63,7 @@ import { Route as AuthenticatedPatientenIdMedischRouteImport } from './routes/_a
 import { Route as AuthenticatedPatientenIdPortalRouteImport } from './routes/_authenticated/patienten.$id.portal'
 import { Route as AuthenticatedPatientenIdTijdlijnRouteImport } from './routes/_authenticated/patienten.$id.tijdlijn'
 import { Route as PatientMijnFeedbackAppointmentIdRouteImport } from './routes/_patient/mijn/feedback.$appointmentId'
-import { Route as PatientMijnHistorieAppointmentIdRouteImport } from './routes/_patient/mijn/historie.$appointmentId'
+import { Route as PatientMijnHistorieAppointmentIdRouteImport } from './routes/_patient/mijn/historie_.$appointmentId'
 import { Route as ApiPublicJobsMailRemindersRouteImport } from './routes/api/public/jobs/mail-reminders'
 import { Route as AuthenticatedBoekingsflowVragenlijstenIdTestRouteImport } from './routes/_authenticated/boekingsflow.vragenlijsten.$id_.test'
 
@@ -368,9 +368,9 @@ const PatientMijnFeedbackAppointmentIdRoute =
   } as any)
 const PatientMijnHistorieAppointmentIdRoute =
   PatientMijnHistorieAppointmentIdRouteImport.update({
-    id: '/$appointmentId',
-    path: '/$appointmentId',
-    getParentRoute: () => PatientMijnHistorieRoute,
+    id: '/historie_/$appointmentId',
+    path: '/historie/$appointmentId',
+    getParentRoute: () => PatientMijnRouteRoute,
   } as any)
 const ApiPublicJobsMailRemindersRoute =
   ApiPublicJobsMailRemindersRouteImport.update({
@@ -409,7 +409,7 @@ export interface FileRoutesByFullPath {
   '/mijn/afspraken': typeof PatientMijnAfsprakenRoute
   '/mijn/berichten': typeof PatientMijnBerichtenRoute
   '/mijn/bestellen': typeof PatientMijnBestellenRoute
-  '/mijn/historie': typeof PatientMijnHistorieRouteWithChildren
+  '/mijn/historie': typeof PatientMijnHistorieRoute
   '/mijn/profiel': typeof PatientMijnProfielRoute
   '/mijn/programma': typeof PatientMijnProgrammaRoute
   '/mijn/start': typeof PatientMijnStartRoute
@@ -463,7 +463,7 @@ export interface FileRoutesByTo {
   '/mijn/afspraken': typeof PatientMijnAfsprakenRoute
   '/mijn/berichten': typeof PatientMijnBerichtenRoute
   '/mijn/bestellen': typeof PatientMijnBestellenRoute
-  '/mijn/historie': typeof PatientMijnHistorieRouteWithChildren
+  '/mijn/historie': typeof PatientMijnHistorieRoute
   '/mijn/profiel': typeof PatientMijnProfielRoute
   '/mijn/programma': typeof PatientMijnProgrammaRoute
   '/mijn/start': typeof PatientMijnStartRoute
@@ -523,7 +523,7 @@ export interface FileRoutesById {
   '/_patient/mijn/afspraken': typeof PatientMijnAfsprakenRoute
   '/_patient/mijn/berichten': typeof PatientMijnBerichtenRoute
   '/_patient/mijn/bestellen': typeof PatientMijnBestellenRoute
-  '/_patient/mijn/historie': typeof PatientMijnHistorieRouteWithChildren
+  '/_patient/mijn/historie': typeof PatientMijnHistorieRoute
   '/_patient/mijn/profiel': typeof PatientMijnProfielRoute
   '/_patient/mijn/programma': typeof PatientMijnProgrammaRoute
   '/_patient/mijn/start': typeof PatientMijnStartRoute
@@ -545,7 +545,7 @@ export interface FileRoutesById {
   '/_authenticated/patienten/$id/portal': typeof AuthenticatedPatientenIdPortalRoute
   '/_authenticated/patienten/$id/tijdlijn': typeof AuthenticatedPatientenIdTijdlijnRoute
   '/_patient/mijn/feedback/$appointmentId': typeof PatientMijnFeedbackAppointmentIdRoute
-  '/_patient/mijn/historie/$appointmentId': typeof PatientMijnHistorieAppointmentIdRoute
+  '/_patient/mijn/historie_/$appointmentId': typeof PatientMijnHistorieAppointmentIdRoute
   '/api/public/jobs/mail-reminders': typeof ApiPublicJobsMailRemindersRoute
   '/_authenticated/boekingsflow/e-mails/': typeof AuthenticatedBoekingsflowEMailsIndexRoute
   '/_authenticated/boekingsflow/vragenlijsten/': typeof AuthenticatedBoekingsflowVragenlijstenIndexRoute
@@ -716,7 +716,7 @@ export interface FileRouteTypes {
     | '/_authenticated/patienten/$id/portal'
     | '/_authenticated/patienten/$id/tijdlijn'
     | '/_patient/mijn/feedback/$appointmentId'
-    | '/_patient/mijn/historie/$appointmentId'
+    | '/_patient/mijn/historie_/$appointmentId'
     | '/api/public/jobs/mail-reminders'
     | '/_authenticated/boekingsflow/e-mails/'
     | '/_authenticated/boekingsflow/vragenlijsten/'
@@ -1122,12 +1122,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PatientMijnFeedbackAppointmentIdRouteImport
       parentRoute: typeof PatientMijnRouteRoute
     }
-    '/_patient/mijn/historie/$appointmentId': {
-      id: '/_patient/mijn/historie/$appointmentId'
-      path: '/$appointmentId'
+    '/_patient/mijn/historie_/$appointmentId': {
+      id: '/_patient/mijn/historie_/$appointmentId'
+      path: '/historie/$appointmentId'
       fullPath: '/mijn/historie/$appointmentId'
       preLoaderRoute: typeof PatientMijnHistorieAppointmentIdRouteImport
-      parentRoute: typeof PatientMijnHistorieRoute
+      parentRoute: typeof PatientMijnRouteRoute
     }
     '/api/public/jobs/mail-reminders': {
       id: '/api/public/jobs/mail-reminders'
@@ -1250,28 +1250,18 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
-interface PatientMijnHistorieRouteChildren {
-  PatientMijnHistorieAppointmentIdRoute: typeof PatientMijnHistorieAppointmentIdRoute
-}
-
-const PatientMijnHistorieRouteChildren: PatientMijnHistorieRouteChildren = {
-  PatientMijnHistorieAppointmentIdRoute: PatientMijnHistorieAppointmentIdRoute,
-}
-
-const PatientMijnHistorieRouteWithChildren =
-  PatientMijnHistorieRoute._addFileChildren(PatientMijnHistorieRouteChildren)
-
 interface PatientMijnRouteRouteChildren {
   PatientMijnAfspraakMakenRoute: typeof PatientMijnAfspraakMakenRoute
   PatientMijnAfsprakenRoute: typeof PatientMijnAfsprakenRoute
   PatientMijnBerichtenRoute: typeof PatientMijnBerichtenRoute
   PatientMijnBestellenRoute: typeof PatientMijnBestellenRoute
-  PatientMijnHistorieRoute: typeof PatientMijnHistorieRouteWithChildren
+  PatientMijnHistorieRoute: typeof PatientMijnHistorieRoute
   PatientMijnProfielRoute: typeof PatientMijnProfielRoute
   PatientMijnProgrammaRoute: typeof PatientMijnProgrammaRoute
   PatientMijnStartRoute: typeof PatientMijnStartRoute
   PatientMijnVoortgangRoute: typeof PatientMijnVoortgangRoute
   PatientMijnFeedbackAppointmentIdRoute: typeof PatientMijnFeedbackAppointmentIdRoute
+  PatientMijnHistorieAppointmentIdRoute: typeof PatientMijnHistorieAppointmentIdRoute
 }
 
 const PatientMijnRouteRouteChildren: PatientMijnRouteRouteChildren = {
@@ -1279,12 +1269,13 @@ const PatientMijnRouteRouteChildren: PatientMijnRouteRouteChildren = {
   PatientMijnAfsprakenRoute: PatientMijnAfsprakenRoute,
   PatientMijnBerichtenRoute: PatientMijnBerichtenRoute,
   PatientMijnBestellenRoute: PatientMijnBestellenRoute,
-  PatientMijnHistorieRoute: PatientMijnHistorieRouteWithChildren,
+  PatientMijnHistorieRoute: PatientMijnHistorieRoute,
   PatientMijnProfielRoute: PatientMijnProfielRoute,
   PatientMijnProgrammaRoute: PatientMijnProgrammaRoute,
   PatientMijnStartRoute: PatientMijnStartRoute,
   PatientMijnVoortgangRoute: PatientMijnVoortgangRoute,
   PatientMijnFeedbackAppointmentIdRoute: PatientMijnFeedbackAppointmentIdRoute,
+  PatientMijnHistorieAppointmentIdRoute: PatientMijnHistorieAppointmentIdRoute,
 }
 
 const PatientMijnRouteRouteWithChildren =

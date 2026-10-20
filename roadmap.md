@@ -4,9 +4,9 @@
 - [x] A: gedeeld mobiel/desktopkader, tokens, afzonderlijke patiëntlogin via tienminutenlink, landingsregel, navigatie en vier demopatiënten; ieder via echte link op 390px/1440px gecontroleerd. Patiëntisolatie, medewerkers-/patiëntgrenzen, herladen, onbekende mail en eenmalig gebruik gecontroleerd; 42 gerichte tests groen. Demo-mails in bestaande outbox. Stop voor go.
   - Afbakening: volledige cosmetische historie/afspraken, behandeltrajecten en programmeerschermen volgen B/D; fase A toont Start-identiteit met demo-aantallen en pakket/meetbronnen, nog geen gefactureerde historische afspraken. Mails blijven demo_only, geen externe bezorging. Geen extra Profiel-tabel; bestaand dossier hergebruikt. Screenshots staan in Files onder Mijn-omgeving-fase-A.
 - [ ] B: cosmetische schermen en behandelinstellingen — wacht op go na A.
-- [ ] C: inloggen vanuit boeking en bevestigen — wacht op go na B.
-- [ ] D: medisch-afvallenschermen (wacht op go na B) — wacht op go na C.
-- [ ] E: bestellen en demo-afrekenen — wacht op go na D.
+- [ ] C: inloggen vanuit boeking (B1-balk: "Eerder bij ons geweest? Log in, dan staan je gegevens klaar" op eerste scherm én planner, loginpagina, terugkeer met Welkom-terugrij + eigen arts + ingevulde gegevens, boekingslink-stap 5, Joyce in bel-footer) — GO gegeven 20-10.
+- [ ] D: medisch-afvallenschermen met foto's en visuele regels — GO gegeven 20-10.
+- [ ] E: bestellen, pakketkiezer-states en demo-afrekenen — GO gegeven 20-10.
 
 ## Uitvoervolgorde eigenaar 19-10 13:19 UTC
 1. Gedeelde doorzoekbare picker

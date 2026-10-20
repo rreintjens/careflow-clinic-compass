@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const portalEmailSchema = z.object({ email: z.string().trim().toLowerCase().email().max(254) });
+export const portalEmailSchema = z.object({ email: z.string().trim().toLowerCase().email().max(254), merk: z.string().max(60).optional(), returnTo: z.string().max(600).optional() });
 export const portalTokenSchema = z.object({ token: z.string().regex(/^[a-f0-9]{64}$/) });
 export const PORTAL_LINK_MINUTES = 10;
 export function usablePortalToken(expiresAt: string, usedAt: string | null, now: number) {

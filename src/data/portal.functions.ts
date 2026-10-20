@@ -14,12 +14,12 @@ export const portalLoginInfo = createServerFn({method:'GET'}).handler(async()=>{
  return {content:{...c,demoPatients:t.test_mode?c['demoPatients']:[]},demo:t.test_mode};
 });
 export const sendPortalLink=createServerFn({method:'POST'}).inputValidator((d:unknown)=>portalEmailSchema.parse(d)).handler(async({data})=>{
- const {resolveTenant,admin}=await import('./booking.server'); const t=await resolveTenant(undefined);
+ const {resolveTenant,admin}=await import('./booking.server'); const t=await resolveTenant(data.merk);
  const result={message:'Check je mail',demoLink:null as string|null}; if(!t)return result; const db=await admin();
  const {count}=await db.from('portal_login_tokens').select('id',{count:'exact',head:true}).eq('tenant_id',t.id).eq('email',data.email).gte('created_at',new Date(Date.now()-600000).toISOString()); if((count??0)>=5)return result;
- const {data:ps}=await db.from('patients').select('id').eq('tenant_id',t.id).ilike('email',data.email).is('deleted_at',null).order('created_at',{ascending:false}); const p=ps?.[0];
+  const {data:ps}=await db.from('patients').select('id').eq('tenant_id',t.id).ilike('email',data.email).is('deleted_at',null).order('created_at',{ascending:false}); const p=ps?.[0];
  const raw=Array.from(crypto.getRandomValues(new Uint8Array(32)),b=>b.toString(16).padStart(2,'0')).join('');
- const {error}=await db.from('portal_login_tokens').insert({tenant_id:t.id,patient_id:p?.id??null,email:data.email,token_hash:await digest(raw),expires_at:new Date(Date.now()+PORTAL_LINK_MINUTES*60000).toISOString()}); if(error)throw new Error('Probeer het later opnieuw.');
+ const {error}=await db.from('portal_login_tokens').insert({tenant_id:t.id,patient_id:p?.id??null,email:data.email,token_hash:await digest(raw),expires_at:new Date(Date.now()+PORTAL_LINK_MINUTES*60000).toISOString(),return_context:data.returnTo?{booking:data.returnTo}:null}); if(error)throw new Error('Probeer het later opnieuw.');
  await db.from('audit_log').insert({tenant_id:t.id,action:'portal_link_sent',category:'login',record_type:'patient',record_id:p?.id??null,details:{email_hash:await digest(data.email),duplicate:(ps?.length??0)>1}});
  if(p){
  const {data:cfg}=await db.from('portal_config').select('content').eq('tenant_id',t.id).single(); const c=cfg?.content;
@@ -51,7 +51,19 @@ export const redeemPortalLink=createServerFn({method:'POST'}).inputValidator((d:
  const client=createClient(process.env['SUPABASE_URL']!,key,{auth:{persistSession:false,autoRefreshToken:false},global:{fetch:(input,init)=>{const h=new Headers(init?.headers);if(key.startsWith('sb_')&&h.get('Authorization')===`Bearer ${key}`)h.delete('Authorization');h.set('apikey',key);return fetch(input,{...init,headers:h});}}});
  const verified=await client.auth.verifyOtp({token_hash:freshOtp,type:'magiclink'}); if(!verified.data.session){console.error('portal verify',verified.error?.code);throw new Error('Inloggen is niet gelukt.');}
  await db.from('audit_log').insert(['portal_link_used','portal_login'].map(action=>({tenant_id:t.id,user_id:user.id,role_key:'patient',action,category:'login',record_type:'patient',record_id:p.id})));
- return {access_token:verified.data.session.access_token,refresh_token:verified.data.session.refresh_token};
+ const rc=tok.return_context; const returnTo=rc&&typeof rc==='object'&&!Array.isArray(rc)&&typeof (rc as Record<string,unknown>)['booking']==='string'?String((rc as Record<string,unknown>)['booking']):null;
+ return {access_token:verified.data.session.access_token,refresh_token:verified.data.session.refresh_token,returnTo};
+});
+
+/** Booking-flow context for a logged-in patient: prefill details and past visits for the practitioner preset. Staff get patient:null. */
+export const bookingPatientContext=createServerFn({method:'POST'}).inputValidator((d:unknown)=>z.object({merk:z.string().max(60).optional()}).parse(d)).handler(async({data,context})=>{
+ const db=context.supabase; const {data:pid}=await db.rpc('portal_patient_id'); if(!pid) return {patient:null,visits:[] as {treatment_id:string;practitioner_id:string|null;starts_at:string}[]};
+ const {resolveTenant,admin}=await import('./booking.server'); const t=await resolveTenant(data.merk); if(!t) return {patient:null,visits:[] as {treatment_id:string;practitioner_id:string|null;starts_at:string}[]};
+ const adb=await admin();
+ const {data:p}=await adb.from('patients').select('id,first_name,last_name,email,phone,phone_country,date_of_birth,salutation,country,postcode,house_number,house_suffix,street,city').eq('id',pid).eq('tenant_id',t.id).is('deleted_at',null).single();
+ if(!p) return {patient:null,visits:[] as {treatment_id:string;practitioner_id:string|null;starts_at:string}[]};
+ const {data:visits}=await adb.from('appointments').select('treatment_id,practitioner_id,starts_at').eq('tenant_id',t.id).eq('patient_id',pid).eq('status','booked').lt('starts_at',new Date().toISOString()).not('practitioner_id','is',null).order('starts_at',{ascending:false}).limit(200);
+ return {patient:p,visits:visits??[]};
 });
 export const readPortal=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).handler(async({context})=>{
  const db=context.supabase; const {data:id}=await db.rpc('portal_patient_id'); if(!id)throw new Error('Log in als patiënt om Mijn omgeving te openen.');
