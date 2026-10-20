@@ -2,7 +2,7 @@ import { createServerFn } from '@tanstack/react-start';
 import { createClient } from '@supabase/supabase-js';
 import { getRequest } from '@tanstack/react-start/server';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
-import { portalEmailSchema, portalTokenSchema, portalLanding, PORTAL_LINK_MINUTES } from '@/domain/portal';
+import { portalEmailSchema, portalTokenSchema, portalLanding, PORTAL_LINK_MINUTES, feedbackSchema } from '@/domain/portal';
 
 const digest = async (v: string) => Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(v))), b=>b.toString(16).padStart(2,'0')).join('');
 export const portalLoginInfo = createServerFn({method:'GET'}).handler(async()=>{
@@ -90,10 +90,10 @@ async function portalHistory(db:{from:(t:string)=>any;storage:any},tenantId:stri
 
 export const sendFeedback=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator((d:unknown)=>feedbackSchema.parse(d)).handler(async({data,context})=>{
  const db=context.supabase; const {data:pid}=await db.rpc('portal_patient_id'); if(!pid)throw new Error('Log in als patiënt.');
- const {data:appt}=await db.from('appointments').select('id,practitioner_id,starts_at').eq('id',data.appointmentId).eq('patient_id',pid).single();
+ const {data:appt}=await db.from('appointments').select('id,tenant_id,practitioner_id,starts_at').eq('id',data.appointmentId).eq('patient_id',pid).single();
  if(!appt||Date.parse(appt.starts_at)>Date.now())throw new Error('Deze behandeling is niet gevonden.');
  const {error}=await db.from('treatment_feedback').insert({appointment_id:data.appointmentId,patient_id:pid,practitioner_id:appt.practitioner_id,rating:data.rating,tags:data.tags,comment:data.comment,share_with_practitioner:data.share_with_practitioner});
  if(error)throw new Error(error.code==='23505'?'Je hebt voor deze behandeling al feedback gegeven.':'Versturen is niet gelukt.');
- await db.from('audit_log').insert({action:'portal_feedback',category:'patient',record_type:'appointment',record_id:data.appointmentId,details:{rating:data.rating}});
+ await db.from('audit_log').insert({tenant_id:appt.tenant_id,user_id:context.userId,role_key:'patient',action:'portal_feedback',category:'patient',record_type:'appointment',record_id:data.appointmentId,details:{rating:data.rating}});
  return {ok:true};
 });
