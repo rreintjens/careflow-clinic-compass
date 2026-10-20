@@ -203,7 +203,7 @@ function LinkModal({ d, link, onClose }: { d: BookingLinksData; link: Link | nul
       open
       onOpenChange={(o) => !o && onClose()}
       title={link ? link.name : "Nieuwe boekingslink"}
-      description="Loop de vijf stappen door. Rechts zie je direct wat de patiënt ziet, met daaronder de link om te kopiëren."
+      description="Loop de zes stappen door. Rechts zie je direct wat de patiënt ziet, met daaronder de link om te kopiëren."
       width="lg"
       footer={<><PillButton variant="outline" onClick={onClose}>Annuleren</PillButton><PillButton disabled={!!problem || !name.trim() || !channelId || !placeId || !campaignId || save.isPending} onClick={() => save.mutate()}>Link opslaan</PillButton></>}
     >
@@ -260,4 +260,14 @@ function LinkModal({ d, link, onClose }: { d: BookingLinksData; link: Link | nul
       </div>
     </Modal>
   );
+}
+
+/** Step 5: whether the booking flow shows the B2 login bar for existing patients. */
+function Step5Login({showLogin,setShowLogin}:{showLogin:boolean;setShowLogin:(v:boolean)=>void}){
+ return <Field label='Inloggen voor bestaande patiënten'>
+  <div className='flex gap-2'>
+   {[true,false].map(v=><button key={String(v)} type='button' onClick={()=>setShowLogin(v)} className={`patient-choice flex-1 rounded-full px-4 py-2.5 text-[14px] font-medium ${showLogin===v?'bg-primary text-primary-foreground':'bg-muted'}`}>{v?'Tonen':'Niet tonen'}</button>)}
+  </div>
+  <p className='mt-2 text-[12px] text-muted-foreground'>{showLogin?'Bovenaan het eerste scherm en de agenda staat: "Eerder bij ons geweest? Inloggen". Na inloggen komt de patiënt terug in deze flow, met gegevens en eigen arts al ingevuld.':'Iedereen doorloopt de boeking als nieuwe patiënt. Handig voor campagnes die zich op nieuwe patiënten richten.'}</p>
+ </Field>;
 }

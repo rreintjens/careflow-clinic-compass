@@ -1,6 +1,6 @@
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { History, ClipboardCheck, CalendarDays, ShieldCheck, Footprints, MapPin, Syringe, Star } from 'lucide-react';
-import { Link } from '@tanstack/react-router';
+import { Link, useSearch } from '@tanstack/react-router';
 import { useEffect,useState } from 'react';
 import { portalQuery } from '@/data/portal';
 import { copy, PortalTile } from './PortalShell';
@@ -33,18 +33,20 @@ export function PortalStart(){
  const {d,treat,prac,loc,role,history,upcoming}=usePortalData();
  const [greeting,setGreeting]=useState('Goedemorgen');
  useEffect(()=>{const hour=Number(new Intl.DateTimeFormat('nl-NL',{timeZone:'Europe/Amsterdam',hour:'numeric',hourCycle:'h23'}).format(new Date()));setGreeting(hour<12?'Goedemorgen':hour<18?'Goedemiddag':'Goedenavond');},[]);
+ const search=useSearch({strict:false}) as {bevestigd?:boolean};
+ const confirmed=search.bevestigd?upcoming[0]:undefined;
  const c=d.content;const lost=d.weight!==null&&d.access.initial_weight_kg!==null?(d.access.initial_weight_kg-d.weight).toLocaleString('nl-NL',{maximumFractionDigits:1}):'';
  const month=d.landing.package?Math.max(1,(Number(d.today.slice(0,4))-Number(d.landing.package.start_date.slice(0,4)))*12+Number(d.today.slice(5,7))-Number(d.landing.package.start_date.slice(5,7))+1):1;
  const historyTile=<PortalTile icon={History} label={copy(c,d.landing.kind==='active'?'combinedHistory':'history')} value={String(history.length)} sub={copy(c,'historySub')} to='/mijn/historie'/>;
  const medical=d.landing.kind==='active'||d.landing.kind==='starter'||d.landing.kind==='stopped';
- return <><p className='portal-date'>{new Date(`${d.today}T12:00:00Z`).toLocaleDateString('nl-NL',{weekday:'long',day:'numeric',month:'long'})}</p><h1>{greeting}, <span>{d.patient.first_name}</span></h1><div className='portal-pills'>{d.landing.kind==='active'?<><span><CalendarDays size={14}/>Maand {month} {copy(c,'programme')}</span><span><Syringe size={14}/>{d.access.medication}</span></>:<span><MapPin size={14}/>Kliniek {d.access.clinic_label}</span>}</div>
+ return <>{confirmed&&<ConfirmedTile a={confirmed}/>}<div className={confirmed?'portal-fade-late':undefined}><p className='portal-date'>{new Date(`${d.today}T12:00:00Z`).toLocaleDateString('nl-NL',{weekday:'long',day:'numeric',month:'long'})}</p><h1>{greeting}, <span>{d.patient.first_name}</span></h1><div className='portal-pills'>{d.landing.kind==='active'?<><span><CalendarDays size={14}/>Maand {month} {copy(c,'programme')}</span><span><Syringe size={14}/>{d.access.medication}</span></>:<span><MapPin size={14}/>Kliniek {d.access.clinic_label}</span>}</div>
  {medical?<div className='portal-start-grid'>
  {d.landing.kind==='active'&&<><PortalTile icon={CalendarDays} label={copy(c,'activeLabel')} value={`Maand ${month}`} sub={d.access.medication??''} status='neutral' to='/mijn/afspraken'/><PortalTile icon={Footprints} label={copy(c,'lost')} value={`${lost} kg`} status='good' to='/mijn/voortgang'/>{history.length>0&&historyTile}</>}
  {d.landing.kind==='starter'&&<><PortalTile icon={ClipboardCheck} label={copy(c,'starterLabel')} value={copy(c,'questionnaire')} sub={copy(c,'questionnaireSub')} status='soon' to='/mijn/afspraken'/><PortalTile icon={ShieldCheck} label={copy(c,'starterLabel')} value={copy(c,'consents')} sub={copy(c,'consentsSub')} status='soon' to='/mijn/profiel'/></>}
  {d.landing.kind==='stopped'&&<div className='portal-tile portal-status-good portal-stopped'><span className='portal-icon'><Footprints size={20}/></span><span className='portal-tile-label'>{copy(c,'stoppedLabel').replace('{datum}',new Date(`${d.landing.stoppedOn}T12:00:00Z`).toLocaleDateString('nl-NL',{day:'numeric',month:'long'}))}</span><strong className='portal-tile-value'>{lost} kg</strong><span className='portal-tile-sub'>{copy(c,'lost')}</span><Link to='/boeken' className='portal-restart'>{copy(c,'restart')}</Link></div>}
  {d.landing.kind==='stopped'&&history.length>0&&historyTile}
  </div>:<CosmeticStart/>}
- </>;
+ </div></>;
 }
 
 /** Cosmetic Start (v0.2 §5): arts card, behandeltraject, feedback, opnieuw boeken, ontdekken. */
@@ -96,5 +98,18 @@ function courseT(a:HistoryItem,treat:(id:string)=>{name_nl:string;icon:string|nu
   <div className='portal-course'><Ring value={courseDone} max={n}><strong>{courseDone} van {n}</strong><span>{copy(c,'ofTreatments')}</span></Ring>
   {courseNext&&<div className='portal-course-next'><p className='portal-sub'>{fill(copy(c,'nextTreatment'),{x:courseDone+1,n})}</p><p className='portal-row-title'>{fmtDay(courseNext.starts_at,{weekday:'short',day:'numeric',month:'short'})}, {new Date(courseNext.starts_at).toLocaleTimeString('nl-NL',{timeZone:'Europe/Amsterdam',hour:'2-digit',minute:'2-digit'})}</p><p className='portal-sub portal-with-photo'>{p&&<Photo src={p.photo} size={18}/>}{p?`${p.first_name} ${p.last_name}`:''} · {loc(courseNext.location_id)?.name}</p></div>}</div>
   {s.course_interval&&<p className='portal-sub'>{s.course_interval}</p>}
+ </section>;
+}
+
+/** Green confirmation tile after a booking confirmed via the login link (v0.1 §2). */
+function ConfirmedTile({a}:{a:{id:string;starts_at:string;treatment_id:string;practitioner_id:string|null;location_id:string|null}}){
+ const {d,treat,prac,loc,role}=usePortalData();const c=d.content;
+ const p=prac(a.practitioner_id);const t=treat(a.treatment_id);
+ return <section className='portal-card portal-confirm'>
+  <p className='portal-card-label'>{copy(c,'confirmedLabel')}</p>
+  <p className='portal-confirm-big'>{fmtDay(a.starts_at,{weekday:'long',day:'numeric',month:'long'})}, {new Date(a.starts_at).toLocaleTimeString('nl-NL',{timeZone:'Europe/Amsterdam',hour:'2-digit',minute:'2-digit'})}</p>
+  <p className='portal-sub'>{t?.name_nl}{loc(a.location_id)?` · ${loc(a.location_id)!.name}`:''}</p>
+  {p&&<div className='portal-confirm-row'><Photo src={p.photo} size={36}/><div className='min-w-0'><p className='portal-row-title'>{p.first_name} {p.last_name}</p><p className='portal-sub'>Je {role(p.role_id).toLowerCase()}</p></div></div>}
+  <Link to='/boeken' search={{t:a.treatment_id,l:a.location_id??undefined,p:a.practitioner_id??undefined}} className='portal-link'>{copy(c,'confirmedAdjust')}</Link>
  </section>;
 }
