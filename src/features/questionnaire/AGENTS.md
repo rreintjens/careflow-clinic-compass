@@ -3,3 +3,5 @@
 - Patient questionnaire UI is one component (`src/features/questionnaire/QuestionnaireRunner.tsx`); fixed screen texts come from option list `questionnaire_ui`.
 - Questionnaire builder opens the live version read-only; editing happens only in the single concept (Aanpassen), with row labels and publish summaries derived from `describeChanges`/`rowChange` so the builder and publish dialog cannot disagree.
 - Version configuration is frozen alongside each definition; every runner, resume and signal context reads the selected version configuration so draft edits never affect live or archived answers.
+
+- Library questions are referenced by code from dossier template versions and questionnaire items (`library_code`); saving one runs `saveLibraryQuestion`, which creates concepts for every user — template merge/sync rules live in `src/domain/dossier-templates.ts` so builder and consult cannot diverge.
