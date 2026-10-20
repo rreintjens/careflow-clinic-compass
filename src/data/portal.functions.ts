@@ -97,3 +97,18 @@ export const sendFeedback=createServerFn({method:'POST'}).middleware([requireSup
  await db.from('audit_log').insert({tenant_id:appt.tenant_id,user_id:context.userId,role_key:'patient',action:'portal_feedback',category:'patient',record_type:'appointment',record_id:data.appointmentId,details:{rating:data.rating}});
  return {ok:true};
 });
+
+/** Staff preview: read the portal as a patient, read-only, audited. */
+export const readPortalAsPatient=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator((d:unknown)=>z.object({patientId:z.string().uuid()}).parse(d)).handler(async({data,context})=>{
+ const {data:allowed}=await context.supabase.rpc('has_permission',{perm:'patients.read'});
+ if(!allowed)throw new Error('Geen toegang.');
+ const {admin}=await import('./booking.server'); const db=await admin();
+ const {data:p}=await db.from('patients').select('id,first_name,last_name,email,patient_number,tenant_id').eq('id',data.patientId).is('deleted_at',null).single();
+ if(!p)throw new Error('Patiënt niet gevonden.');
+ const [a,pk,m,c]=await Promise.all([db.from('portal_patient_access').select('*').eq('patient_id',p.id).maybeSingle(),db.from('ma_packages').select('*').eq('patient_id',p.id),db.from('measurements').select('weight_kg,measured_on').eq('patient_id',p.id).order('measured_on',{ascending:false}).limit(1),db.from('portal_config').select('content').eq('tenant_id',p.tenant_id).single()]);
+ if(!a.data||!c.data)throw new Error('Deze patiënt heeft nog geen Mijn omgeving.');
+ await db.from('audit_log').insert({tenant_id:p.tenant_id,user_id:context.userId,action:'portal_view_as_patient',category:'patient',record_type:'patient',record_id:p.id});
+ const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Amsterdam'}).format(new Date());
+ const extra=await portalHistory(db,p.tenant_id,p.id);
+ return {patient:p,access:a.data,landing:portalLanding(pk.data??[],a.data.starter_proposed,today),weight:m.data?.[0]?.weight_kg??null,content:c.data.content,today,...extra};
+});
