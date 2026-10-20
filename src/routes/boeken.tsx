@@ -325,9 +325,9 @@ function PlannerStep({ c, s, step, tx, lang, go }: { c: Full; s: Search; step: E
           const has = slots.some((x) => x.date === d);
           const on = d === selected;
           return (
-            <button key={d} type="button" disabled={!has} onClick={() => go({ d, tijd: undefined }, true)} aria-pressed={selected===d} className="patient-choice rounded-[12px] px-1 flex flex-col items-center gap-1.5 disabled:opacity-40">
+            <button key={d} type="button" disabled={!has} onClick={() => go({ d, tijd: undefined }, true)} aria-pressed={selected===d} className="patient-choice patient-day rounded-[12px] px-1 flex flex-col items-center gap-1.5 disabled:opacity-40">
               <span className={cn("text-[12px]", on ? "font-semibold text-primary" : "text-muted-foreground")}>{fmt(d, { weekday: "short" }).slice(0, 2)}</span>
-              <span className={cn("flex size-10 items-center justify-center rounded-full text-[15px]", on ? "bg-primary text-primary-foreground" : has ? "bg-sand" : "")}>{Number(d.slice(8))}</span>
+              <span className={cn("day-circle flex size-10 items-center justify-center rounded-full text-[15px]", on ? "bg-primary text-primary-foreground" : has ? "bg-sand" : "")}>{Number(d.slice(8))}</span>
             </button>
           );
         })}
