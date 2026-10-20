@@ -2400,6 +2400,7 @@ export type Database = {
           initial_weight_kg: number | null
           medication: string | null
           patient_id: string
+          program_facts: Json
           role: string
           starter_proposed: boolean
           tenant_id: string
@@ -2417,6 +2418,7 @@ export type Database = {
           initial_weight_kg?: number | null
           medication?: string | null
           patient_id: string
+          program_facts?: Json
           role?: string
           starter_proposed?: boolean
           tenant_id?: string
@@ -2434,6 +2436,7 @@ export type Database = {
           initial_weight_kg?: number | null
           medication?: string | null
           patient_id?: string
+          program_facts?: Json
           role?: string
           starter_proposed?: boolean
           tenant_id?: string
@@ -2680,6 +2683,7 @@ export type Database = {
           sort: number
           status: string
           tenant_id: string
+          title: string | null
           updated_at: string
           updated_by: string | null
           user_id: string | null
@@ -2699,6 +2703,7 @@ export type Database = {
           sort?: number
           status?: string
           tenant_id?: string
+          title?: string | null
           updated_at?: string
           updated_by?: string | null
           user_id?: string | null
@@ -2718,6 +2723,7 @@ export type Database = {
           sort?: number
           status?: string
           tenant_id?: string
+          title?: string | null
           updated_at?: string
           updated_by?: string | null
           user_id?: string | null

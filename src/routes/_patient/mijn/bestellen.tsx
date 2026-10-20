@@ -1,4 +1,4 @@
 import {createFileRoute} from '@tanstack/react-router';
-import {PortalPending} from '@/features/portal/PortalShell';
+import {PortalOrder} from '@/features/portal/PortalOrder';
 import {portalHead} from '@/features/portal/head';
-export const Route=createFileRoute('/_patient/mijn/bestellen')({head:()=>portalHead('Bestellen'),component:()=> <PortalPending page='bestellen'/>});
+export const Route=createFileRoute('/_patient/mijn/bestellen')({head:()=>portalHead('Bestellen'),component:PortalOrder});

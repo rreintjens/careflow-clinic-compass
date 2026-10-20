@@ -4,7 +4,7 @@ import { z } from 'zod';
 import type { Json } from '@/integrations/supabase/types';
 import { getRequest } from '@tanstack/react-start/server';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
-import { portalEmailSchema, portalTokenSchema, portalLanding, PORTAL_LINK_MINUTES, feedbackSchema } from '@/domain/portal';
+import { portalEmailSchema, portalTokenSchema, portalLanding, PORTAL_LINK_MINUTES, feedbackSchema, readMaConfig, packageTotal, packageEnd } from '@/domain/portal';
 
 const digest = async (v: string) => Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(v))), b=>b.toString(16).padStart(2,'0')).join('');
 export const portalLoginInfo = createServerFn({method:'GET'}).handler(async()=>{
@@ -120,22 +120,24 @@ export const readPortal=createServerFn({method:'POST'}).middleware([requireSupab
 });
 
 export type PortalAppointment={id:string;treatment_id:string;practitioner_id:string|null;location_id:string|null;starts_at:string;ends_at:string;status:string;meet_link:string|null};
-export type PortalPractitioner={id:string;first_name:string;last_name:string;role_id:string|null;photo:string|null};
+export type PortalPractitioner={id:string;first_name:string;last_name:string;title:string|null;role_id:string|null;photo:string|null};
 export type PortalTreatment={id:string;name_nl:string;icon:string|null;duration_min:number;portal_settings:Json};
-export type PortalExtra={appointments:PortalAppointment[];feedback:{appointment_id:string;rating:number;tags:string[];comment:string;share_with_practitioner:boolean}[];treatments:PortalTreatment[];practitioners:PortalPractitioner[];locations:{id:string;name:string;kind:string}[];roles:{id:string;name:string}[];categories:{id:string;name_nl:string;icon:string|null;parent_id:string|null}[];categoryLinks:{treatment_id:string;category_id:string}[]};
+export type PortalMeasurement={measured_on:string;weight_kg:number|null;waist_cm:number|null;height_cm:number|null};
+export type PortalExtra={appointments:PortalAppointment[];feedback:{appointment_id:string;rating:number;tags:string[];comment:string;share_with_practitioner:boolean}[];treatments:PortalTreatment[];practitioners:PortalPractitioner[];locations:{id:string;name:string;kind:string}[];roles:{id:string;name:string;key:string}[];categories:{id:string;name_nl:string;icon:string|null;parent_id:string|null}[];categoryLinks:{treatment_id:string;category_id:string}[];measurements:PortalMeasurement[]};
 /** History, upcoming appointments, practitioners and treatments for the portal; photos are signed server-side. */
 async function portalHistory(db:{from:(t:string)=>any;storage:any},tenantId:string,patientId:string):Promise<PortalExtra>{
- const [appts,fb,treats,prs,locs,roles,cats,catLinks]=await Promise.all([
+ const [appts,fb,treats,prs,locs,roles,cats,catLinks,ms]=await Promise.all([
   db.from('appointments').select('id,treatment_id,practitioner_id,location_id,starts_at,ends_at,status,meet_link').eq('tenant_id',tenantId).eq('patient_id',patientId).in('status',['booked']).order('starts_at',{ascending:false}),
   db.from('treatment_feedback').select('appointment_id,rating,tags,comment,share_with_practitioner').eq('tenant_id',tenantId).eq('patient_id',patientId),
   db.from('treatments').select('id,name_nl,icon,duration_min,portal_settings').eq('tenant_id',tenantId),
-  db.from('practitioners').select('id,first_name,last_name,role_id,photo_path').eq('tenant_id',tenantId).eq('status','active'),
+  db.from('practitioners').select('id,first_name,last_name,title,role_id,photo_path').eq('tenant_id',tenantId).eq('status','active'),
   db.from('locations').select('id,name,kind').eq('tenant_id',tenantId),
-  db.from('roles').select('id,name').eq('tenant_id',tenantId),
+  db.from('practitioner_roles').select('id,key,name_nl').eq('tenant_id',tenantId),
   db.from('treatment_categories').select('id,name_nl,icon,parent_id').eq('tenant_id',tenantId),
   db.from('treatment_category_links').select('treatment_id,category_id').eq('tenant_id',tenantId),
+  db.from('measurements').select('measured_on,weight_kg,waist_cm,height_cm').eq('tenant_id',tenantId).eq('patient_id',patientId).order('measured_on',{ascending:false}).limit(24),
  ]);
- for(const q of [appts,fb,treats,prs,locs,roles,cats,catLinks]) if(q.error) throw new Error('Mijn omgeving kon niet worden geladen.');
+ for(const q of [appts,fb,treats,prs,locs,roles,cats,catLinks,ms]) if(q.error) throw new Error('Mijn omgeving kon niet worden geladen.');
  const {data:tenant}=await db.from('tenants').select('slug').eq('id',tenantId).single();
  const bucket=`practitioner-photos-${tenant?.slug??''}`;
  const photos=await Promise.all((prs.data??[]).map(async(p:{photo_path:string|null})=>{
@@ -144,7 +146,7 @@ async function portalHistory(db:{from:(t:string)=>any;storage:any},tenantId:stri
   return s?.signedUrl??null;
  }));
  const photoById=Object.fromEntries((prs.data??[]).map((p:{id:string},i:number)=>[p.id,photos[i]??null]));
- return {appointments:appts.data??[],feedback:fb.data??[],treatments:treats.data??[],practitioners:(prs.data??[]).map((p:{id:string;first_name:string;last_name:string;role_id:string|null;photo_path:string|null})=>({id:p.id,first_name:p.first_name,last_name:p.last_name,role_id:p.role_id,photo:photoById[p.id]??null})),locations:locs.data??[],roles:roles.data??[],categories:cats.data??[],categoryLinks:catLinks.data??[]};
+ return {appointments:appts.data??[],feedback:fb.data??[],treatments:treats.data??[],practitioners:(prs.data??[]).map((p:{id:string;first_name:string;last_name:string;title:string|null;role_id:string|null;photo_path:string|null})=>({id:p.id,first_name:p.first_name,last_name:p.last_name,title:p.title,role_id:p.role_id,photo:photoById[p.id]??null})),locations:locs.data??[],roles:(roles.data??[]).map((r:{id:string;key:string;name_nl:string})=>({id:r.id,key:r.key,name:r.name_nl})),categories:cats.data??[],categoryLinks:catLinks.data??[],measurements:ms.data??[]};
 }
 
 export const sendFeedback=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator((d:unknown)=>feedbackSchema.parse(d)).handler(async({data,context})=>{
@@ -170,4 +172,28 @@ export const readPortalAsPatient=createServerFn({method:'POST'}).middleware([req
  const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Amsterdam'}).format(new Date());
  const extra=await portalHistory(db,p.tenant_id,p.id);
  return {patient:p,access:a.data,landing:portalLanding(pk.data??[],a.data.starter_proposed,today),weight:m.data?.[0]?.weight_kg??null,content:c.data.content,today,...extra};
+});
+
+const orderSchema=z.object({months:z.union([z.literal(1),z.literal(2),z.literal(3),z.literal(6)]),strengths:z.array(z.number()).min(1).max(6),support:z.string().max(40),extras:z.array(z.string().max(40)).max(8),remark:z.string().max(1000),mode:z.enum(['deliver','pickup']),delivery:z.string().max(40).nullable(),payment:z.string().max(40),total:z.number().min(0).max(100000)});
+/** Bestelling plaatsen (demo-betaling): nieuw pakket met status 'ordered'; de arts kijkt na. */
+export const placePortalOrder=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator((d:unknown)=>orderSchema.parse(d)).handler(async({data,context})=>{
+ const db=context.supabase; const {data:pid}=await db.rpc('portal_patient_id'); if(!pid)throw new Error('Log in als patiënt.');
+ const {data:p}=await db.from('patients').select('tenant_id').eq('id',pid).single(); if(!p)throw new Error('Bestellen is niet gelukt.');
+ if(data.strengths.length!==data.months)throw new Error('Kies voor elke maand een sterkte.');
+ const {data:cfgRow}=await db.from('portal_config').select('content').eq('tenant_id',p.tenant_id).single();
+ const cfg=readMaConfig(cfgRow?.content&&typeof cfgRow.content==='object'&&!Array.isArray(cfgRow.content)?(cfgRow.content as Record<string,unknown>)['maConfig']:null);
+ if(!cfg)throw new Error('Bestellen is niet gelukt.');
+ // Sterktes en totaal worden server-side opnieuw berekend; de client stuurt alleen keuzes.
+ const idx=data.strengths.map(s=>cfg.strengths.indexOf(s)); if(idx.some(i=>i<0))throw new Error('Kies voor elke maand een sterkte.');
+ const check=data.strengths.length>1?packageTotal(cfg,idx,data.months):packageTotal(cfg,idx,data.months);
+ const support=cfg.support.find(s=>s.key===data.support); const extras=cfg.extras.filter(e=>data.extras.includes(e.key));
+ const delivery=data.mode==='deliver'?cfg.delivery.find(x=>x.key===data.delivery):undefined;
+ const expected=check+(support?.price??0)*data.months+extras.reduce((s,e)=>s+e.price,0)+(delivery?.price??0);
+ if(Math.abs(expected-data.total)>0.01)throw new Error('Het totaal klopt niet meer. Probeer het opnieuw.');
+ const {data:prev}=await db.from('ma_packages').select('start_date,months').eq('patient_id',pid).in('status',['active','completed']).order('start_date',{ascending:false}).limit(1);
+ const start=prev?.[0]?packageEnd(prev[0].start_date,prev[0].months):new Date().toISOString().slice(0,10);
+ const {error}=await db.from('ma_packages').insert({tenant_id:p.tenant_id,patient_id:pid,order_id:crypto.randomUUID(),start_date:start,months:data.months,strengths:data.strengths,status:'ordered'});
+ if(error)throw new Error('Bestellen is niet gelukt.');
+ await db.from('audit_log').insert({tenant_id:p.tenant_id,user_id:context.userId,role_key:'patient',action:'portal_order_placed',category:'patient',record_type:'patient',record_id:pid,details:{months:data.months,strengths:data.strengths,support:data.support,extras:data.extras,mode:data.mode,delivery:data.delivery,payment:data.payment,total:data.total,remark:data.remark||undefined}});
+ return {ok:true};
 });

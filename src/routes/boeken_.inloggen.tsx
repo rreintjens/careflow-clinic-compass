@@ -8,7 +8,7 @@ import { getBookingCatalog } from "@/data/booking.functions";
 import { sendPortalLink } from "@/data/portal.functions";
 import { PillButton } from "@/components/PillButton";
 import { TextField } from "@/components/Field";
-import { Shell, Title } from "./boeken";
+import { CallFooter, Shell, Title } from "./boeken";
 
 const searchSchema = z.object({ merk: z.string().optional(), lang: z.enum(["nl", "en"]).optional(), link: z.string().optional(), vanaf: z.enum(["start", "planner"]).optional(), ret: z.string().max(600).optional() });
 const catalogQuery = (merk: string | undefined) => queryOptions({ queryKey: ["booking-catalog", merk ?? ""], queryFn: () => getBookingCatalog({ data: { merk } }), staleTime: 60_000 });
@@ -48,6 +48,7 @@ function LoginPage() {
   const [email, setEmail] = useState(""); const [sent, setSent] = useState(false); const [held, setHeld] = useState(false); const [demo, setDemo] = useState<string | null>(null); const [busy, setBusy] = useState(false);
   const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   const back = () => { if (s.ret) window.location.assign(`/boeken?${s.ret}`); else window.history.back(); };
+  const phone = "tenant" in data ? data.tenant?.phone : undefined;
   const send = async () => {
     if (!ok || busy) return; setBusy(true);
     try {
@@ -63,7 +64,11 @@ function LoginPage() {
     </div>
   ) : null;
   return (
-    <Shell lang={lang} onBack={back} footer={!sent ? <PillButton size="lg" className="patient-choice choice-primary w-full" disabled={!ok || busy} onClick={() => void send()}>{tx("login_send")}</PillButton> : undefined}>
+    <Shell lang={lang} onBack={back} onClose={() => window.location.assign(`/boeken${s.ret ? `?${s.ret}` : ""}`)}
+      footer={sent
+        ? (phone ? <CallFooter phone={phone} tx={tx} /> : undefined)
+        : <div className="flex flex-col gap-5"><PillButton size="lg" className="patient-choice choice-primary w-full" disabled={!ok || busy} onClick={() => void send()}>{tx("login_send")}</PillButton>{phone ? <CallFooter phone={phone} tx={tx} /> : null}</div>}>
+      <button type="button" onClick={back} className="mb-4 self-start text-[14px] font-medium text-primary">‹ {tx("back") || "Terug"}</button>
       {sent ? (
         <>
           <span className="mb-6 flex size-[52px] items-center justify-center rounded-full bg-teal-light"><Mail className="size-5 text-primary" strokeWidth={1.7} /></span>

@@ -365,6 +365,13 @@
       "when": 1792496907333,
       "tag": "0051_portal_phase_c_booking_draft_texts",
       "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1792498305003,
+      "tag": "0052_portal_phase_de_facts_and_texts",
+      "breakpoints": true
     }
   ]
 }

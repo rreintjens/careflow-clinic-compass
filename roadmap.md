@@ -158,7 +158,30 @@ Verificatie 19-10: alle vijf punten op 1000007 als Rob doorlopen; 58 gerichte te
 - [x] Apparatuur: gedeelde vaste kolomindeling; zeven gevulde locatiegroepen identiek uitgelijnd, inclusief Amsterdam Buitenveldert/Amsterdam-Zuid, als Rob gecontroleerd. Ook basissjablonen/afwijkingen dezelfde gedeelde indeling en echte rijen gecontroleerd; behandelingen gebruiken al vaste gedeelde grids, rollen één tabel. Build OK.
 
 ## Mijn omgeving v0.2 — eigenaar 20-10 11:15 UTC (alle fasen nu, zonder wachten)
-- [ ] B: cosmetische schermen — nieuwe Start (arts-kaart, behandeltraject, feedbackkaart, Opnieuw boeken, Bekijk deze behandelingen), feedbackscherm /mijn/feedback/$id + treatment_feedback + beheerweergave, behandelaarsfoto's overal (Hugo Ammerlaan, Sophie Verhagen, Simone Mulder), initialen zonder tussenvoegsels, Afspraak maken met foto's, behandelinstellingen + "Bekijk als patiënt"
-- [ ] C: inloggen vanuit boeking — WACHT op go na B; eigenaar stuurt eerst het definitieve ontwerp van het loginblok (addendum §3). Daarna: loginblok startscherm+planner, "Welkom terug"-scherm, terugkeer in flow met eigen arts, booking_links.show_patient_login (stap 5 van 6, &inloggen=nee), "Liever bellen?"-footer met foto Joyce
-- [ ] D: medisch-afvallenschermen (wacht op go na B) met foto's en visuele regels v0.2
-- [ ] E: bestellen met pakketkiezer-states (wacht op go na B) (geen outlines; geselecteerd gevuld teal, toegestaan #EEF3F5, twee stappen amber, niet-toegestaan grijs; legenda; kaarten zonder randen)
+- [x] B: cosmetische schermen — nieuwe Start (arts-kaart, behandeltraject, feedbackkaart, Opnieuw boeken, Bekijk deze behandelingen), feedbackscherm /mijn/feedback/$id + treatment_feedback + beheerweergave, behandelaarsfoto's overal (Hugo Ammerlaan, Sophie Verhagen, Simone Mulder), initialen zonder tussenvoegsels, Afspraak maken met foto's, behandelinstellingen + "Bekijk als patiënt"
+- [x] C: inloggen vanuit boeking — B2-loginbalk (teal, "Eerder bij ons geweest? Log in, dan staan je gegevens klaar"), /boeken/inloggen met "Je keuze blijft bewaard", server-side concept aan de link, 15 min vasthouden, vier herstelscenario's, bevestigingsmail bij ronde boeking, stap 5 in linkbuilder met preview-balk, Joyce-footer
+
+## Eigenaar-review B/C 20-10 12:07 UTC — fixes voor D/E
+- [ ] 1. Profiel §5.5: avatar (initialen-helper "SV"), naam, e-mail, bewerkknop; Account-rijen (Persoonsgegevens, Adres, Facturen, Toestemmingen, Meldingen, Privacy) in witte kaart met grijze chevron; Uitloggen
+- [ ] 2. Rol ontbreekt: portal leest practitioner_roles (niet roles); "Ook jouw huidtherapeut", "{naam}, {rol}"; artsentitel "Drs. Hugo Ammerlaan" (title-kolom)
+- [ ] 3. Historie-filterpills: sitecategorieën (toplevel via parent_id), geen interne groepen
+- [ ] 4. Behandeliconen: fallback op categorie-icoon bij leeg treatment.icoon (Historie, volgende afspraak, behandeltraject)
+- [ ] 5. "Bekijk deze behandelingen eens": alleen categorieën zonder historie (toplevel-vergelijking)
+- [ ] 6. Demo: Sanne's test-feedback weg zodat de feedbackkaart weer verschijnt
+- [ ] 7. /boeken/inloggen: boekingsheader (terug, logo, sluiten), "Terug"-link, "Liever bellen?"-footer met Joyce
+- [ ] 8. Desktop Start ≥1024px: links behandeltraject, rechts arts+feedback+opnieuw boeken, ontdekken volle breedte eronder
+- [ ] D: medisch-afvallenschermen (Start, Voortgang, Programma, Afspraken) met foto's en visuele regels v0.2
+- [ ] E: bestellen met pakketkiezer-states + afrekenflow (geen outlines; geselecteerd gevuld teal, toegestaan #EEF3F5, twee stappen amber, niet-toegestaan grijs; legenda; kaarten zonder randen)
+
+## Portal review-fixes + fase D/E (20 okt, Rob)
+- [x] Profiel-scherm (avatar SV, account-rijen, uitloggen)
+- [x] Rollen en titels bij behandelaars (Drs. Hugo Ammerlaan, huidtherapeut)
+- [x] Historie-filters op sitecategorieën
+- [x] Iconen met categorie-fallback
+- [x] Ontdek-kaarten alleen voor nog niet gehad
+- [x] Feedbackkaart zichtbaar voor Sanne (testfeedback verwijderd)
+- [x] Boeking-login: header, Terug, Joyce-footer
+- [x] Desktop Start in twee kolommen
+- [x] Fase D: Voortgang (3 tabs), Programma, Afspraken
+- [x] Fase E: Bestellen met pakketkiezer + afrekenflow (demo-betaling)
+- [ ] Open: volledige Betaal-klik door de afrekenflow heen nog eind-tot-eind testen

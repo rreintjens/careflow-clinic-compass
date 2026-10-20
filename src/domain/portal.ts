@@ -89,3 +89,52 @@ export function ownDoctor(history: readonly HistoryItem[], categoryTreatmentIds:
   }
   return [...counts.entries()].sort((a, b) => b[1].n - a[1].n || b[1].last.localeCompare(a[1].last))[0]![0];
 }
+/** Bestellen (v0.1 §6): prijzen en opties komen uit portal_config.content.maConfig — nooit hardcoded. */
+export const maConfigSchema = z.object({
+  strengths: z.array(z.number()).min(2),
+  basePrices: z.array(z.number()).min(2),
+  discounts: z.record(z.string(), z.number()),
+  packages: z.array(z.number().int()).min(1),
+  support: z.array(z.object({ key: z.string(), name: z.string(), price: z.number(), lines: z.array(z.string()), tag: z.string().optional() })),
+  extras: z.array(z.object({ key: z.string(), name: z.string(), price: z.number(), line: z.string() })),
+  delivery: z.array(z.object({ key: z.string(), name: z.string(), price: z.number(), line: z.string() })),
+  payment: z.array(z.object({ key: z.string(), name: z.string(), line: z.string() })),
+});
+export type MaConfig = z.infer<typeof maConfigSchema>;
+export function readMaConfig(value: unknown): MaConfig | null {
+  const parsed = maConfigSchema.safeParse(value);
+  return parsed.success ? parsed.data : null;
+}
+
+const DAY = 86_400_000;
+const asDay = (d: string) => Date.parse(`${d}T00:00:00Z`);
+/** Bestelvenster: van 7 dagen voor het einde van het pakket tot de laatste dag. De countdown loopt naar het openingsmoment. */
+export function orderWindow(startDate: string, months: number, today: string) {
+  const end = packageEnd(startDate, months);
+  const opens = new Date(asDay(end) - 7 * DAY).toISOString().slice(0, 10);
+  const daysUntil = Math.ceil((asDay(opens) - asDay(today)) / DAY);
+  return { opens, closes: end, daysUntil: Math.max(0, daysUntil), canOrder: today >= opens && today <= end };
+}
+
+/** Prijs per maand voor een sterkte in een pakket: basisprijs minus pakketkorting. */
+export function monthPrice(config: MaConfig, strengthIndex: number, packageMonths: number) {
+  const base = config.basePrices[strengthIndex] ?? 0;
+  return base - (config.discounts[String(packageMonths)] ?? 0);
+}
+export function packageTotal(config: MaConfig, strengthIndexes: readonly number[], packageMonths: number) {
+  return strengthIndexes.reduce((sum, i) => sum + monthPrice(config, i, packageMonths), 0);
+}
+/** Besparing ten opzichte van losse maanden met dezelfde sterktes. */
+export function packageSavings(config: MaConfig, strengthIndexes: readonly number[], packageMonths: number) {
+  const loose = strengthIndexes.reduce((sum, i) => sum + (config.basePrices[i] ?? 0), 0);
+  return loose - packageTotal(config, strengthIndexes, packageMonths);
+}
+
+/** Pakketkiezer: t.o.v. de vorige maand is dezelfde of één stap omhoog toegestaan, twee stappen alleen met meekijkende arts, meer is geblokkeerd. */
+export type StrengthState = "allowed" | "review" | "blocked";
+export function strengthState(chosenIndex: number, previousIndex: number): StrengthState {
+  const diff = chosenIndex - previousIndex;
+  if (diff <= 1) return "allowed";
+  if (diff === 2) return "review";
+  return "blocked";
+}
