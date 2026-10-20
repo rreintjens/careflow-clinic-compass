@@ -199,4 +199,8 @@ Verificatie 19-10: alle vijf punten op 1000007 als Rob doorlopen; 58 gerichte te
 - [ ] Fase 4: Afrekenen en factuur
 - [ ] Fase 5: Beheer (behandeling-kaarten, Formulieren en nazorg, Adresboek, Koppelingen-kaarten, Data-API)
 - [ ] Fase 6: Mijn omgeving-blokken + demodata; eindtest Sanne en Mark
-- [ ] Patiënt-loginpagina: directe demo-loginknoppen per profiel (o.a. 2× medisch afvallen), met profielnaam erbij — eigenaar 20-10 22:56
+- [x] Patiënt-loginpagina: gedeelde directe demo-loginknoppen op /auth, /boeken/inloggen en /mijn; Sanne cosmetisch, Mark actief afvallen, Eva gestopt en Sandra starter; alle vier aangeklikt en eigen Mijn omgeving/Profiel geverifieerd
+- [x] Review 21:28: consultstappen binnen ActiveConsultMode direct onder de bestaande balk; geen Stappen-link/aparte pagina, dossier blijft staan. Als Rob op /patienten/1000009 getest.
+- [x] Review 21:28: Sanne vandaag Fronsrimpels; twee zoneregels met DEMO-FRONS-2026, Laatst gebruikt hergebruikt; foto via ingelogde-loze QR-pagina ontvangen, vijf injectiepunten, 4/4 controles, klaar voor betaling met receptienotitie. Als Rob getest.
+- [x] Review 21:28: eerste Consult medisch afvallen van Mark; twee fiscale vragen, artsbesluit en Vastgelegd door Rob Reintjens, 20 oktober om 23:37; ook na verversen geverifieerd.
+- [x] Review 21:39: gemelde link was al gebruikt binnen één seconde na aanmaken; heropenen gereproduceerd. Met geldige geverifieerde patiëntsessie opent hergebruik nu Start; zonder sessie blijft eenmalig gebruik vereist. Nieuwe login en heropenen beide browser-getest.

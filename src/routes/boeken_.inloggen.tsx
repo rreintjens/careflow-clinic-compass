@@ -9,6 +9,7 @@ import { sendPortalLink } from "@/data/portal.functions";
 import { PillButton } from "@/components/PillButton";
 import { TextField } from "@/components/Field";
 import { CallFooter, Shell, Title } from "./boeken";
+import { DemoPatientLogins } from '@/features/portal/DemoPatientLogins';
 
 const searchSchema = z.object({ merk: z.string().optional(), lang: z.enum(["nl", "en"]).optional(), link: z.string().optional(), vanaf: z.enum(["start", "planner"]).optional(), ret: z.string().max(600).optional() });
 const catalogQuery = (merk: string | undefined) => queryOptions({ queryKey: ["booking-catalog", merk ?? ""], queryFn: () => getBookingCatalog({ data: { merk } }), staleTime: 60_000 });
@@ -89,6 +90,7 @@ function LoginPage() {
           {choiceCard && <div className="mb-5">{choiceCard}</div>}
           <TextField label={tx("d_email")} type="email" inputMode="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
           <p className="mt-6 text-center text-[14px]"><a href={`/boeken${s.ret ? `?${s.ret}` : ""}`} className="text-primary underline">{tx("login_new")}</a></p>
+          <DemoPatientLogins />
         </>
       )}
     </Shell>
