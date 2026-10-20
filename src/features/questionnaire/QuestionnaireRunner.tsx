@@ -232,7 +232,7 @@ function Frame({ progress, onBack, children, footer, scrollRef, fullScreen }: { 
   return fullScreen ? <PatientFrame>{card}</PatientFrame> : card;
 }
 
-const pill = (on: boolean) => cn("patient-choice flex min-h-[50px] w-full items-center gap-3 rounded-[14px] px-4 py-3 text-left text-[15px]", on ? "border border-primary bg-teal-light" : "border border-transparent bg-sand");
+const pill = (on: boolean) => cn("patient-choice flex min-h-[50px] w-full items-center gap-3 rounded-[14px] px-4 py-3 text-left text-[15px]", on ? "bg-teal-light" : "bg-sand");
 const fieldCls = "h-[54px] w-full rounded-[14px] bg-sand px-4 text-[17px] outline-none focus-visible:ring-1 focus-visible:ring-primary";
 
 function ItemInput({ item, answers, set, t, today, showLabel, all, lang }: { lang: Lang; item: Item; page: Page; answers: Answers; set: (k: string, v: unknown) => void; t: (k: string, e?: Record<string, string | number>) => string; today: string; showLabel: boolean; all: QuestionnaireDef }) {

@@ -549,7 +549,7 @@ function DetailsStep({ c, s, token, treatmentId, locationId, practitionerId, tx,
       <p className="-mt-2 mb-3 text-[15px]">{tx("d_been_before")}</p>
       <div className="flex gap-2">
         {[false, true].map((v) => (
-          <button key={String(v)} type="button" onClick={() => setExisting(v)} aria-pressed={existing===v} className={cn("patient-choice h-11 whitespace-nowrap rounded-full px-5 text-[15px]", existing === v ? "border border-primary bg-teal-light" : "border border-transparent bg-sand")}>{v ? tx("d_existing") : tx("d_new")}</button>
+          <button key={String(v)} type="button" onClick={() => setExisting(v)} aria-pressed={existing===v} className={cn("patient-choice h-11 whitespace-nowrap rounded-full px-5 text-[15px]", existing === v ? "bg-teal-light" : "bg-sand")}>{v ? tx("d_existing") : tx("d_new")}</button>
         ))}
       </div>
       {existing && <p className="mt-4 text-[14px] leading-[1.6] text-muted-foreground">{tx("d_existing_help")}</p>}
