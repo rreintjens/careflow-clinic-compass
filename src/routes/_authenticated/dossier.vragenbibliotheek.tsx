@@ -101,7 +101,7 @@ function LibraryModal({ initial, usage, onClose }: { initial: LibraryRow; usage:
   const condField = optsOf(optRows, "library_condition_field");
   const condValue = optsOf(optRows, "library_condition_value");
   return (
-    <Modal open width="lg" title={initial.id ? `Vraag ${initial.code}` : "Nieuwe vraag"} description={msg ?? undefined} onOpenChange={(o) => !o && onClose()}
+    <Modal open width="lg" title={initial.id ? `Vraag ${initial.code}` : "Nieuwe vraag"} {...(msg ? { description: msg } : {})} onOpenChange={(o) => !o && onClose()}
       footer={<><PillButton variant="outline" onClick={onClose}>Annuleren</PillButton><PillButton onClick={() => save.mutate()} disabled={save.isPending || !f.text_nl.trim()}>Opslaan</PillButton></>}>
       <div className="grid grid-cols-2 gap-4">
         <TextField label="Code" value={f.code} onChange={(e) => setF({ ...f, code: e.target.value.toUpperCase() })} disabled={!!initial.id} />
