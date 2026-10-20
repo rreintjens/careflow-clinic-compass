@@ -1568,6 +1568,66 @@ export type Database = {
         }
         Relationships: []
       }
+      ma_packages: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          months: number
+          order_id: string
+          patient_id: string
+          start_date: string
+          status: string
+          strengths: Json
+          tenant_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          months: number
+          order_id: string
+          patient_id: string
+          start_date: string
+          status?: string
+          strengths?: Json
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          months?: number
+          order_id?: string
+          patient_id?: string
+          start_date?: string
+          status?: string
+          strengths?: Json
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ma_packages_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ma_packages_tenant_id_patient_id_fkey"
+            columns: ["tenant_id", "patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["tenant_id", "id"]
+          },
+        ]
+      }
       mail_outbox: {
         Row: {
           appointment_id: string | null
@@ -2220,6 +2280,177 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: []
+      }
+      portal_config: {
+        Row: {
+          content: Json
+          created_at: string
+          created_by: string | null
+          tenant_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          content?: Json
+          created_at?: string
+          created_by?: string | null
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          created_by?: string | null
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portal_config_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      portal_login_tokens: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          email: string
+          expires_at: string
+          id: string
+          patient_id: string | null
+          pending_booking_id: string | null
+          tenant_id: string
+          token_hash: string
+          updated_at: string
+          updated_by: string | null
+          used_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          email: string
+          expires_at: string
+          id?: string
+          patient_id?: string | null
+          pending_booking_id?: string | null
+          tenant_id?: string
+          token_hash: string
+          updated_at?: string
+          updated_by?: string | null
+          used_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          email?: string
+          expires_at?: string
+          id?: string
+          patient_id?: string | null
+          pending_booking_id?: string | null
+          tenant_id?: string
+          token_hash?: string
+          updated_at?: string
+          updated_by?: string | null
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portal_login_tokens_pending_booking_id_fkey"
+            columns: ["pending_booking_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "portal_login_tokens_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "portal_login_tokens_tenant_id_patient_id_fkey"
+            columns: ["tenant_id", "patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["tenant_id", "id"]
+          },
+        ]
+      }
+      portal_patient_access: {
+        Row: {
+          clinic_label: string
+          cosmetic_history_count: number
+          created_at: string
+          created_by: string | null
+          goal_weight_kg: number | null
+          id: string
+          initial_weight_kg: number | null
+          medication: string | null
+          patient_id: string
+          role: string
+          starter_proposed: boolean
+          tenant_id: string
+          updated_at: string
+          updated_by: string | null
+          user_id: string | null
+        }
+        Insert: {
+          clinic_label?: string
+          cosmetic_history_count?: number
+          created_at?: string
+          created_by?: string | null
+          goal_weight_kg?: number | null
+          id?: string
+          initial_weight_kg?: number | null
+          medication?: string | null
+          patient_id: string
+          role?: string
+          starter_proposed?: boolean
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          clinic_label?: string
+          cosmetic_history_count?: number
+          created_at?: string
+          created_by?: string | null
+          goal_weight_kg?: number | null
+          id?: string
+          initial_weight_kg?: number | null
+          medication?: string | null
+          patient_id?: string
+          role?: string
+          starter_proposed?: boolean
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portal_patient_access_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "portal_patient_access_tenant_id_patient_id_fkey"
+            columns: ["tenant_id", "patient_id"]
+            isOneToOne: true
+            referencedRelation: "patients"
+            referencedColumns: ["tenant_id", "id"]
+          },
+        ]
       }
       practitioner_languages: {
         Row: {
@@ -3820,6 +4051,30 @@ export type Database = {
           tenant_id: string
         }[]
       }
+      portal_claim_token: {
+        Args: { _hash: string; _tenant: string }
+        Returns: {
+          created_at: string
+          created_by: string | null
+          email: string
+          expires_at: string
+          id: string
+          patient_id: string | null
+          pending_booking_id: string | null
+          tenant_id: string
+          token_hash: string
+          updated_at: string
+          updated_by: string | null
+          used_at: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "portal_login_tokens"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      portal_patient_id: { Args: never; Returns: string }
       public_app_flags: {
         Args: never
         Returns: {
