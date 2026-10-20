@@ -126,17 +126,18 @@ export type PortalMeasurement={measured_on:string;weight_kg:number|null;waist_cm
 export type PortalExtra={appointments:PortalAppointment[];feedback:{appointment_id:string;rating:number;tags:string[];comment:string;share_with_practitioner:boolean}[];treatments:PortalTreatment[];practitioners:PortalPractitioner[];locations:{id:string;name:string;kind:string}[];roles:{id:string;name:string;key:string}[];categories:{id:string;name_nl:string;icon:string|null;parent_id:string|null}[];categoryLinks:{treatment_id:string;category_id:string}[];measurements:PortalMeasurement[]};
 /** History, upcoming appointments, practitioners and treatments for the portal; photos are signed server-side. */
 async function portalHistory(db:{from:(t:string)=>any;storage:any},tenantId:string,patientId:string):Promise<PortalExtra>{
- const [appts,fb,treats,prs,locs,roles,cats,catLinks]=await Promise.all([
+ const [appts,fb,treats,prs,locs,roles,cats,catLinks,ms]=await Promise.all([
   db.from('appointments').select('id,treatment_id,practitioner_id,location_id,starts_at,ends_at,status,meet_link').eq('tenant_id',tenantId).eq('patient_id',patientId).in('status',['booked']).order('starts_at',{ascending:false}),
   db.from('treatment_feedback').select('appointment_id,rating,tags,comment,share_with_practitioner').eq('tenant_id',tenantId).eq('patient_id',patientId),
   db.from('treatments').select('id,name_nl,icon,duration_min,portal_settings').eq('tenant_id',tenantId),
-  db.from('practitioners').select('id,first_name,last_name,role_id,photo_path').eq('tenant_id',tenantId).eq('status','active'),
+  db.from('practitioners').select('id,first_name,last_name,title,role_id,photo_path').eq('tenant_id',tenantId).eq('status','active'),
   db.from('locations').select('id,name,kind').eq('tenant_id',tenantId),
-  db.from('roles').select('id,name').eq('tenant_id',tenantId),
+  db.from('practitioner_roles').select('id,key,name_nl').eq('tenant_id',tenantId),
   db.from('treatment_categories').select('id,name_nl,icon,parent_id').eq('tenant_id',tenantId),
   db.from('treatment_category_links').select('treatment_id,category_id').eq('tenant_id',tenantId),
+  db.from('measurements').select('measured_on,weight_kg,waist_cm,height_cm').eq('tenant_id',tenantId).eq('patient_id',patientId).order('measured_on',{ascending:false}).limit(24),
  ]);
- for(const q of [appts,fb,treats,prs,locs,roles,cats,catLinks]) if(q.error) throw new Error('Mijn omgeving kon niet worden geladen.');
+ for(const q of [appts,fb,treats,prs,locs,roles,cats,catLinks,ms]) if(q.error) throw new Error('Mijn omgeving kon niet worden geladen.');
  const {data:tenant}=await db.from('tenants').select('slug').eq('id',tenantId).single();
  const bucket=`practitioner-photos-${tenant?.slug??''}`;
  const photos=await Promise.all((prs.data??[]).map(async(p:{photo_path:string|null})=>{
@@ -145,7 +146,7 @@ async function portalHistory(db:{from:(t:string)=>any;storage:any},tenantId:stri
   return s?.signedUrl??null;
  }));
  const photoById=Object.fromEntries((prs.data??[]).map((p:{id:string},i:number)=>[p.id,photos[i]??null]));
- return {appointments:appts.data??[],feedback:fb.data??[],treatments:treats.data??[],practitioners:(prs.data??[]).map((p:{id:string;first_name:string;last_name:string;role_id:string|null;photo_path:string|null})=>({id:p.id,first_name:p.first_name,last_name:p.last_name,role_id:p.role_id,photo:photoById[p.id]??null})),locations:locs.data??[],roles:roles.data??[],categories:cats.data??[],categoryLinks:catLinks.data??[]};
+ return {appointments:appts.data??[],feedback:fb.data??[],treatments:treats.data??[],practitioners:(prs.data??[]).map((p:{id:string;first_name:string;last_name:string;title:string|null;role_id:string|null;photo_path:string|null})=>({id:p.id,first_name:p.first_name,last_name:p.last_name,title:p.title,role_id:p.role_id,photo:photoById[p.id]??null})),locations:locs.data??[],roles:(roles.data??[]).map((r:{id:string;key:string;name_nl:string})=>({id:r.id,key:r.key,name:r.name_nl})),categories:cats.data??[],categoryLinks:catLinks.data??[],measurements:ms.data??[]};
 }
 
 export const sendFeedback=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator((d:unknown)=>feedbackSchema.parse(d)).handler(async({data,context})=>{
