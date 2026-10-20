@@ -1,0 +1,1 @@
+DO $$ DECLARE definition text; BEGIN SELECT pg_get_functiondef('public.protect_appointment_resources()'::regprocedure) INTO definition; definition := replace(definition, 'e.status=''active''', 'e.status=''in_use'''); EXECUTE definition; END $$;

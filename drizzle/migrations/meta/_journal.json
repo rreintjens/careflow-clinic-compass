@@ -407,6 +407,48 @@
       "when": 1792529402893,
       "tag": "0058_epd_waitlist",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1792535183758,
+      "tag": "0059_epd_reception_and_resource_protection",
+      "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1792535632602,
+      "tag": "0060_epd_authorized_double_booking",
+      "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1792535764475,
+      "tag": "0061_epd_resource_update_validation",
+      "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1792535782778,
+      "tag": "0062_epd_equipment_status_alignment",
+      "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1792536332070,
+      "tag": "0063_epd_demo_sms_queue",
+      "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1792536716960,
+      "tag": "0064_epd_cancellation_demo_payments",
+      "breakpoints": true
     }
   ]
 }

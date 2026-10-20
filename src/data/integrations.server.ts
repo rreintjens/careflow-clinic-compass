@@ -126,7 +126,7 @@ export async function statsSummary(tenant: { id: string; time_zone: string }, da
   if (locations.error) throw locations.error;
 
   const dayOf = (iso: string | null) => (iso ? zonedParts(new Date(iso), tz).date : null);
-  const rows = (appts.data ?? []).filter((a) => a.status !== "cancelled");
+  const rows = (appts.data ?? []).filter((a) => ["booked", "tentatief", "gearriveerd", "in_behandeling", "klaar_voor_betaling", "afgerond", "no_show"].includes(a.status));
   const arrivals = rows.filter((a) => { const d = dayOf(a.created_at); return d !== null && d >= from && d <= today; });
   const inRange = rows.filter((a) => { const d = dayOf(a.starts_at); return d !== null && d >= from && d <= today; });
   const daysList = Array.from({ length: Math.max(1, Math.round((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000) + 1) }, (_, i) => addLocalDays(from, i));

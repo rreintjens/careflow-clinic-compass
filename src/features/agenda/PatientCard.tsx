@@ -7,6 +7,9 @@ import { fmtTime } from "@/domain/slots";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { withAnswerSignals } from "@/data/answer-sets";
+import { AppointmentActions } from "./AppointmentActions";
+import { StartConsultButton, consultNoteQuery } from "@/features/dossier/ConsultMode";
+import { orgQuery } from "@/data/organisation";
 
 export type CardAppt = AgendaAppt & { s: { date: string; minute: number }; e: { minute: number } };
 type Signal = { item: string; label: string };
@@ -29,6 +32,9 @@ export const signalsOf = (sets: ReadonlyArray<{ signals: unknown }>): Signal[] =
 export function PatientCard({ a, treatment, online, onClose, framed = false }: { a: CardAppt; treatment: string; online: boolean; onClose?: () => void; framed?: boolean }) {
   const p = a.patient;
   const { data: sets = [] } = useQuery(appointmentAnswersQuery(a.id));
+  const { data: note } = useQuery(consultNoteQuery(a.id));
+  const { data: org } = useQuery(orgQuery);
+  const {data:canConsult=false}=useQuery({queryKey:["can-start-consult"],queryFn:async()=>!!(await supabase.rpc("has_permission",{_perm:"patients.medical"})).data});
   const signals = signalsOf(sets);
   const medical = sets.find((x) => x.status === "completed" && x.completed_at && x.questionnaire_key !== sets[0]?.questionnaire_key) ?? sets.find((x) => x.status === "completed");
   const day = cap(new Date(`${a.s.date}T12:00:00Z`).toLocaleDateString("nl-NL", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" }));
@@ -47,6 +53,9 @@ export function PatientCard({ a, treatment, online, onClose, framed = false }: {
           : a.new_patient ? <span className="rounded-full bg-teal-light px-3 py-1 text-[12px] text-primary">Nieuw</span> : null}
       </div>
       <Link to="/patienten/$id" params={{ id: p ? String(p.patient_number ?? p.id) : "" }} disabled={!p}><PillButton size="lg" className="w-full">Open dossier</PillButton></Link>
+      <AppointmentActions appointment={a}/>
+      {a.room_id && <p className="text-sm text-muted-foreground">Kamer: {org?.rooms.find(r => r.id === a.room_id)?.name ?? ""}</p>}
+      {p && canConsult && ["booked", "gearriveerd", "in_behandeling"].includes(a.status) && <StartConsultButton patientId={p.id} apptId={a.id} note={note}/>}
       {online && (
         <div className="flex items-center gap-4 rounded-[14px] bg-sand p-4">
           {a.meet_link

@@ -11,6 +11,7 @@ export type AuditLine = { actor: string | null; text: string; sub?: string | und
 
 const PAGES: Array<[RegExp, string]> = [
   [/^\/dashboard/, "het dashboard"],
+  [/^\/receptie/, "de receptie"],
   [/^\/agenda\/mijn-dag/, "Mijn dag"],
   [/^\/agenda/, "de agenda"],
   [/^\/patienten\/?$/, "het patiëntenoverzicht"],
@@ -31,6 +32,8 @@ const TABS: Record<string, string> = { overzicht: "het dossier", tijdlijn: "de t
 const NOUNS: Record<string, string> = {
   appointments: "een afspraak", patients: "een patiënt", consult_notes: "een consultverslag", measurements: "een meting",
   patient_contacts: "een contactmoment of notitie", patient_requests: "een aanvraag",
+  address_book:"een adresboekvermelding",sms_outbox:"een sms-demobericht",
+  appointment_fee_requests:"een betaalverzoek voor annuleringskosten",
   treatment_plans: "een behandelplan", patient_documents: "een document", roles: "een rol", role_permissions: "de rechten van een rol",
   tenant_memberships: "een gebruiker", profiles: "een gebruiker", settings: "een instelling", holidays: "een feestdag",
   treatments: "een behandeling", practitioners: "een behandelaar", locations: "een locatie", rooms: "een ruimte", equipment: "een apparaat",
@@ -67,6 +70,8 @@ export function describeAudit(r: AuditRow): AuditLine {
   if (userActs[r.action]) return { actor: r.user_id, text: userActs[r.action] as string, link: "/instellingen/gebruikers-en-rollen" };
   if (r.action === "role_changed") return { actor: r.user_id, text: "heeft een rol of de rechten gewijzigd.", link: "/instellingen/gebruikers-en-rollen" };
   if (r.action === "settings_changed") return { actor: r.user_id, text: "heeft een instelling gewijzigd.", link: "/instellingen/algemeen" };
+  if (r.action === "appointment_status_changed") return { actor: r.user_id, text: `heeft de afspraakstatus gewijzigd: ${s(d["omschrijving"])}.`, link: "/receptie" };
+  if (r.action === "appointment_double_booked") return {actor:r.user_id,text:`heeft met toestemming dubbel geboekt. Reden: ${s(d["reason"])}.`,link:"/receptie"};
   const pid = r.record_type === "patients" ? r.record_id : s((d["after"] as Record<string, unknown> | undefined)?.["patient_id"] ?? (d["before"] as Record<string, unknown> | undefined)?.["patient_id"]);
   const pnum = pn || s((d["after"] as Record<string, unknown> | undefined)?.["patient_number"]);
   if (r.action === "patient_created") return { actor: r.user_id, text: pnum ? `Patiënt ${pnum} is aangemaakt.` : "Er is een patiënt aangemaakt.", link: pid ? `/patienten/${pnum || pid}` : undefined };

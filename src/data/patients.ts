@@ -3,6 +3,7 @@ import { queryOptions } from "@tanstack/react-query";
 
 import { supabase } from "@/integrations/supabase/client";
 import { withAnswerSignals } from "./answer-sets";
+import { agendaStatuses } from "@/domain/appointment-status";
 
 function must<D>(r: { data: D | null; error: unknown }): D {
   if (r.error) throw r.error;
@@ -25,7 +26,7 @@ export const patientListQuery = (fromIso: string, toIso: string, weekFromIso: st
       const sel = `${APPT}, patient:patients(id, patient_number, first_name, last_name)`;
       const [created, starting, noShows] = await Promise.all([
         supabase.from("appointments").select(sel).neq("status", "hold").gte("created_at", fromIso).lt("created_at", toIso).order("created_at", { ascending: false }),
-        supabase.from("appointments").select(sel).eq("status", "booked").gte("starts_at", fromIso).lt("starts_at", toIso).order("starts_at"),
+        supabase.from("appointments").select(sel).in("status", agendaStatuses).gte("starts_at", fromIso).lt("starts_at", toIso).order("starts_at"),
         supabase.from("appointments").select("id", { count: "exact", head: true }).eq("status", "no_show").gte("starts_at", weekFromIso).lt("starts_at", toIso),
       ]);
       const c = must(created), s = must(starting);

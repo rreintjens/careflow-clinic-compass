@@ -1,0 +1,12 @@
+import {createFileRoute} from "@tanstack/react-router";
+import {queryOptions,useSuspenseQuery,useQueryClient} from "@tanstack/react-query";
+import {getDemoFee,payDemoFee} from "@/data/appointment-fees.functions";
+import {PatientFrame} from "@/components/PatientFrame";
+import {Logo} from "@/components/Logo";
+import {PillButton} from "@/components/PillButton";
+import {useState} from "react";
+const feeQuery=(token:string)=>queryOptions({queryKey:["demo-fee",token],queryFn:()=>getDemoFee({data:{token}})});
+export const Route=createFileRoute("/betalen/$token")({head:()=>({meta:[{title:"Betaalverzoek · The Body Clinic"},{name:"description",content:"Bekijk je demo-betaalverzoek bij The Body Clinic."},{property:"og:title",content:"Betaalverzoek · The Body Clinic"},{property:"og:description",content:"Bekijk je demo-betaalverzoek bij The Body Clinic."},{property:"og:type",content:"website"},{name:"twitter:card",content:"summary"},{name:"robots",content:"noindex"}]}),loader:({context,params})=>context.queryClient.ensureQueryData(feeQuery(params.token)),component:Payment});
+function Payment(){const {token}=Route.useParams();const {data}=useSuspenseQuery(feeQuery(token));const qc=useQueryClient();const [busy,setBusy]=useState(false);const [error,setError]=useState("");const pay=async()=>{setBusy(true);try{await payDemoFee({data:{token}});await qc.invalidateQueries({queryKey:["demo-fee",token]});}catch(e){setError(e instanceof Error?e.message:"Betalen is niet gelukt.");}finally{setBusy(false);}};
+ return <PatientFrame><header className="flex h-16 items-center justify-center"><Logo small/></header><main className="flex flex-1 flex-col gap-6 p-6"><h1 className="text-2xl font-semibold">{data?.status==="paid"?"Betaling ontvangen":"Betaalverzoek"}</h1>{!data?<p>De link is ongeldig.</p>:<><p className="text-2xl font-semibold">{new Intl.NumberFormat("nl-NL",{style:"currency",currency:"EUR"}).format(data.amountCents/100)}</p><p>Dit is een demobetaling. Er wordt geen geld afgeschreven.</p>{data.status==="open"&&<PillButton disabled={busy} onClick={()=>void pay()}>Betaal (demo)</PillButton>}{data.status==="paid"&&<p className="rounded-[14px] bg-teal-light p-4 text-primary">Je betaling is geregistreerd.</p>}</>}{error&&<p role="alert" className="text-warning">{error}</p>}</main></PatientFrame>;
+}

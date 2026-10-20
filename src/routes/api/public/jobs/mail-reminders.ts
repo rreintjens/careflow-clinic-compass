@@ -10,6 +10,7 @@ export const Route = createFileRoute("/api/public/jobs/mail-reminders")({
         if (authFailure) return authFailure;
         const { admin } = await import("@/data/booking.server");
         const { safeQueue } = await import("@/data/mailer.server");
+        const {appointmentPreparation}=await import("@/data/appointment-preparation.server");
         const db = await admin();
         const { data: tenants } = await db.from("tenants").select("id");
         let queued = 0;
@@ -19,15 +20,15 @@ export const Route = createFileRoute("/api/public/jobs/mail-reminders")({
           const now = Date.now();
           const until = (h: number) => new Date(now + h * 3600_000).toISOString();
           const maxH = Math.max(hours("mail_reminder_hours", 24), hours("questionnaire_reminder_hours", 48));
-          const { data: appts } = await db.from("appointments").select("id, starts_at, treatment:treatments(post_questionnaire_key)")
+          const { data: appts } = await db.from("appointments").select("id, starts_at, patient_id,treatment_id, treatment:treatments(post_questionnaire_key)")
             .eq("tenant_id", t.id).eq("status", "booked").gt("starts_at", new Date(now).toISOString()).lte("starts_at", until(maxH));
           for (const a of appts ?? []) {
             const left = (Date.parse(a.starts_at) - now) / 3600_000;
             if (left <= hours("mail_reminder_hours", 24) && (await safeQueue(db, a.id, "appointment_reminder", { dedupe: `appointment_reminder-${a.id}` }))) queued++;
             const key = (a.treatment as { post_questionnaire_key: string | null } | null)?.post_questionnaire_key;
             if (key && left <= hours("questionnaire_reminder_hours", 48)) {
-              const { data: done } = await db.from("answer_sets").select("id").eq("appointment_id", a.id).eq("questionnaire_key", key).eq("status", "completed").limit(1);
-              if (!done?.length && (await safeQueue(db, a.id, "questionnaire_reminder", { dedupe: `questionnaire_reminder-${a.id}` }))) queued++;
+              const preparation=a.patient_id?await appointmentPreparation(t.id,a.patient_id,a.treatment_id,a.starts_at):null;
+              if (preparation?.questionnaireMissing && (await safeQueue(db, a.id, "questionnaire_reminder", { dedupe: `questionnaire_reminder-${a.id}` }))) queued++;
             }
           }
         }

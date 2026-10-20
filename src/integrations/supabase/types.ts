@@ -179,6 +179,57 @@ export type Database = {
           },
         ]
       }
+      appointment_fee_requests: {
+        Row: {
+          amount_cents: number
+          appointment_id: string
+          created_at: string
+          created_by: string | null
+          demo_token: string
+          id: string
+          paid_at: string | null
+          status: string
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          appointment_id: string
+          created_at?: string
+          created_by?: string | null
+          demo_token?: string
+          id?: string
+          paid_at?: string | null
+          status?: string
+          tenant_id?: string
+        }
+        Update: {
+          amount_cents?: number
+          appointment_id?: string
+          created_at?: string
+          created_by?: string | null
+          demo_token?: string
+          id?: string
+          paid_at?: string | null
+          status?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointment_fee_requests_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointment_fee_requests_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       appointment_status_history: {
         Row: {
           appointment_id: string
@@ -186,6 +237,8 @@ export type Database = {
           created_at: string
           from_status: string | null
           id: string
+          note: string | null
+          reason: string | null
           tenant_id: string
           to_status: string
         }
@@ -195,6 +248,8 @@ export type Database = {
           created_at?: string
           from_status?: string | null
           id?: string
+          note?: string | null
+          reason?: string | null
           tenant_id?: string
           to_status: string
         }
@@ -204,6 +259,8 @@ export type Database = {
           created_at?: string
           from_status?: string | null
           id?: string
+          note?: string | null
+          reason?: string | null
           tenant_id?: string
           to_status?: string
         }
@@ -237,7 +294,9 @@ export type Database = {
           cancel_reason: string | null
           created_at: string
           created_by: string | null
+          double_book_reason: string | null
           ends_at: string
+          equipment_ids: string[]
           hold_expires_at: string | null
           hold_token: string | null
           id: string
@@ -248,6 +307,7 @@ export type Database = {
           meet_link: string | null
           meet_link_created_at: string | null
           new_patient: boolean | null
+          notification_plan: Json
           notify: string
           patient_id: string | null
           patient_note: string | null
@@ -275,7 +335,9 @@ export type Database = {
           cancel_reason?: string | null
           created_at?: string
           created_by?: string | null
+          double_book_reason?: string | null
           ends_at: string
+          equipment_ids?: string[]
           hold_expires_at?: string | null
           hold_token?: string | null
           id?: string
@@ -286,6 +348,7 @@ export type Database = {
           meet_link?: string | null
           meet_link_created_at?: string | null
           new_patient?: boolean | null
+          notification_plan?: Json
           notify?: string
           patient_id?: string | null
           patient_note?: string | null
@@ -313,7 +376,9 @@ export type Database = {
           cancel_reason?: string | null
           created_at?: string
           created_by?: string | null
+          double_book_reason?: string | null
           ends_at?: string
+          equipment_ids?: string[]
           hold_expires_at?: string | null
           hold_token?: string | null
           id?: string
@@ -324,6 +389,7 @@ export type Database = {
           meet_link?: string | null
           meet_link_created_at?: string | null
           new_patient?: boolean | null
+          notification_plan?: Json
           notify?: string
           patient_id?: string | null
           patient_note?: string | null
@@ -3831,6 +3897,54 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sms_outbox: {
+        Row: {
+          appointment_id: string
+          created_at: string
+          created_by: string | null
+          dedupe_key: string
+          id: string
+          moment: string
+          status: string
+          tenant_id: string
+        }
+        Insert: {
+          appointment_id: string
+          created_at?: string
+          created_by?: string | null
+          dedupe_key: string
+          id?: string
+          moment: string
+          status?: string
+          tenant_id?: string
+        }
+        Update: {
+          appointment_id?: string
+          created_at?: string
+          created_by?: string | null
+          dedupe_key?: string
+          id?: string
+          moment?: string
+          status?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sms_outbox_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sms_outbox_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"

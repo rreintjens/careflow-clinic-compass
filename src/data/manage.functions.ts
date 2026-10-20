@@ -67,7 +67,7 @@ export const getRescheduleSlots = createServerFn({ method: "POST" })
     const x = await load(data.merk, data.token);
     if (!x || !manageable(x.appt.status)) return [];
     const from = localParts(new Date(), x.tenant.time_zone).date;
-    const r = await computeSlots(x.tenant, { treatmentId: x.appt.treatment_id, locationId: x.appt.location_id, practitionerIds: [x.appt.practitioner_id], from, days: 21 });
+    const r = await computeSlots(x.tenant, { treatmentId: x.appt.treatment_id, locationId: x.appt.location_id, practitionerIds: [x.appt.practitioner_id], from, days: 21,excludeAppointmentId:x.appt.id });
     return (r.perPractitioner[x.appt.practitioner_id] ?? []).slice(0, 4).map((s) => ({ date: s.date, start: s.start }));
   });
 
@@ -77,7 +77,7 @@ export const rescheduleAppointment = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const x = await load(data.merk, data.token);
     if (!x || !manageable(x.appt.status) || !canChangeOnline(x.appt.starts_at, new Date(), x.hours)) return { ok: false as const };
-    const r = await computeSlots(x.tenant, { treatmentId: x.appt.treatment_id, locationId: x.appt.location_id, practitionerIds: [x.appt.practitioner_id], from: data.date, days: 1 });
+    const r = await computeSlots(x.tenant, { treatmentId: x.appt.treatment_id, locationId: x.appt.location_id, practitionerIds: [x.appt.practitioner_id], from: data.date, days: 1,excludeAppointmentId:x.appt.id });
     if (!(r.perPractitioner[x.appt.practitioner_id] ?? []).some((s) => s.date === data.date && s.start === data.start)) return { ok: false as const };
     const startsAt = localToUtc(data.date, data.start, x.tenant.time_zone);
     const len = Date.parse(x.appt.ends_at) - Date.parse(x.appt.starts_at);

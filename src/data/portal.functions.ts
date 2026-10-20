@@ -107,7 +107,7 @@ export const bookingPatientContext=createServerFn({method:'POST'}).middleware([r
  const adb=await admin();
  const {data:p}=await adb.from('patients').select('id,first_name,last_name,email,phone,phone_country,date_of_birth,salutation,country,postcode,house_number,house_suffix,street,city').eq('id',pid).eq('tenant_id',t.id).is('deleted_at',null).single();
  if(!p) return {patient:null,visits:[] as {treatment_id:string;practitioner_id:string|null;starts_at:string}[]};
- const {data:visits}=await adb.from('appointments').select('treatment_id,practitioner_id,starts_at').eq('tenant_id',t.id).eq('patient_id',pid).eq('status','booked').lt('starts_at',new Date().toISOString()).not('practitioner_id','is',null).order('starts_at',{ascending:false}).limit(200);
+ const {data:visits}=await adb.from('appointments').select('treatment_id,practitioner_id,starts_at').eq('tenant_id',t.id).eq('patient_id',pid).in('status',['booked','gearriveerd','in_behandeling','klaar_voor_betaling','afgerond']).lt('starts_at',new Date().toISOString()).not('practitioner_id','is',null).order('starts_at',{ascending:false}).limit(200);
  return {patient:p,visits:visits??[]};
 });
 export const readPortal=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).handler(async({context})=>{
@@ -131,7 +131,7 @@ export type PortalExtra={appointments:PortalAppointment[];feedback:{appointment_
 /** History, upcoming appointments, practitioners and treatments for the portal; photos are signed server-side. */
 async function portalHistory(db:{from:(t:string)=>any;storage:any},tenantId:string,patientId:string):Promise<PortalExtra>{
  const [appts,fb,treats,prs,locs,roles,cats,catLinks,ms]=await Promise.all([
-  db.from('appointments').select('id,treatment_id,practitioner_id,location_id,starts_at,ends_at,status,meet_link').eq('tenant_id',tenantId).eq('patient_id',patientId).in('status',['booked']).order('starts_at',{ascending:false}),
+  db.from('appointments').select('id,treatment_id,practitioner_id,location_id,starts_at,ends_at,status,meet_link').eq('tenant_id',tenantId).eq('patient_id',patientId).in('status',['booked','gearriveerd','in_behandeling','klaar_voor_betaling','afgerond']).order('starts_at',{ascending:false}),
   db.from('treatment_feedback').select('appointment_id,rating,tags,comment,share_with_practitioner').eq('tenant_id',tenantId).eq('patient_id',patientId),
   db.from('treatments').select('id,name_nl,icon,duration_min,portal_settings').eq('tenant_id',tenantId),
   db.from('practitioners').select('id,first_name,last_name,title,role_id,photo_path').eq('tenant_id',tenantId).eq('status','active'),

@@ -13,6 +13,7 @@ const icon = (children: ReactNode) => (
 
 const MAIN = [
   { to: "/dashboard", label: "Dashboard", icon: icon(<><rect x="3.5" y="3.5" width="7" height="7" rx="1.5" /><rect x="13.5" y="3.5" width="7" height="7" rx="1.5" /><rect x="3.5" y="13.5" width="7" height="7" rx="1.5" /><rect x="13.5" y="13.5" width="7" height="7" rx="1.5" /></>) },
+  { to: "/receptie", label: "Receptie", icon: icon(<><path d="M4 12h16v8H4zM8 12V8a4 4 0 0 1 8 0v4M2 12h20"/><path d="M8 16h8"/></>) },
   { to: "/agenda", label: "Agenda", icon: icon(<><rect x="3.5" y="5" width="17" height="15.5" rx="2" /><path d="M3.5 9.5h17M8 3v4M16 3v4" /></>) },
   { to: "/patienten", label: "Patiënten", icon: icon(<><circle cx="9" cy="8.5" r="3.2" /><path d="M3.5 19c.6-3 2.8-4.8 5.5-4.8s4.9 1.8 5.5 4.8" /><path d="M16 5.6a3 3 0 0 1 0 5.8M17.5 14.6c1.6.6 2.7 2.1 3 4.4" /></>) },
 ] as const;

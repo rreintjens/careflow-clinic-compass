@@ -4,6 +4,7 @@ import { getRequestHeader } from "@tanstack/react-start/server";
 import { normalizeHost } from "@/domain/tenancy";
 import { freeSlots, mergeByTime, type Busy, type Slot, type SlotBlock, type SlotException } from "@/domain/slots";
 import { mockExternalBusyProvider } from "./external-busy.server";
+import { blockingStatuses, blocksAppointment } from "@/domain/appointment-status";
 
 export async function admin() {
   return (await import("@/integrations/supabase/client.server")).supabaseAdmin;
@@ -32,7 +33,7 @@ export function localParts(d: Date, tz: string) {
 }
 export const addDays = (date: string, n: number) => { const d = new Date(`${date}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 export type Tenant = NonNullable<Awaited<ReturnType<typeof resolveTenant>>>;
-export type SlotQuery = { treatmentId: string; locationId: string; practitionerIds: string[]; from: string; days: number };
+export type SlotQuery = { treatmentId: string; locationId: string; practitionerIds: string[]; from: string; days: number; excludeAppointmentId?: string | undefined };
 
 export async function computeSlots(tenant: Tenant, data: SlotQuery) {
     const db = await admin();
@@ -66,12 +67,12 @@ export async function computeSlots(tenant: Tenant, data: SlotQuery) {
     const [blocks, exc, appts, external] = await Promise.all([
       db.from("schedule_blocks").select("practitioner_id, weekday, location_id, starts, ends, recurrence, valid_from, valid_until, treatment_ids, allows_online").eq("tenant_id", tid).in("practitioner_id", eligible),
       db.from("schedule_exceptions").select("practitioner_id, kind, date_from, date_to, starts, ends, location_id").eq("tenant_id", tid).in("practitioner_id", eligible).lte("date_from", to),
-      db.from("appointments").select("practitioner_id, starts_at, ends_at, status, hold_expires_at").eq("tenant_id", tid).in("practitioner_id", eligible).in("status", ["held", "booked"])
+      db.from("appointments").select("id, practitioner_id, starts_at, ends_at, status, hold_expires_at").eq("tenant_id", tid).in("practitioner_id", eligible).in("status", ["held", ...blockingStatuses])
         .gte("starts_at", new Date(`${data.from}T00:00:00Z`).toISOString()).lte("starts_at", new Date(`${to}T23:59:59Z`).toISOString()),
       mockExternalBusyProvider.read(db, tid, `${data.from}T00:00:00Z`, `${to}T23:59:59Z`),
     ]);
     const nowMs = Date.now();
-    const busy: Busy[] = (appts.data ?? []).filter((a) => a.status === "booked" || (a.hold_expires_at && Date.parse(a.hold_expires_at) > nowMs)).map((a) => {
+    const busy: Busy[] = (appts.data ?? []).filter((a) => a.id !== data.excludeAppointmentId && blocksAppointment(a.status, a.hold_expires_at ? Date.parse(a.hold_expires_at) : null, nowMs)).map((a) => {
       const s = localParts(new Date(a.starts_at), tenant.time_zone);
       const e = localParts(new Date(a.ends_at), tenant.time_zone);
       return { practitioner_id: a.practitioner_id, date: s.date, start: s.minute, end: e.date === s.date ? e.minute : 24 * 60 };

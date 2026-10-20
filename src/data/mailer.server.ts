@@ -6,6 +6,7 @@ import styles from "@/styles.css?raw";
 import { allowlisted, blocksOf, cancelPolicy, cancelPolicyValues, interpolate, resolveMail, translated, type MailTemplate } from "@/domain/mail";
 import { renderMailDocument, type MailTheme } from "@/domain/mail-document";
 import { admin } from "./booking.server";
+import {notificationEnabled} from "@/domain/appointment-notifications";
 
 type Db = Awaited<ReturnType<typeof admin>>;
 export type MailMoment = "confirmation" | "rescheduled" | "cancelled" | "appointment_reminder" | "questionnaire_reminder" | "no_show" | "follow_up";
@@ -22,9 +23,13 @@ const APP_URL = "https://careflow-clinic-compass.lovable.app";
 /** Renders and stores one mail for an appointment. Returns the outbox status, or null when no template applies. */
 export async function queueAppointmentMail(db: Db, appointmentId: string, moment: MailMoment, opts: { dedupe?: string } = {}) {
   const { data: a } = await db.from("appointments")
-    .select("id, tenant_id, patient_id, treatment_id, practitioner_id, location_id, starts_at, ends_at, meet_link, manage_token, new_patient, notify")
+    .select("id, tenant_id, patient_id, treatment_id, practitioner_id, location_id, starts_at, ends_at, meet_link, manage_token, new_patient, notify, notification_plan")
     .eq("id", appointmentId).maybeSingle();
-  if (!a?.patient_id || a.notify === "none") return null;
+  if (!a?.patient_id) return null;
+  if(notificationEnabled(a.notification_plan,moment,"sms",a.notify)) {
+    await db.from("sms_outbox").upsert({tenant_id:a.tenant_id,appointment_id:a.id,moment,dedupe_key:`sms-${opts.dedupe??`${a.id}-${moment}`}`},{onConflict:"dedupe_key",ignoreDuplicates:true});
+  }
+  if(!notificationEnabled(a.notification_plan,moment,"email",a.notify)) return null;
   const [tenant, patient, treatment, prac, loc, templates, links, settings, sets] = await Promise.all([
     db.from("tenants").select("id, slug, time_zone, default_language, booking_domains").eq("id", a.tenant_id).single(),
     db.from("patients").select("id, first_name, email").eq("id", a.patient_id).single(),
