@@ -1,14 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import type { Json } from "@/integrations/supabase/types";
+import type { Database, Json } from "@/integrations/supabase/types";
 import { mockPharmacyProvider, mockSecureMailProvider } from "@/domain/consult-providers";
 import { nextPharmacyStatus } from "@/domain/consult-steps";
 
-type Sb = Parameters<Parameters<ReturnType<typeof createServerFn>["middleware"]>[0]>[0] extends never ? never : import("@/integrations/supabase/auth-middleware").SupabaseAuthContext["supabase"];
-
-const medical = async (sb: Sb, perm = "patients.medical") => {
+const medical = async (sb: SupabaseClient<Database>, perm = "patients.medical") => {
   if (!(await sb.rpc("is_aal2")).data || !(await sb.rpc("has_permission", { _perm: perm })).data) throw new Error("Geen toegang");
 };
 
