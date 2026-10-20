@@ -100,7 +100,7 @@ export const sendFeedback=createServerFn({method:'POST'}).middleware([requireSup
 
 /** Staff preview: read the portal as a patient, read-only, audited. */
 export const readPortalAsPatient=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator((d:unknown)=>z.object({patientId:z.string().uuid()}).parse(d)).handler(async({data,context})=>{
- const {data:allowed}=await context.supabase.rpc('has_permission',{_perm:'patients.read'});
+ const {data:allowed}=await context.supabase.rpc('has_permission',{_perm:'patients.view'});
  if(!allowed)throw new Error('Geen toegang.');
  const {admin}=await import('./booking.server'); const db=await admin();
  const {data:p}=await db.from('patients').select('id,first_name,last_name,email,patient_number,tenant_id').eq('id',data.patientId).is('deleted_at',null).single();
