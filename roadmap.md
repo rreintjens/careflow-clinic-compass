@@ -156,3 +156,9 @@ Verificatie 19-10: alle vijf punten op 1000007 als Rob doorlopen; 58 gerichte te
 ## Dossier en gegroepeerde tabellen 19-10 16:27–16:28 UTC
 - [x] Anamnese en behandelplan: gedeelde aanklikbare veldrijen met chevron en focusring; alle 12 anamnesevelden en 6 behandelplanvelden op Eva 1000007 als Rob met Enter/Spatie geopend en juiste focus gecontroleerd. Beide bestaande opslagacties met wijziging/heropenen/terugzetten geverifieerd; vijf dossiertabs zonder Wijzig-knop of -link. Consultopslag ongewijzigd.
 - [x] Apparatuur: gedeelde vaste kolomindeling; zeven gevulde locatiegroepen identiek uitgelijnd, inclusief Amsterdam Buitenveldert/Amsterdam-Zuid, als Rob gecontroleerd. Ook basissjablonen/afwijkingen dezelfde gedeelde indeling en echte rijen gecontroleerd; behandelingen gebruiken al vaste gedeelde grids, rollen één tabel. Build OK.
+
+## Mijn omgeving v0.2 — eigenaar 20-10 11:15 UTC (alle fasen nu, zonder wachten)
+- [ ] B: cosmetische schermen — nieuwe Start (arts-kaart, behandeltraject, feedbackkaart, Opnieuw boeken, Bekijk deze behandelingen), feedbackscherm /mijn/feedback/$id + treatment_feedback + beheerweergave, behandelaarsfoto's overal (Hugo Ammerlaan, Sophie Verhagen, Simone Mulder), initialen zonder tussenvoegsels, Afspraak maken met foto's, behandelinstellingen + "Bekijk als patiënt"
+- [ ] C: inloggen vanuit boeking — loginblok op startscherm en planner, "Welkom terug"-scherm, terugkeer in flow met eigen arts voorgeselecteerd, booking_links.show_patient_login (stap 5 van 6, &inloggen=nee), "Liever bellen?"-footer met foto Joyce
+- [ ] D: medisch-afvallenschermen met foto's en visuele regels v0.2
+- [ ] E: bestellen met pakketkiezer-states (geen outlines; geselecteerd gevuld teal, toegestaan #EEF3F5, twee stappen amber, niet-toegestaan grijs; legenda; kaarten zonder randen)
