@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { packageEnd, portalLanding, usablePortalToken, PORTAL_LINK_MINUTES, patientInitials, feedbackDue, ownDoctor } from "./portal";
+import { packageEnd, portalLanding, usablePortalToken, PORTAL_LINK_MINUTES, patientInitials, feedbackDue, ownDoctor, orderWindow, readMaConfig, monthPrice, packageTotal, packageSavings, strengthState } from "./portal";
 
 describe("patient portal rules", () => {
   it("links expire after ten minutes and cannot be reused", () => {
