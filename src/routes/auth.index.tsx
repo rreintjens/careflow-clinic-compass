@@ -122,6 +122,10 @@ function LoginPage() {
         <p className="text-xs leading-relaxed text-muted-foreground">
           Na 5 mislukte pogingen wordt het account 15 minuten geblokkeerd. Beheerders kunnen een gebruiker direct blokkeren bij Gebruikers en rollen.
         </p>
+        <p className="text-xs text-muted-foreground">
+          Patiënt afspaken?{" "}
+          <Link to="/boeken" className="text-primary underline underline-offset-2">Naar de boekingskalender</Link>
+        </p>
       </form>
     </AuthLayout>
   );
