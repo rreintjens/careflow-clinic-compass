@@ -20,10 +20,10 @@ describe("consult steps", () => {
   it("builds the close checklist from the template's required items", () => {
     const items = closeChecklist(botox, { ...emptyStepData(), lines: [{ treatmentId: "t", name: "Botox", qty: 1, unit: "zones", priceCents: 14500, lot: null }], libraryAnswers: { L10: "ja" } }, { prescriptionSigned: null, photoCount: 0, soepFilled: 4 });
     const by = Object.fromEntries(items.map((i) => [i.key, i.done]));
-    expect(by.lotnummer).toBe(false);
-    expect(by.fotos).toBe(false);
-    expect(by.controlevragen).toBe(false);
-    expect(by.soep).toBe(true);
+    expect(by["lotnummer"]).toBe(false);
+    expect(by["fotos"]).toBe(false);
+    expect(by["controlevragen"]).toBe(false);
+    expect(by["soep"]).toBe(true);
     expect(items.some((i) => i.key === "recept")).toBe(false);
   });
   it("requires the transcript to be reviewed once used", () => {

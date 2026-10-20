@@ -34,7 +34,7 @@ export function ConsultPage({ noteId }: { noteId: string }) {
   const { data: d } = useQuery(consultPageQuery(noteId));
   const [step, setStep] = useState(0);
   const [local, setLocal] = useState<StepData | null>(null);
-  const [soep, setSoep] = useState<Record<string, string>>({});
+  const [soep, setSoep] = useState<{ subjective: string; objective: string; evaluation: string; plan: string }>({ subjective: "", objective: "", evaluation: "", plan: "" });
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => { if (d && !local) { setLocal(d.note.step_data); setSoep({ subjective: d.note.subjective, objective: d.note.objective, evaluation: d.note.evaluation, plan: d.note.plan }); } }, [d, local]);
@@ -566,7 +566,7 @@ function Closing({ d, data, patch, checklist }: { d: ConsultPageData; data: Step
           ) : (
             <p className="rounded-[14px] bg-teal-light px-4 py-3 text-sm text-primary">Geen kassa nodig: het pakket staat klaar in Mijn omgeving.</p>
           )}
-          {cosmetic && <TextField label="Notitie voor de receptie" inline value={data.closing.receptionNote} onChange={(e) => patch({ closing: { ...data.closing, receptionNote: e.target.value } })} />}
+          {cosmetic && <TextField label="Notitie voor de receptie" value={data.closing.receptionNote} onChange={(e) => patch({ closing: { ...data.closing, receptionNote: e.target.value } })} />}
           <PillButton variant="outline" onClick={() => setFinish(true)} disabled={!allDone}>Dossier sluiten</PillButton>
           <TextLink onClick={() => window.dispatchEvent(new Event("tbc:finish-consult"))}>Later afsluiten</TextLink>
         </div>
