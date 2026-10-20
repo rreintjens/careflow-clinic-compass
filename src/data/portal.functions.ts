@@ -4,7 +4,7 @@ import { z } from 'zod';
 import type { Json } from '@/integrations/supabase/types';
 import { getRequest } from '@tanstack/react-start/server';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
-import { portalEmailSchema, portalTokenSchema, portalLanding, PORTAL_LINK_MINUTES, feedbackSchema } from '@/domain/portal';
+import { portalEmailSchema, portalTokenSchema, portalLanding, PORTAL_LINK_MINUTES, feedbackSchema, readMaConfig, packageTotal, packageEnd } from '@/domain/portal';
 
 const digest = async (v: string) => Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(v))), b=>b.toString(16).padStart(2,'0')).join('');
 export const portalLoginInfo = createServerFn({method:'GET'}).handler(async()=>{
