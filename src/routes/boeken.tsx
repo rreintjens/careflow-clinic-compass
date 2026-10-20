@@ -216,6 +216,11 @@ const roleName = (c: Full, roleId: string | null, lang = "nl") => { const r = c.
 
 const JOYCE_PHOTO = "https://body-clinic.ams3.digitaloceanspaces.com/0010ee8a9603d578d735779d5fd7e35c.jpg";
 
+/** "Liever bellen?"-footer met Joyce's foto, op elk boekingsscherm. */
+export function CallFooter({ phone, tx }: { phone: string; tx: Tx }) {
+  return <div className="flex items-center justify-center gap-3"><img src={JOYCE_PHOTO} alt="" className="size-11 shrink-0 rounded-full object-cover" style={{ objectPosition: "50% 18%" }} /><span className="text-[13px] text-muted-foreground"><span className="block">{tx("call")} <a href={`tel:${phone}`} className="text-primary underline">{phone}</a></span><span className="block">{tx("call_team")}</span></span></div>;
+}
+
 /** Variant B2: slim teal bar under the header and progress line; the whole bar opens the login screen. */
 function LoginBar({ tx, onClick }: { tx: Tx; onClick: () => void }) {
   return (
