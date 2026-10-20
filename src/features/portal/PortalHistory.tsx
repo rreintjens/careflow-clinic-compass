@@ -21,7 +21,7 @@ export function PortalHistory(){
   {shown.filter(a=>new Date(a.starts_at).getFullYear()===y).map(a=>{const t=treat(a.treatment_id),p=prac(a.practitioner_id),fb=(d.feedback??[]).find(f=>f.appointment_id===a.id);
    return <Link key={a.id} to='/mijn/historie/$appointmentId' params={{appointmentId:a.id}} className='portal-row portal-row-link'>
     <span className='portal-icon'>{t?.icon?<img src={`/treatment-icons/${t.icon}.png`} alt='' className='size-5'/>:null}</span>
-    <div className='min-w-0 flex-1'><p className='portal-sub'>{fmtDay(a.starts_at)} · {loc(a.location_id)?.name}</p><p className='portal-row-title'>{t?.name_nl}</p><p className='portal-sub portal-with-photo'>{p&&<Photo src={p.photo} size={18}/>}{p?`${p.first_name} ${p.last_name}`:''}{p?, ${role(p.role_id).toLowerCase()}`:''}</p></div>
+    <div className='min-w-0 flex-1'><p className='portal-sub'>{fmtDay(a.starts_at)} · {loc(a.location_id)?.name}</p><p className='portal-row-title'>{t?.name_nl}</p><p className='portal-sub portal-with-photo'>{p&&<Photo src={p.photo} size={18}/>}{p?`${p.first_name} ${p.last_name}, ${role(p.role_id).toLowerCase()}`:''}</p></div>
     {fb&&<span className='portal-feedback-mark' aria-label={`${fb.rating} van 5`}><Star size={14} fill='currentColor'/>{fb.rating}</span>}
     <ChevronRight size={16} className='portal-chevron'/></Link>;})}
  </div></section>)}
