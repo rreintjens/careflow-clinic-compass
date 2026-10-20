@@ -2,9 +2,11 @@ import { Modal } from "@/components/Modal";
 import { PillButton } from "@/components/PillButton";
 import { UiIcon } from "@/components/UiIcon";
 import type { ItemType, PageType } from "@/domain/questionnaire/engine";
+import type { LibraryQuestion } from "@/domain/dossier-templates";
+import { Select } from "@/components/Select";
 
 type Opt = { value: string; label: string };
-export type AddChoice = { kind: "item"; type: ItemType } | { kind: "page"; type: PageType };
+export type AddChoice = { kind: "item"; type: ItemType } | { kind: "page"; type: PageType } | { kind: "library"; question: LibraryQuestion };
 
 /** Tiles of vragenlijst-pagina.dc.html; names come from the option lists, these lines explain them. */
 const ITEM_TILES: Partial<Record<ItemType, { icon: string; help: string }>> = {
@@ -62,7 +64,7 @@ const SHORT: Record<string, string> = {
 };
 
 /** "+ Vraag of pagina toevoegen" in a concept: a compact list under the button; a pick inserts a blank row at once. */
-export function AddList({ itemTypes, pageTypes, onPick }: { itemTypes: Opt[]; pageTypes: Opt[]; onPick: (c: AddChoice) => void }) {
+export function AddList({ itemTypes, pageTypes, onPick, library = [] }: { itemTypes: Opt[]; pageTypes: Opt[]; onPick: (c: AddChoice) => void; library?: LibraryQuestion[] }) {
   const Btn = ({ o, onClick }: { o: Opt; onClick: () => void }) => (
     <button type="button" onClick={onClick} className="rounded-[12px] bg-sand px-3 py-2.5 text-left hover:ring-1 hover:ring-primary">
       <span className="block text-[14px] font-medium">{o.label.replace(/ \(BMI\)$/, "")}</span>{SHORT[o.value] && <span className="block text-xs text-muted-foreground">{SHORT[o.value]}</span>}
@@ -72,6 +74,9 @@ export function AddList({ itemTypes, pageTypes, onPick }: { itemTypes: Opt[]; pa
     <div className="grid grid-cols-2 gap-6 rounded-[16px] border border-line bg-background p-4 shadow-sm">
       <div className="flex flex-col gap-2"><span className="text-[13px] font-medium text-muted-foreground">Vraag</span>{itemTypes.map((o) => <Btn key={o.value} o={o} onClick={() => onPick({ kind: "item", type: o.value as ItemType })} />)}</div>
       <div className="flex flex-col gap-2"><span className="text-[13px] font-medium text-muted-foreground">Pagina zonder vraag</span>{pageTypes.map((o) => <Btn key={o.value} o={o} onClick={() => onPick({ kind: "page", type: o.value as PageType })} />)}
+        {library.length > 0 && <><span className="mt-2 text-[13px] font-medium text-muted-foreground">Uit de bibliotheek</span>
+          <Select label="Bibliotheekvraag" value="" onChange={(code) => { const q = library.find((x) => x.code === code); if (q) onPick({ kind: "library", question: q }); }}
+            options={library.map((q) => ({ value: q.code, label: `${q.code} · ${q.text_nl}`, group: q.grp, keywords: q.code }))} help="Blijft gelijk met de bibliotheek; een wijziging daar maakt een concept." /></>}
         <p className="mt-1 text-xs leading-[1.6] text-muted-foreground">De nieuwe regel komt onderaan in je concept en staat meteen rechts in het voorbeeld. Daarna vul je hem in met Wijzig.</p></div>
     </div>
   );

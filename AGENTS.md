@@ -10,7 +10,7 @@
 <!-- LOVABLE:END -->
 
 ## Architecture rules (The Body Clinic)
-- `src/features/questionnaire/` and `src/features/mail/` have their own `AGENTS.md`; read them before changing questionnaires or mails.
+- `src/features/questionnaire/` (also library questions, dossier templates) and `src/features/mail/` have their own `AGENTS.md`; read them first.
 - Read the design package first; its security rules override defaults. Build phases in order without confirmation pauses.
 - TanStack Start (not React Router); app-internal server logic in `createServerFn`, never new Edge Functions — platform stack.
 - Tested logic in `src/domain/`, queries in `src/data/`, shared UI in `src/components/`; extend props, never duplicate.
@@ -28,19 +28,14 @@
 - Tenancy proof: `src/test/tenancy.integration.test.ts`; run separately with TEST_STAFF_PASSWORD.
 - Equipment: device kind comes from `equipment_types` → `equipment_kinds`; names are generated (`src/domain/equipment.ts`), never stored as truth; availability per room/day only via `roomsForKind` — one tested rule.
 - Standalone consultations use the shared dossier modal, shared Zod validation and authenticated server save; option rows configure selections, while existing medical RLS governs access.
-- Measurements share one query across record views; BMI derives from source weight and previously known height through domain functions, and measurement writes use shared server/client validation.
-- Dossier add actions reuse the agenda appointment modal and shared consultation, measurement and document modals; a fixed patient cannot be changed in the appointment modal to prevent cross-record mistakes.
+- Measurements: one shared query; BMI derived in domain from weight + last known height; shared write validation.
+- Dossier add actions reuse the shared appointment/consult/measurement/document modals; a fixed patient is locked in the appointment modal.
 - Public booking (`/boeken`) reads via `src/data/booking.functions.ts` server functions with the admin client after resolving the brand from the host (`?merk=` only for brands in test mode); they return display data only. Step order lives in `src/domain/booking.ts`, free times in `src/domain/slots.ts` — both tested.
 - External busy providers read persisted tenant periods; shared slots and the appointment overlap trigger enforce exclusion independently of the agenda visibility setting.
 - Contact/request entries use shared validated authenticated saves and tenant RLS with patient view/edit permissions; follow-ups, timeline and modal editing read the same stored rows.
-
 - Select and MultiSelect delegate to SearchablePicker; option metadata and eligibility use shared pure picker rules so keyboard and group selection remain consistent throughout admin.
-
 - Booking attribution uses tenant-scoped channel/place/campaign rows and immutable in-use codes; appointments snapshot the resolved link attribution at hold creation so later configuration changes cannot rewrite history.
-
-- Questionnaire messages and booking start screens share MessageFields and Boodschap rendering; treatment/link configuration stays outside questionnaire versions and public booking loads link and catalogue together to avoid hydration divergence.
 
 - Patient choices use semantic states; DataTable owns grouped tracks/row actions; Field rows and Modal focus share editing.
 - Answer reads use frozen versions; consult domain owns timing/patient keys; date-only data has no time.
-
 - Portal uses its own patient gate/access rows, atomic hashed-link redemption and RLS reads, never staff memberships; tested landing and one shell keep later phases consistent. Copy is tenant DB configuration.

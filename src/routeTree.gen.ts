@@ -27,6 +27,9 @@ import { Route as AuthenticatedAgendaMijnDagRouteImport } from './routes/_authen
 import { Route as AuthenticatedAgendaRoosterRouteImport } from './routes/_authenticated/agenda.rooster'
 import { Route as AuthenticatedBoekingsflowBoekingslinksRouteImport } from './routes/_authenticated/boekingsflow.boekingslinks'
 import { Route as AuthenticatedBoekingsflowKanalenEnCampagnesRouteImport } from './routes/_authenticated/boekingsflow.kanalen-en-campagnes'
+import { Route as AuthenticatedDossierAdresboekRouteImport } from './routes/_authenticated/dossier.adresboek'
+import { Route as AuthenticatedDossierFormulierenEnNazorgRouteImport } from './routes/_authenticated/dossier.formulieren-en-nazorg'
+import { Route as AuthenticatedDossierVragenbibliotheekRouteImport } from './routes/_authenticated/dossier.vragenbibliotheek'
 import { Route as AuthenticatedInstellingenAlgemeenRouteImport } from './routes/_authenticated/instellingen.algemeen'
 import { Route as AuthenticatedInstellingenGebruikersEnRollenRouteImport } from './routes/_authenticated/instellingen.gebruikers-en-rollen'
 import { Route as AuthenticatedInstellingenKoppelingenRouteImport } from './routes/_authenticated/instellingen.koppelingen'
@@ -51,6 +54,8 @@ import { Route as AuthenticatedBoekingsflowEMailsBehandelingRouteImport } from '
 import { Route as AuthenticatedBoekingsflowEMailsVerzondenRouteImport } from './routes/_authenticated/boekingsflow.e-mails.verzonden'
 import { Route as AuthenticatedBoekingsflowVragenlijstenIndexRouteImport } from './routes/_authenticated/boekingsflow.vragenlijsten.index'
 import { Route as AuthenticatedBoekingsflowVragenlijstenIdRouteImport } from './routes/_authenticated/boekingsflow.vragenlijsten.$id'
+import { Route as AuthenticatedDossierDossiersjablonenIndexRouteImport } from './routes/_authenticated/dossier.dossiersjablonen.index'
+import { Route as AuthenticatedDossierDossiersjablonenIdRouteImport } from './routes/_authenticated/dossier.dossiersjablonen.$id'
 import { Route as AuthenticatedOrganisatieBehandelaarsIndexRouteImport } from './routes/_authenticated/organisatie.behandelaars.index'
 import { Route as AuthenticatedOrganisatieBehandelaarsIdRouteImport } from './routes/_authenticated/organisatie.behandelaars.$id'
 import { Route as AuthenticatedOrganisatieBehandelingenIndexRouteImport } from './routes/_authenticated/organisatie.behandelingen.index'
@@ -159,6 +164,24 @@ const AuthenticatedBoekingsflowKanalenEnCampagnesRoute =
   AuthenticatedBoekingsflowKanalenEnCampagnesRouteImport.update({
     id: '/boekingsflow/kanalen-en-campagnes',
     path: '/boekingsflow/kanalen-en-campagnes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedDossierAdresboekRoute =
+  AuthenticatedDossierAdresboekRouteImport.update({
+    id: '/dossier/adresboek',
+    path: '/dossier/adresboek',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedDossierFormulierenEnNazorgRoute =
+  AuthenticatedDossierFormulierenEnNazorgRouteImport.update({
+    id: '/dossier/formulieren-en-nazorg',
+    path: '/dossier/formulieren-en-nazorg',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedDossierVragenbibliotheekRoute =
+  AuthenticatedDossierVragenbibliotheekRouteImport.update({
+    id: '/dossier/vragenbibliotheek',
+    path: '/dossier/vragenbibliotheek',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedInstellingenAlgemeenRoute =
@@ -294,6 +317,18 @@ const AuthenticatedBoekingsflowVragenlijstenIdRoute =
     path: '/boekingsflow/vragenlijsten/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedDossierDossiersjablonenIndexRoute =
+  AuthenticatedDossierDossiersjablonenIndexRouteImport.update({
+    id: '/dossier/dossiersjablonen/',
+    path: '/dossier/dossiersjablonen/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedDossierDossiersjablonenIdRoute =
+  AuthenticatedDossierDossiersjablonenIdRouteImport.update({
+    id: '/dossier/dossiersjablonen/$id',
+    path: '/dossier/dossiersjablonen/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedOrganisatieBehandelaarsIndexRoute =
   AuthenticatedOrganisatieBehandelaarsIndexRouteImport.update({
     id: '/organisatie/behandelaars/',
@@ -406,6 +441,9 @@ export interface FileRoutesByFullPath {
   '/agenda/rooster': typeof AuthenticatedAgendaRoosterRoute
   '/boekingsflow/boekingslinks': typeof AuthenticatedBoekingsflowBoekingslinksRoute
   '/boekingsflow/kanalen-en-campagnes': typeof AuthenticatedBoekingsflowKanalenEnCampagnesRoute
+  '/dossier/adresboek': typeof AuthenticatedDossierAdresboekRoute
+  '/dossier/formulieren-en-nazorg': typeof AuthenticatedDossierFormulierenEnNazorgRoute
+  '/dossier/vragenbibliotheek': typeof AuthenticatedDossierVragenbibliotheekRoute
   '/instellingen/algemeen': typeof AuthenticatedInstellingenAlgemeenRoute
   '/instellingen/gebruikers-en-rollen': typeof AuthenticatedInstellingenGebruikersEnRollenRoute
   '/instellingen/koppelingen': typeof AuthenticatedInstellingenKoppelingenRoute
@@ -429,6 +467,7 @@ export interface FileRoutesByFullPath {
   '/boekingsflow/e-mails/behandeling': typeof AuthenticatedBoekingsflowEMailsBehandelingRoute
   '/boekingsflow/e-mails/verzonden': typeof AuthenticatedBoekingsflowEMailsVerzondenRoute
   '/boekingsflow/vragenlijsten/$id': typeof AuthenticatedBoekingsflowVragenlijstenIdRoute
+  '/dossier/dossiersjablonen/$id': typeof AuthenticatedDossierDossiersjablonenIdRoute
   '/organisatie/behandelaars/$id': typeof AuthenticatedOrganisatieBehandelaarsIdRoute
   '/organisatie/behandelingen/$id': typeof AuthenticatedOrganisatieBehandelingenIdRoute
   '/organisatie/locaties/$id': typeof AuthenticatedOrganisatieLocatiesIdRoute
@@ -442,6 +481,7 @@ export interface FileRoutesByFullPath {
   '/api/public/jobs/mail-reminders': typeof ApiPublicJobsMailRemindersRoute
   '/boekingsflow/e-mails/': typeof AuthenticatedBoekingsflowEMailsIndexRoute
   '/boekingsflow/vragenlijsten/': typeof AuthenticatedBoekingsflowVragenlijstenIndexRoute
+  '/dossier/dossiersjablonen/': typeof AuthenticatedDossierDossiersjablonenIndexRoute
   '/organisatie/behandelaars/': typeof AuthenticatedOrganisatieBehandelaarsIndexRoute
   '/organisatie/behandelingen/': typeof AuthenticatedOrganisatieBehandelingenIndexRoute
   '/organisatie/locaties/': typeof AuthenticatedOrganisatieLocatiesIndexRoute
@@ -462,6 +502,9 @@ export interface FileRoutesByTo {
   '/agenda/rooster': typeof AuthenticatedAgendaRoosterRoute
   '/boekingsflow/boekingslinks': typeof AuthenticatedBoekingsflowBoekingslinksRoute
   '/boekingsflow/kanalen-en-campagnes': typeof AuthenticatedBoekingsflowKanalenEnCampagnesRoute
+  '/dossier/adresboek': typeof AuthenticatedDossierAdresboekRoute
+  '/dossier/formulieren-en-nazorg': typeof AuthenticatedDossierFormulierenEnNazorgRoute
+  '/dossier/vragenbibliotheek': typeof AuthenticatedDossierVragenbibliotheekRoute
   '/instellingen/algemeen': typeof AuthenticatedInstellingenAlgemeenRoute
   '/instellingen/gebruikers-en-rollen': typeof AuthenticatedInstellingenGebruikersEnRollenRoute
   '/instellingen/koppelingen': typeof AuthenticatedInstellingenKoppelingenRoute
@@ -484,6 +527,7 @@ export interface FileRoutesByTo {
   '/boekingsflow/e-mails/behandeling': typeof AuthenticatedBoekingsflowEMailsBehandelingRoute
   '/boekingsflow/e-mails/verzonden': typeof AuthenticatedBoekingsflowEMailsVerzondenRoute
   '/boekingsflow/vragenlijsten/$id': typeof AuthenticatedBoekingsflowVragenlijstenIdRoute
+  '/dossier/dossiersjablonen/$id': typeof AuthenticatedDossierDossiersjablonenIdRoute
   '/organisatie/behandelaars/$id': typeof AuthenticatedOrganisatieBehandelaarsIdRoute
   '/organisatie/behandelingen/$id': typeof AuthenticatedOrganisatieBehandelingenIdRoute
   '/organisatie/locaties/$id': typeof AuthenticatedOrganisatieLocatiesIdRoute
@@ -497,6 +541,7 @@ export interface FileRoutesByTo {
   '/api/public/jobs/mail-reminders': typeof ApiPublicJobsMailRemindersRoute
   '/boekingsflow/e-mails': typeof AuthenticatedBoekingsflowEMailsIndexRoute
   '/boekingsflow/vragenlijsten': typeof AuthenticatedBoekingsflowVragenlijstenIndexRoute
+  '/dossier/dossiersjablonen': typeof AuthenticatedDossierDossiersjablonenIndexRoute
   '/organisatie/behandelaars': typeof AuthenticatedOrganisatieBehandelaarsIndexRoute
   '/organisatie/behandelingen': typeof AuthenticatedOrganisatieBehandelingenIndexRoute
   '/organisatie/locaties': typeof AuthenticatedOrganisatieLocatiesIndexRoute
@@ -522,6 +567,9 @@ export interface FileRoutesById {
   '/_authenticated/agenda/rooster': typeof AuthenticatedAgendaRoosterRoute
   '/_authenticated/boekingsflow/boekingslinks': typeof AuthenticatedBoekingsflowBoekingslinksRoute
   '/_authenticated/boekingsflow/kanalen-en-campagnes': typeof AuthenticatedBoekingsflowKanalenEnCampagnesRoute
+  '/_authenticated/dossier/adresboek': typeof AuthenticatedDossierAdresboekRoute
+  '/_authenticated/dossier/formulieren-en-nazorg': typeof AuthenticatedDossierFormulierenEnNazorgRoute
+  '/_authenticated/dossier/vragenbibliotheek': typeof AuthenticatedDossierVragenbibliotheekRoute
   '/_authenticated/instellingen/algemeen': typeof AuthenticatedInstellingenAlgemeenRoute
   '/_authenticated/instellingen/gebruikers-en-rollen': typeof AuthenticatedInstellingenGebruikersEnRollenRoute
   '/_authenticated/instellingen/koppelingen': typeof AuthenticatedInstellingenKoppelingenRoute
@@ -545,6 +593,7 @@ export interface FileRoutesById {
   '/_authenticated/boekingsflow/e-mails/behandeling': typeof AuthenticatedBoekingsflowEMailsBehandelingRoute
   '/_authenticated/boekingsflow/e-mails/verzonden': typeof AuthenticatedBoekingsflowEMailsVerzondenRoute
   '/_authenticated/boekingsflow/vragenlijsten/$id': typeof AuthenticatedBoekingsflowVragenlijstenIdRoute
+  '/_authenticated/dossier/dossiersjablonen/$id': typeof AuthenticatedDossierDossiersjablonenIdRoute
   '/_authenticated/organisatie/behandelaars/$id': typeof AuthenticatedOrganisatieBehandelaarsIdRoute
   '/_authenticated/organisatie/behandelingen/$id': typeof AuthenticatedOrganisatieBehandelingenIdRoute
   '/_authenticated/organisatie/locaties/$id': typeof AuthenticatedOrganisatieLocatiesIdRoute
@@ -558,6 +607,7 @@ export interface FileRoutesById {
   '/api/public/jobs/mail-reminders': typeof ApiPublicJobsMailRemindersRoute
   '/_authenticated/boekingsflow/e-mails/': typeof AuthenticatedBoekingsflowEMailsIndexRoute
   '/_authenticated/boekingsflow/vragenlijsten/': typeof AuthenticatedBoekingsflowVragenlijstenIndexRoute
+  '/_authenticated/dossier/dossiersjablonen/': typeof AuthenticatedDossierDossiersjablonenIndexRoute
   '/_authenticated/organisatie/behandelaars/': typeof AuthenticatedOrganisatieBehandelaarsIndexRoute
   '/_authenticated/organisatie/behandelingen/': typeof AuthenticatedOrganisatieBehandelingenIndexRoute
   '/_authenticated/organisatie/locaties/': typeof AuthenticatedOrganisatieLocatiesIndexRoute
@@ -581,6 +631,9 @@ export interface FileRouteTypes {
     | '/agenda/rooster'
     | '/boekingsflow/boekingslinks'
     | '/boekingsflow/kanalen-en-campagnes'
+    | '/dossier/adresboek'
+    | '/dossier/formulieren-en-nazorg'
+    | '/dossier/vragenbibliotheek'
     | '/instellingen/algemeen'
     | '/instellingen/gebruikers-en-rollen'
     | '/instellingen/koppelingen'
@@ -604,6 +657,7 @@ export interface FileRouteTypes {
     | '/boekingsflow/e-mails/behandeling'
     | '/boekingsflow/e-mails/verzonden'
     | '/boekingsflow/vragenlijsten/$id'
+    | '/dossier/dossiersjablonen/$id'
     | '/organisatie/behandelaars/$id'
     | '/organisatie/behandelingen/$id'
     | '/organisatie/locaties/$id'
@@ -617,6 +671,7 @@ export interface FileRouteTypes {
     | '/api/public/jobs/mail-reminders'
     | '/boekingsflow/e-mails/'
     | '/boekingsflow/vragenlijsten/'
+    | '/dossier/dossiersjablonen/'
     | '/organisatie/behandelaars/'
     | '/organisatie/behandelingen/'
     | '/organisatie/locaties/'
@@ -637,6 +692,9 @@ export interface FileRouteTypes {
     | '/agenda/rooster'
     | '/boekingsflow/boekingslinks'
     | '/boekingsflow/kanalen-en-campagnes'
+    | '/dossier/adresboek'
+    | '/dossier/formulieren-en-nazorg'
+    | '/dossier/vragenbibliotheek'
     | '/instellingen/algemeen'
     | '/instellingen/gebruikers-en-rollen'
     | '/instellingen/koppelingen'
@@ -659,6 +717,7 @@ export interface FileRouteTypes {
     | '/boekingsflow/e-mails/behandeling'
     | '/boekingsflow/e-mails/verzonden'
     | '/boekingsflow/vragenlijsten/$id'
+    | '/dossier/dossiersjablonen/$id'
     | '/organisatie/behandelaars/$id'
     | '/organisatie/behandelingen/$id'
     | '/organisatie/locaties/$id'
@@ -672,6 +731,7 @@ export interface FileRouteTypes {
     | '/api/public/jobs/mail-reminders'
     | '/boekingsflow/e-mails'
     | '/boekingsflow/vragenlijsten'
+    | '/dossier/dossiersjablonen'
     | '/organisatie/behandelaars'
     | '/organisatie/behandelingen'
     | '/organisatie/locaties'
@@ -696,6 +756,9 @@ export interface FileRouteTypes {
     | '/_authenticated/agenda/rooster'
     | '/_authenticated/boekingsflow/boekingslinks'
     | '/_authenticated/boekingsflow/kanalen-en-campagnes'
+    | '/_authenticated/dossier/adresboek'
+    | '/_authenticated/dossier/formulieren-en-nazorg'
+    | '/_authenticated/dossier/vragenbibliotheek'
     | '/_authenticated/instellingen/algemeen'
     | '/_authenticated/instellingen/gebruikers-en-rollen'
     | '/_authenticated/instellingen/koppelingen'
@@ -719,6 +782,7 @@ export interface FileRouteTypes {
     | '/_authenticated/boekingsflow/e-mails/behandeling'
     | '/_authenticated/boekingsflow/e-mails/verzonden'
     | '/_authenticated/boekingsflow/vragenlijsten/$id'
+    | '/_authenticated/dossier/dossiersjablonen/$id'
     | '/_authenticated/organisatie/behandelaars/$id'
     | '/_authenticated/organisatie/behandelingen/$id'
     | '/_authenticated/organisatie/locaties/$id'
@@ -732,6 +796,7 @@ export interface FileRouteTypes {
     | '/api/public/jobs/mail-reminders'
     | '/_authenticated/boekingsflow/e-mails/'
     | '/_authenticated/boekingsflow/vragenlijsten/'
+    | '/_authenticated/dossier/dossiersjablonen/'
     | '/_authenticated/organisatie/behandelaars/'
     | '/_authenticated/organisatie/behandelingen/'
     | '/_authenticated/organisatie/locaties/'
@@ -881,6 +946,27 @@ declare module '@tanstack/react-router' {
       path: '/boekingsflow/kanalen-en-campagnes'
       fullPath: '/boekingsflow/kanalen-en-campagnes'
       preLoaderRoute: typeof AuthenticatedBoekingsflowKanalenEnCampagnesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/dossier/adresboek': {
+      id: '/_authenticated/dossier/adresboek'
+      path: '/dossier/adresboek'
+      fullPath: '/dossier/adresboek'
+      preLoaderRoute: typeof AuthenticatedDossierAdresboekRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/dossier/formulieren-en-nazorg': {
+      id: '/_authenticated/dossier/formulieren-en-nazorg'
+      path: '/dossier/formulieren-en-nazorg'
+      fullPath: '/dossier/formulieren-en-nazorg'
+      preLoaderRoute: typeof AuthenticatedDossierFormulierenEnNazorgRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/dossier/vragenbibliotheek': {
+      id: '/_authenticated/dossier/vragenbibliotheek'
+      path: '/dossier/vragenbibliotheek'
+      fullPath: '/dossier/vragenbibliotheek'
+      preLoaderRoute: typeof AuthenticatedDossierVragenbibliotheekRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/instellingen/algemeen': {
@@ -1051,6 +1137,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBoekingsflowVragenlijstenIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/dossier/dossiersjablonen/': {
+      id: '/_authenticated/dossier/dossiersjablonen/'
+      path: '/dossier/dossiersjablonen'
+      fullPath: '/dossier/dossiersjablonen/'
+      preLoaderRoute: typeof AuthenticatedDossierDossiersjablonenIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/dossier/dossiersjablonen/$id': {
+      id: '/_authenticated/dossier/dossiersjablonen/$id'
+      path: '/dossier/dossiersjablonen/$id'
+      fullPath: '/dossier/dossiersjablonen/$id'
+      preLoaderRoute: typeof AuthenticatedDossierDossiersjablonenIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/organisatie/behandelaars/': {
       id: '/_authenticated/organisatie/behandelaars/'
       path: '/organisatie/behandelaars'
@@ -1199,6 +1299,9 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAgendaRoosterRoute: typeof AuthenticatedAgendaRoosterRoute
   AuthenticatedBoekingsflowBoekingslinksRoute: typeof AuthenticatedBoekingsflowBoekingslinksRoute
   AuthenticatedBoekingsflowKanalenEnCampagnesRoute: typeof AuthenticatedBoekingsflowKanalenEnCampagnesRoute
+  AuthenticatedDossierAdresboekRoute: typeof AuthenticatedDossierAdresboekRoute
+  AuthenticatedDossierFormulierenEnNazorgRoute: typeof AuthenticatedDossierFormulierenEnNazorgRoute
+  AuthenticatedDossierVragenbibliotheekRoute: typeof AuthenticatedDossierVragenbibliotheekRoute
   AuthenticatedInstellingenAlgemeenRoute: typeof AuthenticatedInstellingenAlgemeenRoute
   AuthenticatedInstellingenGebruikersEnRollenRoute: typeof AuthenticatedInstellingenGebruikersEnRollenRoute
   AuthenticatedInstellingenKoppelingenRoute: typeof AuthenticatedInstellingenKoppelingenRoute
@@ -1210,11 +1313,13 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedBoekingsflowEMailsBehandelingRoute: typeof AuthenticatedBoekingsflowEMailsBehandelingRoute
   AuthenticatedBoekingsflowEMailsVerzondenRoute: typeof AuthenticatedBoekingsflowEMailsVerzondenRoute
   AuthenticatedBoekingsflowVragenlijstenIdRoute: typeof AuthenticatedBoekingsflowVragenlijstenIdRoute
+  AuthenticatedDossierDossiersjablonenIdRoute: typeof AuthenticatedDossierDossiersjablonenIdRoute
   AuthenticatedOrganisatieBehandelaarsIdRoute: typeof AuthenticatedOrganisatieBehandelaarsIdRoute
   AuthenticatedOrganisatieBehandelingenIdRoute: typeof AuthenticatedOrganisatieBehandelingenIdRoute
   AuthenticatedOrganisatieLocatiesIdRoute: typeof AuthenticatedOrganisatieLocatiesIdRoute
   AuthenticatedBoekingsflowEMailsIndexRoute: typeof AuthenticatedBoekingsflowEMailsIndexRoute
   AuthenticatedBoekingsflowVragenlijstenIndexRoute: typeof AuthenticatedBoekingsflowVragenlijstenIndexRoute
+  AuthenticatedDossierDossiersjablonenIndexRoute: typeof AuthenticatedDossierDossiersjablonenIndexRoute
   AuthenticatedOrganisatieBehandelaarsIndexRoute: typeof AuthenticatedOrganisatieBehandelaarsIndexRoute
   AuthenticatedOrganisatieBehandelingenIndexRoute: typeof AuthenticatedOrganisatieBehandelingenIndexRoute
   AuthenticatedOrganisatieLocatiesIndexRoute: typeof AuthenticatedOrganisatieLocatiesIndexRoute
@@ -1229,6 +1334,11 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedBoekingsflowBoekingslinksRoute,
   AuthenticatedBoekingsflowKanalenEnCampagnesRoute:
     AuthenticatedBoekingsflowKanalenEnCampagnesRoute,
+  AuthenticatedDossierAdresboekRoute: AuthenticatedDossierAdresboekRoute,
+  AuthenticatedDossierFormulierenEnNazorgRoute:
+    AuthenticatedDossierFormulierenEnNazorgRoute,
+  AuthenticatedDossierVragenbibliotheekRoute:
+    AuthenticatedDossierVragenbibliotheekRoute,
   AuthenticatedInstellingenAlgemeenRoute:
     AuthenticatedInstellingenAlgemeenRoute,
   AuthenticatedInstellingenGebruikersEnRollenRoute:
@@ -1247,6 +1357,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedBoekingsflowEMailsVerzondenRoute,
   AuthenticatedBoekingsflowVragenlijstenIdRoute:
     AuthenticatedBoekingsflowVragenlijstenIdRoute,
+  AuthenticatedDossierDossiersjablonenIdRoute:
+    AuthenticatedDossierDossiersjablonenIdRoute,
   AuthenticatedOrganisatieBehandelaarsIdRoute:
     AuthenticatedOrganisatieBehandelaarsIdRoute,
   AuthenticatedOrganisatieBehandelingenIdRoute:
@@ -1257,6 +1369,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedBoekingsflowEMailsIndexRoute,
   AuthenticatedBoekingsflowVragenlijstenIndexRoute:
     AuthenticatedBoekingsflowVragenlijstenIndexRoute,
+  AuthenticatedDossierDossiersjablonenIndexRoute:
+    AuthenticatedDossierDossiersjablonenIndexRoute,
   AuthenticatedOrganisatieBehandelaarsIndexRoute:
     AuthenticatedOrganisatieBehandelaarsIndexRoute,
   AuthenticatedOrganisatieBehandelingenIndexRoute:

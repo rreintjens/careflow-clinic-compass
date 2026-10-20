@@ -41,6 +41,17 @@ const GROUPS = [
     ],
   },
   {
+    key: "dossier",
+    label: "Dossier",
+    icon: icon(<><rect x="5" y="4.5" width="14" height="16" rx="2" /><path d="M9 4.5V3.5h6v1M9 10h6M9 14h6M9 18h3" /></>),
+    items: [
+      { to: "/dossier/dossiersjablonen", label: "Dossiersjablonen" },
+      { to: "/dossier/vragenbibliotheek", label: "Vragenbibliotheek" },
+      { to: "/dossier/formulieren-en-nazorg", label: "Formulieren en nazorg" },
+      { to: "/dossier/adresboek", label: "Adresboek" },
+    ],
+  },
+  {
     key: "instellingen",
     label: "Instellingen",
     icon: icon(<><path d="M4 7h9M17 7h3M4 17h3M11 17h9" /><circle cx="15" cy="7" r="2" /><circle cx="9" cy="17" r="2" /></>),

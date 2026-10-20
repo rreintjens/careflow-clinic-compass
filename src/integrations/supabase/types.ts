@@ -672,6 +672,7 @@ export type Database = {
           reason: string
           status: string
           subjective: string
+          template_version_ids: string[]
           tenant_id: string
           time_and_duration: string
           updated_at: string
@@ -696,6 +697,7 @@ export type Database = {
           reason?: string
           status?: string
           subjective?: string
+          template_version_ids?: string[]
           tenant_id?: string
           time_and_duration?: string
           updated_at?: string
@@ -720,6 +722,7 @@ export type Database = {
           reason?: string
           status?: string
           subjective?: string
+          template_version_ids?: string[]
           tenant_id?: string
           time_and_duration?: string
           updated_at?: string
@@ -750,6 +753,117 @@ export type Database = {
           },
           {
             foreignKeyName: "consult_notes_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dossier_template_versions: {
+        Row: {
+          change_note: string | null
+          content: Json
+          created_at: string
+          created_by: string | null
+          id: string
+          published_at: string | null
+          published_by: string | null
+          status: string
+          template_id: string
+          tenant_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          change_note?: string | null
+          content?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          published_at?: string | null
+          published_by?: string | null
+          status: string
+          template_id: string
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version: number
+        }
+        Update: {
+          change_note?: string | null
+          content?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          published_at?: string | null
+          published_by?: string | null
+          status?: string
+          template_id?: string
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dossier_template_versions_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "dossier_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dossier_template_versions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dossier_templates: {
+        Row: {
+          category_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          tenant_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dossier_templates_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "treatment_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dossier_templates_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -1358,6 +1472,68 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: []
+      }
+      library_questions: {
+        Row: {
+          code: string
+          condition: Json | null
+          created_at: string
+          created_by: string | null
+          grp: string
+          id: string
+          is_example: boolean
+          options: Json
+          qtype: string
+          sort: number
+          tenant_id: string
+          text_en: string | null
+          text_nl: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          code: string
+          condition?: Json | null
+          created_at?: string
+          created_by?: string | null
+          grp: string
+          id?: string
+          is_example?: boolean
+          options?: Json
+          qtype: string
+          sort?: number
+          tenant_id?: string
+          text_en?: string | null
+          text_nl: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          code?: string
+          condition?: Json | null
+          created_at?: string
+          created_by?: string | null
+          grp?: string
+          id?: string
+          is_example?: boolean
+          options?: Json
+          qtype?: string
+          sort?: number
+          tenant_id?: string
+          text_en?: string | null
+          text_nl?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "library_questions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       location_exceptions: {
         Row: {
@@ -3956,6 +4132,7 @@ export type Database = {
           created_by: string | null
           description_en: string | null
           description_nl: string | null
+          dossier_template_override: string | null
           duration_min: number
           icon: string | null
           id: string
@@ -3984,6 +4161,7 @@ export type Database = {
           created_by?: string | null
           description_en?: string | null
           description_nl?: string | null
+          dossier_template_override?: string | null
           duration_min: number
           icon?: string | null
           id?: string
@@ -4012,6 +4190,7 @@ export type Database = {
           created_by?: string | null
           description_en?: string | null
           description_nl?: string | null
+          dossier_template_override?: string | null
           duration_min?: number
           icon?: string | null
           id?: string
@@ -4033,6 +4212,13 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "treatments_dossier_template_override_fkey"
+            columns: ["dossier_template_override"]
+            isOneToOne: false
+            referencedRelation: "dossier_templates"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "treatments_tenant_id_fkey"
             columns: ["tenant_id"]
