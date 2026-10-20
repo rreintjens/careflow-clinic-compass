@@ -60,7 +60,13 @@ export const sendPortalLink=createServerFn({method:'POST'}).inputValidator((d:un
 });
 export const redeemPortalLink=createServerFn({method:'POST'}).inputValidator((d:unknown)=>portalTokenSchema.parse(d)).handler(async({data})=>{
  const {resolveTenant,admin}=await import('./booking.server'); const t=await resolveTenant(undefined); if(!t)throw new Error('De link is ongeldig of verlopen.'); const db=await admin();
- const {data:rows,error}=await db.rpc('portal_claim_token',{_hash:await digest(data.token),_tenant:t.id}); const tok=rows?.[0]; if(error||!tok?.patient_id)throw new Error('De link is ongeldig of verlopen.');
+ const {data:rows,error}=await db.rpc('portal_claim_token',{_hash:await digest(data.token),_tenant:t.id}); const tok=rows?.[0]; if(error||!tok)throw new Error('De link is ongeldig of verlopen.');
+ const rcRaw=tok.return_context; const draft=rcRaw&&typeof rcRaw==='object'&&!Array.isArray(rcRaw)?rcRaw as {booking?:string;holdToken?:string|null;confirm?:boolean;triage?:{key:string;versionId:string|null;answers:Record<string,unknown>}|null}:null;
+ if(!tok.patient_id){
+  // Unknown address: never log in, send the patient back to the booking as a new patient.
+  if(draft?.booking)return {unknownEmail:true as const,returnTo:draft.booking};
+  throw new Error('De link is ongeldig of verlopen.');
+ }
  const {data:p}=await db.from('patients').select('id,email').eq('tenant_id',t.id).eq('id',tok.patient_id).is('deleted_at',null).single(); if(!p)throw new Error('De link is ongeldig of verlopen.');
  const generated=await db.auth.admin.generateLink({type:'magiclink',email:p.email}); const user=generated.data?.user, otp=generated.data?.properties?.hashed_token; if(generated.error||!user||!otp){console.error('portal generate',generated.error?.code);throw new Error('Inloggen is niet gelukt.');}
  const [ms,gs]=await Promise.all([db.from('tenant_memberships').select('id').eq('user_id',user.id).limit(1),db.from('group_admins').select('user_id').eq('user_id',user.id).limit(1)]); if(ms.error||gs.error||ms.data?.length||gs.data?.length)throw new Error('Gebruik de medewerkerslogin voor dit account.');
@@ -74,8 +80,18 @@ export const redeemPortalLink=createServerFn({method:'POST'}).inputValidator((d:
  const client=createClient(process.env['SUPABASE_URL']!,key,{auth:{persistSession:false,autoRefreshToken:false},global:{fetch:(input,init)=>{const h=new Headers(init?.headers);if(key.startsWith('sb_')&&h.get('Authorization')===`Bearer ${key}`)h.delete('Authorization');h.set('apikey',key);return fetch(input,{...init,headers:h});}}});
  const verified=await client.auth.verifyOtp({token_hash:freshOtp,type:'magiclink'}); if(!verified.data.session){console.error('portal verify',verified.error?.code);throw new Error('Inloggen is niet gelukt.');}
  await db.from('audit_log').insert(['portal_link_used','portal_login'].map(action=>({tenant_id:t.id,user_id:user.id,role_key:'patient',action,category:'login',record_type:'patient',record_id:p.id})));
- const rc=tok.return_context; const returnTo=rc&&typeof rc==='object'&&!Array.isArray(rc)&&typeof (rc as Record<string,unknown>)['booking']==='string'?String((rc as Record<string,unknown>)['booking']):null;
- return {access_token:verified.data.session.access_token,refresh_token:verified.data.session.refresh_token,returnTo};
+ const session={access_token:verified.data.session.access_token,refresh_token:verified.data.session.refresh_token};
+ // Login started at the details step: confirm the held booking right away, with the patient's own record.
+ if(draft?.confirm&&draft.holdToken){
+  const {data:full}=await db.from('patients').select('*').eq('id',p.id).single();
+  const {confirmBooking}=await import('./booking.functions');
+  const r=full?await confirmBooking({data:{token:draft.holdToken,existing:true,salutation:full.salutation??'',firstName:full.first_name,lastName:full.last_name,dateOfBirth:full.date_of_birth,email:full.email,phoneCountry:full.phone_country??'+31',phone:full.phone??'0600000000',country:full.country??'NL',postcode:full.postcode??'0000AA',houseNumber:full.house_number??'0',suffix:full.house_suffix??undefined,street:full.street??'-',city:full.city??'-',consentPrivacy:true,consentGp:false,consentLsp:false,consentMarketing:false,triageKey:draft.triage?.key,triageVersionId:draft.triage?.versionId??undefined,triageAnswers:draft.triage?.answers}}):{ok:false as const,reason:'failed' as const};
+  if(r.ok){await db.from('audit_log').insert({tenant_id:t.id,user_id:user.id,role_key:'patient',action:'portal_booking_confirmed',category:'booking',record_type:'patient',record_id:p.id});return {...session,confirmed:true as const};}
+  // Moment expired: back to the planner with the same choices, without the lost time.
+  const params=new URLSearchParams(draft.booking??'');params.delete('tijd');params.delete('stap');
+  return {...session,returnTo:params.toString(),holdToken:null,holdExpired:true as const};
+ }
+ return {...session,returnTo:draft?.booking??null,holdToken:draft?.holdToken??null};
 });
 
 /** Booking-flow context for a logged-in patient: prefill details and past visits for the practitioner preset. Staff get patient:null. */
