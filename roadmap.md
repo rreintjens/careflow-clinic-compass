@@ -4,9 +4,9 @@
 - [x] A: gedeeld mobiel/desktopkader, tokens, afzonderlijke patiëntlogin via tienminutenlink, landingsregel, navigatie en vier demopatiënten; ieder via echte link op 390px/1440px gecontroleerd. Patiëntisolatie, medewerkers-/patiëntgrenzen, herladen, onbekende mail en eenmalig gebruik gecontroleerd; 42 gerichte tests groen. Demo-mails in bestaande outbox. Stop voor go.
   - Afbakening: volledige cosmetische historie/afspraken, behandeltrajecten en programmeerschermen volgen B/D; fase A toont Start-identiteit met demo-aantallen en pakket/meetbronnen, nog geen gefactureerde historische afspraken. Mails blijven demo_only, geen externe bezorging. Geen extra Profiel-tabel; bestaand dossier hergebruikt. Screenshots staan in Files onder Mijn-omgeving-fase-A.
 - [ ] B: cosmetische schermen en behandelinstellingen — wacht op go na A.
-- [ ] C: inloggen vanuit boeking en bevestigen — wacht op go na B.
-- [ ] D: medisch-afvallenschermen (wacht op go na B) — wacht op go na C.
-- [ ] E: bestellen en demo-afrekenen — wacht op go na D.
+- [ ] C: inloggen vanuit boeking (B2-balk (teal #317689, witte tekst, witte Inloggen-pil); herstel na link per voortgang: niets gekozen→Start, behandeling→planner+welkom+eigen arts, tijd+open stap→eerste open stap (gegevens overgeslagen, Klopt alles?), alles rond/details→direct bevestigen+groene tegel; bevestigingsmail aparte tekst; geen "Liever bij"-regel "Eerder bij ons geweest? Log in, dan staan je gegevens klaar" op eerste scherm én planner, ook in de linkbuilder-preview; loginpagina met kaart "Je keuze blijft bewaard"; boekingsconcept server-side aan de inloglink gekoppeld zodat de link in elke browser de exacte staat herstelt; bij gekozen tijd 15 min vasthouden vanaf verzenden; Check-je-mail-scherm met opnieuw-sturen en spammap-notitie; mail "Ga verder met je afspraak"; terugkeer in dezelfde stap met Welkom-terugrij, nooit een keuze overschrijven, rustige regel "Liever bij {voornaam}?" bij Geen voorkeur; gegevensstap overgeslagen voor ingelogden, eindstap "Klopt alles?" met Bevestig-knop; automatisch bevestigen alleen bij login vanaf de gegevensstap; boekingslink-stap 5; Joyce in bel-footer) — GO gegeven 20-10.
+- [ ] D: medisch-afvallenschermen met foto's en visuele regels — GO gegeven 20-10.
+- [ ] E: bestellen, pakketkiezer-states en demo-afrekenen — GO gegeven 20-10.
 
 ## Uitvoervolgorde eigenaar 19-10 13:19 UTC
 1. Gedeelde doorzoekbare picker

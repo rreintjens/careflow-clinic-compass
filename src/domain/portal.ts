@@ -1,6 +1,14 @@
 import { z } from "zod";
 
-export const portalEmailSchema = z.object({ email: z.string().trim().toLowerCase().email().max(254) });
+/** Booking draft sent along with a login link: the exact flow state, plus hold and triage when the patient already chose a time. */
+export const portalDraftSchema = z.object({
+  params: z.string().max(600),
+  treatmentId: z.string().uuid().optional(), locationId: z.string().uuid().optional(), practitionerId: z.string().max(40).optional(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(), time: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+  confirm: z.boolean().optional(), holdToken: z.string().uuid().optional(),
+  triageKey: z.string().max(80).optional(), triageVersionId: z.string().uuid().optional(), triageAnswers: z.record(z.string(), z.unknown()).optional(),
+});
+export const portalEmailSchema = z.object({ email: z.string().trim().toLowerCase().email().max(254), merk: z.string().max(60).optional(), returnTo: z.string().max(600).optional(), draft: portalDraftSchema.optional() });
 export const portalTokenSchema = z.object({ token: z.string().regex(/^[a-f0-9]{64}$/) });
 export const PORTAL_LINK_MINUTES = 10;
 export function usablePortalToken(expiresAt: string, usedAt: string | null, now: number) {

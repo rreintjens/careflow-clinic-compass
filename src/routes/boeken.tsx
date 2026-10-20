@@ -1,5 +1,5 @@
 import { useQuery, useSuspenseQuery, queryOptions } from "@tanstack/react-query";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
@@ -19,12 +19,17 @@ import { DobField, QuestionnaireRunner } from "@/features/questionnaire/Question
 import { Select } from "@/components/Select";
 import { TextArea, TextField } from "@/components/Field";
 import type { Answers, FlowFile, QuestionnaireDef } from "@/domain/questionnaire/engine";
+import { supabase } from "@/integrations/supabase/client";
+import { bookingPatientContext, sendPortalLink } from "@/data/portal.functions";
+import { patientInitials } from "@/domain/portal";
+import { UserRound, Mail } from "lucide-react";
 
 const search = z.object({
   merk: z.string().optional(), lang: z.enum(["nl", "en"]).optional(), bron: z.string().optional(), link: z.string().optional(),
   utm_source: z.string().max(80).optional(), utm_medium: z.string().max(80).optional(), utm_campaign: z.string().max(80).optional(),
   cat: z.string().optional(), sub: z.string().optional(), t: z.string().optional(), l: z.string().optional(),
   p: z.string().optional(), d: z.string().optional(), tijd: z.string().optional(), stap: z.string().optional(),
+  inloggen: z.enum(["nee"]).optional(),
 });
 type Search = z.infer<typeof search>;
 
@@ -83,6 +88,18 @@ function Booking() {
   }, [stepKey]);
   const guard = settling ? "pointer-events-none" : undefined;
 
+  // A Mijn omgeving session hides the login bar, presets the patient's own practitioner and prefills the details.
+  const [me, setMe] = useState<Awaited<ReturnType<typeof bookingPatientContext>> | null>(null);
+  useEffect(() => {
+    let on = true;
+    void (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session || !on) return;
+      try { const r = await bookingPatientContext({ data: { merk: s.merk } }); if (on && r.patient) setMe(r); } catch { /* not a patient session */ }
+    })();
+    return () => { on = false; };
+  }, [s.merk]);
+
   if (!("categories" in data) || !data.tenant) return <Shell lang={lang} onLang={() => go({ lang: lang === "nl" ? "en" : "nl" })}><p className="pt-10 text-[15px]">{tx("unknown_brand")}</p></Shell>;
   const original = data as Full;
   const c: Full = link ? {...original,treatments:original.treatments.filter(t=>link.treatmentIds.includes(t.id)),practitioners:original.practitioners.filter(p=>!link.practitionerIds||link.practitionerIds.includes(p.id))} : original;
@@ -111,17 +128,25 @@ function Booking() {
   const back = step.kind === "category" ? undefined : () => window.history.back();
   const close = () => navigate({ search: { merk: s.merk, lang: s.lang, bron: s.bron } });
   const phone = c.tenant.phone;
+  const loginAllowed = (link?.showPatientLogin ?? true) && s.inloggen !== "nee";
+  const showBar = loginAllowed && !me?.patient && (step.kind === "category" || step.kind === "planner");
+  const preferredId = me?.patient && (step.kind === "planner" || step.kind === "practitioner") ? preferredPractitioner(c, me.visits, step.treatment, step.location) : null;
+  const openLogin = () => {
+    const params = new URLSearchParams(Object.entries(eff).filter(([k, v]) => v != null && v !== "" && k !== "stap" && k !== "inloggen") as [string, string][]).toString();
+    void navigate({ to: "/boeken/inloggen", search: { merk: s.merk, lang: s.lang, link: s.link, vanaf: step.kind === "planner" ? "planner" : "start", ret: step.kind === "planner" ? params : undefined } });
+  };
 
   const startTreatment=c.treatments.find(t=>t.id===link?.treatmentId);
   const startScreen=resolveStartScreen(link?{treatmentId:link.treatmentId,mode:link.startScreenMode,screen:link.startScreen}:null,startTreatment?.start_screen);
   if(startScreen&&!startPassed&&!s.tijd&&!s.stap) {const page=startScreenPage(startScreen,lang);const people=c.practitioners.filter(p=>c.practitionerTreatments.some(pt=>pt.practitioner_id===p.id&&pt.treatment_id===startTreatment?.id));return <Shell lang={lang} footer={<PillButton size="lg" className="patient-choice choice-primary w-full" onClick={()=>setStartPassed(true)}>{page.button}</PillButton>}><Title>{page.title}</Title><p className="text-[15px] leading-relaxed">{page.body}</p>{startScreen.form==="practitioner"?<div className="mt-5 grid grid-cols-2 gap-4">{people.map(p=><div key={p.id} className="flex items-center gap-3"><Avatar src={p.photo} size={40}/><span className="text-sm">{p.first_name} {p.last_name}</span></div>)}</div>:<Boodschap page={page} vars={{}}/>}<div className="mt-6 flex items-center gap-3"><div className="flex -space-x-2">{people.slice(0,4).map(p=><Avatar key={p.id} src={p.photo} size={32}/>)}</div><span className="text-sm text-muted-foreground">{tx("duration_line",{rol:"arts",min:startTreatment?.duration_min??30})}</span></div></Shell>;}
   if (step.kind === "planner" && s.stap === "vasthouden" && s.d && s.tijd) {
-    return <div className={guard}><HoldStep c={c} s={eff} treatmentId={step.treatment} locationId={step.location} practitionerId={step.practitioner ?? "any"} tx={tx} lang={lang} go={go} /></div>;
+    return <div className={guard}><HoldStep c={c} s={eff} me={me} treatmentId={step.treatment} locationId={step.location} practitionerId={step.practitioner ?? "any"} tx={tx} lang={lang} go={go} /></div>;
   }
 
   return (
     <Shell lang={lang} progress={progress} onBack={back} onClose={close} onLang={step.kind === "category" ? () => go({ lang: lang === "nl" ? "en" : "nl" }, true) : undefined}
-      footer={step.kind === "category" && phone ? <p className="text-center text-[13px] text-muted-foreground">{tx("call")} <a href={`tel:${phone}`} className="text-primary underline">{phone}</a></p> : null}>
+      bar={showBar ? <LoginBar tx={tx} onClick={openLogin} /> : undefined}
+      footer={step.kind === "category" && phone ? <div className="flex items-center justify-center gap-3"><img src={JOYCE_PHOTO} alt="" className="size-11 shrink-0 rounded-full object-cover" style={{ objectPosition: "50% 18%" }} /><span className="text-[13px] text-muted-foreground"><span className="block">{tx("call")} <a href={`tel:${phone}`} className="text-primary underline">{phone}</a></span><span className="block">{tx("call_team")}</span></span></div> : null}>
       <div className={guard}>
       {step.kind === "none" && <p className="pt-10 text-[15px]">{tx("nothing_bookable")}</p>}
       {step.kind === "category" && (
@@ -134,14 +159,14 @@ function Booking() {
         <List title={tx("q_treatment")} rows={step.options.map((id) => { const x = c.treatments.find((k) => k.id === id); return { id, title: x ? name(x) : "", sub: x ? `${x.duration_min} min` : "", icon: x?.icon ?? catIcon(step.category) }; })} onPick={(id) => go({ t: id })} />
       )}
       {step.kind === "location" && <LocationStep c={c} treatmentId={step.treatment} options={step.options} hidePeople={!!startScreen} tx={tx} name={name} onPick={(id) => go({ l: id })} />}
-      {step.kind === "practitioner" && <PractitionerStep c={c} s={s} treatmentId={step.treatment} locationId={step.location} required={step.required} tx={tx} onPick={(p) => go({ p, stap: undefined, tijd: undefined })} />}
-      {step.kind === "planner" && <PlannerStep c={c} s={s} step={step} tx={tx} lang={lang} go={go} />}
+      {step.kind === "practitioner" && <PractitionerStep c={c} s={s} treatmentId={step.treatment} locationId={step.location} required={step.required} tx={tx} preferredId={preferredId} onPick={(p) => go({ p, stap: undefined, tijd: undefined })} />}
+      {step.kind === "planner" && <PlannerStep c={c} s={s} step={step} tx={tx} lang={lang} go={go} me={me} preferredId={preferredId} />}
       </div>
     </Shell>
   );
 }
 
-function Shell({ children, footer, progress = 0, onBack, onClose, onLang, lang }: { children: React.ReactNode; footer?: React.ReactNode; progress?: number; onBack?: (() => void) | undefined; onClose?: () => void; onLang?: (() => void) | undefined; lang: string }) {
+export function Shell({ children, footer, bar, progress = 0, onBack, onClose, onLang, lang }: { children: React.ReactNode; footer?: React.ReactNode; bar?: React.ReactNode; progress?: number; onBack?: (() => void) | undefined; onClose?: () => void; onLang?: (() => void) | undefined; lang: string }) {
   return (
     <PatientFrame>
         <header className="grid h-14 grid-cols-[48px_1fr_48px] items-center px-2">
@@ -151,13 +176,14 @@ function Shell({ children, footer, progress = 0, onBack, onClose, onLang, lang }
           {onClose ? <button type="button" onClick={onClose} aria-label="Sluiten" className="flex justify-center"><img src="/ui-icons/kruis.svg" alt="" className="size-5" /></button> : <span />}
         </header>
         <div className="h-[3px] bg-muted"><div className="h-full bg-primary transition-all" style={{ width: `${Math.round(progress * 100)}%` }} /></div>
+        {bar}
         <main className="flex flex-1 flex-col px-5 pb-6 pt-8">{children}</main>
         {footer && <footer className="px-5 pb-6">{footer}</footer>}
     </PatientFrame>
   );
 }
 
-function Title({ children, sub }: { children: React.ReactNode; sub?: React.ReactNode }) {
+export function Title({ children, sub }: { children: React.ReactNode; sub?: React.ReactNode }) {
   return <div className="mb-6"><h1 className="text-[28px] font-semibold leading-[1.2] tracking-tight">{children}</h1>{sub && <div className="mt-3 text-[15px] leading-[1.6] text-muted-foreground">{sub}</div>}</div>;
 }
 
@@ -187,6 +213,30 @@ function eligiblePractitioners(c: Full, treatmentId: string, locationId: string)
   return c.practitioners.filter((p) => at.has(p.id) && c.practitionerTreatments.some((x) => x.practitioner_id === p.id && x.treatment_id === treatmentId && !(x.excluded_location_ids ?? []).includes(locationId)));
 }
 const roleName = (c: Full, roleId: string | null, lang = "nl") => { const r = c.roles.find((x) => x.id === roleId); return r ? ((lang === "en" && r.name_en) || r.name_nl) : ""; };
+
+const JOYCE_PHOTO = "https://body-clinic.ams3.digitaloceanspaces.com/0010ee8a9603d578d735779d5fd7e35c.jpg";
+
+/** Variant B2: slim teal bar under the header and progress line; the whole bar opens the login screen. */
+function LoginBar({ tx, onClick }: { tx: Tx; onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick} className="flex min-h-[54px] w-full items-center gap-3 bg-primary py-2 pl-4 pr-2.5 text-left">
+      <UserRound className="size-[18px] shrink-0 text-primary-foreground" strokeWidth={1.7} />
+      <span className="min-w-0 flex-1 text-[14px] leading-snug text-primary-foreground"><span className="font-semibold">{tx("login_bar_title")}</span> {tx("login_bar_sub")}</span>
+      <span className="flex h-[34px] shrink-0 items-center rounded-full bg-background px-4 text-[14px] font-medium text-primary">{tx("login_bar_button")}</span>
+    </button>
+  );
+}
+
+/** The practitioner the patient visited most within this treatment's category, else the most recent eligible one. */
+function preferredPractitioner(c: Full, visits: ReadonlyArray<{ treatment_id: string; practitioner_id: string | null; starts_at: string }>, treatmentId: string, locationId: string) {
+  const eligible = new Set(eligiblePractitioners(c, treatmentId, locationId).map((p) => p.id));
+  const cats = new Set(c.links.filter((l) => l.treatment_id === treatmentId).map((l) => l.category_id));
+  const inCat = visits.filter((v) => v.practitioner_id && eligible.has(v.practitioner_id) && c.links.some((l) => l.treatment_id === v.treatment_id && cats.has(l.category_id)));
+  const pool = inCat.length ? inCat : visits.filter((v) => v.practitioner_id && eligible.has(v.practitioner_id));
+  const count = new Map<string, { n: number; last: string }>();
+  for (const v of pool) { const id = v.practitioner_id!; const e = count.get(id) ?? { n: 0, last: v.starts_at }; e.n += 1; if (v.starts_at > e.last) e.last = v.starts_at; count.set(id, e); }
+  return [...count.entries()].sort((a, b) => b[1].n - a[1].n || b[1].last.localeCompare(a[1].last))[0]?.[0] ?? null;
+}
 
 function LocationStep({ c, treatmentId, options, tx, name, onPick,hidePeople=false }: { c: Full; treatmentId: string; options: string[];hidePeople?:boolean; tx: Tx; name: (x: { name_nl: string; name_en: string | null }) => string; onPick: (id: string) => void }) {
   const t = c.treatments.find((x) => x.id === treatmentId);
@@ -240,7 +290,7 @@ function useSlots(c: Full, s: Search, treatmentId: string, locationId: string, p
 
 const todayLocal = () => new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Amsterdam" });
 
-function PractitionerStep({ c, s, treatmentId, locationId, required, tx, onPick }: { c: Full; s: Search; treatmentId: string; locationId: string; required: boolean; tx: Tx; onPick: (p: string) => void }) {
+function PractitionerStep({ c, s, treatmentId, locationId, required, tx, preferredId, onPick }: { c: Full; s: Search; treatmentId: string; locationId: string; required: boolean; tx: Tx; preferredId?: string | null; onPick: (p: string) => void }) {
   const [all, setAll] = useState(false);
   const people = eligiblePractitioners(c, treatmentId, locationId);
   const today = todayLocal();
@@ -286,7 +336,7 @@ function Card({ avatar, title, sub, when, onClick }: { avatar: React.ReactNode; 
   );
 }
 
-function PlannerStep({ c, s, step, tx, lang, go }: { c: Full; s: Search; step: Extract<ReturnType<typeof nextStep>, { kind: "planner" }>; tx: Tx; lang: string; go: (p: Partial<Search>, replace?: boolean) => void }) {
+function PlannerStep({ c, s, step, tx, lang, go, me, preferredId }: { c: Full; s: Search; step: Extract<ReturnType<typeof nextStep>, { kind: "planner" }>; tx: Tx; lang: string; go: (p: Partial<Search>, replace?: boolean) => void; me?: Awaited<ReturnType<typeof bookingPatientContext>> | null; preferredId?: string | null }) {
   const today = todayLocal();
   const horizon = c.maxAheadWeeks * 7;
   const q = useSlots(c, s, step.treatment, step.location, step.practitioner ? [step.practitioner] : [], today, horizon);
@@ -377,7 +427,7 @@ const HOLD_KEY = "tbc-booking-hold";
 const readJson = <T,>(k: string): T | null => { try { return JSON.parse(sessionStorage.getItem(k) ?? "null") as T; } catch { return null; } };
 
 /** Holds the chosen time, runs the triage while the hold lasts, and handles expiry and red outcomes. */
-function HoldStep({ c, s, treatmentId, locationId, practitionerId, tx, lang, go }: { c: Full; s: Search; treatmentId: string; locationId: string; practitionerId: string; tx: Tx; lang: string; go: (p: Partial<Search>, replace?: boolean) => void }) {
+function HoldStep({ c, s, me, treatmentId, locationId, practitionerId, tx, lang, go }: { c: Full; s: Search; me: Awaited<ReturnType<typeof bookingPatientContext>> | null; treatmentId: string; locationId: string; practitionerId: string; tx: Tx; lang: string; go: (p: Partial<Search>, replace?: boolean) => void }) {
   const hold = useServerFn(holdSlot);
   const release = useServerFn(releaseHold);
   const triageFn = useServerFn(getTriage);
@@ -682,5 +732,82 @@ function ConfirmedStep({ c, s, treatmentId, locationId, practitionerId, manageTo
         </div>
       )}
     </Shell>
+  );
+}
+
+/** Logged-in patient: the details form is skipped; the last step is the check with "Bevestig je afspraak". */
+function CheckStep({ c, s, token, treatmentId, locationId, practitionerId, tx, lang, me, triageKey, triageVersionId, triageAnswers, onExpired, onEdit, onDone }: {
+  c: Full; s: Search; token: string; treatmentId: string; locationId: string; practitionerId: string; tx: Tx; lang: string;
+  me: NonNullable<Awaited<ReturnType<typeof bookingPatientContext>>>;
+  triageKey?: string | null; triageVersionId?: string | undefined; triageAnswers?: Answers;
+  onExpired: () => void; onEdit: () => void; onDone: (manageToken: string, meetLink: string | null) => void;
+}) {
+  const confirm = useServerFn(confirmBooking);
+  const [busy, setBusy] = useState(false); const [error, setError] = useState("");
+  const p = me.patient!;
+  const t = c.treatments.find((x) => x.id === treatmentId);
+  const l = c.locations.find((x) => x.id === locationId);
+  const pr = c.practitioners.find((x) => x.id === practitionerId);
+  const tName = t ? ((lang === "en" && t.name_en) || t.name_nl) : "";
+  const submit = async () => {
+    setBusy(true); setError("");
+    try {
+      // Fallbacks satisfy the shared form schema; for an existing patient these fields are only used for the match, never stored.
+      const r = await confirm({ data: { merk: s.merk, token, existing: true, salutation: p.salutation ?? "", firstName: p.first_name, lastName: p.last_name, dateOfBirth: p.date_of_birth, email: p.email, phoneCountry: p.phone_country ?? "+31", phone: p.phone ?? "0600000000", country: p.country ?? "NL", postcode: p.postcode ?? "0000AA", houseNumber: p.house_number ?? "0", suffix: p.house_suffix ?? undefined, street: p.street ?? "-", city: p.city ?? "-", consentPrivacy: true, consentGp: false, consentLsp: false, consentMarketing: false, triageKey: triageKey ?? undefined, triageVersionId, triageAnswers } });
+      if (r.ok) onDone(r.manageToken, r.meetLink); else if (r.reason === "expired") onExpired(); else setError(tx("d_failed"));
+    } catch { setError(tx("d_failed")); } finally { setBusy(false); }
+  };
+  return (
+    <Shell lang={lang} progress={0.95}
+      footer={<>{error && <p role="alert" className="mb-3 text-center text-[14px] text-warning">{error}</p>}<PillButton size="lg" className="patient-choice choice-primary w-full" disabled={busy} onClick={() => void submit()}>{tx("check_confirm")}</PillButton></>}>
+      <Title>{tx("check_title")}</Title>
+      <div className="rounded-[18px] bg-teal-light p-4">
+        <div className="flex items-center gap-4">
+          <Avatar src={pr?.photo ?? null} size={56} />
+          <div className="min-w-0"><p className="text-[16px] font-semibold first-letter:uppercase">{fmtLong(s.d ?? "", lang)}, {s.tijd}</p><p className="text-[14px]">{tName}{pr ? ` · ${pr.first_name} ${pr.last_name}` : ""}</p><p className="text-[14px] text-muted-foreground">{l?.kind === "online" ? tx("d_online_meet") : l?.name}</p></div>
+        </div>
+      </div>
+      <div className="mt-4 rounded-[18px] bg-sand p-4">
+        <p className="text-[12px] text-muted-foreground">{tx("check_details")}</p>
+        <p className="mt-1 text-[15px] font-semibold">{p.first_name} {p.last_name}</p>
+        <p className="text-[14px]">{p.email}</p>
+        {p.phone && <p className="text-[14px]">{p.phone}</p>}
+        <button type="button" onClick={onEdit} className="mt-2 text-[13px] text-primary underline">{tx("change")}</button>
+      </div>
+    </Shell>
+  );
+}
+
+/** Details-step login (v0.1 §2): the mailed link confirms the held booking the moment the patient clicks it. */
+function QuickLogin({ s, tx, token, triageKey, triageVersionId, triageAnswers }: { s: Search; tx: Tx; token: string; triageKey?: string | null; triageVersionId?: string | undefined; triageAnswers?: Answers }) {
+  const [email, setEmail] = useState(""); const [sent, setSent] = useState(false); const [busy, setBusy] = useState(false); const [demo, setDemo] = useState<string | null>(null);
+  const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const send = async () => {
+    if (!ok || busy) return; setBusy(true);
+    try {
+      const params = new URLSearchParams(Object.entries(s).filter(([k, v]) => v != null && v !== "" && k !== "inloggen" && k !== "stap") as [string, string][]).toString();
+      const r = await sendPortalLink({ data: { email: email.trim(), merk: s.merk, draft: { params, treatmentId: s.t, locationId: s.l, practitionerId: s.p, date: s.d, time: s.tijd, confirm: true, holdToken: token, triageKey: triageKey ?? undefined, triageVersionId, triageAnswers } } });
+      setDemo(r.demoLink); setSent(true);
+    } finally { setBusy(false); }
+  };
+  if (sent) return (
+    <div className="mt-4 rounded-[18px] bg-teal-light p-5">
+      <p className="text-[16px] font-semibold text-primary">{tx("login_sent_title")}</p>
+      <p className="mt-2 text-[14px] leading-[1.6]">{tx("quick_login_sent", { email: email.trim() })}</p>
+      <p className="booking-note-amber mt-3">{tx("hold_note", { n: 15 })}</p>
+      <button type="button" onClick={() => void send()} className="mt-3 text-[13px] text-primary underline">{tx("resend")}</button>
+      {demo && <a href={demo} className="portal-demo-link mt-2 block text-[13px] text-primary underline">Demo: open de inloglink</a>}
+    </div>
+  );
+  return (
+    <div className="mt-4 rounded-[18px] bg-teal-light p-5">
+      <p className="text-[16px] font-semibold text-primary">{tx("quick_login_title")}</p>
+      <p className="mt-1 text-[14px] leading-[1.6]">{tx("quick_login_body")}</p>
+      <div className="mt-3 flex items-end gap-2">
+        <span className="flex-1"><TextField label={tx("d_email")} type="email" inputMode="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} /></span>
+        <PillButton disabled={!ok || busy} onClick={() => void send()}>{tx("quick_login_send")}</PillButton>
+      </div>
+      <p className="mt-3 text-[13px] text-muted-foreground">{tx("no_login")}</p>
+    </div>
   );
 }

@@ -14,30 +14,59 @@ export const portalLoginInfo = createServerFn({method:'GET'}).handler(async()=>{
  return {content:{...c,demoPatients:t.test_mode?c['demoPatients']:[]},demo:t.test_mode};
 });
 export const sendPortalLink=createServerFn({method:'POST'}).inputValidator((d:unknown)=>portalEmailSchema.parse(d)).handler(async({data})=>{
- const {resolveTenant,admin}=await import('./booking.server'); const t=await resolveTenant(undefined);
- const result={message:'Check je mail',demoLink:null as string|null}; if(!t)return result; const db=await admin();
+ const {resolveTenant,admin}=await import('./booking.server'); const t=await resolveTenant(data.merk);
+ const result={message:'Check je mail',demoLink:null as string|null,held:false}; if(!t)return result; const db=await admin();
  const {count}=await db.from('portal_login_tokens').select('id',{count:'exact',head:true}).eq('tenant_id',t.id).eq('email',data.email).gte('created_at',new Date(Date.now()-600000).toISOString()); if((count??0)>=5)return result;
- const {data:ps}=await db.from('patients').select('id').eq('tenant_id',t.id).ilike('email',data.email).is('deleted_at',null).order('created_at',{ascending:false}); const p=ps?.[0];
+  const {data:ps}=await db.from('patients').select('id').eq('tenant_id',t.id).ilike('email',data.email).is('deleted_at',null).order('created_at',{ascending:false}); const p=ps?.[0];
+ // Booking draft: the exact flow state travels with the token, so the link restores it in any browser.
+ const draft=data.draft; let holdToken:string|null=null; let held=false;
+ if(draft?.date&&draft.time&&draft.treatmentId&&draft.locationId){
+  if(draft.holdToken){
+   const {data:heldRow}=await db.from('appointments').select('id').eq('tenant_id',t.id).eq('hold_token',draft.holdToken).eq('status','held').gt('hold_expires_at',new Date().toISOString()).maybeSingle();
+   if(heldRow){holdToken=draft.holdToken;held=true;}
+  }
+  if(!holdToken){
+   const qp=new URLSearchParams(draft.params); const {holdSlot}=await import('./booking.functions');
+   const h=await holdSlot({data:{merk:data.merk,treatmentId:draft.treatmentId,locationId:draft.locationId,practitionerId:(qp.get('p')==='any'||!qp.get('p')?'any':qp.get('p')!) as never,date:draft.date,time:draft.time,language:qp.get('lang')==='en'?'en':'nl',source:qp.get('bron')??undefined,link:qp.get('link')??undefined}});
+   if(h.ok){holdToken=h.token;held=true;}
+  }
+ }
+ const rc=draft?{booking:draft.params,holdToken,confirm:draft.confirm===true,triage:draft.triageKey?{key:draft.triageKey,versionId:draft.triageVersionId??null,answers:draft.triageAnswers??{}}:null}:(data.returnTo?{booking:data.returnTo}:null);
  const raw=Array.from(crypto.getRandomValues(new Uint8Array(32)),b=>b.toString(16).padStart(2,'0')).join('');
- const {error}=await db.from('portal_login_tokens').insert({tenant_id:t.id,patient_id:p?.id??null,email:data.email,token_hash:await digest(raw),expires_at:new Date(Date.now()+PORTAL_LINK_MINUTES*60000).toISOString()}); if(error)throw new Error('Probeer het later opnieuw.');
- await db.from('audit_log').insert({tenant_id:t.id,action:'portal_link_sent',category:'login',record_type:'patient',record_id:p?.id??null,details:{email_hash:await digest(data.email),duplicate:(ps?.length??0)>1}});
+ const {error}=await db.from('portal_login_tokens').insert({tenant_id:t.id,patient_id:p?.id??null,email:data.email,token_hash:await digest(raw),expires_at:new Date(Date.now()+PORTAL_LINK_MINUTES*60000).toISOString(),return_context:rc as never}); if(error)throw new Error('Probeer het later opnieuw.');
+ await db.from('audit_log').insert({tenant_id:t.id,action:'portal_link_sent',category:'login',record_type:'patient',record_id:p?.id??null,details:{email_hash:await digest(data.email),duplicate:(ps?.length??0)>1,booking:!!draft}});
  if(p){
  const {data:cfg}=await db.from('portal_config').select('content').eq('tenant_id',t.id).single(); const c=cfg?.content;
  const txt=(k:string)=>c&&typeof c==='object'&&!Array.isArray(c)&&typeof c[k]==='string'?String(c[k]):'';
  const origin=new URL(getRequest().url).origin; const path=`/mijn/link/${raw}`; const url=(origin.startsWith('https:')?origin:'https://careflow-clinic-compass.lovable.app')+path;
  const {theme}=await import('./mailer.server'); const {renderMailDocument}=await import('@/domain/mail-document'); const {allowlisted}=await import('@/domain/mail');
  const {data:st}=await db.from('settings').select('value').eq('tenant_id',t.id).eq('key','mail_allowlist').maybeSingle();
- const blank={condition:'always',title_en:'',text_en:'',button_en:'',image:''};
- const html=renderMailDocument({language:'nl',values:{},situation:{online:false,existingPatient:true,questionnaire:false,preparation:false},images:{},theme:theme(),blocks:[{...blank,id:'login',type:'button',title_nl:txt('subject'),text_nl:'',button_nl:txt('mailButton'),url},{...blank,id:'footnote',type:'text',title_nl:'',text_nl:txt('mailFootnote'),button_nl:'',url:''}]});
- const saved=await db.from('mail_outbox').insert({tenant_id:t.id,patient_id:p.id,recipient:data.email,subject:txt('subject'),html,moment:'portal_login',status:allowlisted(st?.value,data.email)?'waiting_domain':'demo_only'}); if(saved.error)throw new Error('Probeer het later opnieuw.');
+  const blank={condition:'always',title_en:'',text_en:'',button_en:'',image:''};
+ let subject=txt('subject'),text='',button=txt('mailButton'),footnote=txt('mailFootnote');
+ if(draft){
+  subject=(draft.confirm?txt('confirmSubject'):txt('bookingSubject'))||subject; button=(draft.confirm?txt('confirmButton'):txt('bookingButton'))||button; footnote=txt('bookingFootnote')||footnote;
+  const [tr,lc]=await Promise.all([db.from('treatments').select('name_nl').eq('id',draft.treatmentId??'').maybeSingle(),db.from('locations').select('name,kind').eq('id',draft.locationId??'').maybeSingle()]);
+  const dag=draft.date?new Date(`${draft.date}T12:00:00Z`).toLocaleDateString('nl-NL',{timeZone:'UTC',weekday:'long',day:'numeric',month:'long'}):'';
+  const vars:Record<string,string>={behandeling:tr.data?.name_nl??'',dag,tijd:draft.time??'',locatie:lc.data?.kind==='online'?'een videogesprek':lc.data?.name??''};
+  text=txt('bookingText').replace(/\{(\w+)\}/g,(_,k:string)=>vars[k]??'');
+ }
+ const html=renderMailDocument({language:'nl',values:{},situation:{online:false,existingPatient:true,questionnaire:false,preparation:false},images:{},theme:theme(),blocks:[{...blank,id:'login',type:'button',title_nl:subject,text_nl:text,button_nl:button,url},{...blank,id:'footnote',type:'text',title_nl:'',text_nl:footnote,button_nl:'',url:''}]});
+ const saved=await db.from('mail_outbox').insert({tenant_id:t.id,patient_id:p.id,recipient:data.email,subject,html,moment:'portal_login',status:allowlisted(st?.value,data.email)?'waiting_domain':'demo_only'}); if(saved.error)throw new Error('Probeer het later opnieuw.');
  // Test-mode link is also returned for unknown addresses, preserving a uniform sending response.
  }
  if(t.test_mode)result.demoLink=`/mijn/link/${raw}`;
+ result.held=held;
  return result;
 });
 export const redeemPortalLink=createServerFn({method:'POST'}).inputValidator((d:unknown)=>portalTokenSchema.parse(d)).handler(async({data})=>{
  const {resolveTenant,admin}=await import('./booking.server'); const t=await resolveTenant(undefined); if(!t)throw new Error('De link is ongeldig of verlopen.'); const db=await admin();
- const {data:rows,error}=await db.rpc('portal_claim_token',{_hash:await digest(data.token),_tenant:t.id}); const tok=rows?.[0]; if(error||!tok?.patient_id)throw new Error('De link is ongeldig of verlopen.');
+ const {data:rows,error}=await db.rpc('portal_claim_token',{_hash:await digest(data.token),_tenant:t.id}); const tok=rows?.[0]; if(error||!tok)throw new Error('De link is ongeldig of verlopen.');
+ const rcRaw=tok.return_context; const draft=rcRaw&&typeof rcRaw==='object'&&!Array.isArray(rcRaw)?rcRaw as {booking?:string;holdToken?:string|null;confirm?:boolean;triage?:{key:string;versionId:string|null;answers:Record<string,unknown>}|null}:null;
+ if(!tok.patient_id){
+  // Unknown address: never log in, send the patient back to the booking as a new patient.
+  if(draft?.booking)return {unknownEmail:true as const,returnTo:draft.booking};
+  throw new Error('De link is ongeldig of verlopen.');
+ }
  const {data:p}=await db.from('patients').select('id,email').eq('tenant_id',t.id).eq('id',tok.patient_id).is('deleted_at',null).single(); if(!p)throw new Error('De link is ongeldig of verlopen.');
  const generated=await db.auth.admin.generateLink({type:'magiclink',email:p.email}); const user=generated.data?.user, otp=generated.data?.properties?.hashed_token; if(generated.error||!user||!otp){console.error('portal generate',generated.error?.code);throw new Error('Inloggen is niet gelukt.');}
  const [ms,gs]=await Promise.all([db.from('tenant_memberships').select('id').eq('user_id',user.id).limit(1),db.from('group_admins').select('user_id').eq('user_id',user.id).limit(1)]); if(ms.error||gs.error||ms.data?.length||gs.data?.length)throw new Error('Gebruik de medewerkerslogin voor dit account.');
@@ -51,7 +80,31 @@ export const redeemPortalLink=createServerFn({method:'POST'}).inputValidator((d:
  const client=createClient(process.env['SUPABASE_URL']!,key,{auth:{persistSession:false,autoRefreshToken:false},global:{fetch:(input,init)=>{const h=new Headers(init?.headers);if(key.startsWith('sb_')&&h.get('Authorization')===`Bearer ${key}`)h.delete('Authorization');h.set('apikey',key);return fetch(input,{...init,headers:h});}}});
  const verified=await client.auth.verifyOtp({token_hash:freshOtp,type:'magiclink'}); if(!verified.data.session){console.error('portal verify',verified.error?.code);throw new Error('Inloggen is niet gelukt.');}
  await db.from('audit_log').insert(['portal_link_used','portal_login'].map(action=>({tenant_id:t.id,user_id:user.id,role_key:'patient',action,category:'login',record_type:'patient',record_id:p.id})));
- return {access_token:verified.data.session.access_token,refresh_token:verified.data.session.refresh_token};
+ const session={access_token:verified.data.session.access_token,refresh_token:verified.data.session.refresh_token};
+ // Login started at the details step: confirm the held booking right away, with the patient's own record.
+ if(draft?.confirm&&draft.holdToken){
+  const {data:full}=await db.from('patients').select('*').eq('id',p.id).single();
+  const {confirmBooking}=await import('./booking.functions');
+  const r=full?await confirmBooking({data:{token:draft.holdToken,existing:true,salutation:full.salutation??'',firstName:full.first_name,lastName:full.last_name,dateOfBirth:full.date_of_birth,email:full.email,phoneCountry:full.phone_country??'+31',phone:full.phone??'0600000000',country:full.country??'NL',postcode:full.postcode??'0000AA',houseNumber:full.house_number??'0',suffix:full.house_suffix??undefined,street:full.street??'-',city:full.city??'-',consentPrivacy:true,consentGp:false,consentLsp:false,consentMarketing:false,triageKey:draft.triage?.key,triageVersionId:draft.triage?.versionId??undefined,triageAnswers:draft.triage?.answers}}):{ok:false as const,reason:'failed' as const};
+  if(r.ok){await db.from('audit_log').insert({tenant_id:t.id,user_id:user.id,role_key:'patient',action:'portal_booking_confirmed',category:'booking',record_type:'patient',record_id:p.id});return {...session,confirmed:true as const};}
+  // Moment expired: back to the planner with the same choices, without the lost time.
+  const params=new URLSearchParams(draft.booking??'');params.delete('tijd');params.delete('stap');
+  return {...session,returnTo:params.toString(),holdToken:null,holdExpired:true as const};
+ }
+ let returnTo=draft?.booking??null;
+ if(returnTo&&draft?.holdToken){const qp=new URLSearchParams(returnTo);if(qp.get('d')&&qp.get('tijd')){qp.set('stap','vasthouden');returnTo=qp.toString();}}
+ return {...session,returnTo,holdToken:draft?.holdToken??null};
+});
+
+/** Booking-flow context for a logged-in patient: prefill details and past visits for the practitioner preset. Staff get patient:null. */
+export const bookingPatientContext=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator((d:unknown)=>z.object({merk:z.string().max(60).optional()}).parse(d)).handler(async({data,context})=>{
+ const db=context.supabase; const {data:pid}=await db.rpc('portal_patient_id'); if(!pid) return {patient:null,visits:[] as {treatment_id:string;practitioner_id:string|null;starts_at:string}[]};
+ const {resolveTenant,admin}=await import('./booking.server'); const t=await resolveTenant(data.merk); if(!t) return {patient:null,visits:[] as {treatment_id:string;practitioner_id:string|null;starts_at:string}[]};
+ const adb=await admin();
+ const {data:p}=await adb.from('patients').select('id,first_name,last_name,email,phone,phone_country,date_of_birth,salutation,country,postcode,house_number,house_suffix,street,city').eq('id',pid).eq('tenant_id',t.id).is('deleted_at',null).single();
+ if(!p) return {patient:null,visits:[] as {treatment_id:string;practitioner_id:string|null;starts_at:string}[]};
+ const {data:visits}=await adb.from('appointments').select('treatment_id,practitioner_id,starts_at').eq('tenant_id',t.id).eq('patient_id',pid).eq('status','booked').lt('starts_at',new Date().toISOString()).not('practitioner_id','is',null).order('starts_at',{ascending:false}).limit(200);
+ return {patient:p,visits:visits??[]};
 });
 export const readPortal=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).handler(async({context})=>{
  const db=context.supabase; const {data:id}=await db.rpc('portal_patient_id'); if(!id)throw new Error('Log in als patiënt om Mijn omgeving te openen.');

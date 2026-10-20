@@ -1,0 +1,1 @@
+UPDATE public.option_lists SET label_nl='Je gegevens staan klaar' WHERE list_key='booking_ui' AND value='welcome_ready';

@@ -2328,6 +2328,7 @@ export type Database = {
           id: string
           patient_id: string | null
           pending_booking_id: string | null
+          return_context: Json | null
           tenant_id: string
           token_hash: string
           updated_at: string
@@ -2342,6 +2343,7 @@ export type Database = {
           id?: string
           patient_id?: string | null
           pending_booking_id?: string | null
+          return_context?: Json | null
           tenant_id?: string
           token_hash: string
           updated_at?: string
@@ -2356,6 +2358,7 @@ export type Database = {
           id?: string
           patient_id?: string | null
           pending_booking_id?: string | null
+          return_context?: Json | null
           tenant_id?: string
           token_hash?: string
           updated_at?: string
@@ -4144,6 +4147,7 @@ export type Database = {
           id: string
           patient_id: string | null
           pending_booking_id: string | null
+          return_context: Json | null
           tenant_id: string
           token_hash: string
           updated_at: string

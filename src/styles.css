@@ -291,6 +291,13 @@ a.portal-tile:hover {box-shadow:var(--portal-shadow);transform:translateY(-2px);
 /* Portal fase B: kaarten, rijen, ring, sterren, chips — states zonder randen. */
 .portal-card {background:var(--background);border-radius:24px;padding:20px;box-shadow:var(--portal-shadow);display:flex;flex-direction:column;gap:14px;margin-bottom:16px;}
 .portal-card-amber {background:var(--portal-soon-bg);color:var(--portal-soon-text);box-shadow:none;}
+.booking-note-amber {background:var(--portal-soon-bg);color:var(--portal-soon-text);border-radius:14px;padding:10px 16px;font-size:14px;line-height:1.5;}
+.portal-confirm {background:#EAF1F3;animation:portal-rise .7s ease both;}
+.portal-confirm-big {font-size:20px;font-weight:600;margin:6px 0 2px;}
+.portal-confirm-row {display:flex;gap:10px;align-items:center;background:#fff;border-radius:12px;padding:8px 10px;margin:10px 0;}
+.portal-fade-late {animation:portal-rise .7s ease 1.2s both;}
+@keyframes portal-rise {from {opacity:0;transform:translateY(12px);} to {opacity:1;transform:none;}}
+@media (prefers-reduced-motion:reduce) {.portal-confirm,.portal-fade-late {animation:none;}}
 .portal-card-label {font-size:12px;font-weight:500;color:var(--muted-foreground);}
 .portal-card-amber .portal-card-label {color:var(--portal-soon-text);}
 .portal-card-heading {font-size:16px;font-weight:600;}

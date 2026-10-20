@@ -19,6 +19,7 @@ import { Route as PatientMijnRouteRouteImport } from './routes/_patient/mijn/rou
 import { Route as AfspraakTokenRouteImport } from './routes/afspraak.$token'
 import { Route as AuthIndexRouteImport } from './routes/auth.index'
 import { Route as Auth2faRouteImport } from './routes/auth.2fa'
+import { Route as BoekenInloggenRouteImport } from './routes/boeken_.inloggen'
 import { Route as MijnIndexRouteImport } from './routes/mijn.index'
 import { Route as VragenlijstTokenRouteImport } from './routes/vragenlijst.$token'
 import { Route as AuthenticatedAgendaIndexRouteImport } from './routes/_authenticated/agenda.index'
@@ -63,7 +64,7 @@ import { Route as AuthenticatedPatientenIdMedischRouteImport } from './routes/_a
 import { Route as AuthenticatedPatientenIdPortalRouteImport } from './routes/_authenticated/patienten.$id.portal'
 import { Route as AuthenticatedPatientenIdTijdlijnRouteImport } from './routes/_authenticated/patienten.$id.tijdlijn'
 import { Route as PatientMijnFeedbackAppointmentIdRouteImport } from './routes/_patient/mijn/feedback.$appointmentId'
-import { Route as PatientMijnHistorieAppointmentIdRouteImport } from './routes/_patient/mijn/historie.$appointmentId'
+import { Route as PatientMijnHistorieAppointmentIdRouteImport } from './routes/_patient/mijn/historie_.$appointmentId'
 import { Route as ApiPublicJobsMailRemindersRouteImport } from './routes/api/public/jobs/mail-reminders'
 import { Route as AuthenticatedBoekingsflowVragenlijstenIdTestRouteImport } from './routes/_authenticated/boekingsflow.vragenlijsten.$id_.test'
 
@@ -113,6 +114,11 @@ const AuthIndexRoute = AuthIndexRouteImport.update({
 const Auth2faRoute = Auth2faRouteImport.update({
   id: '/auth/2fa',
   path: '/auth/2fa',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BoekenInloggenRoute = BoekenInloggenRouteImport.update({
+  id: '/boeken_/inloggen',
+  path: '/boeken/inloggen',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MijnIndexRoute = MijnIndexRouteImport.update({
@@ -368,9 +374,9 @@ const PatientMijnFeedbackAppointmentIdRoute =
   } as any)
 const PatientMijnHistorieAppointmentIdRoute =
   PatientMijnHistorieAppointmentIdRouteImport.update({
-    id: '/$appointmentId',
-    path: '/$appointmentId',
-    getParentRoute: () => PatientMijnHistorieRoute,
+    id: '/historie_/$appointmentId',
+    path: '/historie/$appointmentId',
+    getParentRoute: () => PatientMijnRouteRoute,
   } as any)
 const ApiPublicJobsMailRemindersRoute =
   ApiPublicJobsMailRemindersRouteImport.update({
@@ -392,6 +398,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/afspraak/$token': typeof AfspraakTokenRoute
   '/auth/2fa': typeof Auth2faRoute
+  '/boeken/inloggen': typeof BoekenInloggenRoute
   '/vragenlijst/$token': typeof VragenlijstTokenRoute
   '/auth/': typeof AuthIndexRoute
   '/mijn/': typeof MijnIndexRoute
@@ -409,7 +416,7 @@ export interface FileRoutesByFullPath {
   '/mijn/afspraken': typeof PatientMijnAfsprakenRoute
   '/mijn/berichten': typeof PatientMijnBerichtenRoute
   '/mijn/bestellen': typeof PatientMijnBestellenRoute
-  '/mijn/historie': typeof PatientMijnHistorieRouteWithChildren
+  '/mijn/historie': typeof PatientMijnHistorieRoute
   '/mijn/profiel': typeof PatientMijnProfielRoute
   '/mijn/programma': typeof PatientMijnProgrammaRoute
   '/mijn/start': typeof PatientMijnStartRoute
@@ -448,6 +455,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/afspraak/$token': typeof AfspraakTokenRoute
   '/auth/2fa': typeof Auth2faRoute
+  '/boeken/inloggen': typeof BoekenInloggenRoute
   '/vragenlijst/$token': typeof VragenlijstTokenRoute
   '/auth': typeof AuthIndexRoute
   '/agenda/mijn-dag': typeof AuthenticatedAgendaMijnDagRoute
@@ -463,7 +471,7 @@ export interface FileRoutesByTo {
   '/mijn/afspraken': typeof PatientMijnAfsprakenRoute
   '/mijn/berichten': typeof PatientMijnBerichtenRoute
   '/mijn/bestellen': typeof PatientMijnBestellenRoute
-  '/mijn/historie': typeof PatientMijnHistorieRouteWithChildren
+  '/mijn/historie': typeof PatientMijnHistorieRoute
   '/mijn/profiel': typeof PatientMijnProfielRoute
   '/mijn/programma': typeof PatientMijnProgrammaRoute
   '/mijn/start': typeof PatientMijnStartRoute
@@ -506,6 +514,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/afspraak/$token': typeof AfspraakTokenRoute
   '/auth/2fa': typeof Auth2faRoute
+  '/boeken_/inloggen': typeof BoekenInloggenRoute
   '/vragenlijst/$token': typeof VragenlijstTokenRoute
   '/auth/': typeof AuthIndexRoute
   '/mijn/': typeof MijnIndexRoute
@@ -523,7 +532,7 @@ export interface FileRoutesById {
   '/_patient/mijn/afspraken': typeof PatientMijnAfsprakenRoute
   '/_patient/mijn/berichten': typeof PatientMijnBerichtenRoute
   '/_patient/mijn/bestellen': typeof PatientMijnBestellenRoute
-  '/_patient/mijn/historie': typeof PatientMijnHistorieRouteWithChildren
+  '/_patient/mijn/historie': typeof PatientMijnHistorieRoute
   '/_patient/mijn/profiel': typeof PatientMijnProfielRoute
   '/_patient/mijn/programma': typeof PatientMijnProgrammaRoute
   '/_patient/mijn/start': typeof PatientMijnStartRoute
@@ -545,7 +554,7 @@ export interface FileRoutesById {
   '/_authenticated/patienten/$id/portal': typeof AuthenticatedPatientenIdPortalRoute
   '/_authenticated/patienten/$id/tijdlijn': typeof AuthenticatedPatientenIdTijdlijnRoute
   '/_patient/mijn/feedback/$appointmentId': typeof PatientMijnFeedbackAppointmentIdRoute
-  '/_patient/mijn/historie/$appointmentId': typeof PatientMijnHistorieAppointmentIdRoute
+  '/_patient/mijn/historie_/$appointmentId': typeof PatientMijnHistorieAppointmentIdRoute
   '/api/public/jobs/mail-reminders': typeof ApiPublicJobsMailRemindersRoute
   '/_authenticated/boekingsflow/e-mails/': typeof AuthenticatedBoekingsflowEMailsIndexRoute
   '/_authenticated/boekingsflow/vragenlijsten/': typeof AuthenticatedBoekingsflowVragenlijstenIndexRoute
@@ -564,6 +573,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/afspraak/$token'
     | '/auth/2fa'
+    | '/boeken/inloggen'
     | '/vragenlijst/$token'
     | '/auth/'
     | '/mijn/'
@@ -620,6 +630,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/afspraak/$token'
     | '/auth/2fa'
+    | '/boeken/inloggen'
     | '/vragenlijst/$token'
     | '/auth'
     | '/agenda/mijn-dag'
@@ -677,6 +688,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/afspraak/$token'
     | '/auth/2fa'
+    | '/boeken_/inloggen'
     | '/vragenlijst/$token'
     | '/auth/'
     | '/mijn/'
@@ -716,7 +728,7 @@ export interface FileRouteTypes {
     | '/_authenticated/patienten/$id/portal'
     | '/_authenticated/patienten/$id/tijdlijn'
     | '/_patient/mijn/feedback/$appointmentId'
-    | '/_patient/mijn/historie/$appointmentId'
+    | '/_patient/mijn/historie_/$appointmentId'
     | '/api/public/jobs/mail-reminders'
     | '/_authenticated/boekingsflow/e-mails/'
     | '/_authenticated/boekingsflow/vragenlijsten/'
@@ -735,6 +747,7 @@ export interface RootRouteChildren {
   MijnRoute: typeof MijnRouteWithChildren
   AfspraakTokenRoute: typeof AfspraakTokenRoute
   Auth2faRoute: typeof Auth2faRoute
+  BoekenInloggenRoute: typeof BoekenInloggenRoute
   VragenlijstTokenRoute: typeof VragenlijstTokenRoute
   AuthIndexRoute: typeof AuthIndexRoute
   ApiPublicEkisExportRoute: typeof ApiPublicEkisExportRoute
@@ -812,6 +825,13 @@ declare module '@tanstack/react-router' {
       path: '/auth/2fa'
       fullPath: '/auth/2fa'
       preLoaderRoute: typeof Auth2faRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/boeken_/inloggen': {
+      id: '/boeken_/inloggen'
+      path: '/boeken/inloggen'
+      fullPath: '/boeken/inloggen'
+      preLoaderRoute: typeof BoekenInloggenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mijn/': {
@@ -1122,12 +1142,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PatientMijnFeedbackAppointmentIdRouteImport
       parentRoute: typeof PatientMijnRouteRoute
     }
-    '/_patient/mijn/historie/$appointmentId': {
-      id: '/_patient/mijn/historie/$appointmentId'
-      path: '/$appointmentId'
+    '/_patient/mijn/historie_/$appointmentId': {
+      id: '/_patient/mijn/historie_/$appointmentId'
+      path: '/historie/$appointmentId'
       fullPath: '/mijn/historie/$appointmentId'
       preLoaderRoute: typeof PatientMijnHistorieAppointmentIdRouteImport
-      parentRoute: typeof PatientMijnHistorieRoute
+      parentRoute: typeof PatientMijnRouteRoute
     }
     '/api/public/jobs/mail-reminders': {
       id: '/api/public/jobs/mail-reminders'
@@ -1250,28 +1270,18 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
-interface PatientMijnHistorieRouteChildren {
-  PatientMijnHistorieAppointmentIdRoute: typeof PatientMijnHistorieAppointmentIdRoute
-}
-
-const PatientMijnHistorieRouteChildren: PatientMijnHistorieRouteChildren = {
-  PatientMijnHistorieAppointmentIdRoute: PatientMijnHistorieAppointmentIdRoute,
-}
-
-const PatientMijnHistorieRouteWithChildren =
-  PatientMijnHistorieRoute._addFileChildren(PatientMijnHistorieRouteChildren)
-
 interface PatientMijnRouteRouteChildren {
   PatientMijnAfspraakMakenRoute: typeof PatientMijnAfspraakMakenRoute
   PatientMijnAfsprakenRoute: typeof PatientMijnAfsprakenRoute
   PatientMijnBerichtenRoute: typeof PatientMijnBerichtenRoute
   PatientMijnBestellenRoute: typeof PatientMijnBestellenRoute
-  PatientMijnHistorieRoute: typeof PatientMijnHistorieRouteWithChildren
+  PatientMijnHistorieRoute: typeof PatientMijnHistorieRoute
   PatientMijnProfielRoute: typeof PatientMijnProfielRoute
   PatientMijnProgrammaRoute: typeof PatientMijnProgrammaRoute
   PatientMijnStartRoute: typeof PatientMijnStartRoute
   PatientMijnVoortgangRoute: typeof PatientMijnVoortgangRoute
   PatientMijnFeedbackAppointmentIdRoute: typeof PatientMijnFeedbackAppointmentIdRoute
+  PatientMijnHistorieAppointmentIdRoute: typeof PatientMijnHistorieAppointmentIdRoute
 }
 
 const PatientMijnRouteRouteChildren: PatientMijnRouteRouteChildren = {
@@ -1279,12 +1289,13 @@ const PatientMijnRouteRouteChildren: PatientMijnRouteRouteChildren = {
   PatientMijnAfsprakenRoute: PatientMijnAfsprakenRoute,
   PatientMijnBerichtenRoute: PatientMijnBerichtenRoute,
   PatientMijnBestellenRoute: PatientMijnBestellenRoute,
-  PatientMijnHistorieRoute: PatientMijnHistorieRouteWithChildren,
+  PatientMijnHistorieRoute: PatientMijnHistorieRoute,
   PatientMijnProfielRoute: PatientMijnProfielRoute,
   PatientMijnProgrammaRoute: PatientMijnProgrammaRoute,
   PatientMijnStartRoute: PatientMijnStartRoute,
   PatientMijnVoortgangRoute: PatientMijnVoortgangRoute,
   PatientMijnFeedbackAppointmentIdRoute: PatientMijnFeedbackAppointmentIdRoute,
+  PatientMijnHistorieAppointmentIdRoute: PatientMijnHistorieAppointmentIdRoute,
 }
 
 const PatientMijnRouteRouteWithChildren =
@@ -1322,6 +1333,7 @@ const rootRouteChildren: RootRouteChildren = {
   MijnRoute: MijnRouteWithChildren,
   AfspraakTokenRoute: AfspraakTokenRoute,
   Auth2faRoute: Auth2faRoute,
+  BoekenInloggenRoute: BoekenInloggenRoute,
   VragenlijstTokenRoute: VragenlijstTokenRoute,
   AuthIndexRoute: AuthIndexRoute,
   ApiPublicEkisExportRoute: ApiPublicEkisExportRoute,
