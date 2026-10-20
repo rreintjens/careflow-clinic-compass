@@ -5,6 +5,7 @@ import { useEffect,useState } from 'react';
 import { portalQuery } from '@/data/portal';
 import { copy, PortalTile } from './PortalShell';
 import { feedbackDue, ownDoctor, readPortalSettings, weeksSince, type HistoryItem } from '@/domain/portal';
+import type { Json } from '@/integrations/supabase/types';
 
 export type PortalData=ReturnType<typeof usePortalData>;
 export function usePortalData(){
@@ -88,7 +89,7 @@ function CosmeticStart(){
  {discover.length>0&&<section><h2 className='portal-card-heading portal-discover-heading'>{copy(c,'discoverTitle')}</h2><div className='portal-discover'>{discover.map(cat=><Link key={cat.id} to='/boeken' search={{cat:cat.id}} className='portal-discover-card'>{cat.icon&&<img src={`/treatment-icons/${cat.icon}.png`} alt='' className='size-7'/>}<p className='portal-row-title'>{cat.name_nl}</p><p className='portal-sub'>{copy(c,'discoverPlaceholder')||'Ontdek wat deze behandeling voor je kan doen.'}</p><span className='portal-link'>{copy(c,'moreInfo')}</span></Link>)}</div></section>}
  </>;
 }
-function courseT(a:HistoryItem,treat:(id:string)=>{name_nl:string;icon:string|null}|undefined,c:unknown,courseDone:number,courseNext:{id:string;starts_at:string;practitioner_id:string|null;location_id:string|null}|undefined,prac:(id:string|null|undefined)=>{first_name:string;last_name:string;photo:string|null}|undefined,loc:(id:string|null|undefined)=>{name:string}|undefined){
+function courseT(a:HistoryItem,treat:(id:string)=>{name_nl:string;icon:string|null;portal_settings?:Json}|undefined,c:Json,courseDone:number,courseNext:{id:string;starts_at:string;practitioner_id:string|null;location_id:string|null}|undefined,prac:(id:string|null|undefined)=>{first_name:string;last_name:string;photo:string|null}|undefined,loc:(id:string|null|undefined)=>{name:string}|undefined){
  const t=treat(a.treatment_id);const s=readPortalSettings((t as {portal_settings?:unknown}|undefined)?.portal_settings);const n=s.course_count??1;const p=courseNext?prac(courseNext.practitioner_id):undefined;
  return <section className='portal-card'>
   <div className='portal-doctor'><span className='portal-icon'>{t?.icon?<img src={`/treatment-icons/${t.icon}.png`} alt='' className='size-5'/>:<Syringe size={18}/>}</span><div><p className='portal-card-label'>{copy(c,'courseLabel')}</p><h2>{t?.name_nl}</h2></div></div>

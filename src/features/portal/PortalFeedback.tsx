@@ -23,8 +23,8 @@ export function PortalFeedback({appointmentId,rating:initial}:{appointmentId:str
   onSuccess:async()=>{await qc.invalidateQueries({queryKey:portalQuery.queryKey});toast.success(copy(c,'feedbackThanks'));await navigate({to:'/mijn/start'});},
   onError:e=>toast.error(e instanceof Error?e.message:'Versturen is niet gelukt')});
  if(!a||!t)return <p className='portal-pending'>Deze behandeling is niet gevonden.</p>;
- const labels:string[]=Array.isArray(c['ratingLabels'])?c['ratingLabels'] as string[]:[];
- const tagOptions:string[]=Array.isArray(c['feedbackTags'])?c['feedbackTags'] as string[]:[];
+ const list=(k:string):string[]=>c&&typeof c==='object'&&!Array.isArray(c)&&Array.isArray((c as Record<string,unknown>)[k])?(c as Record<string,unknown[]>)[k] as string[]:[];
+ const labels=list('ratingLabels');const tagOptions=list('feedbackTags');
  const toggle=(tag:string)=>setTags(tags.includes(tag)?tags.filter(x=>x!==tag):[...tags,tag]);
  return <><Link to='/mijn/start' className='portal-back'>‹ Start</Link>
  <div className='portal-feedback'>
