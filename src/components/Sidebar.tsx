@@ -41,17 +41,6 @@ const GROUPS = [
     ],
   },
   {
-    key: "boekingsflow",
-    label: "Boekingsflow",
-    icon: icon(<><circle cx="6" cy="6" r="2.5" /><circle cx="6" cy="18" r="2.5" /><circle cx="18" cy="12" r="2.5" /><path d="M8 7l8 4M8 17l8-4" /></>),
-    items: [
-      { to: "/boekingsflow/boekingslinks", label: "Boekingslinks" },
-      { to: "/boekingsflow/kanalen-en-campagnes", label: "Kanalen en campagnes" },
-      { to: "/boekingsflow/vragenlijsten", label: "Vragenlijsten" },
-      { to: "/boekingsflow/e-mails", label: "E-mails en sjablonen" },
-    ],
-  },
-  {
     key: "dossier",
     label: "Dossier",
     icon: icon(<><rect x="5" y="4.5" width="14" height="16" rx="2" /><path d="M9 4.5V3.5h6v1M9 10h6M9 14h6M9 18h3" /></>),
