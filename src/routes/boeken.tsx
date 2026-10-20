@@ -145,7 +145,8 @@ function Booking() {
 
   return (
     <Shell lang={lang} progress={progress} onBack={back} onClose={close} onLang={step.kind === "category" ? () => go({ lang: lang === "nl" ? "en" : "nl" }, true) : undefined}
-      footer={step.kind === "category" && phone ? <p className="text-center text-[13px] text-muted-foreground">{tx("call")} <a href={`tel:${phone}`} className="text-primary underline">{phone}</a></p> : null}>
+      bar={showBar ? <LoginBar tx={tx} onClick={openLogin} /> : undefined}
+      footer={step.kind === "category" && phone ? <div className="flex items-center justify-center gap-3"><img src={JOYCE_PHOTO} alt="" className="size-11 shrink-0 rounded-full object-cover" style={{ objectPosition: "50% 18%" }} /><span className="text-[13px] text-muted-foreground"><span className="block">{tx("call")} <a href={`tel:${phone}`} className="text-primary underline">{phone}</a></span><span className="block">{tx("call_team")}</span></span></div> : null}>
       <div className={guard}>
       {step.kind === "none" && <p className="pt-10 text-[15px]">{tx("nothing_bookable")}</p>}
       {step.kind === "category" && (
@@ -158,14 +159,14 @@ function Booking() {
         <List title={tx("q_treatment")} rows={step.options.map((id) => { const x = c.treatments.find((k) => k.id === id); return { id, title: x ? name(x) : "", sub: x ? `${x.duration_min} min` : "", icon: x?.icon ?? catIcon(step.category) }; })} onPick={(id) => go({ t: id })} />
       )}
       {step.kind === "location" && <LocationStep c={c} treatmentId={step.treatment} options={step.options} hidePeople={!!startScreen} tx={tx} name={name} onPick={(id) => go({ l: id })} />}
-      {step.kind === "practitioner" && <PractitionerStep c={c} s={s} treatmentId={step.treatment} locationId={step.location} required={step.required} tx={tx} onPick={(p) => go({ p, stap: undefined, tijd: undefined })} />}
-      {step.kind === "planner" && <PlannerStep c={c} s={s} step={step} tx={tx} lang={lang} go={go} />}
+      {step.kind === "practitioner" && <PractitionerStep c={c} s={s} treatmentId={step.treatment} locationId={step.location} required={step.required} tx={tx} preferredId={preferredId} onPick={(p) => go({ p, stap: undefined, tijd: undefined })} />}
+      {step.kind === "planner" && <PlannerStep c={c} s={s} step={step} tx={tx} lang={lang} go={go} me={me} preferredId={preferredId} />}
       </div>
     </Shell>
   );
 }
 
-function Shell({ children, footer, progress = 0, onBack, onClose, onLang, lang }: { children: React.ReactNode; footer?: React.ReactNode; progress?: number; onBack?: (() => void) | undefined; onClose?: () => void; onLang?: (() => void) | undefined; lang: string }) {
+export function Shell({ children, footer, bar, progress = 0, onBack, onClose, onLang, lang }: { children: React.ReactNode; footer?: React.ReactNode; bar?: React.ReactNode; progress?: number; onBack?: (() => void) | undefined; onClose?: () => void; onLang?: (() => void) | undefined; lang: string }) {
   return (
     <PatientFrame>
         <header className="grid h-14 grid-cols-[48px_1fr_48px] items-center px-2">
@@ -175,13 +176,14 @@ function Shell({ children, footer, progress = 0, onBack, onClose, onLang, lang }
           {onClose ? <button type="button" onClick={onClose} aria-label="Sluiten" className="flex justify-center"><img src="/ui-icons/kruis.svg" alt="" className="size-5" /></button> : <span />}
         </header>
         <div className="h-[3px] bg-muted"><div className="h-full bg-primary transition-all" style={{ width: `${Math.round(progress * 100)}%` }} /></div>
+        {bar}
         <main className="flex flex-1 flex-col px-5 pb-6 pt-8">{children}</main>
         {footer && <footer className="px-5 pb-6">{footer}</footer>}
     </PatientFrame>
   );
 }
 
-function Title({ children, sub }: { children: React.ReactNode; sub?: React.ReactNode }) {
+export function Title({ children, sub }: { children: React.ReactNode; sub?: React.ReactNode }) {
   return <div className="mb-6"><h1 className="text-[28px] font-semibold leading-[1.2] tracking-tight">{children}</h1>{sub && <div className="mt-3 text-[15px] leading-[1.6] text-muted-foreground">{sub}</div>}</div>;
 }
 
