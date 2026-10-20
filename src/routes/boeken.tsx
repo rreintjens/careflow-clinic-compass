@@ -290,7 +290,7 @@ function useSlots(c: Full, s: Search, treatmentId: string, locationId: string, p
 
 const todayLocal = () => new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Amsterdam" });
 
-function PractitionerStep({ c, s, treatmentId, locationId, required, tx, onPick }: { c: Full; s: Search; treatmentId: string; locationId: string; required: boolean; tx: Tx; onPick: (p: string) => void }) {
+function PractitionerStep({ c, s, treatmentId, locationId, required, tx, preferredId, onPick }: { c: Full; s: Search; treatmentId: string; locationId: string; required: boolean; tx: Tx; preferredId?: string | null; onPick: (p: string) => void }) {
   const [all, setAll] = useState(false);
   const people = eligiblePractitioners(c, treatmentId, locationId);
   const today = todayLocal();
@@ -427,7 +427,7 @@ const HOLD_KEY = "tbc-booking-hold";
 const readJson = <T,>(k: string): T | null => { try { return JSON.parse(sessionStorage.getItem(k) ?? "null") as T; } catch { return null; } };
 
 /** Holds the chosen time, runs the triage while the hold lasts, and handles expiry and red outcomes. */
-function HoldStep({ c, s, treatmentId, locationId, practitionerId, tx, lang, go }: { c: Full; s: Search; treatmentId: string; locationId: string; practitionerId: string; tx: Tx; lang: string; go: (p: Partial<Search>, replace?: boolean) => void }) {
+function HoldStep({ c, s, me, treatmentId, locationId, practitionerId, tx, lang, go }: { c: Full; s: Search; me: Awaited<ReturnType<typeof bookingPatientContext>> | null; treatmentId: string; locationId: string; practitionerId: string; tx: Tx; lang: string; go: (p: Partial<Search>, replace?: boolean) => void }) {
   const hold = useServerFn(holdSlot);
   const release = useServerFn(releaseHold);
   const triageFn = useServerFn(getTriage);
