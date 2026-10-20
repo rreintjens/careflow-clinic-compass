@@ -1,7 +1,8 @@
 # Roadmap
 
 ## Mijn omgeving v0.1 — eigenaar 20-10
-- [ ] A: gedeeld mobiel/desktopkader, tokens, afzonderlijke patiëntlogin via tienminutenlink, landingsregel, navigatie en vier demopatiënten; testen op 390px/1440px; stoppen voor go.
+- [x] A: gedeeld mobiel/desktopkader, tokens, afzonderlijke patiëntlogin via tienminutenlink, landingsregel, navigatie en vier demopatiënten; ieder via echte link op 390px/1440px gecontroleerd. Patiëntisolatie, medewerkers-/patiëntgrenzen, herladen, onbekende mail en eenmalig gebruik gecontroleerd; 42 gerichte tests groen. Demo-mails in bestaande outbox. Stop voor go.
+  - Afbakening: volledige cosmetische historie/afspraken, behandeltrajecten en programmeerschermen volgen B/D; fase A toont Start-identiteit met demo-aantallen en pakket/meetbronnen, nog geen gefactureerde historische afspraken. Mails blijven demo_only, geen externe bezorging. Geen extra Profiel-tabel; bestaand dossier hergebruikt. Screenshots staan in Files onder Mijn-omgeving-fase-A.
 - [ ] B: cosmetische schermen en behandelinstellingen — wacht op go na A.
 - [ ] C: inloggen vanuit boeking en bevestigen — wacht op go na B.
 - [ ] D: medisch-afvallenschermen — wacht op go na C.
