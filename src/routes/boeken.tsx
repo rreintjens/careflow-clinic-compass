@@ -214,6 +214,30 @@ function eligiblePractitioners(c: Full, treatmentId: string, locationId: string)
 }
 const roleName = (c: Full, roleId: string | null, lang = "nl") => { const r = c.roles.find((x) => x.id === roleId); return r ? ((lang === "en" && r.name_en) || r.name_nl) : ""; };
 
+const JOYCE_PHOTO = "https://body-clinic.ams3.digitaloceanspaces.com/0010ee8a9603d578d735779d5fd7e35c.jpg";
+
+/** Variant B2: slim teal bar under the header and progress line; the whole bar opens the login screen. */
+function LoginBar({ tx, onClick }: { tx: Tx; onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick} className="flex min-h-[54px] w-full items-center gap-3 bg-primary py-2 pl-4 pr-2.5 text-left">
+      <UserRound className="size-[18px] shrink-0 text-primary-foreground" strokeWidth={1.7} />
+      <span className="min-w-0 flex-1 text-[14px] leading-snug text-primary-foreground"><span className="font-semibold">{tx("login_bar_title")}</span> {tx("login_bar_sub")}</span>
+      <span className="flex h-[34px] shrink-0 items-center rounded-full bg-background px-4 text-[14px] font-medium text-primary">{tx("login_bar_button")}</span>
+    </button>
+  );
+}
+
+/** The practitioner the patient visited most within this treatment's category, else the most recent eligible one. */
+function preferredPractitioner(c: Full, visits: ReadonlyArray<{ treatment_id: string; practitioner_id: string | null; starts_at: string }>, treatmentId: string, locationId: string) {
+  const eligible = new Set(eligiblePractitioners(c, treatmentId, locationId).map((p) => p.id));
+  const cats = new Set(c.links.filter((l) => l.treatment_id === treatmentId).map((l) => l.category_id));
+  const inCat = visits.filter((v) => v.practitioner_id && eligible.has(v.practitioner_id) && c.links.some((l) => l.treatment_id === v.treatment_id && cats.has(l.category_id)));
+  const pool = inCat.length ? inCat : visits.filter((v) => v.practitioner_id && eligible.has(v.practitioner_id));
+  const count = new Map<string, { n: number; last: string }>();
+  for (const v of pool) { const id = v.practitioner_id!; const e = count.get(id) ?? { n: 0, last: v.starts_at }; e.n += 1; if (v.starts_at > e.last) e.last = v.starts_at; count.set(id, e); }
+  return [...count.entries()].sort((a, b) => b[1].n - a[1].n || b[1].last.localeCompare(a[1].last))[0]?.[0] ?? null;
+}
+
 function LocationStep({ c, treatmentId, options, tx, name, onPick,hidePeople=false }: { c: Full; treatmentId: string; options: string[];hidePeople?:boolean; tx: Tx; name: (x: { name_nl: string; name_en: string | null }) => string; onPick: (id: string) => void }) {
   const t = c.treatments.find((x) => x.id === treatmentId);
   const locs = sortLocations(c.locations.filter((l) => options.includes(l.id)));
