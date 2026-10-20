@@ -19,6 +19,7 @@ import {
   treatmentMainCategoryIds, workLocationIds, type Org, type Requirement, kindName, kindOpts,
 } from "@/data/organisation";
 import { durationOptions, practitionerExcludedHere, practitionerTreatmentLocations, TREATMENT_ICONS } from "@/domain/organisation";
+import { readPortalSettings } from "@/domain/portal";
 import { REASON_TEXT, treatmentBookability } from "@/features/organisation/bookability";
 import { cn } from "@/lib/utils";
 
@@ -179,6 +180,15 @@ function TreatmentForm({ org, defaults, onSaved, onCancel }: { org: Org; default
               <TextField label="Naam (Engels)" value={nameEn} onChange={(e) => setNameEn(e.target.value)} help="Leeg laten: de patiënt ziet de Nederlandse naam." />
               <Select label="Icoon" value={icon} onChange={setIcon} options={[{ value: "none", label: "Icoon van de categorie" }, ...TREATMENT_ICONS.map((i) => ({ value: i, label: i.replace(/-/g, " ").replace(/^./, (c) => c.toUpperCase()) }))]} help="Leeg: de patiënt ziet het icoon van de (sub)categorie." />
               <div className="flex items-end pb-1">{icon !== "none" && <img src={`/treatment-icons/${icon}.png`} alt="" className="h-11 w-11" />}</div>
+            </div>
+          </Card>
+
+          <Card title="Mijn omgeving" description="Wat de patiënt in Mijn omgeving ziet: het traject, de nazorg en de herinnering om opnieuw te plannen.">
+            <div className="grid grid-cols-2 gap-4">
+              <Select label="Traject (aantal behandelingen)" value={courseCount} onChange={setCourseCount} options={[1,2,3,4,5,6].map(n=>({value:String(n),label:n===1?"Geen traject":`${n} behandelingen`}))} />
+              <Select label="Nazorg tonen op Start" value={aftercareDays} onChange={setAftercareDays} options={[3,7,14,30].map(n=>({value:String(n),label:`${n} dagen`}))} />
+              <Select label="Herinnering opnieuw plannen" value={reminderWeeks} onChange={setReminderWeeks} options={[[0,"Geen"],[4,"4 weken"],[8,"8 weken"],[12,"12 weken"],[16,"16 weken"],[24,"24 weken"]].map(([v,l])=>({value:String(v),label:String(l)}))} />
+              <TextField label="Interval traject" value={courseInterval} maxLength={200} onChange={(e)=>setCourseInterval(e.target.value)} help="Bijvoorbeeld: Meestal drie behandelingen, met vier tot zes weken ertussen." />
             </div>
           </Card>
 
