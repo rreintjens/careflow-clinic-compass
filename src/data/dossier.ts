@@ -35,9 +35,9 @@ export const liveOf = (vs: TemplateVersionRow[], tid: string) => vs.find((v) => 
 export const conceptOf = (vs: TemplateVersionRow[], tid: string) => vs.find((v) => v.template_id === tid && v.status === "concept");
 
 export async function createTemplate(categoryId: string, name: string) {
-  const t = await ok(supabase.from("dossier_templates").insert({ category_id: categoryId, name }).select("id").single());
-  await ok(supabase.from("dossier_template_versions").insert({ template_id: (t as { id: string }).id, version: 1, status: "concept", content: readContent({}) as unknown as Json, change_note: "Nieuw sjabloon" }));
-  return (t as { id: string }).id;
+  const t: { id: string } = await ok<{ id: string }>(supabase.from("dossier_templates").insert({ category_id: categoryId, name }).select("id").single());
+  await ok(supabase.from("dossier_template_versions").insert({ template_id: t.id, version: 1, status: "concept", content: readContent({}) as unknown as Json, change_note: "Nieuw sjabloon" }));
+  return t.id;
 }
 
 export async function createConcept(templateId: string, from: TemplateVersionRow, versions: TemplateVersionRow[]) {
