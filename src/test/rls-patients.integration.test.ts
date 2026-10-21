@@ -27,7 +27,7 @@ const cleanup: Array<() => Promise<unknown>> = [];
 
 // Expected per role, from the "Rollen en rechten" matrix.
 const matrix: Array<{ email: string; insert: boolean; delete: boolean }> = [
-  // superadmin is not probed: its only factor is the owner's own authenticator.
+  // The owner account is not mutated; dedicated role accounts cover this matrix.
   { email: "admin@example.test", insert: true, delete: false },
   { email: "arts@example.test", insert: false, delete: false },
   { email: "therapeut@example.test", insert: false, delete: false },
