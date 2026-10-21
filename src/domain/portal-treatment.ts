@@ -17,3 +17,10 @@ export function treatmentReminderDate(startsAt: string, days: number): string | 
   date.setUTCDate(date.getUTCDate() + days);
   return date.toISOString().slice(0, 10);
 }
+
+export function treatmentReminderDue(startsAt: string, days: number, now: string): boolean {
+  const due = treatmentReminderDate(startsAt, days);
+  const date = new Date(now);
+  if (!due || !Number.isFinite(date.getTime())) return false;
+  return due === new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Amsterdam' }).format(date);
+}

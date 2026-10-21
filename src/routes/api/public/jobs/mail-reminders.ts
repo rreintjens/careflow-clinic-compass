@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { authenticateCronRequest } from "@/integrations/supabase/cron-auth";
+import { treatmentReminderDue } from '@/domain/portal-treatment';
+import { readStepData } from '@/domain/consult-steps';
 
 /** Hourly: appointment and medical-questionnaire reminders, timed by each brand's settings; one per appointment. */
 export const Route = createFileRoute("/api/public/jobs/mail-reminders")({
@@ -30,6 +32,17 @@ export const Route = createFileRoute("/api/public/jobs/mail-reminders")({
               if (preparation?.questionnaireMissing && (await safeQueue(db, a.id, "questionnaire_reminder", { dedupe: `questionnaire_reminder-${a.id}` }))) queued++;
               if (preparation?.detailsMissing && (await safeQueue(db, a.id, "details_reminder", { dedupe: `details_reminder-${a.id}` }))) queued++;
             }
+          }
+          // Only released consults, on their frozen reminder date; never parked/private notes.
+          const notes = await db.from('consult_notes').select('id,appointment_id,step_data,appointment:appointments(starts_at,status)')
+            .eq('tenant_id',t.id).eq('status','final').neq('visibility','archived').not('appointment_id','is',null);
+          if (notes.error) throw new Error('Behandelherinneringen konden niet worden geladen.');
+          for (const note of notes.data ?? []) {
+            const appointment = note.appointment;
+            if (!note.appointment_id || !appointment || appointment.status !== 'afgerond') continue;
+            const days = readStepData(note.step_data).closing.reminderDays;
+            if (treatmentReminderDue(appointment.starts_at,days,new Date().toISOString()) &&
+              await safeQueue(db,note.appointment_id,'follow_up',{dedupe:`treatment-reminder-${note.id}`})) queued++;
           }
         }
         return Response.json({ success: true, queued });
