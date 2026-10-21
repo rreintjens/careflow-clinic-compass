@@ -1,0 +1,2 @@
+import {z} from 'zod';
+export const treatmentSettingsSchema=z.object({price_cents:z.number().int().nonnegative().nullable(),price_per:z.string().min(1).nullable(),btw_rate:z.number().min(0).max(100),vat_exemption_possible:z.boolean(),material_brand:z.string().nullable(),material_unit:z.string().nullable(),lot_required:z.boolean(),supplier:z.string().nullable(),reminder_days:z.number().int().nonnegative(),online_booking:z.boolean(),dossier_template_override:z.string().uuid().nullable()});
