@@ -44,4 +44,4 @@
 - Consent shares SignaturePad; forms publish atomically via permission-checked RPC; consults freeze text/version snapshots and refuse missing text.
 - Billing uses catalog prices and bounded till discounts; invoices stay immutable; reception sees no medical answers.
 - Treatment settings share one validated modal; public availability never restricts staff booking.
-- Stats keys are header-only; URL credentials are rejected to prevent log leakage.
+- Stats keys are header-only. Photos share a demo resolver; frozen reminders use the mail job.
