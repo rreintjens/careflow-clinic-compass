@@ -26,7 +26,7 @@
 - Active tenant is the server-written JWT claim `app_metadata.active_tenant`; roles use `tenant_memberships` (`user_roles` deprecated). Group admins need no membership: `my_tenants` lists all; `current_role_key`/`has_permission`/`my_staff_context` supply superadmin fallbacks.
 - Shared group data (permissions, option_lists, languages, group_settings) is editable only by `group_admins`; storage buckets are per tenant (`<name>-<slug>`).
 - Vitest files run serially: integration checks share accounts and change tenant claims.
-- Equipment: device kind comes from `equipment_types` → `equipment_kinds`; names are generated (`src/domain/equipment.ts`), never stored as truth; availability per room/day only via `roomsForKind` — one tested rule.
+- Equipment kinds derive from types; names from domain rules, availability only via tested `roomsForKind`.
 - Standalone consultations share modal, validation and authenticated save; options configure choices and medical RLS governs access.
 - Measurements: one shared query; BMI derived in domain from weight + last known height; shared write validation.
 - Dossier add actions reuse the shared appointment/consult/measurement/document modals; a fixed patient is locked in the appointment modal.
@@ -43,3 +43,4 @@
 - ActiveConsultMode owns the template workflow beside its unchanged bar and notes panel; legacy consult URLs redirect to the dossier rather than render a second workflow.
 - Consent shares SignaturePad; freeze text/version IDs, refuse missing text.
 - Billing settles atomically with immutable invoices; reception sees amounts, never medical answers.
+- Treatment price/material settings share one validated modal; public availability never restricts staff booking.
