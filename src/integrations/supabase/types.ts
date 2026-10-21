@@ -925,9 +925,82 @@ export type Database = {
           },
         ]
       }
+      care_form_versions: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string | null
+          id: string
+          kind: string
+          name: string
+          published_at: string | null
+          published_by: string | null
+          status: string
+          template_id: string | null
+          tenant_id: string
+          text_en: string
+          text_nl: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind: string
+          name: string
+          published_at?: string | null
+          published_by?: string | null
+          status?: string
+          template_id?: string | null
+          tenant_id?: string
+          text_en?: string
+          text_nl?: string
+          updated_at?: string
+          updated_by?: string | null
+          version: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind?: string
+          name?: string
+          published_at?: string | null
+          published_by?: string | null
+          status?: string
+          template_id?: string | null
+          tenant_id?: string
+          text_en?: string
+          text_nl?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "care_form_versions_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "dossier_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "care_form_versions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       consult_notes: {
         Row: {
           appointment_id: string | null
+          care_form_snapshot: Json
           checklist: Json
           created_at: string
           created_by: string | null
@@ -954,6 +1027,7 @@ export type Database = {
         }
         Insert: {
           appointment_id?: string | null
+          care_form_snapshot?: Json
           checklist?: Json
           created_at?: string
           created_by?: string | null
@@ -980,6 +1054,7 @@ export type Database = {
         }
         Update: {
           appointment_id?: string | null
+          care_form_snapshot?: Json
           checklist?: Json
           created_at?: string
           created_by?: string | null
@@ -2420,6 +2495,7 @@ export type Database = {
       patient_consents: {
         Row: {
           appointment_id: string | null
+          care_form_version_id: string | null
           created_at: string
           granted: boolean
           id: string
@@ -2434,6 +2510,7 @@ export type Database = {
         }
         Insert: {
           appointment_id?: string | null
+          care_form_version_id?: string | null
           created_at?: string
           granted: boolean
           id?: string
@@ -2448,6 +2525,7 @@ export type Database = {
         }
         Update: {
           appointment_id?: string | null
+          care_form_version_id?: string | null
           created_at?: string
           granted?: boolean
           id?: string
@@ -2466,6 +2544,13 @@ export type Database = {
             columns: ["appointment_id"]
             isOneToOne: false
             referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_consents_care_form_version_id_fkey"
+            columns: ["care_form_version_id"]
+            isOneToOne: false
+            referencedRelation: "care_form_versions"
             referencedColumns: ["id"]
           },
           {
@@ -4929,6 +5014,10 @@ export type Database = {
     }
     Functions: {
       billing_projection: { Args: { _appointment: string }; Returns: Json }
+      capture_care_forms: {
+        Args: { _templates: string[]; _tenant: string }
+        Returns: Json
+      }
       consult_template_ids: {
         Args: { _tenant: string; _treatment: string }
         Returns: string[]
@@ -4944,6 +5033,19 @@ export type Database = {
       is_aal2: { Args: never; Returns: boolean }
       is_group_admin: { Args: never; Returns: boolean }
       is_staff: { Args: never; Returns: boolean }
+      manage_care_form: {
+        Args: {
+          _action: string
+          _code?: string
+          _en?: string
+          _id?: string
+          _kind?: string
+          _name?: string
+          _nl?: string
+          _template?: string
+        }
+        Returns: string
+      }
       mfa_required: { Args: never; Returns: boolean }
       my_staff_context: {
         Args: never

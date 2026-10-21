@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { readContent, mergeTemplates, type LibraryQuestion, type TemplateContent } from "@/domain/dossier-templates";
 import { readStepData, type StepData } from "@/domain/consult-steps";
 import type { QuestionnaireDef } from "@/domain/questionnaire/engine";
+import {frozenAftercare} from '@/domain/care-forms';
 
 export interface ConsultPageData {
   note: { id: string; patient_id: string; appointment_id: string | null; subjective: string; objective: string; evaluation: string; plan: string; status: string; step_data: StepData; template_version_ids: string[] };
@@ -34,7 +35,7 @@ const row = async (p: PromiseLike<{ data: unknown; error: { message: string } | 
 export const consultPageQuery = (noteId: string) => queryOptions({
   queryKey: ["consult-page", noteId],
   queryFn: async (): Promise<ConsultPageData | null> => {
-    const note = await row(supabase.from("consult_notes").select("id, patient_id, appointment_id, subjective, objective, evaluation, plan, status, step_data, template_version_ids").eq("id", noteId).single());
+    const note = await row(supabase.from("consult_notes").select("id, patient_id, appointment_id, subjective, objective, evaluation, plan, status, step_data, template_version_ids, care_form_snapshot").eq("id", noteId).single());
     if (!note) return null;
     const [appt, patient] = await Promise.all([
       note["appointment_id"] ? row(supabase.from("appointments").select("id, starts_at, ends_at, status, treatment_id, practitioner_id, location_id, treatment:treatments(name_nl, vat_exemption_possible, price_cents, price_per, material_unit, lot_required), practitioner:practitioners(first_name, last_name)").eq("id", note["appointment_id"] as string).single()) : Promise.resolve(null),
@@ -59,6 +60,7 @@ export const consultPageQuery = (noteId: string) => queryOptions({
         : chosen.length ? await rows(supabase.from("dossier_template_versions").select("template_id, version, content").in("template_id", chosen.map((x) => x["id"] as string)).eq("status", "live")) : [];
       if (versions.length) {
         const merged = mergeTemplates(versions.map((v) => readContent(v["content"])));
+        merged.aftercare=frozenAftercare(note['care_form_snapshot'])??merged.aftercare;
         template = { name: chosen.map((x) => x["name"] as string).join(" + "), version: Math.max(...versions.map((v) => v["version"] as number)), content: merged };
       }
     }
