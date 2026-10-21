@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { statsCredential } from '@/domain/stats-access';
 
 import { logStatsRequest, statsSummary, tenantByStatsKey } from "@/data/integrations.server";
 
@@ -9,7 +10,7 @@ import { logStatsRequest, statsSummary, tenantByStatsKey } from "@/data/integrat
  */
 async function handle(request: Request) {
   const url = new URL(request.url);
-  const key = request.headers.get("x-api-key") ?? url.searchParams.get("key");
+  const key = statsCredential(request);
   const days = Number(url.searchParams.get("days") ?? "30");
   const tenant = key ? await tenantByStatsKey(key) : null;
   if (!tenant) return Response.json({ error: "ongeldige sleutel" }, { status: 403, headers: { "cache-control": "no-store" } });

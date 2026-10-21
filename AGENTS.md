@@ -14,7 +14,7 @@
 - Read the design package first; its security rules override defaults. Build phases in order without confirmation pauses.
 - TanStack Start (not React Router); app-internal server logic in `createServerFn`, never new Edge Functions — platform stack.
 - Tested logic in `src/domain/`, queries in `src/data/`, shared UI in `src/components/`; extend props, never duplicate.
-- Agenda routes share AgendaToolbar for stable controls; public and staff booking share slots domain with online-location IDs and block flags so mixed-consult conflicts cannot diverge.
+- Agenda shares AgendaToolbar; booking shares slots with online-location IDs/block flags to prevent mixed-consult conflicts.
 - Configuration (settings, option lists, texts, roles, permissions, landing pages) lives in DB rows; code never contains those values.
 - Staff area: session + aal2 when `mfa_required()` + active role; RLS/server use `is_aal2()` + `has_permission()`. `mfa_required()` is false in test mode (demo) — one switch, so layers can't diverge.
 - Password sign-in enforces lockout server-side. Server functions log auth events; audit_log stays append-only.
@@ -33,7 +33,7 @@
 - Public booking (`/boeken`) reads via `src/data/booking.functions.ts` server functions with the admin client after resolving the brand from the host (`?merk=` only for brands in test mode); they return display data only. Step order lives in `src/domain/booking.ts`, free times in `src/domain/slots.ts` — both tested.
 - Shared statuses drive agenda/reception/slots; PatientCard owns actions. Triggers protect resources/eKis; audited double books bypass practitioner overlap only. One modal/save creates, reschedules and places waitlist entries with self-exclusion, compare-and-set and preserved preferences.
 - Contact/request entries use shared validated authenticated saves and tenant RLS with patient view/edit permissions; follow-ups, timeline and modal editing read the same stored rows.
-- Select and MultiSelect delegate to SearchablePicker; option metadata and eligibility use shared pure picker rules so keyboard and group selection remain consistent throughout admin.
+- Select/MultiSelect use SearchablePicker and shared eligibility rules for consistent keyboard/group selection.
 - Booking attribution uses tenant-scoped channel/place/campaign rows and immutable in-use codes; appointments snapshot the resolved link attribution at hold creation so later configuration changes cannot rewrite history.
 
 - Patient choices use semantic states; DataTable owns grouped tracks/row actions; Field rows and Modal focus share editing.
@@ -41,6 +41,7 @@
 - Portal uses patient gates/access, atomic hashed links and RLS, never staff memberships; profile edits derive owner from this gate with shared validation/audit. Copy is tenant DB configuration.
 - DemoPatientLogins uses configured profile labels and server-gated portal links; no parallel auth flow.
 - ActiveConsultMode owns the template workflow beside its unchanged bar and notes panel; legacy consult URLs redirect to the dossier rather than render a second workflow.
-- Consent shares SignaturePad; freeze text/version IDs, refuse missing text.
+- Consent shares SignaturePad; forms publish atomically via permission-checked RPC; consults freeze text/version snapshots and refuse missing text.
 - Billing settles atomically with immutable invoices; reception sees amounts, never medical answers.
-- Treatment price/material settings share one validated modal; public availability never restricts staff booking.
+- Treatment settings share one validated modal; public availability never restricts staff booking.
+- Stats keys are header-only; URL credentials are rejected to prevent log leakage.
