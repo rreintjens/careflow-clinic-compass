@@ -526,6 +526,20 @@
       "when": 1792604440371,
       "tag": "0075_versioned_consent_aftercare",
       "breakpoints": true
+    },
+    {
+      "idx": 76,
+      "version": "7",
+      "when": 1792605765202,
+      "tag": "0076_portal_treatment_shared_projection",
+      "breakpoints": true
+    },
+    {
+      "idx": 77,
+      "version": "7",
+      "when": 1792606868512,
+      "tag": "0077_billing_catalog_price_guard",
+      "breakpoints": true
     }
   ]
 }

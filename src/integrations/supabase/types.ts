@@ -5094,6 +5094,7 @@ export type Database = {
         }
       }
       portal_patient_id: { Args: never; Returns: string }
+      portal_treatment_detail: { Args: { _appointment: string }; Returns: Json }
       public_app_flags: {
         Args: never
         Returns: {
