@@ -25,8 +25,10 @@ export function usePortalData(){
  /** Behandelicoon, met de sitecategorie als fallback. */
  const treatIcon=(tid:string|null|undefined)=>treat(tid)?.icon??siteCat(tid)?.icon??null;
  const now=Date.parse(`${d.today}T23:59:59+02:00`);
- const history=(d.appointments??[]).filter(a=>Date.parse(a.starts_at)<now);
- const upcoming=(d.appointments??[]).filter(a=>Date.parse(a.starts_at)>=now).sort((a,b)=>a.starts_at.localeCompare(b.starts_at));
+ // A visit that is already finished or paid is history, even when its slot lies later today or in the future.
+ const done=(a:{starts_at:string;status?:string|null})=>Date.parse(a.starts_at)<now||a.status==='afgerond'||a.status==='klaar_voor_betaling';
+ const history=(d.appointments??[]).filter(done);
+ const upcoming=(d.appointments??[]).filter(a=>!done(a)).sort((a,b)=>a.starts_at.localeCompare(b.starts_at));
  return {d,treat,prac,loc,role,siteCat,treatIcon,history,upcoming};
 }
 export const fmtDay=(iso:string,o:Intl.DateTimeFormatOptions={day:'numeric',month:'long'})=>new Date(iso).toLocaleDateString('nl-NL',{timeZone:'Europe/Amsterdam',...o});
