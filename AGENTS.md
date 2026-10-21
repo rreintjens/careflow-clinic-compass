@@ -25,7 +25,7 @@
 - Multi-tenant (docs/03_MULTI_TENANT.md is binding): every tenant table has non-null `tenant_id` defaulting to `current_tenant()`; every policy ANDs `tenant_id = current_tenant()` — isolation lives in the database.
 - Active tenant is the server-written JWT claim `app_metadata.active_tenant`; roles use `tenant_memberships` (`user_roles` deprecated). Group admins need no membership: `my_tenants` lists all; `current_role_key`/`has_permission`/`my_staff_context` supply superadmin fallbacks.
 - Shared group data (permissions, option_lists, languages, group_settings) is editable only by `group_admins`; storage buckets are per tenant (`<name>-<slug>`).
-- Run tenancy and RLS integration files separately: they share test accounts.
+- Vitest files run serially: integration checks share accounts and change tenant claims.
 - Equipment: device kind comes from `equipment_types` → `equipment_kinds`; names are generated (`src/domain/equipment.ts`), never stored as truth; availability per room/day only via `roomsForKind` — one tested rule.
 - Standalone consultations share modal, validation and authenticated save; options configure choices and medical RLS governs access.
 - Measurements: one shared query; BMI derived in domain from weight + last known height; shared write validation.
@@ -39,6 +39,7 @@
 - Patient choices use semantic states; DataTable owns grouped tracks/row actions; Field rows and Modal focus share editing.
 - Preparation gates reminder mail by missing data/validity; fee tokens expose amount/status, with test-mode payment and compare-and-set.
 - Portal uses patient gates/access, atomic hashed links and RLS, never staff memberships; profile edits derive owner from this gate with shared validation/audit. Copy is tenant DB configuration.
-- Demo patient shortcuts share DemoPatientLogins and redeem the existing server-gated single-use portal links; profile labels come from portal configuration so no parallel authentication flow is introduced.
+- DemoPatientLogins uses configured profile labels and server-gated portal links; no parallel auth flow.
 - ActiveConsultMode owns the template workflow beside its unchanged bar and notes panel; legacy consult URLs redirect to the dossier rather than render a second workflow.
-- Consent signing shares SignaturePad; freeze configured text and consult version IDs, refuse missing text.
+- Consent shares SignaturePad; freeze text/version IDs, refuse missing text.
+- Billing settles atomically with immutable invoices; reception sees amounts, never medical answers.

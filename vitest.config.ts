@@ -5,6 +5,8 @@ import path from "node:path";
 export default defineConfig({
   plugins: [react()],
   test: {
+    // Integration files share test accounts and must not rotate their sessions concurrently.
+    fileParallelism: false,
     environment: "jsdom",
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
