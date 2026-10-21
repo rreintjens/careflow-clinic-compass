@@ -1,0 +1,1 @@
+DO $$ DECLARE definition text; BEGIN SELECT pg_get_functiondef('public.settle_appointment(uuid,jsonb,jsonb,boolean,text)'::regprocedure) INTO definition; definition:=replace(definition,'coalesce(t.btw_rate,0)','coalesce(t.btw_rate::numeric,0)'); EXECUTE definition; END $$;

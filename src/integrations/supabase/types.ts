@@ -527,6 +527,111 @@ export type Database = {
           },
         ]
       }
+      billing_counters: {
+        Row: {
+          last_number: number
+          tenant_id: string
+        }
+        Insert: {
+          last_number?: number
+          tenant_id?: string
+        }
+        Update: {
+          last_number?: number
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_counters_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      billing_settlements: {
+        Row: {
+          appointment_id: string
+          created_at: string
+          created_by: string | null
+          fiscal_snapshot: Json
+          id: string
+          invoice_number: string | null
+          issuer_snapshot: Json
+          lines: Json
+          patient_id: string
+          payments: Json
+          reason: string
+          tenant_id: string
+          total_cents: number
+          updated_at: string
+          updated_by: string | null
+          vat_cents: number
+          without_invoice: boolean
+        }
+        Insert: {
+          appointment_id: string
+          created_at?: string
+          created_by?: string | null
+          fiscal_snapshot: Json
+          id?: string
+          invoice_number?: string | null
+          issuer_snapshot: Json
+          lines: Json
+          patient_id: string
+          payments: Json
+          reason?: string
+          tenant_id?: string
+          total_cents: number
+          updated_at?: string
+          updated_by?: string | null
+          vat_cents: number
+          without_invoice?: boolean
+        }
+        Update: {
+          appointment_id?: string
+          created_at?: string
+          created_by?: string | null
+          fiscal_snapshot?: Json
+          id?: string
+          invoice_number?: string | null
+          issuer_snapshot?: Json
+          lines?: Json
+          patient_id?: string
+          payments?: Json
+          reason?: string
+          tenant_id?: string
+          total_cents?: number
+          updated_at?: string
+          updated_by?: string | null
+          vat_cents?: number
+          without_invoice?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_settlements_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: true
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_settlements_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_settlements_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       booking_campaigns: {
         Row: {
           active: boolean
@@ -4823,6 +4928,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      billing_projection: { Args: { _appointment: string }; Returns: Json }
       consult_template_ids: {
         Args: { _tenant: string; _treatment: string }
         Returns: string[]
@@ -4903,6 +5009,16 @@ export type Database = {
           slug: string
           theme: Json
         }[]
+      }
+      settle_appointment: {
+        Args: {
+          _appointment: string
+          _lines: Json
+          _payments: Json
+          _reason: string
+          _without_invoice: boolean
+        }
+        Returns: string
       }
       staff_names: {
         Args: { _ids: string[] }

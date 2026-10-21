@@ -4,6 +4,7 @@ import { ChevronRight, Star } from 'lucide-react';
 import { copy } from './PortalShell';
 import { usePortalData, fmtDay, Photo, pracName, CourseIcon } from './PortalStart';
 import { readPortalSettings } from '@/domain/portal';
+import {PortalInvoice} from './PortalInvoice';
 
 /** Historie (v0.1 §5.2): filter pills per sitecategorie, grouped per year, rows open the detail. */
 export function PortalHistory(){
@@ -44,6 +45,7 @@ export function PortalHistoryDetail({appointmentId}:{appointmentId:string}){
   {p&&<div className='portal-detail-section'><h2>{copy(c,'treatedBy')}</h2><div className='portal-doctor'><Photo src={p.photo} size={48}/><div><p className='portal-row-title'>{pracName(p)}</p><p className='portal-sub'>{role(p.role_id)}{isDoctor?` · ${copy(c,'bigRegistered')}`:''}</p></div></div></div>}
   {(s.aftercare_tips??[]).length>0&&<div className='portal-detail-section'><h2>{copy(c,'aftercare')}</h2><ul className='portal-tips'>{s.aftercare_tips!.map((tip,i)=><li key={i}><span className='portal-tip-check'>✓</span>{tip}</li>)}</ul></div>}
   {fb&&<div className='portal-detail-section'><h2>{copy(c,'feedbackTitle')}</h2><p className='portal-sub'><span className='portal-feedback-mark'><Star size={14} fill='currentColor'/>{fb.rating}</span> {fb.comment}</p></div>}
+  <PortalInvoice appointmentId={appointmentId}/>
   <div className='portal-detail-actions'>
    <Link to='/boeken' search={{t:a.treatment_id,p:a.practitioner_id??undefined}} className='portal-btn-primary'>{fill(copy(c,'replanWith'),{voornaam:p?.first_name??''})}</Link>
    <Link to='/mijn/berichten' className='portal-btn-secondary'>{copy(c,'askQuestion')}</Link>

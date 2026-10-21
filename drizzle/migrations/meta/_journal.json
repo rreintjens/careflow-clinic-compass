@@ -463,6 +463,62 @@
       "when": 1792539346616,
       "tag": "0066_freeze_consult_template_selection",
       "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1792601388349,
+      "tag": "0067_epd_billing_settlement",
+      "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1792601813752,
+      "tag": "0068_billing_financial_projection",
+      "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1792601942942,
+      "tag": "0069_billing_vat_numeric",
+      "breakpoints": true
+    },
+    {
+      "idx": 70,
+      "version": "7",
+      "when": 1792602349611,
+      "tag": "0070_freeze_issued_invoices",
+      "breakpoints": true
+    },
+    {
+      "idx": 71,
+      "version": "7",
+      "when": 1792602385331,
+      "tag": "0071_billing_snapshot_allowlist",
+      "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1792602445398,
+      "tag": "0072_billing_issuer_config",
+      "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1792602496825,
+      "tag": "0073_billing_read_financial_projection",
+      "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1792602782408,
+      "tag": "0074_billing_authoritative_validation",
+      "breakpoints": true
     }
   ]
 }

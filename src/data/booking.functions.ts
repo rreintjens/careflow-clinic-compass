@@ -11,6 +11,7 @@ import {appointmentPreparation} from "./appointment-preparation.server";
 import { z } from "zod";
 
 import type { Slot } from "@/domain/slots";
+import {publiclyBookable} from '@/domain/treatment-settings';
 import { admin, computeSlots, localParts, localToUtc, resolveTenant, settingNum } from "./booking.server";
 import { attachMeeting } from "./meeting.server";
 import { answerSignals } from "@/domain/questionnaire/answers";
@@ -30,7 +31,7 @@ export const getBookingCatalog = createServerFn({ method: "GET" })
     const [cats, links, treatments, tLocs, locs, prs, pLocs, pTreat, roles, tRoles, settings, mixed] = await Promise.all([
       db.from("treatment_categories").select("id, parent_id, name_nl, name_en, icon, sort").eq("tenant_id", tid).order("sort"),
       db.from("treatment_category_links").select("treatment_id, category_id, sort").eq("tenant_id", tid),
-      db.from("treatments").select("id, slug, name_nl, name_en, icon, duration_min, practitioner_choice, status, pre_questionnaire_key, post_questionnaire_key, questionnaire_minutes, start_screen").eq("tenant_id", tid).eq("status", "active"),
+      db.from("treatments").select("id, slug, name_nl, name_en, icon, duration_min, practitioner_choice, status, pre_questionnaire_key, post_questionnaire_key, questionnaire_minutes, start_screen").eq("tenant_id", tid).eq("status", "active").eq('online_booking','bookable'),
       db.from("treatment_locations").select("treatment_id, location_id").eq("tenant_id", tid),
       db.from("locations").select("id, slug, name, kind, address, status, show_new_label, sort").eq("tenant_id", tid).order("sort"),
       db.from("practitioners").select("id, first_name, last_name, role_id, photo_path, bio_nl, status, sort").eq("tenant_id", tid).eq("status", "active"),
@@ -53,9 +54,9 @@ export const getBookingCatalog = createServerFn({ method: "GET" })
       tenant: { slug: tenant.slug, name: tenant.display_name, languages: [tenant.default_language, ...tenant.extra_languages], phone: typeof phone === "string" ? phone : null },
       ui: ui ?? [],
       categories: cats.data ?? [],
-      links: links.data ?? [],
+      links: (links.data ?? []).filter(l=>treatments.data?.some(t=>t.id===l.treatment_id)),
       treatments: treatments.data ?? [],
-      treatmentLocations: tLocs.data ?? [],
+      treatmentLocations: (tLocs.data ?? []).filter(l=>treatments.data?.some(t=>t.id===l.treatment_id)),
       locations: (locs.data ?? []).filter((l) => l.status === "open"),
       practitioners: (prs.data ?? []).map((p, i) => ({ id: p.id, first_name: p.first_name, last_name: p.last_name, role_id: p.role_id, photo: photos[i] ?? null, bio: p.bio_nl ?? "", sort: p.sort })),
       practitionerLocations: [...(pLocs.data ?? []), ...(locs.data ?? []).filter((l) => l.kind === "online").flatMap((l) =>
@@ -86,6 +87,8 @@ export const getBookingSlots = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const tenant = await resolveTenant(data.merk);
     if (!tenant) return { perPractitioner: {} as Record<string, Slot[]>, merged: [] as Slot[], today: "" };
+    const treatment=await (await admin()).from('treatments').select('status,online_booking').eq('tenant_id',tenant.id).eq('id',data.treatmentId).maybeSingle();
+    if(treatment.error||!publiclyBookable(treatment.data))return {perPractitioner:{} as Record<string,Slot[]>,merged:[] as Slot[],today:''};
     if (!data.link) return computeSlots(tenant,data);
     const scope=await resolveLinkScope(await admin(),tenant.id,data.link);
     if (!scope || !scope.treatmentIds.includes(data.treatmentId) || !scope.row.location_ids.includes(data.locationId)) return {perPractitioner:{} as Record<string,Slot[]>,merged:[] as Slot[],today:""};
@@ -115,6 +118,8 @@ export const holdSlot = createServerFn({ method: "POST" })
     if (!tenant) return { ok: false as const };
     const db = await admin();
     const scope=data.link?await resolveLinkScope(db,tenant.id,data.link):null;
+    const publicTreatment=await db.from('treatments').select('status,online_booking').eq('tenant_id',tenant.id).eq('id',data.treatmentId).maybeSingle();
+    if(publicTreatment.error||!publiclyBookable(publicTreatment.data))return {ok:false as const};
     const linkRow=scope?.row??null;
     if(data.link && (!scope || !scope.treatmentIds.includes(data.treatmentId) || !scope.row.location_ids.includes(data.locationId))) return {ok:false as const};
     const allowed=scope?scopePractitioners(scope.catalog,scope.draft,data.treatmentId,data.locationId):null;
@@ -235,6 +240,8 @@ export const confirmBooking = createServerFn({ method: "POST" })
     const db = await admin();
     const appt = (await db.from("appointments").select("id, status, hold_expires_at, manage_token,treatment_id,starts_at").eq("tenant_id", tenant.id).eq("hold_token", data.token).maybeSingle()).data;
     if (!appt || appt.status !== "held" || !appt.hold_expires_at || Date.parse(appt.hold_expires_at) <= Date.now()) return { ok: false as const, reason: "expired" };
+    const publicTreatment=await db.from('treatments').select('status,online_booking').eq('tenant_id',tenant.id).eq('id',appt.treatment_id).maybeSingle();
+    if(publicTreatment.error||!publiclyBookable(publicTreatment.data))return {ok:false as const,reason:'failed'};
     const today = localParts(new Date(), tenant.time_zone).date;
     const [ty, tm, td] = today.split("-").map(Number) as [number, number, number];
     const [by, bm, bd] = data.dateOfBirth.split("-").map(Number) as [number, number, number];

@@ -1,0 +1,2 @@
+CREATE FUNCTION public.freeze_billing_settlement() RETURNS trigger LANGUAGE plpgsql SET search_path=public AS $$ BEGIN RAISE EXCEPTION 'Een afgesloten afrekening kan niet worden gewijzigd of verwijderd.'; END $$;
+CREATE TRIGGER billing_settlement_immutable BEFORE UPDATE OR DELETE ON public.billing_settlements FOR EACH ROW EXECUTE FUNCTION public.freeze_billing_settlement();

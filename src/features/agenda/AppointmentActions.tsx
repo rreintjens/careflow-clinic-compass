@@ -14,6 +14,7 @@ import { receptionTransitions } from "@/domain/appointment-status";
 import type { AgendaAppt } from "@/data/agenda";
 import { agendaRefQuery } from "@/data/agenda";
 import { NewAppointmentModal } from "./NewAppointmentModal";
+import {BillingModal} from './BillingModal';
 
 export function AppointmentStatus({ status }: { status: string }) {
   const { data: opts = [] } = useQuery(appointmentStatusOptionsQuery);
@@ -22,6 +23,7 @@ export function AppointmentStatus({ status }: { status: string }) {
 export function AppointmentActions({ appointment }: { appointment: AgendaAppt }) {
   const [open, setOpen] = useState(false);
   const [moving,setMoving]=useState(false);
+  const [billing,setBilling]=useState(false);
   const {data:ref}=useQuery(agendaRefQuery);
   const [status, setStatus] = useState(appointment.status);
   const [reason, setReason] = useState("");
@@ -50,6 +52,8 @@ export function AppointmentActions({ appointment }: { appointment: AgendaAppt })
   return <>
     <div className="flex flex-wrap items-center gap-2"><AppointmentStatus status={appointment.status}/><PillButton variant="ghost" size="sm" onClick={() => { setStatus(allowed[0] ?? appointment.status); setNote(appointment.reception_note ?? ""); setError(""); setOpen(true); }}>Afspraak en geschiedenis</PillButton></div>
     {appointment.reception_note && <p className="text-sm text-muted-foreground">{appointment.reception_note}</p>}
+    {canCharge&&['klaar_voor_betaling','afgerond'].includes(appointment.status)&&<PillButton onClick={()=>setBilling(true)}>{appointment.status==='afgerond'?'Bekijk afrekening':'Afrekenen'}</PillButton>}
+    {billing&&<BillingModal appointmentId={appointment.id} onClose={()=>setBilling(false)}/>}
     {["booked","tentatief"].includes(appointment.status) && <PillButton variant="ghost" size="sm" onClick={()=>setMoving(true)}>Afspraak verzetten</PillButton>}
     {allowed.includes("cancelled")&&<PillButton variant="ghost" size="sm" onClick={()=>{setStatus("cancelled");setReason("");setNote(appointment.reception_note??"");setError("");setOpen(true);}}>Afspraak annuleren</PillButton>}
     {moving && ref && <NewAppointmentModal open onOpenChange={setMoving} data={ref} appointment={appointment} onPickInAgenda={()=>setMoving(false)}/>}
