@@ -53,7 +53,10 @@ export const consultPageQuery = (noteId: string) => queryOptions({
       const override = t?.["dossier_template_override"] as string | null | undefined;
       const tpls = await rows(supabase.from("dossier_templates").select("id, name, category_id").in("category_id", catIds.length ? catIds : ["-"]));
       const chosen = override ? tpls.filter((x) => x["id"] === override) : tpls;
-      const versions = chosen.length ? await rows(supabase.from("dossier_template_versions").select("template_id, version, content").in("template_id", chosen.map((x) => x["id"] as string)).eq("status", "live")) : [];
+      const frozen=note["template_version_ids"] as string[]|null;
+      const versions = frozen?.length
+        ? await rows(supabase.from("dossier_template_versions").select("template_id, version, content").in("id",frozen))
+        : chosen.length ? await rows(supabase.from("dossier_template_versions").select("template_id, version, content").in("template_id", chosen.map((x) => x["id"] as string)).eq("status", "live")) : [];
       if (versions.length) {
         const merged = mergeTemplates(versions.map((v) => readContent(v["content"])));
         template = { name: chosen.map((x) => x["name"] as string).join(" + "), version: Math.max(...versions.map((v) => v["version"] as number)), content: merged };

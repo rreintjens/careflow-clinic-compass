@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import QRCode from "qrcode";
 
+import {SignaturePad} from "@/components/SignaturePad";
+import {ConsultConsents} from "./ConsultConsents";
 import { Card } from "@/components/Card";
 import { Checkbox, TextArea, TextField, TextLink } from "@/components/Field";
 import { Modal } from "@/components/Modal";
@@ -116,13 +118,7 @@ function MedicalStatus({ d }: { d: ConsultPageData }) {
           </dl>
         </>
       )}
-      {(d.template?.content.consentForms.length ?? 0) > 0 && (
-        <div className="mt-4 flex items-center gap-3 rounded-[14px] bg-sand px-4 py-3 text-sm">
-          <span className="flex-1">Toestemmingsformulier: {d.template!.content.consentForms.join(", ")}</span>
-          <PillButton size="sm" variant="outline">Bekijk PDF</PillButton>
-          <PillButton size="sm" variant="outline">Op tablet</PillButton>
-        </div>
-      )}
+      <ConsultConsents noteId={d.note.id}/>
     </Card>
   );
 }
@@ -303,22 +299,6 @@ function Prescription({ d, data }: { d: ConsultPageData; data: StepData }) {
         </Modal>
       )}
     </Card>
-  );
-}
-
-/** Signature pad: draw with pointer, stored as image. */
-function SignaturePad({ onSign, onClose }: { onSign: (dataUrl: string) => void; onClose: () => void }) {
-  const ref = useRef<HTMLCanvasElement>(null);
-  const drawing = useRef(false);
-  const [empty, setEmpty] = useState(true);
-  const pos = (e: React.PointerEvent) => { const r = ref.current!.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top] as const; };
-  const start = (e: React.PointerEvent) => { drawing.current = true; const c = ref.current!.getContext("2d")!; c.strokeStyle = "#39332E"; c.lineWidth = 2; c.lineCap = "round"; c.beginPath(); c.moveTo(...pos(e)); };
-  const move = (e: React.PointerEvent) => { if (!drawing.current) return; const c = ref.current!.getContext("2d")!; c.lineTo(...pos(e)); c.stroke(); setEmpty(false); };
-  return (
-    <Modal open onOpenChange={(o) => !o && onClose()} title="Onderteken het recept" description="Zet je handtekening met de muis of vinger."
-      footer={<><PillButton variant="outline" onClick={onClose}>Annuleren</PillButton><PillButton disabled={empty} onClick={() => onSign(ref.current!.toDataURL("image/png"))}>Ondertekenen</PillButton></>}>
-      <canvas ref={ref} width={520} height={200} className="w-full touch-none rounded-[14px] bg-sand" onPointerDown={start} onPointerMove={move} onPointerUp={() => { drawing.current = false; }} onPointerLeave={() => { drawing.current = false; }} />
-    </Modal>
   );
 }
 

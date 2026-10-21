@@ -30,7 +30,7 @@ const TABS: Record<string, string> = { overzicht: "het dossier", tijdlijn: "de t
 
 /** Dutch noun for a changed table, never the table name itself. */
 const NOUNS: Record<string, string> = {
-  appointments: "een afspraak", patients: "een patiënt", consult_notes: "een consultverslag", measurements: "een meting",
+  appointments: "een afspraak", patients: "een patiënt", consult_notes: "een consultverslag", measurements: "een meting",patient_consents:"een toestemming",
   patient_contacts: "een contactmoment of notitie", patient_requests: "een aanvraag",
   address_book:"een adresboekvermelding",sms_outbox:"een sms-demobericht",
   appointment_fee_requests:"een betaalverzoek voor annuleringskosten",
@@ -60,6 +60,7 @@ export function describeAudit(r: AuditRow): AuditLine {
   if (r.action === "mfa_verified") return { actor: r.user_id, text: "is ingelogd met tweestapsverificatie." };
   if (r.action === "login_failed") return { actor: null, text: "Inloggen is mislukt." };
   if (r.action === "demo_login") return { actor: r.user_id, text: "is ingelogd met de demoknop." };
+  if(r.action==='consent_signed')return {actor:r.user_id,text:'heeft een toestemmingsformulier op tablet laten ondertekenen.'};
   if (r.action === "tenant_switched_in") return { actor: r.user_id, text: "is naar deze organisatie gewisseld." };
   if (r.action === "tenant_switched_out") return { actor: r.user_id, text: `is naar een andere organisatie gewisseld (${s(d["to"])}).` };
   const userActs: Record<string, string> = {

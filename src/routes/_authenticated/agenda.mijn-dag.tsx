@@ -18,6 +18,7 @@ import { AgendaToolbar } from "@/features/agenda/AgendaToolbar";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { AppointmentStatus } from "@/features/agenda/AppointmentActions";
+import {orgQuery} from "@/data/organisation";
 
 const TZ = "Europe/Amsterdam";
 const local = (iso: string) => {
@@ -46,6 +47,7 @@ function Page() {
   const now = useNow();
   const date = s.datum ?? now.date;
   const { data: ref } = useQuery(agendaRefQuery);
+  const {data:org}=useQuery(orgQuery);
   const { data: external } = useQuery(externalBusyQuery);
   const { data: me } = useQuery({ queryKey: ["me-practitioner"], queryFn: async () => {
     const { data: u } = await supabase.auth.getUser();
@@ -140,7 +142,7 @@ function Page() {
                     <span className={cn("h-[70%] w-[3px] rounded-full", a.online ? "bg-primary" : "bg-warning")} />
                     <span className="min-w-0 flex-1">
                       <span className="block whitespace-nowrap text-[14px] font-semibold">{fmtTime(a.start)} · {a.patient?.first_name} {a.patient?.last_name}</span>
-                      <span className="block truncate text-[12px] text-muted-foreground">{tName(a.treatment_id)} · {a.patient?.patient_number} · {a.new_patient ? "nieuw" : "vervolg"}{a.online ? " · Online" : ""}</span>
+                      <span className="block truncate text-[12px] text-muted-foreground">{tName(a.treatment_id)} · {a.patient?.patient_number} · {a.new_patient ? "nieuw" : "vervolg"}{a.online ? " · Online" : ""}{a.room_id?` · ${org?.rooms.find(r=>r.id===a.room_id)?.name??""}`:""}</span>
                     </span>
                     {n > 0 && <span className="whitespace-nowrap rounded-full bg-signal px-2.5 py-0.5 text-[11px] ring-1 ring-signal-border">{n} {n === 1 ? "signaal" : "signalen"}</span>}
                     <AppointmentStatus status={a.status}/>

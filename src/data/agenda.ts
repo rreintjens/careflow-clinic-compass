@@ -17,7 +17,7 @@ export async function loadAgendaRef() {
       supabase.from("schedule_exceptions").select("practitioner_id, kind, date_from, date_to, starts, ends, location_id"),
       supabase.from("locations").select("id, name, kind").order("sort"),
       supabase.from("treatments").select("id, name_nl, duration_min, status").eq("status", "active").order("name_nl"),
-      supabase.from("treatment_categories").select("id, parent_id, name_nl, sort").order("sort"),
+      supabase.from("treatment_categories").select("id, parent_id, name_nl, sort, icon").order("sort"),
       supabase.from("treatment_category_links").select("treatment_id, category_id"),
       supabase.from("practitioner_treatments").select("practitioner_id, treatment_id, excluded_location_ids"),
       supabase.from("practitioner_locations").select("practitioner_id, location_id"),
