@@ -5,6 +5,7 @@ import { readContent, mergeTemplates, type LibraryQuestion, type TemplateContent
 import { readStepData, type StepData } from "@/domain/consult-steps";
 import type { QuestionnaireDef } from "@/domain/questionnaire/engine";
 import {frozenAftercare} from '@/domain/care-forms';
+import { consultPhotoSource } from '@/lib/consult-photo';
 
 export interface ConsultPageData {
   note: { id: string; patient_id: string; appointment_id: string | null; subjective: string; objective: string; evaluation: string; plan: string; status: string; step_data: StepData; template_version_ids: string[] };
@@ -111,7 +112,7 @@ export const consultPageQuery = (noteId: string) => queryOptions({
       mailChannels: channels.map((r) => ({ value: r["value"] as string, label: r["label_nl"] as string })),
       reminderOptions: reminders.map((r) => ({ value: r["value"] as string, label: r["label_nl"] as string })),
       prescription: prescription as unknown as ConsultPageData["prescription"],
-      photos: photos as unknown as ConsultPageData["photos"],
+      photos: (photos as unknown as ConsultPageData["photos"]).map(photo => ({ ...photo, image: consultPhotoSource(photo.image) })),
       treatments: treatments as unknown as ConsultPageData["treatments"],
       permissions,
     };
@@ -121,5 +122,5 @@ export const consultPageQuery = (noteId: string) => queryOptions({
 /** Photos across all of the patient's consults, for the Foto's tab and the compare view. */
 export const patientPhotosQuery = (patientId: string) => queryOptions({
   queryKey: ["patient-photos", patientId],
-  queryFn: async () => (await rows(supabase.from("consult_photos").select("id, consult_note_id, slot, image, shared_with_patient, created_at").eq("patient_id", patientId).order("created_at"))) as unknown as Array<{ id: string; consult_note_id: string; slot: string; image: string; shared_with_patient: boolean; created_at: string }>,
+  queryFn: async () => ((await rows(supabase.from("consult_photos").select("id, consult_note_id, slot, image, shared_with_patient, created_at").eq("patient_id", patientId).order("created_at"))) as unknown as Array<{ id: string; consult_note_id: string; slot: string; image: string; shared_with_patient: boolean; created_at: string }>).map(photo => ({ ...photo, image: consultPhotoSource(photo.image) })),
 });
