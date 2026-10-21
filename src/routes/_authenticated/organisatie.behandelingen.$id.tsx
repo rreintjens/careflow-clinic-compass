@@ -22,6 +22,7 @@ import { durationOptions, practitionerExcludedHere, practitionerTreatmentLocatio
 import { readPortalSettings } from "@/domain/portal";
 import { REASON_TEXT, treatmentBookability } from "@/features/organisation/bookability";
 import { cn } from "@/lib/utils";
+import {TreatmentSettings} from '@/features/organisation/TreatmentSettings';
 
 export const Route = createFileRoute("/_authenticated/organisatie/behandelingen/$id")({
   head: () => ({ meta: [{ title: "Behandeling · Beheer · The Body Clinic" }, { name: "description", content: "Behandeling bij The Body Clinic. Beheer en bekijk de bijbehorende gegevens." }, { property: "og:title", content: "Behandeling · Beheer · The Body Clinic" }, { property: "og:description", content: "Behandeling bij The Body Clinic. Beheer en bekijk de bijbehorende gegevens." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { name: "robots", content: "noindex" }] }),
@@ -167,6 +168,7 @@ function TreatmentForm({ org, defaults, onSaved, onCancel }: { org: Org; default
       <section className="border-t border-line pt-5"><h2 className="mb-4 text-lg font-semibold">Startscherm in de boekingsflow</h2><StartScreenEditor value={startScreen} onChange={setStartScreen} defaultButton="Kies waar en wanneer"/></section>
       <div className="grid grid-cols-[minmax(0,1fr)_300px] items-start gap-6">
         <div className="flex min-w-0 flex-col gap-6">
+          <TreatmentSettings treatment={t} org={org}/>
           <Card title="Algemeen">
             <div className="grid grid-cols-2 gap-x-4 gap-y-5">
               <TextField label="Naam" value={name} onChange={(e) => setName(e.target.value)} />
