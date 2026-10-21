@@ -21,13 +21,13 @@
 - `signInDemo`: passwordless for group setting `demo_login_email`, refused server-side unless its tenant is in test mode.
 - Identity columns only in `patients`; medical data goes in separate tables without identity columns.
 - Security headers are set in `src/start.ts` middleware (`src/lib/security-headers.ts`); `TBC_LIVE=true` switches framing to 'none'.
-- RLS proof: `src/test/rls-patients.integration.test.ts` with TEST_STAFF_PASSWORD.
+- RLS tests use isolated test-runner magic links, not passwords or MFA changes.
 - Multi-tenant (docs/03_MULTI_TENANT.md is binding): every tenant table has non-null `tenant_id` defaulting to `current_tenant()`; every policy ANDs `tenant_id = current_tenant()` — isolation lives in the database.
 - Active tenant is the server-written JWT claim `app_metadata.active_tenant`; roles use `tenant_memberships` (`user_roles` deprecated). Group admins need no membership: `my_tenants` lists all; `current_role_key`/`has_permission`/`my_staff_context` supply superadmin fallbacks.
 - Shared group data (permissions, option_lists, languages, group_settings) is editable only by `group_admins`; storage buckets are per tenant (`<name>-<slug>`).
-- Tenancy proof: `src/test/tenancy.integration.test.ts`; run separately with TEST_STAFF_PASSWORD.
+- Run tenancy and RLS integration files separately: they share test accounts.
 - Equipment: device kind comes from `equipment_types` → `equipment_kinds`; names are generated (`src/domain/equipment.ts`), never stored as truth; availability per room/day only via `roomsForKind` — one tested rule.
-- Standalone consultations use the shared dossier modal, shared Zod validation and authenticated server save; option rows configure selections, while existing medical RLS governs access.
+- Standalone consultations share modal, validation and authenticated save; options configure choices and medical RLS governs access.
 - Measurements: one shared query; BMI derived in domain from weight + last known height; shared write validation.
 - Dossier add actions reuse the shared appointment/consult/measurement/document modals; a fixed patient is locked in the appointment modal.
 - Public booking (`/boeken`) reads via `src/data/booking.functions.ts` server functions with the admin client after resolving the brand from the host (`?merk=` only for brands in test mode); they return display data only. Step order lives in `src/domain/booking.ts`, free times in `src/domain/slots.ts` — both tested.
@@ -41,3 +41,4 @@
 - Portal uses patient gates/access, atomic hashed links and RLS, never staff memberships; profile edits derive owner from this gate with shared validation/audit. Copy is tenant DB configuration.
 - Demo patient shortcuts share DemoPatientLogins and redeem the existing server-gated single-use portal links; profile labels come from portal configuration so no parallel authentication flow is introduced.
 - ActiveConsultMode owns the template workflow beside its unchanged bar and notes panel; legacy consult URLs redirect to the dossier rather than render a second workflow.
+- Consent signing shares SignaturePad; freeze configured text and consult version IDs, refuse missing text.

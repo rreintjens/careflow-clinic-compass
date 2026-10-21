@@ -2320,7 +2320,12 @@ export type Database = {
           id: string
           kind: string
           patient_id: string
+          signature: string | null
+          signed_by: string | null
+          source: string | null
+          template_version_ids: string[]
           tenant_id: string
+          text_snapshot: string | null
         }
         Insert: {
           appointment_id?: string | null
@@ -2329,7 +2334,12 @@ export type Database = {
           id?: string
           kind: string
           patient_id: string
+          signature?: string | null
+          signed_by?: string | null
+          source?: string | null
+          template_version_ids?: string[]
           tenant_id?: string
+          text_snapshot?: string | null
         }
         Update: {
           appointment_id?: string | null
@@ -2338,7 +2348,12 @@ export type Database = {
           id?: string
           kind?: string
           patient_id?: string
+          signature?: string | null
+          signed_by?: string | null
+          source?: string | null
+          template_version_ids?: string[]
           tenant_id?: string
+          text_snapshot?: string | null
         }
         Relationships: [
           {
@@ -4808,6 +4823,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      consult_template_ids: {
+        Args: { _tenant: string; _treatment: string }
+        Returns: string[]
+      }
       count_triage_rejection: {
         Args: { _questionnaire: string; _reason: string; _tenant: string }
         Returns: undefined

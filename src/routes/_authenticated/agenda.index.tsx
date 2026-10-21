@@ -102,7 +102,9 @@ function Page() {
     ? `Week ${isoWeek(monday)} · ${Number(monday.slice(8))} tot ${fmt(shift(monday, 6), { day: "numeric", month: "long", year: "numeric" })}`
     : cap(fmt(date, { weekday: "long", day: "numeric", month: "long", year: "numeric" }));
   const step = week ? 7 : 1;
+  const [highlighted,setHighlighted]=useState<string|null>(null);
   const selected = view?.all.find((a) => a.id === s.afspraak);
+  const linkedId=highlighted??s.afspraak;
   const topCats = (ref?.categories ?? []).filter((c) => !c.parent_id);
 
   return (
@@ -130,7 +132,7 @@ function Page() {
       <div className="flex flex-wrap gap-6 text-[13px]">
         <Legend cls="bg-teal-light" label="Online beschikbaar" /><Legend cls="bg-sand" label="In de kliniek" /><Legend cls="hatch" label={week ? "Geblokkeerd of vrij" : "Geblokkeerd"} /><Legend cls="bg-background ring-1 ring-mist" label="Afspraak" />
       </div>
-      {!week && s.locatie && <div className="flex flex-wrap gap-3">{topCats.map(c => <span key={c.id} className="rounded-full bg-sand px-3 py-1 text-xs">{c.name_nl}</span>)}<span className="hatch rounded-full px-3 py-1 text-xs">Tentatief</span></div>}
+      {!week && s.locatie && <div className="flex flex-wrap gap-3" aria-label="Categorielegenda">{topCats.map(c => <span key={c.id} className="inline-flex items-center gap-2 rounded-full bg-sand px-3 py-1 text-xs">{c.icon && <img src={`/treatment-icons/${c.icon}.png`} alt="" className="size-4" />}{c.name_nl}</span>)}<span className="hatch rounded-full px-3 py-1 text-xs">Tentatief</span></div>}
       {!view ? <p className="text-[14px] text-muted-foreground">Laden…</p> : (
         <>
           {view.stats ? (
@@ -139,7 +141,7 @@ function Page() {
                 <div key={k} className="rounded-[16px] bg-sand px-5 py-4"><p className="text-[13px] text-muted-foreground">{k}</p><p className="text-[24px] font-semibold">{v}</p></div>
               ))}
             </div>
-          ) : <p className="text-[13px] text-muted-foreground">{view.cols.length} behandelaars ingeroosterd op deze dag</p>}
+          ) : <p className="text-[13px] text-muted-foreground">{view.cols.filter(c => !c.key.includes(":" )).length} behandelaars ingeroosterd op deze dag</p>}
           <div className="overflow-x-auto">
             <div className="grid min-w-max" style={{ gridTemplateColumns: `56px repeat(${Math.max(1, view.cols.length)}, minmax(340px, 1fr))` }}>
               <span />
@@ -163,16 +165,19 @@ function Page() {
                     return <ExternalBusyBlock key={b.id} start={start} end={end} top={(start - view.range[0] * 60) / 60 * HOUR} height={(end - start) / 60 * HOUR} />;
                   })}
                   {c.own.map((a) => {
-                    const on = a.id === s.afspraak;
+                    const on = a.id === linkedId;
                     const online = view.locs.get(a.location_id)?.kind === "online";
                     const tName = ref?.treatments.find((t) => t.id === a.treatment_id)?.name_nl ?? "";
+                    const categoryIds = ref?.links.filter(l => l.treatment_id === a.treatment_id).map(l => l.category_id) ?? [];
+                    const category = topCats.find(c => categoryIds.includes(c.id) || ref?.categories.some(child => categoryIds.includes(child.id) && child.parent_id === c.id));
                     return (
-                       <button key={a.id} type="button" onClick={() => go({ afspraak: a.id })}
+                       <button key={a.id} type="button" onClick={() => go({ afspraak: a.id })} onMouseEnter={()=>setHighlighted(a.id)} onMouseLeave={()=>setHighlighted(null)} onFocus={()=>setHighlighted(a.id)} onBlur={()=>setHighlighted(null)} data-appointment-id={a.id} aria-pressed={on}
                          aria-label={`${fmtTime(a.s.minute)} · ${a.patient?.patient_number ?? ""} · ${tName}${online ? " · Online" : ""}`}
                          title={`${fmtTime(a.s.minute)} · ${a.patient?.patient_number ?? ""} · ${tName}${online ? " · Online" : ""}`}
                          className={cn("absolute inset-x-2 flex items-center gap-1 overflow-hidden rounded-[8px] px-2 text-left text-[11px] leading-tight", on ? "bg-primary text-primary-foreground" : a.status === "tentatief" ? "hatch" : "bg-background ring-1 ring-mist")}
                         style={{ top: ((a.s.minute - view.range[0] * 60) / 60) * HOUR + 2, height: Math.max(26, ((a.e.minute - a.s.minute) / 60) * HOUR - 4) }}>
                          <span className="shrink-0 font-semibold">{fmtTime(a.s.minute)} · {a.patient?.patient_number ?? ""}</span>
+                         {!week && s.locatie && category?.icon && <img src={`/treatment-icons/${category.icon}.png`} alt={category.name_nl} className="size-3.5 shrink-0" />}
                          <span className="min-w-0 truncate">· {tName}</span>
                          {online && <img src="/ui-icons/videogesprek.svg" alt="Online" className={cn("size-3.5 shrink-0", on && "invert")} />}
                       </button>
