@@ -21,4 +21,11 @@ describe.skipIf(!integrationEnabled)('Invoice access and atomic settlement',()=>
   const duplicate=await client.rpc('settle_appointment',{_appointment:invoice.data.appointment_id,_lines:invoice.data.lines,_payments:invoice.data.payments,_without_invoice:false,_reason:''});expect(duplicate.error).not.toBeNull();
   const after=await db.from('billing_settlements').select('id').eq('appointment_id',invoice.data.appointment_id);expect(after.data).toEqual(before.data);
  });
+ it('financial projection returns only amounts and exemption, not medical data',async()=>{
+  const db=databaseClient(true);const invoice=await db.from('billing_settlements').select('appointment_id').eq('invoice_number','2026-000001').single();if(!invoice.data)throw new Error('Missing verified invoice');
+  const {client}=await testRoleSession('admin@example.test');const r=await client.rpc('billing_projection',{_appointment:invoice.data.appointment_id});expect(r.error).toBeNull();
+  expect(Object.keys(r.data as object).sort()).toEqual(['exempt','lines']);
+  const result=r.data as {lines:Array<Record<string,unknown>>};expect(result.lines.length).toBeGreaterThan(0);for(const line of result.lines)expect(Object.keys(line).sort()).toEqual(['priceCents','qty','treatmentId','unit']);
+  const anonymous=await databaseClient().rpc('billing_projection',{_appointment:invoice.data.appointment_id});expect(anonymous.error).not.toBeNull();
+ });
 });

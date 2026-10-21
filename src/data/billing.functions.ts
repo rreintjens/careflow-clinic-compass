@@ -2,7 +2,6 @@ import {createServerFn} from '@tanstack/react-start';
 import {z} from 'zod';
 import {requireSupabaseAuth} from '@/integrations/supabase/auth-middleware';
 import {settlementSchema,validateSettlement,mockBillingPaymentProvider} from '@/domain/billing';
-import {readStepData} from '@/domain/consult-steps';
 import type {Json} from '@/integrations/supabase/types';
 
 export const readBilling=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(z.object({appointmentId:z.string().uuid()})).handler(async({data,context})=>{
@@ -11,13 +10,12 @@ export const readBilling=createServerFn({method:'POST'}).middleware([requireSupa
  const [a,c,m,settled]=await Promise.all([db.from('appointments').select('id,tenant_id,treatment_id,status').eq('id',data.appointmentId).single(),db.from('treatments').select('id,name_nl,price_cents,price_per,btw_rate,vat_exemption_possible').eq('status','active'),db.from('option_lists').select('value,label_nl').eq('list_key','billing_payment_method').order('sort'),db.from('billing_settlements').select('*').eq('appointment_id',data.appointmentId).maybeSingle()]);
  if(a.error||c.error||m.error||settled.error)throw new Error('Afrekenen kon niet worden geladen.');
  // Reception may read amounts, never the medical note, answers or diagnoses.
- const {admin}=await import('./booking.server');const privileged=await admin();
- const note=await privileged.from('consult_notes').select('step_data').eq('tenant_id',a.data.tenant_id).eq('appointment_id',a.data.id).order('created_at',{ascending:false}).limit(1).maybeSingle();
- if(note.error)throw new Error('Betaalregels konden niet worden geladen.');
- const steps=readStepData(note.data?.step_data);
- const source=steps.lines.length?steps.lines:c.data.filter(t=>t.id===a.data.treatment_id).map(t=>({treatmentId:t.id,name:t.name_nl,qty:1,unit:t.price_per??'',priceCents:t.price_cents??0}));
- const catalog=c.data.map(t=>({...t,effectiveVatRate:t.vat_exemption_possible&&steps.vat?.exempt&&steps.vat.by&&steps.vat.at?0:Number(t.btw_rate??0)}));
- const lines=source.map(l=>({treatmentId:l.treatmentId,name:l.name,qty:l.qty,unit:l.unit,priceCents:l.priceCents,discountCents:0,vatRate:catalog.find(t=>t.id===l.treatmentId)?.effectiveVatRate??0}));
+ const projection=await db.rpc('billing_projection',{_appointment:a.data.id});
+ if(projection.error)throw new Error('Betaalregels konden niet worden geladen.');
+ const financial=z.object({lines:z.array(z.object({treatmentId:z.string().uuid(),qty:z.number().positive(),unit:z.string(),priceCents:z.number().int().nonnegative()})),exempt:z.boolean()}).parse(projection.data);
+ const source=financial.lines.length?financial.lines:c.data.filter(t=>t.id===a.data.treatment_id).map(t=>({treatmentId:t.id,qty:1,unit:t.price_per??'',priceCents:t.price_cents??0}));
+ const catalog=c.data.map(t=>({...t,effectiveVatRate:t.vat_exemption_possible&&financial.exempt?0:Number(t.btw_rate??0)}));
+ const lines=source.map(l=>({treatmentId:l.treatmentId,name:catalog.find(t=>t.id===l.treatmentId)?.name_nl??'',qty:l.qty,unit:l.unit,priceCents:l.priceCents,discountCents:0,vatRate:catalog.find(t=>t.id===l.treatmentId)?.effectiveVatRate??0}));
  return {lines,catalog,methods:m.data,settlement:settled.data};
 });
 export const settleBilling=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(settlementSchema).handler(async({data,context})=>{
