@@ -73,6 +73,7 @@ export async function queueAppointmentMail(db: Db, appointmentId: string, moment
     maps_link: loc.data?.maps_url ?? "", telefoon: loc.data?.phone ?? (typeof sv("mail_phone") === "string" ? (sv("mail_phone") as string) : ""),
     e_mail: typeof sv("sender_address") === "string" ? (sv("sender_address") as string) : "", meet_link: a.meet_link ?? "",
     link_wijzigen: `${base}/afspraak/${a.manage_token}`, link_vragenlijst: `${base}/vragenlijst/${a.manage_token}`,link_gegevens:`${base}/mijn?returnTo=${encodeURIComponent('/mijn/profiel')}`,
+    link_boeken: `${base}/boeken?t=${encodeURIComponent(a.treatment_id)}${a.practitioner_id ? `&p=${encodeURIComponent(a.practitioner_id)}` : ''}`,
     ...cancelPolicyValues(policy, noShow),
   };
   const situation = { online, existingPatient: !a.new_patient, questionnaire: !!tr.post_questionnaire_key, preparation: !!values["voorbereiding"] };

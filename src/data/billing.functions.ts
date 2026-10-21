@@ -15,7 +15,7 @@ export const readBilling=createServerFn({method:'POST'}).middleware([requireSupa
  const financial=z.object({lines:z.array(z.object({treatmentId:z.string().uuid(),qty:z.number().positive(),unit:z.string(),priceCents:z.number().int().nonnegative()})),exempt:z.boolean()}).parse(projection.data);
  const source=financial.lines.length?financial.lines:c.data.filter(t=>t.id===a.data.treatment_id).map(t=>({treatmentId:t.id,qty:1,unit:t.price_per??'',priceCents:t.price_cents??0}));
  const catalog=c.data.map(t=>({...t,effectiveVatRate:t.vat_exemption_possible&&financial.exempt?0:Number(t.btw_rate??0)}));
- const lines=source.map(l=>({treatmentId:l.treatmentId,name:catalog.find(t=>t.id===l.treatmentId)?.name_nl??'',qty:l.qty,unit:l.unit,priceCents:l.priceCents,discountCents:0,vatRate:catalog.find(t=>t.id===l.treatmentId)?.effectiveVatRate??0}));
+ const lines=source.map(l=>({treatmentId:l.treatmentId,name:catalog.find(t=>t.id===l.treatmentId)?.name_nl??'',qty:l.qty,unit:l.unit,priceCents:catalog.find(t=>t.id===l.treatmentId)?.price_cents??0,discountCents:0,vatRate:catalog.find(t=>t.id===l.treatmentId)?.effectiveVatRate??0}));
  return {lines,catalog,methods:m.data,settlement:settled.data};
 });
 export const settleBilling=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(settlementSchema).handler(async({data,context})=>{

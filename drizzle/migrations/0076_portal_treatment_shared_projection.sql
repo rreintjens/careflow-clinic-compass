@@ -1,0 +1,16 @@
+CREATE OR REPLACE FUNCTION public.portal_treatment_detail(_appointment uuid) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
+DECLARE pid uuid := public.portal_patient_id(); tid uuid := public.current_tenant(); result jsonb;
+BEGIN
+ IF pid IS NULL OR tid IS NULL THEN RAISE EXCEPTION 'Geen toegang' USING ERRCODE='42501'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM public.appointments WHERE id=_appointment AND tenant_id=tid AND patient_id=pid) THEN RAISE EXCEPTION 'Behandeling niet gevonden' USING ERRCODE='42501'; END IF;
+ SELECT jsonb_build_object(
+ 'notes',coalesce((SELECT jsonb_agg(jsonb_build_object('id',n.id,'patientNote',coalesce(n.step_data->'closing'->>'patientNote',''),'aftercare',coalesce(nullif(n.step_data->'closing'->>'aftercare',''),n.care_form_snapshot->>'aftercare',''),'gpLetter',CASE WHEN n.step_data->'closing'->>'gpCopyToPortal'='true' THEN coalesce(n.step_data->'closing'->>'gpLetter','') ELSE '' END,'reminderDays',coalesce(n.step_data->'closing'->'reminderDays','0'::jsonb)) ORDER BY n.created_at) FROM public.consult_notes n WHERE n.tenant_id=tid AND n.patient_id=pid AND n.appointment_id=_appointment AND n.status='final' AND n.visibility IS DISTINCT FROM 'archived'),'[]'::jsonb),
+ 'photos',coalesce((SELECT jsonb_agg(jsonb_build_object('id',f.id,'image',f.image,'slot',f.slot,'createdAt',f.created_at) ORDER BY f.created_at) FROM public.consult_photos f JOIN public.consult_notes n ON n.id=f.consult_note_id AND n.tenant_id=f.tenant_id AND n.patient_id=f.patient_id WHERE f.tenant_id=tid AND f.patient_id=pid AND f.shared_with_patient AND n.appointment_id=_appointment AND n.status='final' AND n.visibility IS DISTINCT FROM 'archived'),'[]'::jsonb),
+ 'prescriptions',coalesce((SELECT jsonb_agg(jsonb_build_object('id',r.id,'medication',r.medication,'instructions',r.s_text,'status',r.status,'signedAt',r.signed_at) ORDER BY r.created_at) FROM public.prescriptions r JOIN public.consult_notes n ON n.id=r.consult_note_id AND n.tenant_id=r.tenant_id AND n.patient_id=r.patient_id WHERE r.tenant_id=tid AND r.patient_id=pid AND n.appointment_id=_appointment AND n.status='final' AND n.visibility IS DISTINCT FROM 'archived' AND r.signed_at IS NOT NULL AND r.signature IS NOT NULL AND r.status<>'concept'),'[]'::jsonb),
+ 'consents',coalesce((SELECT jsonb_agg(jsonb_build_object('id',c.id,'kind',c.kind,'text',c.text_snapshot,'signedAt',c.created_at,'granted',c.granted) ORDER BY c.created_at) FROM public.patient_consents c WHERE c.tenant_id=tid AND c.patient_id=pid AND c.appointment_id=_appointment AND c.signature IS NOT NULL),'[]'::jsonb)
+ ) INTO result;
+ INSERT INTO public.audit_log(tenant_id,user_id,role_key,action,category,record_type,record_id,details) VALUES(tid,auth.uid(),'patient','portal_treatment_viewed','patient','appointment',_appointment,'{"description":"Behandeldetail in Mijn omgeving bekeken"}'::jsonb);
+ RETURN result;
+END $$;
+REVOKE ALL ON FUNCTION public.portal_treatment_detail(uuid) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.portal_treatment_detail(uuid) TO authenticated;

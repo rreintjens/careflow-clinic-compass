@@ -5,6 +5,7 @@ import { copy } from './PortalShell';
 import { usePortalData, fmtDay, Photo, pracName, CourseIcon } from './PortalStart';
 import { readPortalSettings } from '@/domain/portal';
 import {PortalInvoice} from './PortalInvoice';
+import {PortalTreatment} from './PortalTreatment';
 
 /** Historie (v0.1 §5.2): filter pills per sitecategorie, grouped per year, rows open the detail. */
 export function PortalHistory(){
@@ -43,7 +44,7 @@ export function PortalHistoryDetail({appointmentId}:{appointmentId:string}){
   <div className='portal-doctor'><span className='portal-icon'><CourseIcon tid={a.treatment_id} fallback={t?.icon}/></span><div><h1 className='portal-detail-title'>{t?.name_nl}</h1><p className='portal-sub'>{fmtDay(a.starts_at,{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</p></div></div>
   <div className='portal-pills'><span>{loc(a.location_id)?.name}</span><span>{t?.duration_min} min</span></div>
   {p&&<div className='portal-detail-section'><h2>{copy(c,'treatedBy')}</h2><div className='portal-doctor'><Photo src={p.photo} size={48}/><div><p className='portal-row-title'>{pracName(p)}</p><p className='portal-sub'>{role(p.role_id)}{isDoctor?` · ${copy(c,'bigRegistered')}`:''}</p></div></div></div>}
-  {(s.aftercare_tips??[]).length>0&&<div className='portal-detail-section'><h2>{copy(c,'aftercare')}</h2><ul className='portal-tips'>{s.aftercare_tips!.map((tip,i)=><li key={i}><span className='portal-tip-check'>✓</span>{tip}</li>)}</ul></div>}
+  <PortalTreatment appointmentId={appointmentId} startsAt={a.starts_at} treatmentId={a.treatment_id} practitionerId={a.practitioner_id} fallbackAftercare={s.aftercare_tips??[]}/>
   {fb&&<div className='portal-detail-section'><h2>{copy(c,'feedbackTitle')}</h2><p className='portal-sub'><span className='portal-feedback-mark'><Star size={14} fill='currentColor'/>{fb.rating}</span> {fb.comment}</p></div>}
   <PortalInvoice appointmentId={appointmentId}/>
   <div className='portal-detail-actions'>
