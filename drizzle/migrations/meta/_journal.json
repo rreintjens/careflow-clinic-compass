@@ -505,6 +505,13 @@
       "when": 1792602445398,
       "tag": "0072_billing_issuer_config",
       "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1792602496825,
+      "tag": "0073_billing_read_financial_projection",
+      "breakpoints": true
     }
   ]
 }

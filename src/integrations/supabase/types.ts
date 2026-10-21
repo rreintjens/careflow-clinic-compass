@@ -4928,6 +4928,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      billing_projection: { Args: { _appointment: string }; Returns: Json }
       consult_template_ids: {
         Args: { _tenant: string; _treatment: string }
         Returns: string[]
