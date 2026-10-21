@@ -9,6 +9,7 @@ export async function downloadInvoice(invoice:Invoice){
  const issuer=invoice.issuer_snapshot&&typeof invoice.issuer_snapshot==='object'&&!Array.isArray(invoice.issuer_snapshot)?invoice.issuer_snapshot:{};
  add(String(issuer['clinic']??''));add(`Factuur ${invoice.invoice_number}`);add(new Date(invoice.created_at).toLocaleDateString('nl-NL'));add('Demofactuur - geen echte betaling');add('');
  const legal=issuer['legal'];if(legal&&typeof legal==='object'&&!Array.isArray(legal))for(const [k,v] of Object.entries(legal)){if(typeof v==='string'&&/big|agb|btw|vat|kvk|address|adres|legal_name/i.test(k))add(`${k}: ${v}`);}
+ const details=issuer['invoiceDetails'];if(details&&typeof details==='object'&&!Array.isArray(details))for(const [k,v] of Object.entries(details)){if(typeof v==='string'&&v.trim())add(`${k.replace('invoice_','')}: ${v}`);}
  if(Array.isArray(invoice.lines))for(const l of invoice.lines){if(l&&typeof l==='object'&&!Array.isArray(l)){add(`${l['name']} - ${l['qty']} ${l['unit']} - ${euros(Number(l['totalCents']))}`);add(`Btw ${l['vatRate']}%: ${euros(Number(l['vatCents']))} | Korting: ${euros(Number(l['discountCents']))}`);}}
  add('');add(`Totaal betaald: ${euros(invoice.total_cents)}`);add(`Btw: ${euros(invoice.vat_cents)}`);
  const fiscal=invoice.fiscal_snapshot;if(fiscal&&typeof fiscal==='object'&&!Array.isArray(fiscal)&&fiscal['exempt'])add(`Btw-vrijstelling vastgelegd door ${fiscal['by']} op ${fiscal['at']}`);

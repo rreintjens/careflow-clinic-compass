@@ -498,6 +498,13 @@
       "when": 1792602385331,
       "tag": "0071_billing_snapshot_allowlist",
       "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1792602445398,
+      "tag": "0072_billing_issuer_config",
+      "breakpoints": true
     }
   ]
 }
