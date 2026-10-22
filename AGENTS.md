@@ -41,6 +41,7 @@
 - Portal uses patient gates, hashed links and RLS; profile edits derive owner from them. Clinical detail is an audited final/shared projection, never raw notes. Copy is DB config.
 - DemoPatientLogins uses configured profile labels and server-gated portal links; no parallel auth flow.
 - ActiveConsultMode owns the template workflow beside its unchanged bar and notes panel; legacy consult URLs redirect to the dossier rather than render a second workflow.
+- Consult closing and the notes-panel checklist both reuse closeChecklist with the resolved frozen template; medical-only requirements must not leak into cosmetic consults.
 - Consent shares SignaturePad; forms publish atomically via permission-checked RPC; consults freeze text/version snapshots and refuse missing text.
 - Billing uses catalog prices and bounded till discounts; invoices stay immutable; reception sees no medical answers.
 - Treatment settings share one validated modal; public availability never restricts staff booking.
