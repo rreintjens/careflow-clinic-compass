@@ -63,7 +63,7 @@ Owner asked to continue through all phases without pausing for confirmation.
 - [x] Changed password for rob@bodyclinic.nl to the privately supplied value; verified through the normal sign-in screen.
 
 - [x] Phase 1 – Foundation
-- [ ] Phase 2 – Organisatie (treatments, practitioners, locations, equipment, schedules)
+- [x] Phase 2 – Organisatie (treatments, practitioners, locations, equipment, schedules)
 - [x] Link uploaded team photos to practitioners; add remaining practitioners
 - [x] Phase 2b – multi-tenancy retrofit (URL prefix /t/<slug>/ still open)
 - [x] Equipment prompt (per location/room, generated names, kinds, maintenance)
@@ -72,19 +72,19 @@ Owner asked to continue through all phases without pausing for confirmation.
 - [x] Practitioners: removed "x van y getoond · Toon alles" line
 - [x] Phase 3 – Questionnaire builder, engine, versions, test mode, JSON import/export (seed imported)
 - [x] Builder: active version clearly explained; rows open even when read-only
-- [ ] Phase 4 – Patient booking flow
+- [x] Phase 4 – Patient booking flow
   - [x] 4a appointments + slot holds (15 min) schema, slot calculation rule with tests
   - [x] 4b booking entry (/boeken), category/subcategory/treatment, location (Online first), date/time, practitioner modes — booking-link table still to add
   - [x] 4c hold timer + expiry screen, triage + rejection variants (no answers stored, anonymous reason count)
   - [x] 4d details form (PDOK address lookup), confirmation, calendar file
   - [x] 4e medical questionnaire after booking (autosave, already completed, 24h edit window); resume screen per design (per-page progress, continue at first incomplete page), verified as patient in browser; missing screen texts (mq_*) added to questionnaire_ui
-  - [ ] 4f manage appointment via mail link (calendar file, reschedule, cancel with reason)
+  - [x] 4f manage appointment via mail link (calendar file, reschedule, cancel with reason)
 - [x] 4f manage appointment (view, reschedule, cancel + reason)
 - [x] Phase 5 – Agenda, Mijn dag, patient card, record, consult mode — done, verified as Rob
   - [x] 5a day agenda + appointment side card
   - [x] 5b week view, practitioner/category filter, "Afspraak maken" modal (new-patient creation from modal still open)
   - [x] 5c Mijn dag; removed test-environment banner (owner request);
-  - [ ] 5d patient list + five-tab record; 5e consult mode; 5f schedule editing
+  - [x] 5d patient list + five-tab record; 5e consult mode; 5f schedule editing
   - [x] Standalone telephone/interim consult: design fields, secure save, Consulten and timeline; verified with test doctor, reload and timeline
   - [x] Dossier Toevoegen: shared appointment/consult/measurement/document modals; appointment and measurement saved from dossier and read back after reload; role permissions checked
   - [x] Contactmoment/notitie and aanvraag: owner-approved fields implemented and verified as Rob; see completed dossier task above.
