@@ -16,7 +16,8 @@ export const portalLoginInfo = createServerFn({method:'GET'}).handler(async()=>{
 export const sendPortalLink=createServerFn({method:'POST'}).inputValidator((d:unknown)=>portalEmailSchema.parse(d)).handler(async({data})=>{
  const {resolveTenant,admin}=await import('./booking.server'); const t=await resolveTenant(data.merk);
  const result={message:'Check je mail',demoLink:null as string|null,held:false}; if(!t)return result; const db=await admin();
- const {count}=await db.from('portal_login_tokens').select('id',{count:'exact',head:true}).eq('tenant_id',t.id).eq('email',data.email).gte('created_at',new Date(Date.now()-600000).toISOString()); if((count??0)>=5)return result;
+ // Send limit protects real inboxes; test mode (demo buttons, no real mail) is exempt so repeated demo logins keep working.
+ if(!t.test_mode){const {count}=await db.from('portal_login_tokens').select('id',{count:'exact',head:true}).eq('tenant_id',t.id).eq('email',data.email).gte('created_at',new Date(Date.now()-600000).toISOString()); if((count??0)>=5)return result;}
   const {data:ps}=await db.from('patients').select('id').eq('tenant_id',t.id).ilike('email',data.email).is('deleted_at',null).order('created_at',{ascending:false}); const p=ps?.[0];
  // Booking draft: the exact flow state travels with the token, so the link restores it in any browser.
  const draft=data.draft; let holdToken:string|null=null; let held=false;
