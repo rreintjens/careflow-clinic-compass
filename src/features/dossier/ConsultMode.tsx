@@ -3,7 +3,6 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import { Checkbox } from "@/components/Field";
 import { Modal } from "@/components/Modal";
 import { PillButton } from "@/components/PillButton";
 import { UiIcon } from "@/components/UiIcon";
@@ -12,6 +11,9 @@ import { recordKey } from "@/data/patients";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { ConsultPage } from './ConsultPage';
+import { consultPageQuery } from '@/data/consult-steps';
+import { closeChecklist } from '@/domain/consult-steps';
+import { emptyContent } from '@/domain/dossier-templates';
 
 type Note = { id: string; subjective: string; objective: string; evaluation: string; plan: string; checklist: Record<string, boolean>; updated_at: string; status: string };
 type Patient = { id: string; first_name: string; last_name: string; patient_number: string | number | null };
@@ -81,7 +83,7 @@ const DEFAULT_PREFS: Prefs = { x: 0, y: 0, w: 380, h: 0, min: false, tab: "notes
 export function ActiveConsultMode() {
   const qc = useQueryClient();
   const { data: c } = useQuery(activeConsultQuery);
-  const { data: steps = [] } = useQuery({ queryKey: ["consult-steps"], queryFn: async () => (await supabase.from("option_lists").select("value, label_nl").eq("list_key", "consult_steps").order("sort")).data ?? [], enabled: !!c });
+  const { data: consult } = useQuery({ ...consultPageQuery(c?.id ?? ''), enabled: !!c });
   const { data: next } = useQuery({
     queryKey: ["consult-next", c?.appointment.id], enabled: !!c?.appointment.practitioner_id,
     queryFn: async () => {
@@ -135,6 +137,11 @@ export function ActiveConsultMode() {
   });
   if (!c) return null;
   const v = { ...c, ...local } as ActiveConsult;
+  const checklist = consult ? closeChecklist(consult.template?.content ?? emptyContent(), consult.note.step_data, {
+    prescriptionSigned: consult.prescription ? consult.prescription.status !== 'concept' : false,
+    photoCount: consult.photos.length,
+    soepFilled: SOEP.filter(([k]) => v[k].trim()).length,
+  }) : [];
   const a = c.appointment, p = c.patient;
   const name = `${p.first_name} ${p.last_name}`;
   const timing = consultTiming(a.starts_at, a.ends_at, now);
@@ -193,7 +200,7 @@ export function ActiveConsultMode() {
               )) : (
                 <div className="rounded-[14px] bg-background p-3">
                   <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Stappen van dit consult</p>
-                  {steps.map((s, i) => <div key={s.value} className="py-1.5"><Checkbox checked={!!v.checklist?.[s.value]} label={`${i + 1}. ${s.label_nl}`} onChange={(on) => patch({ checklist: { ...v.checklist, [s.value]: on } })} /></div>)}
+                  {checklist.map((item) => <div key={item.key} className="flex items-center gap-2 py-1.5 text-[13px]"><UiIcon name={item.done ? 'vinkje' : 'waarschuwing'} className={cn('size-4 shrink-0', item.done ? 'text-primary' : 'text-warning')} />{item.label}</div>)}
                 </div>
               )}
             </div>
@@ -201,15 +208,19 @@ export function ActiveConsultMode() {
           </>
         )}
       </div>
-      {finish && <FinishModal note={v} patient={p} appt={a} steps={steps} onClose={() => setFinish(false)} onDone={() => { localStorage.removeItem(PREFS_KEY); void qc.invalidateQueries(); }} />}
+      {finish && <FinishModal note={v} patient={p} appt={a} onClose={() => setFinish(false)} onDone={() => { localStorage.removeItem(PREFS_KEY); void qc.invalidateQueries(); }} />}
     </>
   );
 }
 
-function FinishModal({ note, patient, appt, steps, onClose, onDone }: { note: Note; patient: Patient; appt: ApptInfo; steps: Array<{ value: string; label_nl: string }>; onClose: () => void; onDone: () => void }) {
-  const { data: plan } = useQuery({ queryKey: ["plan-filled", patient.id], queryFn: async () => { const f = (await supabase.from("treatment_plans").select("fields").eq("patient_id", patient.id).maybeSingle()).data?.fields as Record<string, string> | undefined; return !!f && Object.values(f).some(Boolean); } });
+function FinishModal({ note, patient, appt, onClose, onDone }: { note: Note; patient: Patient; appt: ApptInfo; onClose: () => void; onDone: () => void }) {
+  const { data: consult, isFetching, error } = useQuery({ ...consultPageQuery(note.id), refetchOnMount: 'always' });
   const filled = SOEP.filter(([k]) => note[k].trim()).length;
-  const done = steps.filter((s) => note.checklist?.[s.value]).length;
+  const checklist = consult ? closeChecklist(consult.template?.content ?? emptyContent(), consult.note.step_data, {
+    prescriptionSigned: consult.prescription ? consult.prescription.status !== 'concept' : false,
+    photoCount: consult.photos.length,
+    soepFilled: filled,
+  }) : [];
   const fin = useMutation({
     mutationFn: async () => {
       const { subjective, objective, evaluation, plan: p, checklist } = note;
@@ -219,19 +230,17 @@ function FinishModal({ note, patient, appt, steps, onClose, onDone }: { note: No
     onSuccess: () => { toast.success("Consult afgerond"); onDone(); onClose(); },
     onError: () => toast.error("Afronden is niet gelukt"),
   });
-  const row = (ok: boolean, title: string, sub: string, link?: React.ReactNode) => (
-    <div className="flex items-center gap-3 rounded-[14px] p-3.5 ring-1 ring-mist">
+  const row = (key: string, ok: boolean, title: string) => (
+    <div key={key} className="flex items-center gap-3 rounded-[14px] p-3.5 ring-1 ring-mist">
       <span className={cn("flex size-7 items-center justify-center rounded-full", ok ? "bg-teal-light text-primary" : "bg-warning-bg text-warning")}><UiIcon name={ok ? "vinkje" : "waarschuwing"} className="size-3.5" /></span>
-      <div className="flex-1"><p className="text-[14px]">{title}</p><p className="text-[12px] text-muted-foreground">{sub}</p></div>{link}
+      <div className="flex-1"><p className="text-[14px]">{title}</p></div>
     </div>
   );
   return (
     <Modal open onOpenChange={(o) => !o && onClose()} title={`Consult afronden · ${patient.first_name} ${patient.last_name}`} description={`${hm(appt.starts_at)} tot ${hm(appt.ends_at)}`}
-      footer={<div className="flex w-full items-center justify-between"><button type="button" onClick={onClose} className="text-[14px] text-warning underline">Nog niet afronden</button><div className="flex gap-2"><PillButton variant="outline" onClick={onClose}>Annuleren</PillButton><PillButton disabled={fin.isPending} onClick={() => fin.mutate()}>Afronden</PillButton></div></div>}>
+      footer={<div className="flex w-full items-center justify-between"><button type="button" onClick={onClose} className="text-[14px] text-warning underline">Nog niet afronden</button><div className="flex gap-2"><PillButton variant="outline" onClick={onClose}>Annuleren</PillButton><PillButton disabled={fin.isPending || isFetching || !consult || !!error} onClick={() => fin.mutate()}>Afronden</PillButton></div></div>}>
       <div className="flex flex-col gap-2">
-        {row(filled === 4, "Consultverslag", filled === 4 ? "Subjectief, objectief, evaluatie en plan ingevuld" : `${filled} van 4 velden ingevuld`)}
-        {row(done === steps.length, "Stappen", `${done} van ${steps.length} afgevinkt`)}
-        {row(!!plan, "Behandelplan en medicatie", plan ? "Ingevuld" : "Nog leeg. Zonder plan kan de apotheek niets klaarzetten.", !plan && <Link to="/patienten/$id/behandeling" params={{ id: recordKey(patient) }} onClick={onClose} className="text-[13px] text-primary underline">Nu maken</Link>)}
+        {error ? <p role="alert">De afrondcontrole kon niet worden geladen.</p> : isFetching ? <p role="status" className="text-sm text-muted-foreground">Consult laden…</p> : checklist.map((item) => row(item.key, item.done, item.label))}
       </div>
       <p className="mt-4 text-[12px] text-muted-foreground">Afronden zet het verslag vast in het dossier en sluit het notitiepaneel. Het Meet-gesprek sluit je zelf.</p>
     </Modal>

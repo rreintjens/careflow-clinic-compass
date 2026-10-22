@@ -34,6 +34,17 @@ describe("consult steps", () => {
     const d = { ...emptyStepData(), transcript: { status: "proposal" as const, proposal: "x" } };
     expect(closeChecklist(ma, d, { prescriptionSigned: true, photoCount: 0, soepFilled: 4 }).find((i) => i.key === "verslag")?.done).toBe(false);
   });
+  it("uses cosmetic requirements even when a patient also has a prescription", () => {
+    const items = closeChecklist(botox, emptyStepData(), { prescriptionSigned: false, photoCount: 0, soepFilled: 0 });
+    expect(items.map(i => i.key)).toEqual(['lotnummer', 'fotos', 'controlevragen', 'soep']);
+  });
+  it("keeps the prescription requirement for the medical weight-loss template", () => {
+    const pending = closeChecklist(ma, emptyStepData(), { prescriptionSigned: false, photoCount: 0, soepFilled: 4 });
+    const signed = closeChecklist(ma, emptyStepData(), { prescriptionSigned: true, photoCount: 0, soepFilled: 4 });
+    expect(pending.find(i => i.key === 'recept')?.done).toBe(false);
+    expect(signed.find(i => i.key === 'recept')?.done).toBe(true);
+    expect(pending.some(i => i.key === 'fotos')).toBe(false);
+  });
   it("requires all bespreekpunten answered", () => {
     const d = { ...emptyStepData(), discussed: { L14: { answer: "ja" as const, by: "u", at: "t" } } };
     expect(closeChecklist(ma, d, { prescriptionSigned: true, photoCount: 0, soepFilled: 4 }).find((i) => i.key === "bespreekpunten")?.done).toBe(false);
