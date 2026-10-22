@@ -3,10 +3,10 @@
 ## Mijn omgeving v0.1 — eigenaar 20-10
 - [x] A: gedeeld mobiel/desktopkader, tokens, afzonderlijke patiëntlogin via tienminutenlink, landingsregel, navigatie en vier demopatiënten; ieder via echte link op 390px/1440px gecontroleerd. Patiëntisolatie, medewerkers-/patiëntgrenzen, herladen, onbekende mail en eenmalig gebruik gecontroleerd; 42 gerichte tests groen. Demo-mails in bestaande outbox. Stop voor go.
   - Afbakening: volledige cosmetische historie/afspraken, behandeltrajecten en programmeerschermen volgen B/D; fase A toont Start-identiteit met demo-aantallen en pakket/meetbronnen, nog geen gefactureerde historische afspraken. Mails blijven demo_only, geen externe bezorging. Geen extra Profiel-tabel; bestaand dossier hergebruikt. Screenshots staan in Files onder Mijn-omgeving-fase-A.
-- [ ] B: cosmetische schermen en behandelinstellingen — wacht op go na A.
-- [ ] C: inloggen vanuit boeking (B2-balk (teal #317689, witte tekst, witte Inloggen-pil); herstel na link per voortgang: niets gekozen→Start, behandeling→planner+welkom+eigen arts, tijd+open stap→eerste open stap (gegevens overgeslagen, Klopt alles?), alles rond/details→direct bevestigen+groene tegel; bevestigingsmail aparte tekst; geen "Liever bij"-regel "Eerder bij ons geweest? Log in, dan staan je gegevens klaar" op eerste scherm én planner, ook in de linkbuilder-preview; loginpagina met kaart "Je keuze blijft bewaard"; boekingsconcept server-side aan de inloglink gekoppeld zodat de link in elke browser de exacte staat herstelt; bij gekozen tijd 15 min vasthouden vanaf verzenden; Check-je-mail-scherm met opnieuw-sturen en spammap-notitie; mail "Ga verder met je afspraak"; terugkeer in dezelfde stap met Welkom-terugrij, nooit een keuze overschrijven, rustige regel "Liever bij {voornaam}?" bij Geen voorkeur; gegevensstap overgeslagen voor ingelogden, eindstap "Klopt alles?" met Bevestig-knop; automatisch bevestigen alleen bij login vanaf de gegevensstap; boekingslink-stap 5; Joyce in bel-footer) — GO gegeven 20-10.
-- [ ] D: medisch-afvallenschermen met foto's en visuele regels — GO gegeven 20-10.
-- [ ] E: bestellen, pakketkiezer-states en demo-afrekenen — GO gegeven 20-10.
+- [x] B: cosmetische schermen en behandelinstellingen — wacht op go na A.
+- [x] C: inloggen vanuit boeking (B2-balk (teal #317689, witte tekst, witte Inloggen-pil); herstel na link per voortgang: niets gekozen→Start, behandeling→planner+welkom+eigen arts, tijd+open stap→eerste open stap (gegevens overgeslagen, Klopt alles?), alles rond/details→direct bevestigen+groene tegel; bevestigingsmail aparte tekst; geen "Liever bij"-regel "Eerder bij ons geweest? Log in, dan staan je gegevens klaar" op eerste scherm én planner, ook in de linkbuilder-preview; loginpagina met kaart "Je keuze blijft bewaard"; boekingsconcept server-side aan de inloglink gekoppeld zodat de link in elke browser de exacte staat herstelt; bij gekozen tijd 15 min vasthouden vanaf verzenden; Check-je-mail-scherm met opnieuw-sturen en spammap-notitie; mail "Ga verder met je afspraak"; terugkeer in dezelfde stap met Welkom-terugrij, nooit een keuze overschrijven, rustige regel "Liever bij {voornaam}?" bij Geen voorkeur; gegevensstap overgeslagen voor ingelogden, eindstap "Klopt alles?" met Bevestig-knop; automatisch bevestigen alleen bij login vanaf de gegevensstap; boekingslink-stap 5; Joyce in bel-footer) — GO gegeven 20-10.
+- [x] D: medisch-afvallenschermen met foto's en visuele regels — GO gegeven 20-10.
+- [x] E: bestellen, pakketkiezer-states en demo-afrekenen — GO gegeven 20-10.
 
 ## Uitvoervolgorde eigenaar 19-10 13:19 UTC
 1. Gedeelde doorzoekbare picker
@@ -162,16 +162,16 @@ Verificatie 19-10: alle vijf punten op 1000007 als Rob doorlopen; 58 gerichte te
 - [x] C: inloggen vanuit boeking — B2-loginbalk (teal, "Eerder bij ons geweest? Log in, dan staan je gegevens klaar"), /boeken/inloggen met "Je keuze blijft bewaard", server-side concept aan de link, 15 min vasthouden, vier herstelscenario's, bevestigingsmail bij ronde boeking, stap 5 in linkbuilder met preview-balk, Joyce-footer
 
 ## Eigenaar-review B/C 20-10 12:07 UTC — fixes voor D/E
-- [ ] 1. Profiel §5.5: avatar (initialen-helper "SV"), naam, e-mail, bewerkknop; Account-rijen (Persoonsgegevens, Adres, Facturen, Toestemmingen, Meldingen, Privacy) in witte kaart met grijze chevron; Uitloggen
-- [ ] 2. Rol ontbreekt: portal leest practitioner_roles (niet roles); "Ook jouw huidtherapeut", "{naam}, {rol}"; artsentitel "Drs. Hugo Ammerlaan" (title-kolom)
-- [ ] 3. Historie-filterpills: sitecategorieën (toplevel via parent_id), geen interne groepen
-- [ ] 4. Behandeliconen: fallback op categorie-icoon bij leeg treatment.icoon (Historie, volgende afspraak, behandeltraject)
-- [ ] 5. "Bekijk deze behandelingen eens": alleen categorieën zonder historie (toplevel-vergelijking)
-- [ ] 6. Demo: Sanne's test-feedback weg zodat de feedbackkaart weer verschijnt
-- [ ] 7. /boeken/inloggen: boekingsheader (terug, logo, sluiten), "Terug"-link, "Liever bellen?"-footer met Joyce
-- [ ] 8. Desktop Start ≥1024px: links behandeltraject, rechts arts+feedback+opnieuw boeken, ontdekken volle breedte eronder
-- [ ] D: medisch-afvallenschermen (Start, Voortgang, Programma, Afspraken) met foto's en visuele regels v0.2
-- [ ] E: bestellen met pakketkiezer-states + afrekenflow (geen outlines; geselecteerd gevuld teal, toegestaan #EEF3F5, twee stappen amber, niet-toegestaan grijs; legenda; kaarten zonder randen)
+- [x] 1. Profiel §5.5: avatar (initialen-helper "SV"), naam, e-mail, bewerkknop; Account-rijen (Persoonsgegevens, Adres, Facturen, Toestemmingen, Meldingen, Privacy) in witte kaart met grijze chevron; Uitloggen
+- [x] 2. Rol ontbreekt: portal leest practitioner_roles (niet roles); "Ook jouw huidtherapeut", "{naam}, {rol}"; artsentitel "Drs. Hugo Ammerlaan" (title-kolom)
+- [x] 3. Historie-filterpills: sitecategorieën (toplevel via parent_id), geen interne groepen
+- [x] 4. Behandeliconen: fallback op categorie-icoon bij leeg treatment.icoon (Historie, volgende afspraak, behandeltraject)
+- [x] 5. "Bekijk deze behandelingen eens": alleen categorieën zonder historie (toplevel-vergelijking)
+- [x] 6. Demo: Sanne's test-feedback weg zodat de feedbackkaart weer verschijnt
+- [x] 7. /boeken/inloggen: boekingsheader (terug, logo, sluiten), "Terug"-link, "Liever bellen?"-footer met Joyce
+- [x] 8. Desktop Start ≥1024px: links behandeltraject, rechts arts+feedback+opnieuw boeken, ontdekken volle breedte eronder
+- [x] D: medisch-afvallenschermen (Start, Voortgang, Programma, Afspraken) met foto's en visuele regels v0.2
+- [x] E: bestellen met pakketkiezer-states + afrekenflow (geen outlines; geselecteerd gevuld teal, toegestaan #EEF3F5, twee stappen amber, niet-toegestaan grijs; legenda; kaarten zonder randen)
 
 ## Portal review-fixes + fase D/E (20 okt, Rob)
 - [x] Profiel-scherm (avatar SV, account-rijen, uitloggen)
