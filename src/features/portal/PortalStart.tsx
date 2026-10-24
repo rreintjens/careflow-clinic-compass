@@ -4,7 +4,7 @@ import { Link, useSearch } from '@tanstack/react-router';
 import { useEffect,useState } from 'react';
 import { portalQuery } from '@/data/portal';
 import { copy, PortalTile } from './PortalShell';
-import { feedbackDue, orderWindow, ownDoctor, readPortalSettings, weeksSince, type HistoryItem } from '@/domain/portal';
+import { feedbackDue, orderWindow, ownDoctor, portalAppointmentDone, readPortalSettings, weeksSince, type HistoryItem } from '@/domain/portal';
 import type { Json } from '@/integrations/supabase/types';
 import type { PortalPractitioner } from '@/data/portal.functions';
 
@@ -24,9 +24,9 @@ export function usePortalData(){
  };
  /** Behandelicoon, met de sitecategorie als fallback. */
  const treatIcon=(tid:string|null|undefined)=>treat(tid)?.icon??siteCat(tid)?.icon??null;
- const now=Date.parse(`${d.today}T23:59:59+02:00`);
+ const now=Date.now();
  // A visit that is already finished or paid is history, even when its slot lies later today or in the future.
- const done=(a:{starts_at:string;status?:string|null})=>Date.parse(a.starts_at)<now||a.status==='afgerond'||a.status==='klaar_voor_betaling';
+ const done=(a:{starts_at:string;status?:string|null})=>portalAppointmentDone(a,now);
  const history=(d.appointments??[]).filter(done);
  const upcoming=(d.appointments??[]).filter(a=>!done(a)).sort((a,b)=>a.starts_at.localeCompare(b.starts_at));
  return {d,treat,prac,loc,role,siteCat,treatIcon,history,upcoming};
