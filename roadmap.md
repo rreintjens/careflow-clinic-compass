@@ -1,5 +1,10 @@
 # Roadmap
 
+## Mobiele app — eigenaar 24-10
+- [ ] Hoofdmenu via hamburger op mobiel, bestaande desktopzijbalk behouden.
+- [ ] Gedeelde schermkoppen, lijsten, formulieren en pop-ups aanpassen; agenda, dossier, boeken en portaal controleren.
+- [ ] Als Rob mobiel menu, navigatie en afspraakformulier testen; desktop controleren.
+
 ## Bugonderzoek — eigenaar 24-10
 - [x] Agenda: keuzelijsten compact naast elkaar; alle pillen even hoog op één rij eronder met scheidingsstreepjes tussen filtergroepen; als Rob geselecteerd/verwijderd en visueel gecontroleerd.
 - [x] Trage agenda: dubbele referentielezingen verwijderd, gedeelde tenantcache en weekbereiken, voorladen na staff-inlog; bestaande toegangsregels eenmaal per databaseaanvraag geëvalueerd. Als Rob eerste agenda circa 1,83 s (voorheen 10,47 s), heropenen 0,17–0,19 s; 38 cache-, selectie-, tenant-, rol- en portaaltests groen. Gepubliceerde snelheid niet gemeten.
