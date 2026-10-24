@@ -76,7 +76,7 @@ function SchedulePage() {
   const { data: sched } = useSuspenseQuery(scheduleQuery(pid));
   const navigate = useNavigate({ from: Route.fullPath });
   const qc = useQueryClient();
-  const refresh = () => Promise.all([qc.invalidateQueries({ queryKey: ["schedule"] }), qc.invalidateQueries({ queryKey: ["agenda-ref"] })]);
+  const refresh = async () => { await Promise.all([qc.invalidateQueries({ queryKey: ["schedule"] }), qc.invalidateQueries({ queryKey: ["agenda-ref"] })]); };
   const today = iso(new Date());
   const weekStart = mondayOf(s.from ?? today);
   const weekEnd = addDays(weekStart, 6);
