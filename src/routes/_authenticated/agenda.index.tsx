@@ -57,7 +57,7 @@ function Page() {
   const { data: ref } = useQuery(agendaRefQuery);
   const { data: org } = useQuery(orgQuery);
   const { data: external } = useQuery(externalBusyQuery);
-    const { data: rawAppts } = useQuery(agendaApptsQuery(`${shift(days[0] ?? date, -1)}T00:00:00Z`, `${shift(days[days.length - 1] ?? date, 2)}T00:00:00Z`));
+  const { data: rawAppts } = useQuery(agendaApptsQuery(`${shift(monday, -1)}T00:00:00Z`, `${shift(monday, 8)}T00:00:00Z`));
   const go = (patch: Partial<typeof s>) => void navigate({ search: (p) => ({ ...p, ...patch }) });
   const practitionerIds = agendaPractitionerIds(s.behandelaars, s.behandelaar);
 

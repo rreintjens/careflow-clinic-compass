@@ -34,7 +34,7 @@ export async function loadAgendaAppts(from: string, to: string) {
     .in("status", [...agendaStatuses, "cancelled"]).gte("starts_at", from).lt("starts_at", to));
 }
 export type AgendaAppt = Awaited<ReturnType<typeof loadAgendaAppts>>[number];
-export const agendaApptsQuery = (from: string, to: string) => queryOptions({ queryKey: ["agenda-appts", from, to], queryFn: () => loadAgendaAppts(from, to) });
+export const agendaApptsQuery = (from: string, to: string) => queryOptions({ queryKey: ["agenda-appts", from, to], queryFn: () => loadAgendaAppts(from, to), staleTime: 30_000 });
 
 /** Patient search for "Voor wie" (number, name or e-mail). */
 export const patientSearchQuery = (q: string) => queryOptions({
