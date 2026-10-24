@@ -1,3 +1,10 @@
+import type { Segment } from './agenda';
+
+/** Keep existing appointments visible even when the underlying roster has changed. */
+export function agendaHasActivity(segments: readonly Segment[], appointmentCount: number) {
+  return segments.some(segment => segment.kind === 'work') || appointmentCount > 0;
+}
+
 /** An empty selection means everyone; singular links remain compatible. */
 export function agendaPractitionerIds(selected: readonly string[] | undefined, legacy?: string) {
   return [...new Set(selected ?? (legacy ? [legacy] : []))];

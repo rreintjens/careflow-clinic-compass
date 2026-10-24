@@ -16,6 +16,7 @@
 - Tested logic in `src/domain/`, queries in `src/data/`, shared UI in `src/components/`; extend props, never duplicate.
 - Agenda shares AgendaToolbar; booking shares slots with online-location IDs/block flags to prevent mixed-consult conflicts.
 - Agenda day/week practitioner filters use URL-backed multiple selections and shared SearchablePicker; week tracks retain practitioner identity so schedules and busy blocks cannot mix between people.
+- Agenda picker and tracks derive visibility from location-filtered daySegments or existing appointments; resource tracks require a visible practitioner work segment so unscheduled days stay empty. Shared picker selectionOptions preserve removable selections independently of current eligibility.
 - Patient directory reads identity rows under existing RLS, independently of appointment dates; its URL search filters the loaded identities, with stable ranged reads to avoid silently truncated lists.
 - Configuration (settings, option lists, texts, roles, permissions, landing pages) lives in DB rows; code never contains those values.
 - Staff area: session + aal2 when `mfa_required()` + active role; RLS/server use `is_aal2()` + `has_permission()`. `mfa_required()` is false in test mode (demo) — one switch, so layers can't diverge.

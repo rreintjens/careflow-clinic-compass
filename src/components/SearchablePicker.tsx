@@ -19,6 +19,8 @@ export interface SearchablePickerProps {
   className?: string | undefined;
   inline?: boolean | undefined;
   selectionPlacement?: "inside" | "below" | undefined;
+  selectionOptions?: readonly PickerOption[] | undefined;
+  selectionClassName?: string | undefined;
   preserveOrder?: boolean | undefined;
 }
 
@@ -60,7 +62,7 @@ export function SearchablePicker(props:SearchablePickerProps) {
   const client=useContext(QueryClientContext);
   return <Picker {...props} queryClient={client??fallbackQueryClient}/>;
 }
-function Picker({ label, options, value, onChange, multiple, help, disabled, className, inline, selectionPlacement, preserveOrder, queryClient }: SearchablePickerProps & {queryClient:QueryClient}) {
+function Picker({ label, options, value, onChange, multiple, help, disabled, className, inline, selectionPlacement, selectionOptions, selectionClassName, preserveOrder, queryClient }: SearchablePickerProps & {queryClient:QueryClient}) {
   const id = useId();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -72,7 +74,7 @@ function Picker({ label, options, value, onChange, multiple, help, disabled, cla
   const org = fetchedOrg ?? qc.getQueryData<Org>(orgQuery.queryKey);
   const enriched = useMemo(() => enrich(options, org, preserveOrder), [options, org, preserveOrder]);
   const selected = typeof value === "string" ? [value] : value;
-  const chosen = enriched.filter(o => selected.includes(o.value));
+  const chosen = (selectionOptions ? enrich(selectionOptions, org, preserveOrder) : enriched).filter(o => selected.includes(o.value));
   const filtered = filterPickerOptions(enriched, search);
   const eligible = filtered.filter(o => !o.disabled);
   const groups = [...new Set(filtered.map(o => o.group ?? ""))];
@@ -117,7 +119,7 @@ function Picker({ label, options, value, onChange, multiple, help, disabled, cla
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>
-    {multiple && selectionPlacement === "below" && chosen.length > 0 && <div className="flex flex-wrap gap-2" aria-label="Geselecteerde behandelaars">{chosen.map(option => <PillButton key={option.value} variant="ghost" size="sm" className="h-auto whitespace-normal bg-teal-light text-primary" aria-label={`${option.label} verwijderen`} onClick={() => onChange(selected.filter(v => v !== option.value))}><UiIcon name="kruis" className="size-3 shrink-0" />{option.photoPath && <Avatar path={option.photoPath} size={24} />}{option.label}</PillButton>)}</div>}
+    {multiple && selectionPlacement === "below" && chosen.length > 0 && <div className={cn("flex flex-wrap gap-2", selectionClassName)} aria-label="Geselecteerde behandelaars">{chosen.map(option => <PillButton key={option.value} variant="ghost" size="sm" className="h-auto whitespace-normal bg-teal-light text-primary" aria-label={`${option.label} verwijderen`} onClick={() => onChange(selected.filter(v => v !== option.value))}><UiIcon name="kruis" className="size-3 shrink-0" />{option.photoPath && <Avatar path={option.photoPath} size={24} />}{option.label}</PillButton>)}</div>}
     {help && <span className="text-xs leading-[1.45] text-muted-foreground">{help}</span>}
   </div>;
 }

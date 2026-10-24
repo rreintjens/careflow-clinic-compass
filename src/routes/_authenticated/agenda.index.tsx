@@ -8,7 +8,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { PillButton } from "@/components/PillButton";
 import { Select } from "@/components/Select";
 import { SearchablePicker } from "@/components/SearchablePicker";
-import { agendaPractitionerIds, agendaSelectedPractitioners, agendaWeekTracks } from "@/domain/agenda-selection";
+import { agendaHasActivity, agendaPractitionerIds, agendaSelectedPractitioners, agendaWeekTracks } from "@/domain/agenda-selection";
 import { agendaApptsQuery, agendaRefQuery } from "@/data/agenda";
 import { externalBusyQuery } from "@/data/external-busy";
 import { ExternalBusyBlock } from "@/features/agenda/ExternalBusyBlocks";
@@ -74,20 +74,21 @@ function Page() {
       return s.locatie ? g.filter((x) => x.kind === "break" || x.locationId === s.locatie) : g;
     };
     type Col = { key: string; title: string; sub: string; photo?: string | null; segs: Segment[]; own: typeof appts; today?: boolean; practitionerId?: string; date?: string };
+    const eligiblePeople = ref.practitioners.filter(p => doesCat(p.id) && days.some(d => agendaHasActivity(seg(p.id, d), appts.filter(a => a.practitioner_id === p.id && a.s.date === d).length)));
     let cols: Col[];
     if (week) {
-      const people = agendaSelectedPractitioners(ref.practitioners, practitionerIds).filter(p => doesCat(p.id));
+      const people = agendaSelectedPractitioners(eligiblePeople, practitionerIds);
       cols = agendaWeekTracks(days, people.map(p => p.id)).map(track => {
         const p = people.find(person => person.id === track.practitionerId);
         return { ...track, title: cap(fmt(track.date, { weekday: "short" }).replace(".", "")) + " " + Number(track.date.slice(8)), sub: p ? `${p.first_name} ${p.last_name}` : '', photo: p?.photo_path ?? null, segs: seg(track.practitionerId, track.date), own: appts.filter(a => a.practitioner_id === track.practitionerId && a.s.date === track.date), today: track.date === today() };
-      });
+      }).filter(c => agendaHasActivity(c.segs, c.own.length));
     } else {
-      cols = agendaSelectedPractitioners(ref.practitioners, practitionerIds).filter((p) => doesCat(p.id)).map((p) => {
+      cols = agendaSelectedPractitioners(eligiblePeople, practitionerIds).map((p) => {
         const segs = seg(p.id, date);
         const where = [...new Set(segs.filter((g) => g.kind === "work").map((g) => (g.locationId && locs.get(g.locationId)?.name) || ""))].filter(Boolean);
         return { key: p.id, title: `${p.first_name} ${p.last_name}`, sub: where.join(" en "), photo: p.photo_path, segs, own: appts.filter((a) => a.practitioner_id === p.id) };
       }).filter((c) => c.segs.some((g) => g.kind === "work") || c.own.length);
-      if (s.locatie && org) {
+      if (cols.some(c => c.segs.some(g => g.kind === "work")) && s.locatie && org) {
         const names = deviceNames(org);
         const devices = deviceLite(org).filter(d => deviceCountsOn(d, date) && (d.location_id === s.locatie || d.schedule.some(x => x.weekday === weekdayOf(date) && x.location_id === s.locatie)));
         cols.push(...org.rooms.filter(r => r.location_id === s.locatie).map(r => ({ key: `room:${r.id}`, title: r.name, sub: "Kamer", segs: [], own: appts.filter(a => a.room_id === r.id) })));
@@ -100,7 +101,7 @@ function Page() {
       free: cols.reduce((n, c) => n + freePlaces(c.segs, c.own.map((a) => ({ start: a.s.minute, end: a.e.minute }))), 0),
       online: cols.reduce((n, c) => n + c.own.filter((a) => locs.get(a.location_id)?.kind === "online").length, 0),
     } : null;
-    return { cols, range: hourRange(mins), locs, all: appts, stats };
+    return { cols, range: hourRange(mins), locs, all: appts, stats, eligiblePeople };
   }, [ref, org, rawAppts, s.locatie, s.categorie, s.behandelaar, s.behandelaars, week, date, days.join()]);
 
   const label = week
@@ -130,16 +131,13 @@ function Page() {
           <div className="flex w-full flex-wrap items-start gap-3">
           <Select label="Locatie" preserveOrder className="w-[190px] max-w-full [&>label]:sr-only" value={s.locatie ?? "all"} onChange={(v) => go({ locatie: v === "all" ? undefined : v })}
             options={[{ value: "all", label: "Alle locaties" }, ...(ref?.locations ?? []).slice().sort((a,b) => Number(b.kind === 'online') - Number(a.kind === 'online')).map((l) => ({ value: l.id, label: l.name }))]} />
-          <SearchablePicker label="Behandelaars" multiple selectionPlacement="below" className="w-[280px] max-w-full [&>label]:sr-only" value={practitionerIds} onChange={values => go({ behandelaar: undefined, behandelaars: values.length ? values : undefined, afspraak: undefined })}
-            options={(ref?.practitioners ?? []).map(p => ({ value: p.id, label: `${p.first_name} ${p.last_name}`, photoPath: p.photo_path }))} />
+          <SearchablePicker label="Behandelaars" multiple selectionPlacement="below" selectionClassName="order-last w-full" className="contents [&>label]:hidden [&>button]:w-[280px] [&>button]:max-w-full" value={practitionerIds} onChange={values => go({ behandelaar: undefined, behandelaars: values.length ? values : undefined, afspraak: undefined })}
+            options={(view?.eligiblePeople ?? []).map(p => ({ value: p.id, label: `${p.first_name} ${p.last_name}`, photoPath: p.photo_path }))}
+            selectionOptions={(ref?.practitioners ?? []).map(p => ({ value: p.id, label: `${p.first_name} ${p.last_name}`, photoPath: p.photo_path }))} />
           {!week && <Select label="Categorie" className="w-[200px] [&>label]:sr-only" value={s.categorie ?? "all"} onChange={(v) => go({ categorie: v === "all" ? undefined : v })}
             options={[{ value: "all", label: "Alle behandelingen" }, ...topCats.map((c) => ({ value: c.id, label: c.name_nl }))]} />}
           </div>
         </>} />
-      <div className="flex flex-wrap gap-6 text-[13px]">
-        <Legend cls="bg-teal-light" label="Online beschikbaar" /><Legend cls="bg-sand" label="In de kliniek" /><Legend cls="hatch" label={week ? "Geblokkeerd of vrij" : "Geblokkeerd"} /><Legend cls="bg-background ring-1 ring-mist" label="Afspraak" />
-      </div>
-      {!week && s.locatie && <div className="flex flex-wrap gap-3" aria-label="Categorielegenda">{topCats.map(c => <span key={c.id} className="inline-flex items-center gap-2 rounded-full bg-sand px-3 py-1 text-xs">{c.icon && <img src={`/treatment-icons/${c.icon}.png`} alt="" className="size-4" />}{c.name_nl}</span>)}<span className="hatch rounded-full px-3 py-1 text-xs">Tentatief</span></div>}
       {!view ? <p className="text-[14px] text-muted-foreground">Laden…</p> : (
         <>
           {view.stats ? (
@@ -149,7 +147,7 @@ function Page() {
               ))}
             </div>
           ) : <p className="text-[13px] text-muted-foreground">{view.cols.filter(c => !c.key.includes(":" )).length} behandelaars ingeroosterd op deze dag</p>}
-          <div className="overflow-x-auto">
+          {view.cols.length > 0 && <div className="overflow-x-auto">
             <div className="grid min-w-max" style={{ gridTemplateColumns: `56px repeat(${Math.max(1, view.cols.length)}, minmax(340px, 1fr))` }}>
               <span />
               {view.cols.map((c) => week
@@ -193,17 +191,13 @@ function Page() {
                 </div>
               ))}
             </div>
-          </div>
+          </div>}
         </>
       )}
       {selected && ref && <aside className="fixed inset-y-0 right-0 z-30 w-[420px] overflow-y-auto bg-background shadow-[0_8px_24px_rgba(57,51,46,0.10)]"><PatientCard a={selected} treatment={ref.treatments.find((t) => t.id === selected.treatment_id)?.name_nl ?? ""} online={view?.locs.get(selected.location_id)?.kind === "online"} onClose={() => go({ afspraak: undefined })} /></aside>}
       {ref && <NewAppointmentModal open={newOpen} onOpenChange={setNewOpen} data={ref} onPickInAgenda={(p) => go({ weergave: "week", behandelaar: undefined, behandelaars: [p] })} />}
     </div>
   );
-}
-
-function Legend({ cls, label }: { cls: string; label: string }) {
-  return <span className="flex items-center gap-2 whitespace-nowrap"><span className={cn("size-4 rounded-[4px]", cls)} />{label}</span>;
 }
 
 function SegBox({ g, top0, name, online }: { g: Segment; top0: number; name: string; online: boolean }) {
