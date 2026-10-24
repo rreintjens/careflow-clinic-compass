@@ -6,7 +6,6 @@ import { z } from "zod";
 import { Avatar } from "@/components/Avatar";
 import { PageHeader } from "@/components/PageHeader";
 import { PillButton } from "@/components/PillButton";
-import { Select } from "@/components/Select";
 import { SearchablePicker } from "@/components/SearchablePicker";
 import { agendaHasActivity, agendaPractitionerIds, agendaSelectedPractitioners, agendaWeekTracks } from "@/domain/agenda-selection";
 import { agendaApptsQuery, agendaRefQuery } from "@/data/agenda";
@@ -128,13 +127,15 @@ function Page() {
           {!days.includes(today()) && <button type="button" onClick={() => go({ datum: undefined })} className="text-[14px] text-primary underline">Vandaag</button>}
         </>}
         filters={<>
-          <div className="flex w-full flex-wrap items-start gap-3">
-          <Select label="Locatie" preserveOrder className="w-[190px] max-w-full [&>label]:sr-only" value={s.locatie ?? "all"} onChange={(v) => go({ locatie: v === "all" ? undefined : v })}
+          <div className="flex w-full flex-col items-start gap-4">
+          <SearchablePicker label="Locatie" preserveOrder selectionPlacement="below" selectionClassName="w-full" className="w-full items-start [&>label]:sr-only [&>button]:w-[190px] [&>button]:max-w-full" value={s.locatie ?? "all"} onChange={values => go({ locatie: values[0] === "all" ? undefined : values[0] })}
+            selectionOptions={(ref?.locations ?? []).map(l => ({ value: l.id, label: l.name }))}
             options={[{ value: "all", label: "Alle locaties" }, ...(ref?.locations ?? []).slice().sort((a,b) => Number(b.kind === 'online') - Number(a.kind === 'online')).map((l) => ({ value: l.id, label: l.name }))]} />
-          <SearchablePicker label="Behandelaars" multiple selectionPlacement="below" selectionClassName="order-last w-full" className="contents [&>label]:hidden [&>button]:w-[280px] [&>button]:max-w-full" value={practitionerIds} onChange={values => go({ behandelaar: undefined, behandelaars: values.length ? values : undefined, afspraak: undefined })}
+          <SearchablePicker label="Behandelaars" multiple selectionPlacement="below" selectionClassName="w-full" className="w-full items-start [&>label]:hidden [&>button]:w-[280px] [&>button]:max-w-full" value={practitionerIds} onChange={values => go({ behandelaar: undefined, behandelaars: values.length ? values : undefined, afspraak: undefined })}
             options={(view?.eligiblePeople ?? []).map(p => ({ value: p.id, label: `${p.first_name} ${p.last_name}`, photoPath: p.photo_path }))}
             selectionOptions={(ref?.practitioners ?? []).map(p => ({ value: p.id, label: `${p.first_name} ${p.last_name}`, photoPath: p.photo_path }))} />
-          {!week && <Select label="Categorie" className="w-[200px] [&>label]:sr-only" value={s.categorie ?? "all"} onChange={(v) => go({ categorie: v === "all" ? undefined : v })}
+          {!week && <SearchablePicker label="Behandelingen" selectionPlacement="below" selectionClassName="w-full" className="w-full items-start [&>label]:sr-only [&>button]:w-[200px] [&>button]:max-w-full" value={s.categorie ?? "all"} onChange={values => go({ categorie: values[0] === "all" ? undefined : values[0] })}
+            selectionOptions={topCats.map(c => ({ value: c.id, label: c.name_nl }))}
             options={[{ value: "all", label: "Alle behandelingen" }, ...topCats.map((c) => ({ value: c.id, label: c.name_nl }))]} />}
           </div>
         </>} />
