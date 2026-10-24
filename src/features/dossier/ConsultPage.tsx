@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import QRCode from "qrcode";
 
@@ -14,7 +14,7 @@ import { PillButton } from "@/components/PillButton";
 import { Select } from "@/components/Select";
 import { UiIcon } from "@/components/UiIcon";
 import { consultPageQuery, patientPhotosQuery, type ConsultPageData } from "@/data/consult-steps";
-import { createPhotoToken, readyForPayment, recordVatDecision, saveStepData, sendGpLetter, sendPrescription, shareConsultPhoto, signPrescription } from "@/data/consult-steps.functions";
+import { createPhotoToken, readyForPayment, recordVatDecision, sendGpLetter, sendPrescription, shareConsultPhoto, signPrescription } from "@/data/consult-steps.functions";
 import { recordKey } from "@/data/patients";
 import { closeChecklist, euros, fiscalAnswersComplete, gpLetterText, lineTotal, readStepData, type StepData } from "@/domain/consult-steps";
 import { mockDictationProvider, mockTranscriptProvider } from "@/domain/consult-providers";
@@ -32,7 +32,6 @@ type Note = ConsultPageData["note"];
 
 /** The consult page: a stepper built from the dossier template, next to the sticky bar and floating notes. */
 export function ConsultPage({ noteId, soep, patchSoep, onStepData }: { noteId: string; soep: {subjective:string;objective:string;evaluation:string;plan:string}; patchSoep: (key:string,value:string)=>void; onStepData:(value:StepData)=>void }) {
-  const qc = useQueryClient();
   const { data: d } = useQuery(consultPageQuery(noteId));
   const [step, setStep] = useState(0);
   const [local, setLocal] = useState<StepData | null>(null);
