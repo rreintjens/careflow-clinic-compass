@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Bugonderzoek — eigenaar 24-10
+- [ ] Traag wisselen tussen pagina’s meten en versnellen tot normale demobediening; opnieuw browsermeten.
 - [ ] Patiëntlogin en portaal met echte demo-inlogknoppen nalopen; gevonden fouten reproduceren en herstellen.
 - [ ] Agenda, receptie en dossier als Rob nalopen; gevonden fouten reproduceren en herstellen.
 - [ ] Gerichte regressietests en browsercontrole van herstelde fouten uitvoeren.
