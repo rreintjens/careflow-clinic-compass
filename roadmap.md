@@ -1,5 +1,10 @@
 # Roadmap
 
+## Bugonderzoek — eigenaar 24-10
+- [ ] Patiëntlogin en portaal met echte demo-inlogknoppen nalopen; gevonden fouten reproduceren en herstellen.
+- [ ] Agenda, receptie en dossier als Rob nalopen; gevonden fouten reproduceren en herstellen.
+- [ ] Gerichte regressietests en browsercontrole van herstelde fouten uitvoeren.
+
 ## Mijn omgeving v0.1 — eigenaar 20-10
 - [x] A: gedeeld mobiel/desktopkader, tokens, afzonderlijke patiëntlogin via tienminutenlink, landingsregel, navigatie en vier demopatiënten; ieder via echte link op 390px/1440px gecontroleerd. Patiëntisolatie, medewerkers-/patiëntgrenzen, herladen, onbekende mail en eenmalig gebruik gecontroleerd; 42 gerichte tests groen. Demo-mails in bestaande outbox. Stop voor go.
   - Afbakening: volledige cosmetische historie/afspraken, behandeltrajecten en programmeerschermen volgen B/D; fase A toont Start-identiteit met demo-aantallen en pakket/meetbronnen, nog geen gefactureerde historische afspraken. Mails blijven demo_only, geen externe bezorging. Geen extra Profiel-tabel; bestaand dossier hergebruikt. Screenshots staan in Files onder Mijn-omgeving-fase-A.
