@@ -462,11 +462,15 @@ a.portal-tile:hover {box-shadow:var(--portal-shadow);transform:translateY(-2px);
 
 /* Mobile staff screens keep wide tables and calendars inside their own scroll regions. */
 @media(max-width:639px) {
- .agenda-filters > button {width:calc((100% - 24px)/3)!important;min-width:0;padding-left:8px;padding-right:8px;font-size:11px;}
+ .agenda-filters > button {width:auto!important;flex:1 1 0;min-width:0;padding-left:8px;padding-right:8px;font-size:11px;}
  .agenda-filters > div {max-width:100%;}
  .staff-content section.rounded-\[20px\] {padding:16px;}
  .staff-content .grid:not(.grid-cols-7):not(.agenda-grid), .app-modal .grid:not(.grid-cols-7) {min-width:0;}
  .app-modal .grid-cols-2,.app-modal .grid-cols-3 {grid-template-columns:minmax(0,1fr);}
+ .app-modal .grid[class*="grid-cols-["] {grid-template-columns:minmax(0,1fr);}
+ .app-modal fieldset,.app-modal section {min-width:0;max-width:100%;}
+ .staff-content [role="tablist"] {max-width:100%;overflow-x:auto;}
+ .staff-content [role="tab"] {flex-shrink:0;}
  .app-modal .col-span-2,.app-modal .col-span-3 {grid-column:auto;}
  .staff-content input:not([type=checkbox]):not([type=radio]),.staff-content textarea,.app-modal input:not([type=checkbox]):not([type=radio]),.app-modal textarea,.portal input,.portal textarea {font-size:16px;}
  .admin-list-page {min-width:0;}

@@ -86,13 +86,13 @@ function TemplateEditor() {
         : <p className="flex items-center gap-3 rounded-[14px] bg-sand px-4 py-3 text-sm"><UiIcon name="slot" className="size-4 shrink-0" />{viewId ? `Je bekijkt versie ${shownVersion.version}. ` : "Je bekijkt de versie die live staat. "}Klik op Aanpassen om een concept te maken; lopende consulten houden de versie waarmee ze begonnen.</p>}
       {!editing && concept && live && !viewId && <div className="flex items-center gap-4 rounded-[16px] bg-warning-bg px-5 py-4 text-sm"><span className="mr-auto font-semibold text-warning">Er ligt een concept: versie {concept.version}{concept.change_note ? ` · ${concept.change_note}` : ""}</span><PillButton onClick={startEdit}>Verder met versie {concept.version}</PillButton></div>}
 
-      <div className="grid grid-cols-[minmax(0,1fr)_320px] items-start gap-6">
+      <div className="grid min-w-0 grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
         <fieldset disabled={!editable} className="flex min-w-0 flex-col gap-6">
           <Card title="Consultstappen" description="De volgorde waarin de arts de stappen krijgt.">
             <MultiSelect label="Stappen" value={c.steps} onChange={(v) => write({ ...c, steps: v })} options={steps} />
           </Card>
           <Card title="Medische vragenlijst">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Select label="Vragenlijst" value={c.questionnaire.key ?? ""} onChange={(v) => write({ ...c, questionnaire: { ...c.questionnaire, key: v || null } })} options={[{ value: "", label: "Geen vragenlijst" }, ...questionnaires.map((q) => ({ value: q.key, label: q.name }))]} />
               <Select label="Opnieuw vragen" value={String(c.questionnaire.reaskDays)} onChange={(v) => write({ ...c, questionnaire: { ...c.questionnaire, reaskDays: Number(v) } })} options={optsOf(optRows, "reask_days")} />
             </div>
@@ -115,7 +115,7 @@ function TemplateEditor() {
             </Card>
           ))}
           <Card title="Diagnoses en toestemming">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <TextField label="Voorgeselecteerde diagnosecodes" help="Gescheiden door komma's, bijvoorbeeld E66.0" value={c.diagnoses.join(", ")} onChange={(e) => write({ ...c, diagnoses: e.target.value.split(",").map((x) => x.trim()).filter(Boolean) })} />
               <Select label="Toestemming opnieuw tekenen" value={String(c.resignMonths)} onChange={(v) => write({ ...c, resignMonths: Number(v) })} options={optsOf(optRows, "resign_months")} />
             </div>
