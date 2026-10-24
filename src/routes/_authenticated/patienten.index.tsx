@@ -30,7 +30,7 @@ function Page() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex min-h-12 w-full max-w-xl items-center gap-3 rounded-full bg-sand px-5">
           <img src="/ui-icons/zoeken.svg" alt="" className="size-4 shrink-0" />
-          <input aria-label="Zoek patiënten" value={q} onChange={e => void navigate({ to: '/patienten/', search: { zoek: e.target.value || undefined }, replace: true })} placeholder="Naam, patiëntnummer, e-mail of telefoon" className="min-w-0 flex-1 bg-transparent text-[14px] outline-none" />
+          <input aria-label="Zoek patiënten" value={q} onChange={e => void navigate({ to: '/patienten', search: { zoek: e.target.value || undefined }, replace: true })} placeholder="Naam, patiëntnummer, e-mail of telefoon" className="min-w-0 flex-1 bg-transparent text-[14px] outline-none" />
         </div>
         <span className="text-xs text-muted-foreground">{shown.length} patiënten</span>
       </div>
@@ -47,7 +47,7 @@ function Page() {
               <td className="px-2.5">{p.email ?? '–'}</td>
               <td className="whitespace-nowrap px-2.5">{p.phone ?? '–'}</td>
               <td className="whitespace-nowrap px-2.5 text-muted-foreground">{dateLabel(p.created_at)}</td>
-              <td className="px-2.5"><RowChevron label={`Dossier van ${p.first_name} ${p.last_name}`} onClick={() => void navigate({ to: '/patienten/$id', params: { id: String(p.patient_number ?? p.id) } })} /></td>
+              <td className="px-2.5"><Link to="/patienten/$id" params={{ id: String(p.patient_number ?? p.id) }} aria-label={`Dossier van ${p.first_name} ${p.last_name}`}><RowChevron /></Link></td>
             </tr>)}
           </tbody>
         </table></DataTable>

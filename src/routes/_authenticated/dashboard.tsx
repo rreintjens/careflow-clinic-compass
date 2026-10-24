@@ -14,6 +14,8 @@ const dashboardQuery = queryOptions({ queryKey: ["dashboard"], queryFn: () => ge
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard · Beheer · The Body Clinic" }, { name: "description", content: "Dashboard bij The Body Clinic. Beheer en bekijk de bijbehorende gegevens." }, { property: "og:title", content: "Dashboard · Beheer · The Body Clinic" }, { property: "og:description", content: "Dashboard bij The Body Clinic. Beheer en bekijk de bijbehorende gegevens." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { name: "robots", content: "noindex" }] }),
   loader: ({ context }) => Promise.all([context.queryClient.ensureQueryData(uiTextsQuery("dashboard_ui")), context.queryClient.ensureQueryData(dashboardQuery)]),
+  errorComponent: () => <p role="alert">Dashboard laden is niet gelukt.</p>,
+  notFoundComponent: () => <p>Dashboard niet gevonden.</p>,
   component: DashboardPage,
 });
 
