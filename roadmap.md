@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Bugonderzoek — eigenaar 24-10
+- [ ] Patiënten toont alle patiënten zonder standaard dagfilter, met een goede zoekbalk.
 - [ ] Agenda: eerst locaties (Alle locaties boven Online), daarna meerdere behandelaars met verwijderbare selectiechips en kruisje links; Week standaard alle behandelaars.
 - [ ] Traag wisselen tussen pagina’s meten en versnellen tot normale demobediening; opnieuw browsermeten.
 - [ ] Patiëntlogin en portaal met echte demo-inlogknoppen nalopen; gevonden fouten reproduceren en herstellen.
