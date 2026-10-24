@@ -204,7 +204,7 @@ function SegBox({ g, top0, name, online }: { g: Segment; top0: number; name: str
   const top = ((g.start - top0 * 60) / 60) * HOUR, h = ((g.end - g.start) / 60) * HOUR;
   return (
     <div className={cn("absolute inset-x-1 rounded-[10px]", g.kind === "break" ? "hatch" : online ? "bg-teal-light" : "bg-sand")} style={{ top, height: h }}>
-      <span className="absolute bottom-1.5 right-2.5 text-[11px] text-muted-foreground">{g.kind === "break" ? "Pauze" : name}</span>
+      <span className="absolute bottom-1.5 right-2 max-w-[calc(100%-16px)] truncate text-[11px] text-muted-foreground">{g.kind === "break" ? "Pauze" : name}</span>
     </div>
   );
 }
