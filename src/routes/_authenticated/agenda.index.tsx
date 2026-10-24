@@ -88,7 +88,7 @@ function Page() {
         const where = [...new Set(segs.filter((g) => g.kind === "work").map((g) => (g.locationId && locs.get(g.locationId)?.name) || ""))].filter(Boolean);
         return { key: p.id, title: `${p.first_name} ${p.last_name}`, sub: where.join(" en "), photo: p.photo_path, segs, own: appts.filter((a) => a.practitioner_id === p.id) };
       }).filter((c) => c.segs.some((g) => g.kind === "work") || c.own.length);
-      if (cols.length > 0 && s.locatie && org) {
+      if (cols.some(c => c.segs.some(g => g.kind === "work")) && s.locatie && org) {
         const names = deviceNames(org);
         const devices = deviceLite(org).filter(d => deviceCountsOn(d, date) && (d.location_id === s.locatie || d.schedule.some(x => x.weekday === weekdayOf(date) && x.location_id === s.locatie)));
         cols.push(...org.rooms.filter(r => r.location_id === s.locatie).map(r => ({ key: `room:${r.id}`, title: r.name, sub: "Kamer", segs: [], own: appts.filter(a => a.room_id === r.id) })));
