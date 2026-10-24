@@ -14,7 +14,7 @@ import { PillButton } from "@/components/PillButton";
 import { Select } from "@/components/Select";
 import { UiIcon } from "@/components/UiIcon";
 import { consultPageQuery, patientPhotosQuery, type ConsultPageData } from "@/data/consult-steps";
-import { createPhotoToken, readyForPayment, recordVatDecision, saveStepData, sendGpLetter, sendPrescription, shareConsultPhoto, signPrescription } from "@/data/consult-steps.functions";
+import { createPhotoToken, readyForPayment, recordVatDecision, sendGpLetter, sendPrescription, shareConsultPhoto, signPrescription } from "@/data/consult-steps.functions";
 import { recordKey } from "@/data/patients";
 import { closeChecklist, euros, fiscalAnswersComplete, gpLetterText, lineTotal, readStepData, type StepData } from "@/domain/consult-steps";
 import { mockDictationProvider, mockTranscriptProvider } from "@/domain/consult-providers";
@@ -31,36 +31,22 @@ const STEP_TITLES: Record<string, string> = { medische_status: "Medische status"
 type Note = ConsultPageData["note"];
 
 /** The consult page: a stepper built from the dossier template, next to the sticky bar and floating notes. */
-export function ConsultPage({ noteId }: { noteId: string }) {
-  const qc = useQueryClient();
+export function ConsultPage({ noteId, soep, patchSoep, onStepData }: { noteId: string; soep: {subjective:string;objective:string;evaluation:string;plan:string}; patchSoep: (key:string,value:string)=>void; onStepData:(value:StepData)=>void }) {
   const { data: d } = useQuery(consultPageQuery(noteId));
   const [step, setStep] = useState(0);
   const [local, setLocal] = useState<StepData | null>(null);
-  const [soep, setSoep] = useState<{ subjective: string; objective: string; evaluation: string; plan: string }>({ subjective: "", objective: "", evaluation: "", plan: "" });
-  const [savedAt, setSavedAt] = useState<string | null>(null);
-  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  useEffect(() => { if (d && !local) { setLocal(d.note.step_data); setSoep({ subjective: d.note.subjective, objective: d.note.objective, evaluation: d.note.evaluation, plan: d.note.plan }); } }, [d, local]);
+  useEffect(() => { if (d && !local) setLocal(d.note.step_data); }, [d, local]);
   if (!d || !local) return <p className="text-sm text-muted-foreground">Consult laden…</p>;
 
   const content = d.template?.content;
   const steps = content?.steps.length ? content.steps : ["anamnese", "afronden"];
-  const current = steps[Math.min(step, steps.length - 1)]!;
+  const current = steps[Math.min(step, steps.length - 1)] ?? 'anamnese';
   const lib = (code: string) => d.library.find((q) => q.code === code);
 
   const patch = (p: Partial<StepData>) => {
     const next = { ...local, ...p };
     setLocal(next);
-    clearTimeout(timer.current);
-    timer.current = setTimeout(() => { saveStepData({ data: { noteId, stepData: next as unknown as Record<string, unknown> } }).then(() => setSavedAt(hm(new Date()))).catch(() => toast.error("Opslaan is niet gelukt")); }, 400);
-  };
-  const patchSoep = (k: string, v: string) => {
-    const next = { ...soep, [k]: v };
-    setSoep(next);
-    clearTimeout(timer.current);
-    timer.current = setTimeout(async () => {
-      const r = await supabase.from("consult_notes").update(next).eq("id", noteId);
-      if (r.error) toast.error("Opslaan is niet gelukt"); else setSavedAt(hm(new Date()));
-    }, 400);
+    onStepData(next);
   };
 
   const soepFilled = SOEP.filter(([k]) => (soep[k] ?? "").trim()).length;
@@ -73,7 +59,7 @@ export function ConsultPage({ noteId }: { noteId: string }) {
         <div className="mt-1 flex flex-wrap items-center gap-3">
           <h1 className="text-[28px] font-semibold tracking-tight">Consult · {d.patient.first_name} {d.patient.last_name}</h1>
           {d.template && <span className="whitespace-nowrap rounded-full bg-teal-light px-3 py-1 text-[12px] text-primary">Sjabloon {d.template.name} · v{d.template.version}</span>}
-          <span className="ml-auto text-[13px] text-muted-foreground">Alles wordt direct bewaard{savedAt ? ` · ${savedAt}` : ""}</span>
+          <span className="ml-auto text-[13px] text-muted-foreground">Alles wordt direct bewaard</span>
         </div>
         {d.appointment && <p className="mt-1 text-[15px] text-muted-foreground">{d.appointment.treatment?.name_nl} · {d.appointment.practitioner?.first_name} {d.appointment.practitioner?.last_name}</p>}
       </div>

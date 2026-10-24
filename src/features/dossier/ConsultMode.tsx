@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useServerFn } from '@tanstack/react-start';
 import { toast } from "sonner";
 
 import { Modal } from "@/components/Modal";
@@ -12,7 +13,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { ConsultPage } from './ConsultPage';
 import { consultPageQuery } from '@/data/consult-steps';
-import { closeChecklist } from '@/domain/consult-steps';
+import { closeChecklist, type StepData } from '@/domain/consult-steps';
+import { consultAutosave } from '@/domain/consult-autosave';
+import { finishConsult } from '@/data/consult-steps.functions';
 import { emptyContent } from '@/domain/dossier-templates';
 
 type Note = { id: string; subjective: string; objective: string; evaluation: string; plan: string; checklist: Record<string, boolean>; updated_at: string; status: string };
@@ -102,13 +105,22 @@ export function ActiveConsultMode() {
   const [finish, setFinish] = useState(false);
   const [now, setNow] = useState(Date.now());
   const drag = useRef<{ sx: number; sy: number; ox: number; oy: number } | null>(null);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [localSteps, setLocalSteps] = useState<StepData | null>(null);
+  const queue = useMemo(() => consultAutosave<Note & {step_data:StepData}>(async values => {
+    if (!c?.id) throw new Error('Geen actief consult');
+    const r = await supabase.from('consult_notes').update(values as unknown as {subjective?:string;objective?:string;evaluation?:string;plan?:string;step_data?:import('@/integrations/supabase/types').Json}).eq('id', c.id).eq('status','draft').select('id').maybeSingle();
+    if (r.error || !r.data) throw new Error('Opslaan is niet gelukt');
+    setSavedAt(hms(new Date()));
+    qc.setQueryData<ActiveConsult | null>(['active-consult'], old => old ? {...old,...values} : old);
+    void qc.invalidateQueries({queryKey:['consult-page',c.id]});
+  }, () => toast.error('Opslaan is niet gelukt')), [c?.id,qc]);
+  useEffect(() => () => { void queue.flush().catch(() => toast.error('Opslaan is niet gelukt')); },[queue]);
   const panel = useRef<HTMLDivElement>(null);
 
   useEffect(() => { try { const raw = localStorage.getItem(PREFS_KEY); if (raw) setPrefs({ ...DEFAULT_PREFS, ...(JSON.parse(raw) as Partial<Prefs>) }); } catch { /* defaults */ } }, []);
   const savePrefs = (p: Partial<Prefs>) => setPrefs((x) => { const n = { ...x, ...p }; localStorage.setItem(PREFS_KEY, JSON.stringify(n)); return n; });
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 15_000); return () => clearInterval(t); }, []);
-  useEffect(() => { setLocal({}); if (c?.updated_at) setSavedAt(hms(c.updated_at)); }, [c?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { setLocal({}); setLocalSteps(null); if (c?.updated_at) setSavedAt(hms(c.updated_at)); }, [c?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { const open = () => setFinish(true); window.addEventListener(FINISH_EVENT, open); return () => window.removeEventListener(FINISH_EVENT, open); }, []);
   // Remember the size the doctor drags the panel to.
   useEffect(() => {
@@ -123,21 +135,16 @@ export function ActiveConsultMode() {
   const patch = (p: Partial<Note>) => {
     const nextVal = { ...local, ...p };
     setLocal(nextVal);
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(async () => {
-      if (!c) return;
-      const r = await supabase.from("consult_notes").update(nextVal).eq("id", c.id);
-      if (r.error) toast.error("Opslaan is niet gelukt"); else { setSavedAt(hms(new Date())); qc.setQueryData(["active-consult"], { ...c, ...nextVal }); }
-    }, 300);
+    queue.patch(p);
   };
   const park = useMutation({
-    mutationFn: async () => { if (!c) return; const r = await supabase.from("consult_notes").update({ ...local, status: "parked" }).eq("id", c.id); if (r.error) throw r.error; },
+    mutationFn: async () => { if (!c) return; await queue.flush(); const r = await supabase.from("consult_notes").update({ status: "parked" }).eq("id", c.id); if (r.error) throw r.error; },
     onSuccess: () => { toast.success("Consult geparkeerd; hervat het vanuit het dossier"); void refreshConsult(qc); },
     onError: () => toast.error("Parkeren is niet gelukt"),
   });
   if (!c) return null;
   const v = { ...c, ...local } as ActiveConsult;
-  const checklist = consult ? closeChecklist(consult.template?.content ?? emptyContent(), consult.note.step_data, {
+  const checklist = consult ? closeChecklist(consult.template?.content ?? emptyContent(), localSteps ?? consult.note.step_data, {
     prescriptionSigned: consult.prescription ? consult.prescription.status !== 'concept' : false,
     photoCount: consult.photos.length,
     soepFilled: SOEP.filter(([k]) => v[k].trim()).length,
@@ -173,7 +180,7 @@ export function ActiveConsultMode() {
       </div>
 
       <section aria-label={`Consultstappen voor ${name}`} className="mb-8">
-        <ConsultPage key={c.id} noteId={c.id} />
+        <ConsultPage key={c.id} noteId={c.id} soep={v} patchSoep={(key,value) => { if (SOEP.some(([k]) => k === key)) patch({[key]:value}); }} onStepData={value => {setLocalSteps(value);queue.patch({step_data:value});}} />
       </section>
 
       <div ref={panel} aria-label={`Consultnotities voor ${name}`} role="complementary"
@@ -208,12 +215,13 @@ export function ActiveConsultMode() {
           </>
         )}
       </div>
-      {finish && <FinishModal note={v} patient={p} appt={a} onClose={() => setFinish(false)} onDone={() => { localStorage.removeItem(PREFS_KEY); void qc.invalidateQueries(); }} />}
+      {finish && <FinishModal note={v} patient={p} appt={a} flush={() => queue.flush()} onClose={() => setFinish(false)} onDone={() => { localStorage.removeItem(PREFS_KEY); void qc.invalidateQueries(); }} />}
     </>
   );
 }
 
-function FinishModal({ note, patient, appt, onClose, onDone }: { note: Note; patient: Patient; appt: ApptInfo; onClose: () => void; onDone: () => void }) {
+function FinishModal({ note, patient, appt, flush, onClose, onDone }: { note: Note; patient: Patient; appt: ApptInfo; flush:()=>Promise<void>; onClose: () => void; onDone: () => void }) {
+  const finish = useServerFn(finishConsult);
   const { data: consult, isFetching, error } = useQuery({ ...consultPageQuery(note.id), refetchOnMount: 'always' });
   const filled = SOEP.filter(([k]) => note[k].trim()).length;
   const checklist = consult ? closeChecklist(consult.template?.content ?? emptyContent(), consult.note.step_data, {
@@ -223,12 +231,11 @@ function FinishModal({ note, patient, appt, onClose, onDone }: { note: Note; pat
   }) : [];
   const fin = useMutation({
     mutationFn: async () => {
-      const { subjective, objective, evaluation, plan: p, checklist } = note;
-      const r = await supabase.from("consult_notes").update({ subjective, objective, evaluation, plan: p, checklist, status: "final", finished_at: new Date().toISOString() }).eq("id", note.id);
-      if (r.error) throw r.error;
+      await flush();
+      await finish({data:{noteId:note.id}});
     },
     onSuccess: () => { toast.success("Consult afgerond"); onDone(); onClose(); },
-    onError: () => toast.error("Afronden is niet gelukt"),
+    onError: (e) => toast.error(e.message),
   });
   const row = (key: string, ok: boolean, title: string) => (
     <div key={key} className="flex items-center gap-3 rounded-[14px] p-3.5 ring-1 ring-mist">
@@ -238,7 +245,7 @@ function FinishModal({ note, patient, appt, onClose, onDone }: { note: Note; pat
   );
   return (
     <Modal open onOpenChange={(o) => !o && onClose()} title={`Consult afronden · ${patient.first_name} ${patient.last_name}`} description={`${hm(appt.starts_at)} tot ${hm(appt.ends_at)}`}
-      footer={<div className="flex w-full items-center justify-between"><button type="button" onClick={onClose} className="text-[14px] text-warning underline">Nog niet afronden</button><div className="flex gap-2"><PillButton variant="outline" onClick={onClose}>Annuleren</PillButton><PillButton disabled={fin.isPending || isFetching || !consult || !!error} onClick={() => fin.mutate()}>Afronden</PillButton></div></div>}>
+      footer={<div className="flex w-full items-center justify-between"><button type="button" onClick={onClose} className="text-[14px] text-warning underline">Nog niet afronden</button><div className="flex gap-2"><PillButton variant="outline" onClick={onClose}>Annuleren</PillButton><PillButton disabled={fin.isPending || isFetching || !consult || !!error || checklist.some(i => !i.done)} onClick={() => fin.mutate()}>Afronden</PillButton></div></div>}>
       <div className="flex flex-col gap-2">
         {error ? <p role="alert">De afrondcontrole kon niet worden geladen.</p> : isFetching ? <p role="status" className="text-sm text-muted-foreground">Consult laden…</p> : checklist.map((item) => row(item.key, item.done, item.label))}
       </div>

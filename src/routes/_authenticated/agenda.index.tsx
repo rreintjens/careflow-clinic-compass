@@ -7,6 +7,8 @@ import { Avatar } from "@/components/Avatar";
 import { PageHeader } from "@/components/PageHeader";
 import { PillButton } from "@/components/PillButton";
 import { Select } from "@/components/Select";
+import { SearchablePicker } from "@/components/SearchablePicker";
+import { agendaPractitionerIds, agendaSelectedPractitioners, agendaWeekTracks } from "@/domain/agenda-selection";
 import { agendaApptsQuery, agendaRefQuery } from "@/data/agenda";
 import { externalBusyQuery } from "@/data/external-busy";
 import { ExternalBusyBlock } from "@/features/agenda/ExternalBusyBlocks";
@@ -37,6 +39,7 @@ export const Route = createFileRoute("/_authenticated/agenda/")({
   validateSearch: z.object({
     datum: z.string().optional(), weergave: z.enum(["dag", "week"]).optional(), locatie: z.string().optional(),
     behandelaar: z.string().optional(), categorie: z.string().optional(), afspraak: z.string().optional(),
+    behandelaars: z.array(z.string()).optional(),
   }),
   head: () => ({ meta: [{ title: "Agenda · Beheer · The Body Clinic" }, { name: "description", content: "Dag- en weekagenda met afspraken en beschikbaarheid van The Body Clinic." }, { property: "og:title", content: "Agenda · The Body Clinic" }, { property: "og:description", content: "Dag- en weekagenda met afspraken en beschikbaarheid van The Body Clinic." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { name: "robots", content: "noindex" }] }),
   component: Page,
@@ -57,7 +60,7 @@ function Page() {
   const { data: external } = useQuery(externalBusyQuery);
     const { data: rawAppts } = useQuery(agendaApptsQuery(`${shift(days[0] ?? date, -1)}T00:00:00Z`, `${shift(days[days.length - 1] ?? date, 2)}T00:00:00Z`));
   const go = (patch: Partial<typeof s>) => void navigate({ search: (p) => ({ ...p, ...patch }) });
-  const practitionerId = s.behandelaar ?? (week ? ref?.practitioners[0]?.id : undefined);
+  const practitionerIds = agendaPractitionerIds(s.behandelaars, s.behandelaar);
 
   const view = useMemo(() => {
     if (!ref || !rawAppts) return null;
@@ -70,14 +73,16 @@ function Page() {
       const g = daySegments(pid, d, ref.blocks as SlotBlock[], ref.exceptions as SlotException[]);
       return s.locatie ? g.filter((x) => x.kind === "break" || x.locationId === s.locatie) : g;
     };
-    type Col = { key: string; title: string; sub: string; photo?: string | null; segs: Segment[]; own: typeof appts; today?: boolean };
+    type Col = { key: string; title: string; sub: string; photo?: string | null; segs: Segment[]; own: typeof appts; today?: boolean; practitionerId?: string; date?: string };
     let cols: Col[];
     if (week) {
-      const pid = practitionerId ?? "";
-      cols = days.map((d) => ({ key: d, title: cap(fmt(d, { weekday: "short" }).replace(".", "")) + " " + Number(d.slice(8)), sub: "", segs: seg(pid, d), own: appts.filter((a) => a.practitioner_id === pid && a.s.date === d), today: d === today() }))
-        .filter((c, i) => i < 6 || c.segs.length || c.own.length);
+      const people = agendaSelectedPractitioners(ref.practitioners, practitionerIds).filter(p => doesCat(p.id));
+      cols = agendaWeekTracks(days, people.map(p => p.id)).map(track => {
+        const p = people.find(person => person.id === track.practitionerId);
+        return { ...track, title: cap(fmt(track.date, { weekday: "short" }).replace(".", "")) + " " + Number(track.date.slice(8)), sub: p ? `${p.first_name} ${p.last_name}` : '', photo: p?.photo_path ?? null, segs: seg(track.practitionerId, track.date), own: appts.filter(a => a.practitioner_id === track.practitionerId && a.s.date === track.date), today: track.date === today() };
+      });
     } else {
-      cols = ref.practitioners.filter((p) => (!s.behandelaar || p.id === s.behandelaar) && doesCat(p.id)).map((p) => {
+      cols = agendaSelectedPractitioners(ref.practitioners, practitionerIds).filter((p) => doesCat(p.id)).map((p) => {
         const segs = seg(p.id, date);
         const where = [...new Set(segs.filter((g) => g.kind === "work").map((g) => (g.locationId && locs.get(g.locationId)?.name) || ""))].filter(Boolean);
         return { key: p.id, title: `${p.first_name} ${p.last_name}`, sub: where.join(" en "), photo: p.photo_path, segs, own: appts.filter((a) => a.practitioner_id === p.id) };
@@ -96,7 +101,7 @@ function Page() {
       online: cols.reduce((n, c) => n + c.own.filter((a) => locs.get(a.location_id)?.kind === "online").length, 0),
     } : null;
     return { cols, range: hourRange(mins), locs, all: appts, stats };
-  }, [ref, org, rawAppts, s.locatie, s.categorie, s.behandelaar, week, practitionerId, date, days.join()]);
+  }, [ref, org, rawAppts, s.locatie, s.categorie, s.behandelaar, s.behandelaars, week, date, days.join()]);
 
   const label = week
     ? `Week ${isoWeek(monday)} · ${Number(monday.slice(8))} tot ${fmt(shift(monday, 6), { day: "numeric", month: "long", year: "numeric" })}`
@@ -114,7 +119,7 @@ function Page() {
         <PillButton onClick={() => setNewOpen(true)} disabled={!ref}><img src="/ui-icons/plus.svg" alt="" className="size-4 invert" />Afspraak maken</PillButton>
       </>} />
       <AgendaToolbar value={week ? "week" : "dag"}
-        onChange={(v) => v === "mijn" ? void navigate({ to: "/agenda/mijn-dag", search: { datum: s.datum, behandelaar: practitionerId } }) : go({ weergave: v === "week" ? "week" : undefined, afspraak: undefined })}
+        onChange={(v) => v === "mijn" ? void navigate({ to: "/agenda/mijn-dag", search: { datum: s.datum, behandelaar: practitionerIds.length === 1 ? practitionerIds[0] : undefined } }) : go({ weergave: v === "week" ? "week" : undefined, afspraak: undefined })}
         dateControls={<>
           <button type="button" aria-label="Vorige" onClick={() => go({ datum: shift(date, -step), afspraak: undefined })} className="flex size-9 items-center justify-center rounded-full bg-sand"><img src="/ui-icons/pijl-links.svg" alt="" className="size-4" /></button>
           <span className="whitespace-nowrap text-[15px] font-semibold">{label}</span>
@@ -122,12 +127,14 @@ function Page() {
           {!days.includes(today()) && <button type="button" onClick={() => go({ datum: undefined })} className="text-[14px] text-primary underline">Vandaag</button>}
         </>}
         filters={<>
-          <Select label="Behandelaar" className="w-[230px] [&>label]:sr-only" value={practitionerId ?? "all"} onChange={(v) => go({ behandelaar: v === "all" ? undefined : v })}
-            options={[...(week ? [] : [{ value: "all", label: "Alle behandelaars" }]), ...(ref?.practitioners ?? []).map((p) => ({ value: p.id, label: `${p.first_name} ${p.last_name}` }))]} />
-          <Select label="Locatie" className="w-[190px] [&>label]:sr-only" value={s.locatie ?? "all"} onChange={(v) => go({ locatie: v === "all" ? undefined : v })}
-            options={[{ value: "all", label: "Alle locaties" }, ...(ref?.locations ?? []).map((l) => ({ value: l.id, label: l.name }))]} />
+          <div className="flex w-full flex-wrap items-start gap-3">
+          <Select label="Locatie" preserveOrder className="w-[190px] max-w-full [&>label]:sr-only" value={s.locatie ?? "all"} onChange={(v) => go({ locatie: v === "all" ? undefined : v })}
+            options={[{ value: "all", label: "Alle locaties" }, ...(ref?.locations ?? []).slice().sort((a,b) => Number(b.kind === 'online') - Number(a.kind === 'online')).map((l) => ({ value: l.id, label: l.name }))]} />
+          <SearchablePicker label="Behandelaars" multiple selectionPlacement="below" className="w-[280px] max-w-full [&>label]:sr-only" value={practitionerIds} onChange={values => go({ behandelaar: undefined, behandelaars: values.length ? values : undefined, afspraak: undefined })}
+            options={(ref?.practitioners ?? []).map(p => ({ value: p.id, label: `${p.first_name} ${p.last_name}`, photoPath: p.photo_path }))} />
           {!week && <Select label="Categorie" className="w-[200px] [&>label]:sr-only" value={s.categorie ?? "all"} onChange={(v) => go({ categorie: v === "all" ? undefined : v })}
             options={[{ value: "all", label: "Alle behandelingen" }, ...topCats.map((c) => ({ value: c.id, label: c.name_nl }))]} />}
+          </div>
         </>} />
       <div className="flex flex-wrap gap-6 text-[13px]">
         <Legend cls="bg-teal-light" label="Online beschikbaar" /><Legend cls="bg-sand" label="In de kliniek" /><Legend cls="hatch" label={week ? "Geblokkeerd of vrij" : "Geblokkeerd"} /><Legend cls="bg-background ring-1 ring-mist" label="Afspraak" />
@@ -146,7 +153,7 @@ function Page() {
             <div className="grid min-w-max" style={{ gridTemplateColumns: `56px repeat(${Math.max(1, view.cols.length)}, minmax(340px, 1fr))` }}>
               <span />
               {view.cols.map((c) => week
-                ? <p key={c.key} className={cn("px-2 pb-3 text-[14px]", c.today && "font-semibold text-primary")}>{c.title}</p>
+                ? <div key={c.key} className="px-2 pb-3"><p className={cn("text-[14px]", c.today && "font-semibold text-primary")}>{c.title}</p><div className="mt-2 flex items-center gap-2"><Avatar path={c.photo ?? null} size={28} /><span className="text-xs">{c.sub}</span></div></div>
                 : (
                   <Link key={c.key} to="/agenda/mijn-dag" disabled={c.key.includes(":")} search={{ datum: date, behandelaar: c.key }} aria-label={`Bekijk de dag van ${c.title}`} className="flex items-center gap-3 rounded-[12px] px-2 pb-3 text-left transition-colors hover:bg-teal-light focus-visible:outline-2 focus-visible:outline-primary">
                     <Avatar path={c.photo ?? null} size={36} />
@@ -160,7 +167,7 @@ function Page() {
                 <div key={c.key} className="relative border-l border-mist" style={{ height: (view.range[1] - view.range[0]) * HOUR }}>
                   {Array.from({ length: view.range[1] - view.range[0] }, (_, i) => <span key={i} className="absolute inset-x-0 border-t border-mist/60" style={{ top: i * HOUR }} />)}
                   {c.segs.map((g, i) => <SegBox key={i} g={g} top0={view.range[0]} name={g.locationId ? view.locs.get(g.locationId)?.name ?? "" : ""} online={!!g.locationId && view.locs.get(g.locationId)?.kind === "online"} />)}
-                  {external?.visible && external.periods.filter((b) => b.practitioner_id === (week ? practitionerId : c.key) && local(b.starts_at).date === (week ? c.key : date)).map((b) => {
+                  {external?.visible && external.periods.filter((b) => b.practitioner_id === (week ? c.practitionerId : c.key) && local(b.starts_at).date === (week ? c.date : date)).map((b) => {
                     const start = local(b.starts_at).minute, end = local(b.ends_at).minute;
                     return <ExternalBusyBlock key={b.id} start={start} end={end} top={(start - view.range[0] * 60) / 60 * HOUR} height={(end - start) / 60 * HOUR} />;
                   })}
@@ -190,7 +197,7 @@ function Page() {
         </>
       )}
       {selected && ref && <aside className="fixed inset-y-0 right-0 z-30 w-[420px] overflow-y-auto bg-background shadow-[0_8px_24px_rgba(57,51,46,0.10)]"><PatientCard a={selected} treatment={ref.treatments.find((t) => t.id === selected.treatment_id)?.name_nl ?? ""} online={view?.locs.get(selected.location_id)?.kind === "online"} onClose={() => go({ afspraak: undefined })} /></aside>}
-      {ref && <NewAppointmentModal open={newOpen} onOpenChange={setNewOpen} data={ref} onPickInAgenda={(p) => go({ weergave: "week", behandelaar: p })} />}
+      {ref && <NewAppointmentModal open={newOpen} onOpenChange={setNewOpen} data={ref} onPickInAgenda={(p) => go({ weergave: "week", behandelaar: undefined, behandelaars: [p] })} />}
     </div>
   );
 }

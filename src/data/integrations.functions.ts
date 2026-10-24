@@ -68,13 +68,14 @@ export const getDashboard = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const ctx = context as unknown as Ctx;
-    if (!(await ctx.supabase.rpc("is_aal2")).data) throw new Error("Forbidden");
-    await allowed(ctx, "settings.view");
+    const [aal] = await Promise.all([ctx.supabase.rpc("is_aal2"), allowed(ctx, "settings.view")]);
+    if (aal.error || !aal.data) throw new Error("Forbidden");
     const tenant = await activeTenant(ctx);
     const db = await admin();
-    const summary = await statsSummary(tenant, 30);
-    const today = summary.range.to;
-    const [appts, patients, treatments, categories, links, completed, lastStats] = await Promise.all([
+    const { zonedParts } = await import("@/domain/time");
+    const today = zonedParts(new Date(), tenant.time_zone).date;
+    const [summary, appts, patients, treatments, categories, links, completed, lastStats] = await Promise.all([
+      statsSummary(tenant, 30),
       db.from("appointments").select("patient_id, treatment_id, starts_at, status, location_id, created_at").eq("tenant_id", tenant.id).neq("status", "released").neq("status", "cancelled").gte("starts_at", `${today}T00:00:00Z`),
       db.from("patients").select("id, created_at").eq("tenant_id", tenant.id).is("deleted_at", null),
       db.from("treatments").select("id, pre_questionnaire_key").eq("tenant_id", tenant.id),
@@ -90,7 +91,6 @@ export const getDashboard = createServerFn({ method: "GET" })
     if (links.error) throw links.error;
     if (completed.error) throw completed.error;
 
-    const { zonedParts } = await import("@/domain/time");
     const dayOf = (iso: string | null) => (iso ? zonedParts(new Date(iso), tenant.time_zone).date : null);
     const newPatientDays = new Set((patients.data ?? []).map((p) => dayOf(p.created_at)));
     const preKey = new Map((treatments.data ?? []).map((t) => [t.id, t.pre_questionnaire_key]));

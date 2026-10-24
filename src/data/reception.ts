@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-export const appointmentStatusOptionsQuery = queryOptions({ queryKey: ["appointment-status-options"], queryFn: async () => {
+export const appointmentStatusOptionsQuery = queryOptions({ queryKey: ["appointment-status-options"], staleTime: 5 * 60_000, queryFn: async () => {
   const r = await supabase.from("option_lists").select("list_key,value,label_nl").in("list_key", ["appointment_status", "cancel_reason", "appointment_kind"]).order("sort");
   if (r.error) throw r.error; return r.data;
 } });

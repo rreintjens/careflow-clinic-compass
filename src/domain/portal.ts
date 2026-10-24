@@ -9,7 +9,16 @@ export const portalDraftSchema = z.object({
   triageKey: z.string().max(80).optional(), triageVersionId: z.string().uuid().optional(), triageAnswers: z.record(z.string(), z.unknown()).optional(),
 });
 export const portalEmailSchema = z.object({ email: z.string().trim().toLowerCase().email().max(254), merk: z.string().max(60).optional(), returnTo: z.string().max(600).optional(), draft: portalDraftSchema.optional() });
-export const portalTokenSchema = z.object({ token: z.string().regex(/^[a-f0-9]{64}$/) });
+export const portalTokenSchema = z.object({ token: z.string().regex(/^[a-f0-9]{64}$/), merk: z.string().max(60).optional() });
+/** Links generated on a demo host retain the tenant selected when they were issued. */
+export const portalLinkPath = (token: string, merk?: string) => `/mijn/link/${token}${merk ? `?merk=${encodeURIComponent(merk)}` : ''}`;
+export function portalAppointmentDone(a: { starts_at: string; status?: string | null }, now: number) {
+  return Date.parse(a.starts_at) < now || a.status === 'afgerond' || a.status === 'klaar_voor_betaling';
+}
+export function portalAppointmentDays(startsAt: string, today: string) {
+  const day = new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Amsterdam'}).format(new Date(startsAt));
+  return Math.max(0,Math.round((Date.parse(`${day}T00:00:00Z`)-Date.parse(`${today}T00:00:00Z`))/86_400_000));
+}
 export const PORTAL_LINK_MINUTES = 10;
 export function usablePortalToken(expiresAt: string, usedAt: string | null, now: number) {
   return usedAt === null && Date.parse(expiresAt) > now;

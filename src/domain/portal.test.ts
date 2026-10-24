@@ -1,7 +1,26 @@
 import { describe, expect, it } from "vitest";
-import { packageEnd, portalLanding, usablePortalToken, PORTAL_LINK_MINUTES, patientInitials, feedbackDue, ownDoctor, orderWindow, readMaConfig, monthPrice, packageTotal, packageSavings, strengthState } from "./portal";
+import { packageEnd, portalLanding, usablePortalToken, PORTAL_LINK_MINUTES, patientInitials, feedbackDue, ownDoctor, orderWindow, readMaConfig, monthPrice, packageTotal, packageSavings, strengthState, portalAppointmentDone, portalAppointmentDays, portalLinkPath, portalTokenSchema } from "./portal";
 
 describe("patient portal rules", () => {
+  it('uses calendar days rather than rounding a few hours up to tomorrow', () => {
+    expect(portalAppointmentDays('2026-10-24T14:00:00+02:00','2026-10-24')).toBe(0);
+    expect(portalAppointmentDays('2026-10-25T14:00:00+01:00','2026-10-24')).toBe(1);
+  });
+  it('keeps an appointment later today upcoming, including winter time', () => {
+    expect(portalAppointmentDone({starts_at:'2026-10-24T14:00:00+02:00',status:'booked'},Date.parse('2026-10-24T08:00:00Z'))).toBe(false);
+    expect(portalAppointmentDone({starts_at:'2026-10-25T14:00:00+01:00',status:'booked'},Date.parse('2026-10-25T08:00:00Z'))).toBe(false);
+  });
+  it('counts a completed future appointment as history without moving a booked one', () => {
+    const a={starts_at:'2026-11-02T14:00:00Z'}; const now=Date.parse('2026-10-24T08:00:00Z');
+    expect(portalAppointmentDone({...a,status:'afgerond'},now)).toBe(true);
+    expect(portalAppointmentDone({...a,status:'klaar_voor_betaling'},now)).toBe(true);
+    expect(portalAppointmentDone({...a,status:'booked'},now)).toBe(false);
+  });
+  it('preserves the selected demo brand in a redeemable login link', () => {
+    const token='a'.repeat(64);const link=new URL(portalLinkPath(token,'tbc-be'),'https://demo.test');
+    expect(portalTokenSchema.parse({token:link.pathname.split('/').at(-1),merk:link.searchParams.get('merk')})).toEqual({token,merk:'tbc-be'});
+    expect(portalLinkPath(token)).toBe(`/mijn/link/${token}`);
+  });
   it("links expire after ten minutes and cannot be reused", () => {
     expect(PORTAL_LINK_MINUTES).toBe(10);
     const issued = Date.parse("2026-10-20T06:18:00Z"), expires = "2026-10-20T06:28:00Z";

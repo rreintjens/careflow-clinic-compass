@@ -1,5 +1,13 @@
 # Roadmap
 
+## Bugonderzoek — eigenaar 24-10
+- [x] Patiënten toont alle patiënten zonder standaard dagfilter, met een goede zoekbalk; 12 identiteiten als Rob, volledige naam → één resultaat → dossier → herladen gecontroleerd.
+- [x] Agenda: eerst locaties (Alle locaties boven Online), daarna meerdere behandelaars met verwijderbare selectiechips en kruisje links; Week standaard alle behandelaars. Als Rob selecteren/verwijderen/beide weergaven gecontroleerd.
+- [x] Traag wisselen tussen pagina’s versneld met korte queryfreshness, referentiehergebruik, parallelle navigatiecontroles en dashboardreads; RLS/servercontroles blijven intact. Herhaalde lokale schermwisselingen circa 0,06–0,21 s, ook met 250 ms toegevoegde netwerkvertraging. Geen claim over gepubliceerde snelheid.
+- [x] Patiëntlogin en portaal met echte demo-inlogknoppen: Sanne returnTo Profiel hersteld, merk behouden in tokenlink, afspraak vandaag blijft toekomstig tot het tijdstip en toont vandaag i.p.v. morgen.
+- [x] Agenda, receptie en dossier als Rob nagelopen. Beide SOEP-editors delen seriële coalesced opslag; SOEP + stapnotitie na herladen behouden; incomplete geladen afrondlijst blokkeert; parkeren bevestigd verdwenen.
+- [x] Gerichte regressietests en browsercontrole uitgevoerd; volledige suite 539 tests in 57 bestanden groen. Legacy consult zonder bevroren sjabloon wordt veilig geweigerd bij afronden; geen bypass. Een CancelledError bij snelle patiënt/staff-sessiewissel, geen zichtbare schermfout in deze proef.
+
 ## Mijn omgeving v0.1 — eigenaar 20-10
 - [x] A: gedeeld mobiel/desktopkader, tokens, afzonderlijke patiëntlogin via tienminutenlink, landingsregel, navigatie en vier demopatiënten; ieder via echte link op 390px/1440px gecontroleerd. Patiëntisolatie, medewerkers-/patiëntgrenzen, herladen, onbekende mail en eenmalig gebruik gecontroleerd; 42 gerichte tests groen. Demo-mails in bestaande outbox. Stop voor go.
   - Afbakening: volledige cosmetische historie/afspraken, behandeltrajecten en programmeerschermen volgen B/D; fase A toont Start-identiteit met demo-aantallen en pakket/meetbronnen, nog geen gefactureerde historische afspraken. Mails blijven demo_only, geen externe bezorging. Geen extra Profiel-tabel; bestaand dossier hergebruikt. Screenshots staan in Files onder Mijn-omgeving-fase-A.

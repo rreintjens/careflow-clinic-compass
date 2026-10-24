@@ -109,7 +109,7 @@ export function Sidebar({ fullName, email, roleName, onSignOut, tenants = [], on
         {MAIN.map((m) => {
           const active = pathname === m.to || pathname.startsWith(`${m.to}/`);
           return (
-            <Link key={m.to} to={m.to} className={cn(rowBase, active ? "bg-sidebar-accent text-primary" : "text-foreground hover:text-primary")}>
+            <Link key={m.to} to={m.to} preload="intent" className={cn(rowBase, active ? "bg-sidebar-accent text-primary" : "text-foreground hover:text-primary")}>
               {m.icon}
               {m.label}
             </Link>
@@ -137,6 +137,7 @@ export function Sidebar({ fullName, email, roleName, onSignOut, tenants = [], on
                     <Link
                       key={it.to}
                       to={it.to}
+                      preload="intent"
                       aria-current={active ? "page" : undefined}
                       className={cn(
                         "flex h-10 items-center whitespace-nowrap rounded-xl pl-11 pr-3 text-sm font-medium",

@@ -15,8 +15,11 @@
 - TanStack Start (not React Router); app-internal server logic in `createServerFn`, never new Edge Functions — platform stack.
 - Tested logic in `src/domain/`, queries in `src/data/`, shared UI in `src/components/`; extend props, never duplicate.
 - Agenda shares AgendaToolbar; booking shares slots with online-location IDs/block flags to prevent mixed-consult conflicts.
+- Agenda day/week practitioner filters use URL-backed multiple selections and shared SearchablePicker; week tracks retain practitioner identity so schedules and busy blocks cannot mix between people.
+- Patient directory reads identity rows under existing RLS, independently of appointment dates; its URL search filters the loaded identities, with stable ranged reads to avoid silently truncated lists.
 - Configuration (settings, option lists, texts, roles, permissions, landing pages) lives in DB rows; code never contains those values.
 - Staff area: session + aal2 when `mfa_required()` + active role; RLS/server use `is_aal2()` + `has_permission()`. `mfa_required()` is false in test mode (demo) — one switch, so layers can't diverge.
+- UI navigation checks may reuse a verified result for 30 seconds per session/tenant; identity/MFA changes clear it. RLS/server authorization is never cached or skipped. Query data uses short freshness and mutation invalidation; reference catalogs stay fresh longer to avoid repeated full reloads.
 - Password sign-in enforces lockout server-side. Server functions log auth events; audit_log stays append-only.
 - `signInDemo`: passwordless for group setting `demo_login_email`, refused server-side unless its tenant is in test mode.
 - Identity columns only in `patients`; medical data goes in separate tables without identity columns.
@@ -40,8 +43,8 @@
 - Preparation gates reminder mail by missing data/validity; fee tokens expose amount/status, with test-mode payment and compare-and-set.
 - Portal uses patient gates, hashed links and RLS; profile edits derive owner from them. Clinical detail is an audited final/shared projection, never raw notes. Copy is DB config.
 - DemoPatientLogins uses configured profile labels and server-gated portal links; no parallel auth flow.
-- ActiveConsultMode owns the template workflow beside its unchanged bar and notes panel; legacy consult URLs redirect to the dossier rather than render a second workflow.
-- Consult closing and the notes-panel checklist both reuse closeChecklist with the resolved frozen template; medical-only requirements must not leak into cosmetic consults.
+- ActiveConsultMode owns shared SOEP state and a coalesced serial autosave queue for both editors; flush before parking/closing to prevent cross-editor cancellation and stale overwrites. Legacy consult URLs redirect to the dossier.
+- Consult closing and the notes-panel checklist both reuse closeChecklist with the resolved frozen template; finalization validates persisted requirements in an authenticated server function and compares updated_at, never copying stale editor text. Medical-only requirements must not leak into cosmetic consults.
 - Consent shares SignaturePad; forms publish atomically via permission-checked RPC; consults freeze text/version snapshots and refuse missing text.
 - Billing uses catalog prices and bounded till discounts; invoices stay immutable; reception sees no medical answers.
 - Treatment settings share one validated modal; public availability never restricts staff booking.

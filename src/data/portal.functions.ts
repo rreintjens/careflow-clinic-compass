@@ -4,7 +4,7 @@ import { z } from 'zod';
 import type { Json } from '@/integrations/supabase/types';
 import { getRequest } from '@tanstack/react-start/server';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
-import { portalEmailSchema, portalTokenSchema, portalLanding, PORTAL_LINK_MINUTES, feedbackSchema, readMaConfig, packageTotal, packageEnd } from '@/domain/portal';
+import { portalEmailSchema, portalTokenSchema, portalLinkPath, portalLanding, PORTAL_LINK_MINUTES, feedbackSchema, readMaConfig, packageTotal, packageEnd } from '@/domain/portal';
 
 const digest = async (v: string) => Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(v))), b=>b.toString(16).padStart(2,'0')).join('');
 export const portalLoginInfo = createServerFn({method:'GET'}).handler(async()=>{
@@ -43,7 +43,7 @@ export const sendPortalLink=createServerFn({method:'POST'}).inputValidator((d:un
  if(p){
  const {data:cfg}=await db.from('portal_config').select('content').eq('tenant_id',t.id).single(); const c=cfg?.content;
  const txt=(k:string)=>c&&typeof c==='object'&&!Array.isArray(c)&&typeof c[k]==='string'?String(c[k]):'';
- const origin=new URL(getRequest().url).origin; const path=`/mijn/link/${raw}`; const url=(origin.startsWith('https:')?origin:'https://careflow-clinic-compass.lovable.app')+path;
+ const origin=new URL(getRequest().url).origin; const path=portalLinkPath(raw,data.merk); const url=(origin.startsWith('https:')?origin:'https://careflow-clinic-compass.lovable.app')+path;
  const {theme}=await import('./mailer.server'); const {renderMailDocument}=await import('@/domain/mail-document'); const {allowlisted}=await import('@/domain/mail');
  const {data:st}=await db.from('settings').select('value').eq('tenant_id',t.id).eq('key','mail_allowlist').maybeSingle();
   const blank={condition:'always',title_en:'',text_en:'',button_en:'',image:''};
@@ -59,12 +59,12 @@ export const sendPortalLink=createServerFn({method:'POST'}).inputValidator((d:un
  const saved=await db.from('mail_outbox').insert({tenant_id:t.id,patient_id:p.id,recipient:data.email,subject,html,moment:'portal_login',status:allowlisted(st?.value,data.email)?'waiting_domain':'demo_only'}); if(saved.error)throw new Error('Probeer het later opnieuw.');
  // Test-mode link is also returned for unknown addresses, preserving a uniform sending response.
  }
- if(t.test_mode)result.demoLink=`/mijn/link/${raw}`;
+ if(t.test_mode)result.demoLink=portalLinkPath(raw,data.merk);
  result.held=held;
  return result;
 });
 export const redeemPortalLink=createServerFn({method:'POST'}).inputValidator((d:unknown)=>portalTokenSchema.parse(d)).handler(async({data})=>{
- const {resolveTenant,admin}=await import('./booking.server'); const t=await resolveTenant(undefined); if(!t)throw new Error('De link is ongeldig of verlopen.'); const db=await admin();
+ const {resolveTenant,admin}=await import('./booking.server'); const t=await resolveTenant(data.merk); if(!t)throw new Error('De link is ongeldig of verlopen.'); const db=await admin();
  const {data:rows,error}=await db.rpc('portal_claim_token',{_hash:await digest(data.token),_tenant:t.id}); const tok=rows?.[0]; if(error||!tok)throw new Error('De link is ongeldig of verlopen.');
  const rcRaw=tok.return_context; const draft=rcRaw&&typeof rcRaw==='object'&&!Array.isArray(rcRaw)?rcRaw as {portalPath?:string;booking?:string;holdToken?:string|null;confirm?:boolean;triage?:{key:string;versionId:string|null;answers:Record<string,unknown>}|null}:null;
  if(!tok.patient_id){

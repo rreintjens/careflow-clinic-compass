@@ -6,7 +6,7 @@ import { PillButton } from '@/components/PillButton';
 import { portalLoginInfo, sendPortalLink } from '@/data/portal.functions';
 
 /** Demo shortcuts use the existing single-use patient-link flow and its server test-mode gate. */
-export function DemoPatientLogins() {
+export function DemoPatientLogins({ returnTo }: { returnTo?: string | undefined }) {
   const { data } = useQuery({ queryKey: ['portal-demo-logins'], queryFn: () => portalLoginInfo(), staleTime: 60_000 });
   const send = useServerFn(sendPortalLink);
   const navigate = useNavigate();
@@ -22,10 +22,11 @@ export function DemoPatientLogins() {
     if (busy) return;
     setBusy(email); setError('');
     try {
-      const result = await send({ data: { email } });
-      const token = result.demoLink?.split('/').at(-1);
+      const result = await send({ data: { email, returnTo } });
+      const link = result.demoLink ? new URL(result.demoLink, window.location.origin) : null;
+      const token = link?.pathname.split('/').at(-1);
       if (!token) throw new Error('Inloggen is niet gelukt. Probeer het later opnieuw.');
-      await navigate({ to: '/mijn/link/$token', params: { token } });
+      await navigate({ to: '/mijn/link/$token', params: { token }, search: { merk: link?.searchParams.get('merk') ?? undefined } });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Inloggen is niet gelukt.');
       setBusy(null);

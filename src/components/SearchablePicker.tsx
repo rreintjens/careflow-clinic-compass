@@ -18,9 +18,11 @@ export interface SearchablePickerProps {
   disabled?: boolean | undefined;
   className?: string | undefined;
   inline?: boolean | undefined;
+  selectionPlacement?: "inside" | "below" | undefined;
+  preserveOrder?: boolean | undefined;
 }
 
-function enrich(options: readonly PickerOption[], org: Org | undefined): PickerOption[] {
+function enrich(options: readonly PickerOption[], org: Org | undefined, preserveOrder = false): PickerOption[] {
   if (!org) return [...options];
   const path = (id: string): string => {
     const category = org.categories.find(c => c.id === id);
@@ -39,6 +41,7 @@ function enrich(options: readonly PickerOption[], org: Org | undefined): PickerO
     if (category) return { ...option, group: option.group ?? path(category.parent_id ?? category.id) };
     return option;
   }).sort((a, b) => {
+    if (preserveOrder) return 0;
     const online = (value: string) => org.locations.some(l => l.id === value && l.kind === "online");
     return Number(online(b.value)) - Number(online(a.value));
   });
@@ -57,7 +60,7 @@ export function SearchablePicker(props:SearchablePickerProps) {
   const client=useContext(QueryClientContext);
   return <Picker {...props} queryClient={client??fallbackQueryClient}/>;
 }
-function Picker({ label, options, value, onChange, multiple, help, disabled, className, inline,queryClient }: SearchablePickerProps & {queryClient:QueryClient}) {
+function Picker({ label, options, value, onChange, multiple, help, disabled, className, inline, selectionPlacement, preserveOrder, queryClient }: SearchablePickerProps & {queryClient:QueryClient}) {
   const id = useId();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -67,7 +70,7 @@ function Picker({ label, options, value, onChange, multiple, help, disabled, cla
   const hasIds = options.some(o => /^[0-9a-f]{8}-/i.test(o.value));
   const { data: fetchedOrg } = useQuery({ ...orgQuery, enabled: open && hasIds, staleTime: 60_000 },queryClient);
   const org = fetchedOrg ?? qc.getQueryData<Org>(orgQuery.queryKey);
-  const enriched = useMemo(() => enrich(options, org), [options, org]);
+  const enriched = useMemo(() => enrich(options, org, preserveOrder), [options, org, preserveOrder]);
   const selected = typeof value === "string" ? [value] : value;
   const chosen = enriched.filter(o => selected.includes(o.value));
   const filtered = filterPickerOptions(enriched, search);
@@ -84,7 +87,7 @@ function Picker({ label, options, value, onChange, multiple, help, disabled, cla
       <Popover.Trigger asChild>
         <PillButton id={id} role="combobox" aria-expanded={open} aria-controls={`${id}-list`} aria-label={label} disabled={disabled} variant="ghost" className={cn("h-auto min-h-12 w-full justify-between rounded-[14px] bg-sand px-4 py-2 text-left font-normal text-foreground hover:bg-sand", inline && "min-h-9 rounded-[10px] bg-background text-sm") }>
           <span className="flex min-w-0 flex-wrap gap-1.5">
-            {multiple ? chosen.map(option => <span key={option.value} className="flex items-center gap-1 rounded-full bg-background px-2.5 py-1 text-sm"><span className="whitespace-normal">{option.label}</span><span role="button" tabIndex={0} aria-label={`${option.label} verwijderen`} onClick={e => { e.preventDefault(); e.stopPropagation(); onChange(selected.filter(v => v !== option.value)); }} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onChange(selected.filter(v => v !== option.value)); } }}><UiIcon name="kruis" className="h-3 w-3" /></span></span>) : <span className="truncate">{chosen[0]?.label ?? label}</span>}
+            {multiple && selectionPlacement === "below" ? <span>{label}</span> : multiple ? chosen.map(option => <span key={option.value} className="flex items-center gap-1 rounded-full bg-background px-2.5 py-1 text-sm"><span className="whitespace-normal">{option.label}</span><span role="button" tabIndex={0} aria-label={`${option.label} verwijderen`} onClick={e => { e.preventDefault(); e.stopPropagation(); onChange(selected.filter(v => v !== option.value)); }} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); onChange(selected.filter(v => v !== option.value)); } }}><UiIcon name="kruis" className="h-3 w-3" /></span></span>) : <span className="truncate">{chosen[0]?.label ?? label}</span>}
           </span>
           <UiIcon name="zoeken" className="h-4 w-4 text-primary" />
         </PillButton>
@@ -114,6 +117,7 @@ function Picker({ label, options, value, onChange, multiple, help, disabled, cla
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>
+    {multiple && selectionPlacement === "below" && chosen.length > 0 && <div className="flex flex-wrap gap-2" aria-label="Geselecteerde behandelaars">{chosen.map(option => <PillButton key={option.value} variant="ghost" size="sm" className="h-auto whitespace-normal bg-teal-light text-primary" aria-label={`${option.label} verwijderen`} onClick={() => onChange(selected.filter(v => v !== option.value))}><UiIcon name="kruis" className="size-3 shrink-0" />{option.photoPath && <Avatar path={option.photoPath} size={24} />}{option.label}</PillButton>)}</div>}
     {help && <span className="text-xs leading-[1.45] text-muted-foreground">{help}</span>}
   </div>;
 }
