@@ -152,7 +152,7 @@ function Page() {
             </div>
           ) : <p className="text-[13px] text-muted-foreground">{view.cols.filter(c => !c.key.includes(":" )).length} behandelaars ingeroosterd op deze dag</p>}
           {view.cols.length > 0 && <div>
-            <div ref={headRef} aria-hidden={false} className="agenda-head sticky top-16 z-20 overflow-hidden bg-background lg:top-0">
+            <div ref={headRef} className="agenda-head sticky top-16 z-20 overflow-hidden bg-background lg:top-0">
             <div className="grid w-full min-w-0 pt-2" style={{ gridTemplateColumns: template }}>
               <span className="sticky left-0 z-10 bg-background" />
               {view.cols.map((c) => week
