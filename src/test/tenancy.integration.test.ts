@@ -113,6 +113,21 @@ describe.skipIf(!enabled)("tenancy (03_MULTI_TENANT §8)", () => {
     expect(cross.error).not.toBeNull();
   });
 
+  it("optimized agenda reference policies retain own-tenant reads and reject a known other-tenant row", async () => {
+    const c = await signIn("admin@example.test", "tbc-nl");
+    const own = await c.from("practitioner_treatments").select("practitioner_id,treatment_id,tenant_id").limit(1);
+    expect(own.error).toBeNull();
+    expect(own.data).toHaveLength(1);
+    const row = own.data?.[0];
+    if (!row) throw new Error("Missing reference test row");
+    expect(row.tenant_id).toBe(tenantId("tbc-nl"));
+    await switchTo(c, await uid(c), "tbc-de");
+    const other = await c.from("practitioner_treatments").select("tenant_id").eq("practitioner_id", row.practitioner_id).eq("treatment_id", row.treatment_id);
+    expect(other.error).toBeNull();
+    expect(other.data).toEqual([]);
+    await switchTo(c, await uid(c), "tbc-nl");
+  });
+
   it("unknown booking host resolves to no tenant; configured hosts resolve to their own tenant", async () => {
     const a = anonClient();
     const unknown = await a.rpc("resolve_tenant_by_host", { _host: "evil.example.com" });

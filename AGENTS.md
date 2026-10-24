@@ -17,6 +17,7 @@
 - Agenda shares AgendaToolbar; booking shares slots with online-location IDs/block flags to prevent mixed-consult conflicts.
 - Agenda filter pills reuse SearchablePicker's below-selection rendering for single and multiple selection; selectionOptions excludes all-options so clearing a pill restores the unfiltered state.
 - Organisation reference reads use one authenticated server function with at most six concurrent RLS reads; agenda reuses that query cache, warms references after staff sign-in, and shares week appointment ranges across day/week navigation to avoid duplicate requests. Schedule edits invalidate agenda references.
+- Reference SELECT policies evaluate stable caller-only checks through statement InitPlans, preserving every existing staff/patient and tenant predicate; never cache authorization between database requests.
 - Agenda day/week practitioner filters use URL-backed multiple selections and shared SearchablePicker; week tracks retain practitioner identity so schedules and busy blocks cannot mix between people.
 - Agenda picker and tracks derive visibility from location-filtered daySegments or existing appointments; resource tracks require a visible practitioner work segment so unscheduled days stay empty. Shared picker selectionOptions preserve removable selections independently of current eligibility.
 - Patient directory reads identity rows under existing RLS, independently of appointment dates; its URL search filters the loaded identities, with stable ranged reads to avoid silently truncated lists.
