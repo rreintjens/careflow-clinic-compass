@@ -8,7 +8,7 @@ import {
   Scripts,
   type ErrorComponentProps,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -120,9 +120,16 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
 
+  const lastIdentity = useRef<string | null>(null);
   useEffect(() => {
-    const { data } = supabase.auth.onAuthStateChange((event) => {
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      const identity = session ? `${session.user.id}:${String(session.user.app_metadata['active_tenant'] ?? '')}` : '';
+      if (event === 'INITIAL_SESSION') { lastIdentity.current = identity; return; }
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED" && event !== "MFA_CHALLENGE_VERIFIED") return;
+      // SIGNED_IN also fires when an unchanged session is recovered on tab focus.
+      if (event === 'SIGNED_IN' && lastIdentity.current === identity) return;
+      lastIdentity.current = identity;
+      queryClient.removeQueries({queryKey:['staff-navigation-check']});
       router.invalidate();
       if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
     });

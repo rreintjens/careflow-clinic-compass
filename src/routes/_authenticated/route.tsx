@@ -16,6 +16,15 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async ({ context }) => {
+    // Local session only identifies the UI cache; the cached check validates with getUser.
+    // Data access always remains independently enforced by RLS/server middleware.
+    const { data: session } = await supabase.auth.getSession();
+    if (!session.session) throw redirect({ to: '/auth' });
+    await context.queryClient.fetchQuery({
+      queryKey: ['staff-navigation-check', session.session.user.id, session.session.user.app_metadata['active_tenant'], session.session.expires_at],
+      staleTime: 30_000,
+      retry: false,
+      queryFn: async () => {
     const { data } = await supabase.auth.getUser();
     if (!data.user) throw redirect({ to: "/auth" });
     const aal = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
@@ -24,12 +33,14 @@ export const Route = createFileRoute("/_authenticated")({
       const { data: required } = await supabase.rpc("mfa_required");
       if (required !== false) throw redirect({ to: "/auth/2fa" });
     }
-    const staff = await context.queryClient.ensureQueryData(staffContextQuery);
-    await context.queryClient.ensureQueryData(myTenantsQuery);
+    const [staff] = await Promise.all([context.queryClient.ensureQueryData(staffContextQuery), context.queryClient.ensureQueryData(myTenantsQuery), context.queryClient.ensureQueryData(appFlagsQuery)]);
     if (!staff) {
       await supabase.auth.signOut();
       throw redirect({ to: "/auth" });
     }
+    return true;
+      },
+    });
   },
   component: StaffLayout,
 });

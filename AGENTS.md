@@ -17,6 +17,7 @@
 - Agenda shares AgendaToolbar; booking shares slots with online-location IDs/block flags to prevent mixed-consult conflicts.
 - Configuration (settings, option lists, texts, roles, permissions, landing pages) lives in DB rows; code never contains those values.
 - Staff area: session + aal2 when `mfa_required()` + active role; RLS/server use `is_aal2()` + `has_permission()`. `mfa_required()` is false in test mode (demo) — one switch, so layers can't diverge.
+- UI navigation checks may reuse a verified result for 30 seconds per session/tenant; identity/MFA changes clear it. RLS/server authorization is never cached or skipped. Query data uses short freshness and mutation invalidation; reference catalogs stay fresh longer to avoid repeated full reloads.
 - Password sign-in enforces lockout server-side. Server functions log auth events; audit_log stays append-only.
 - `signInDemo`: passwordless for group setting `demo_login_email`, refused server-side unless its tenant is in test mode.
 - Identity columns only in `patients`; medical data goes in separate tables without identity columns.

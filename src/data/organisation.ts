@@ -27,6 +27,7 @@ function must<D>(r: { data: D | null; error: unknown }): D {
 /** Everything the organisation screens read; small reference data, loaded together. */
 export const orgQuery = queryOptions({
   queryKey: ["org"],
+  staleTime: 5 * 60_000,
   queryFn: async () => {
     const [
       options, roles, languages, locations, hours, rooms, equipment, dayLocs, kinds, types, categories, treatments,
