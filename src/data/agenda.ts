@@ -2,7 +2,8 @@ import { queryOptions } from "@tanstack/react-query";
 
 import { supabase } from "@/integrations/supabase/client";
 import { agendaStatuses } from "@/domain/appointment-status";
-import { orgQuery } from "./organisation";
+import { orgQuery, type Org } from "./organisation";
+import { getOrganisation } from "./organisation-read.functions";
 
 function must<D>(r: { data: D | null; error: unknown }): D {
   if (r.error) throw r.error;
@@ -10,10 +11,10 @@ function must<D>(r: { data: D | null; error: unknown }): D {
 }
 
 /** Reference data for the agenda (practitioners, schedules, catalogue); RLS scopes to the active tenant. */
-export async function loadAgendaRef() {
+export async function loadAgendaRef(organisation: Promise<Org> = getOrganisation()) {
   {
     const [org, blocks, exc] = await Promise.all([
-      orgQuery.queryFn(),
+      organisation,
       supabase.from("schedule_blocks").select("practitioner_id, weekday, location_id, starts, ends, recurrence, valid_from, valid_until, treatment_ids, allows_online"),
       supabase.from("schedule_exceptions").select("practitioner_id, kind, date_from, date_to, starts, ends, location_id"),
     ]);
@@ -24,7 +25,7 @@ export async function loadAgendaRef() {
   }
 }
 export type AgendaRef = Awaited<ReturnType<typeof loadAgendaRef>>;
-export const agendaRefQuery = queryOptions({ queryKey: ["agenda-ref"], queryFn: loadAgendaRef, staleTime: 60_000 });
+export const agendaRefQuery = queryOptions({ queryKey: ["agenda-ref"], queryFn: ({ client }) => loadAgendaRef(client.fetchQuery(orgQuery)), staleTime: 60_000 });
 
 /** Booked appointments between two UTC instants. */
 export async function loadAgendaAppts(from: string, to: string) {
