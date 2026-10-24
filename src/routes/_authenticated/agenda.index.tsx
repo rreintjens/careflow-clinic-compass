@@ -151,7 +151,7 @@ function Page() {
             <div className="grid w-full min-w-0" style={{ gridTemplateColumns: `56px repeat(${Math.max(1, view.cols.length)}, ${week ? "148px" : "minmax(190px, 1fr)"})` }}>
               <span />
               {view.cols.map((c) => week
-                ? <div key={c.key} className="min-w-0 px-1.5 pb-3"><p className={cn("truncate text-[13px]", c.today && "font-semibold text-primary")}>{c.title}</p><div className="mt-1.5 flex items-center gap-1.5"><Avatar path={c.photo ?? null} size={24} /><span className="truncate text-[11px]">{c.sub}</span></div></div>
+                ? <Link key={c.key} to="/agenda" search={{ datum: c.date, locatie: s.locatie, behandelaar: c.practitionerId }} aria-label={`Bekijk de dag van ${c.sub}`} className="block min-w-0 rounded-[12px] px-1.5 pb-3 text-left transition-colors hover:bg-teal-light focus-visible:outline-2 focus-visible:outline-primary"><p className={cn("truncate text-[13px]", c.today && "font-semibold text-primary")}>{c.title}</p><div className="mt-1.5 flex items-center gap-1.5"><Avatar path={c.photo ?? null} size={24} className="shrink-0" /><span className="truncate text-[11px]">{c.sub}</span></div></Link>
                 : (
                   <Link key={c.key} to="/agenda/mijn-dag" disabled={c.key.includes(":")} search={{ datum: date, behandelaar: c.key }} aria-label={`Bekijk de dag van ${c.title}`} className="flex items-center gap-2 rounded-[12px] px-1.5 pb-3 text-left transition-colors hover:bg-teal-light focus-visible:outline-2 focus-visible:outline-primary">
                     <Avatar path={c.photo ?? null} size={28} className="shrink-0" />
