@@ -5,8 +5,39 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database, Json } from "@/integrations/supabase/types";
 import { mockPharmacyProvider, mockSecureMailProvider } from "@/domain/consult-providers";
-import { nextPharmacyStatus } from "@/domain/consult-steps";
+import { closeChecklist, nextPharmacyStatus } from "@/domain/consult-steps";
 import { readStepData } from '@/domain/consult-steps';
+import { mergeTemplates, readContent } from '@/domain/dossier-templates';
+
+/** Finalization validates persisted content, never stale values from another editor. */
+export const finishConsult = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ noteId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const db = context.supabase;
+    await medical(db);
+    const note = await db.from('consult_notes').select('id, status, subjective, objective, evaluation, plan, step_data, template_version_ids, updated_at').eq('id', data.noteId).single();
+    if (note.error || !note.data || !['draft', 'parked'].includes(note.data.status)) throw new Error('Consult niet beschikbaar');
+    const ids = note.data.template_version_ids ?? [];
+    if (!ids.length) throw new Error('Het consultsjabloon ontbreekt');
+    const [versions, prescription, photos] = await Promise.all([
+      db.from('dossier_template_versions').select('id, content').in('id', ids),
+      db.from('prescriptions').select('status, signature').eq('consult_note_id', data.noteId).neq('status', 'ingetrokken').order('created_at', { ascending: false }).limit(1).maybeSingle(),
+      db.from('consult_photos').select('id', { count: 'exact', head: true }).eq('consult_note_id', data.noteId),
+    ]);
+    if (versions.error || prescription.error || photos.error || versions.data.length !== ids.length) throw new Error('De afrondcontrole kon niet worden geladen');
+    const content = mergeTemplates(versions.data.map(v => readContent(v.content)));
+    const n = note.data;
+    const items = closeChecklist(content, readStepData(n.step_data), {
+      prescriptionSigned: !!prescription.data?.signature && prescription.data.status !== 'concept',
+      photoCount: photos.count ?? 0,
+      soepFilled: [n.subjective,n.objective,n.evaluation,n.plan].filter(v => v.trim()).length,
+    });
+    if (items.some(i => !i.done)) throw new Error('Vul eerst de ontbrekende onderdelen van het consult in');
+    const saved = await db.from('consult_notes').update({status:'final', finished_at:new Date().toISOString()}).eq('id', data.noteId).eq('updated_at', n.updated_at).in('status',['draft','parked']).select('id').maybeSingle();
+    if (saved.error || !saved.data) throw new Error('Het consult is gewijzigd. Controleer het opnieuw');
+    return {ok:true};
+  });
 
 const medical = async (sb: SupabaseClient<Database>, perm = "patients.medical") => {
   if (!(await sb.rpc("is_aal2")).data || !(await sb.rpc("has_permission", { _perm: perm })).data) throw new Error("Geen toegang");
