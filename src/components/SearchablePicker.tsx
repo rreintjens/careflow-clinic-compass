@@ -39,8 +39,8 @@ function enrich(options: readonly PickerOption[], org: Org | undefined, preserve
     const category = org.categories.find(c => c.id === option.value);
     if (practitioner) return { ...option, group: option.group ?? roleName(org, practitioner.role_id), photoPath: practitioner.photo_path, detail: option.detail ?? org.practitionerLocations.filter(l => l.practitioner_id === practitioner.id).map(l => org.locations.find(x => x.id === l.location_id)?.name).filter(Boolean).join(", "), keywords: [option.keywords, fullName(practitioner)].filter(Boolean).join(" ") };
     if (treatment) return { ...option, group: option.group ?? org.categoryLinks.filter(l => l.treatment_id === treatment.id).map(l => path(l.category_id)).filter(Boolean).join(" / "), detail: option.detail ?? `${treatment.duration_min} minuten` };
-    if (location) return { ...option, group: option.group ?? (location.kind === "online" ? location.name : "Klinieken"), detail: option.detail ?? [location.address, location.postal_city].filter(Boolean).join(", ") };
-    if (category) return { ...option, group: option.group ?? path(category.parent_id ?? category.id) };
+    if (location) return { ...option, detail: option.detail ?? [location.address, location.postal_city].filter(Boolean).join(", ") };
+    if (category) return { ...option, group: option.group ?? path(category.parent_id ?? "") };
     return option;
   }).sort((a, b) => {
     if (preserveOrder) return 0;

@@ -148,17 +148,17 @@ function Page() {
             </div>
           ) : <p className="text-[13px] text-muted-foreground">{view.cols.filter(c => !c.key.includes(":" )).length} behandelaars ingeroosterd op deze dag</p>}
           {view.cols.length > 0 && <div className="overflow-x-auto">
-            <div className="grid min-w-max" style={{ gridTemplateColumns: `56px repeat(${Math.max(1, view.cols.length)}, minmax(340px, 1fr))` }}>
-              <span />
+            <div className="grid w-full min-w-0" style={{ gridTemplateColumns: `56px repeat(${Math.max(1, view.cols.length)}, ${week ? "148px" : "minmax(190px, 1fr)"})` }}>
+              <span className="sticky top-0 z-10 bg-background" />
               {view.cols.map((c) => week
-                ? <div key={c.key} className="px-2 pb-3"><p className={cn("text-[14px]", c.today && "font-semibold text-primary")}>{c.title}</p><div className="mt-2 flex items-center gap-2"><Avatar path={c.photo ?? null} size={28} /><span className="text-xs">{c.sub}</span></div></div>
+                ? <Link key={c.key} to="/agenda" search={{ datum: c.date, locatie: s.locatie, behandelaar: c.practitionerId }} aria-label={`Bekijk de dag van ${c.sub}`} className="sticky top-0 z-10 block min-w-0 rounded-[12px] bg-background px-1.5 pb-3 text-left transition-colors hover:bg-teal-light focus-visible:outline-2 focus-visible:outline-primary"><p className={cn("truncate text-[13px]", c.today && "font-semibold text-primary")}>{c.title}</p><div className="mt-1.5 flex items-center gap-1.5"><Avatar path={c.photo ?? null} size={24} className="shrink-0" /><span className="truncate text-[11px]">{c.sub}</span></div></Link>
                 : (
-                  <Link key={c.key} to="/agenda/mijn-dag" disabled={c.key.includes(":")} search={{ datum: date, behandelaar: c.key }} aria-label={`Bekijk de dag van ${c.title}`} className="flex items-center gap-3 rounded-[12px] px-2 pb-3 text-left transition-colors hover:bg-teal-light focus-visible:outline-2 focus-visible:outline-primary">
-                    <Avatar path={c.photo ?? null} size={36} />
-                    <div className="min-w-0"><p className="whitespace-nowrap text-[14px] font-semibold">{c.title}</p><p className="whitespace-nowrap text-[12px] text-muted-foreground">{c.sub}</p></div>
+                  <Link key={c.key} to="/agenda/mijn-dag" disabled={c.key.includes(":")} search={{ datum: date, behandelaar: c.key }} aria-label={`Bekijk de dag van ${c.title}`} className="sticky top-0 z-10 flex items-center gap-2 rounded-[12px] bg-background px-1.5 pb-3 text-left transition-colors hover:bg-teal-light focus-visible:outline-2 focus-visible:outline-primary">
+                    <Avatar path={c.photo ?? null} size={28} className="shrink-0" />
+                    <div className="min-w-0"><p className="truncate text-[13px] font-semibold">{c.title}</p><p className="truncate text-[11px] text-muted-foreground">{c.sub}</p></div>
                   </Link>
                 ))}
-              <div className="relative" style={{ height: (view.range[1] - view.range[0]) * HOUR }}>
+              <div className="sticky left-0 z-10 bg-background" style={{ height: (view.range[1] - view.range[0]) * HOUR }}>
                 {Array.from({ length: view.range[1] - view.range[0] + 1 }, (_, i) => <span key={i} className="absolute right-2 -translate-y-1/2 text-[12px] text-muted-foreground" style={{ top: i * HOUR }}>{fmtTime((view.range[0] + i) * 60)}</span>)}
               </div>
               {view.cols.map((c) => (
@@ -204,7 +204,7 @@ function SegBox({ g, top0, name, online }: { g: Segment; top0: number; name: str
   const top = ((g.start - top0 * 60) / 60) * HOUR, h = ((g.end - g.start) / 60) * HOUR;
   return (
     <div className={cn("absolute inset-x-1 rounded-[10px]", g.kind === "break" ? "hatch" : online ? "bg-teal-light" : "bg-sand")} style={{ top, height: h }}>
-      <span className="absolute bottom-1.5 right-2.5 text-[11px] text-muted-foreground">{g.kind === "break" ? "Pauze" : name}</span>
+      <span className="absolute bottom-1.5 right-2 max-w-[calc(100%-16px)] truncate text-[11px] text-muted-foreground">{g.kind === "break" ? "Pauze" : name}</span>
     </div>
   );
 }
