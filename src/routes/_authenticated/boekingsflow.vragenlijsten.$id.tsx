@@ -257,7 +257,7 @@ function Builder() {
           {archived ? <VersionPill tone="archive">Archief · versie {archived.version_no}</VersionPill>
             : inEdit && draft ? <VersionPill tone="draft">Concept · versie {draft.version_no}, nog niet live</VersionPill>
             : pub ? <VersionPill tone="live">Live · versie {pub.version_no}</VersionPill> : null}
-          <div className="ml-auto flex gap-2">
+          <div className="ml-auto flex flex-wrap gap-2">
             {!inEdit && !archived && testLink(pub, "Test als patiënt")}
             <PillButton variant="outline" onClick={() => setEdit({ kind: "versions" })}><UiIcon name="klok" className="size-4" />Versies</PillButton>
             {!inEdit && !archived && pub && !draft && <PillButton onClick={startEdit} disabled={mut.isPending}>Aanpassen</PillButton>}
@@ -361,7 +361,7 @@ function Builder() {
 
       {Object.keys(settings).some((k) => k === "bmi") && (
         <Card title="Grenswaarden" description={`Waarden van versie ${working.version_no}${inEdit ? " · concept" : " · alleen-lezen"}.`} action={inEdit && pub && configurationChanges(pub.version_config, working.version_config).length > 0 ? <VersionPill tone="draft">Gewijzigd</VersionPill> : undefined}>
-          <table className="w-full">
+          <div className="min-w-0 overflow-x-auto"><table className="w-full">
             <thead><tr className="border-b border-line"><th className={thCls}>Regel</th><th className={thCls}>Standaard</th><th className={thCls}>Verlaagd, bij herkomst uit de genoemde regio’s</th></tr></thead>
             <tbody className="divide-y divide-line">
               {THRESHOLDS.map((r) => {
@@ -369,20 +369,20 @@ function Builder() {
                 return <tr key={r.label}><td className={tdCls}>{names.thresholds[r.std] || r.label}</td><td className={tdCls}>{v(r.std)}{r.unit ?? ""}</td><td className={tdCls}>{v(r.red)}{r.unit ?? ""}</td></tr>;
               })}
             </tbody>
-          </table>
+          </table></div>
           {editable && <div className="mt-4"><PillButton variant="outline" onClick={() => setEdit({ kind: "thresholds" })}>Grenswaarden wijzigen</PillButton></div>}
         </Card>
       )}
 
       <Card title="Berekende velden" description="Eenvoudige formules met velden tussen accolades. Je gebruikt ze in voorwaarden en in teksten.">
-        <table className="w-full" onClick={rowOpen}>
+        <div className="min-w-0 overflow-x-auto"><table className="w-full" onClick={rowOpen}>
           <thead><tr className="border-b border-line"><th className={thCls}>Veld</th><th className={thCls}>Formule</th><th className={thCls}>Voorbeeld</th><th className={thCls} /></tr></thead>
           <tbody className="divide-y divide-line">
             {Object.entries(computed).map(([k, f]) => (
               <tr key={k} {...(editable ? { "data-list-row": "" } : {})}><td className={tdCls}>{names.computed[k] || "Berekend veld zonder naam"}</td><td className={cn(tdCls, "font-mono text-xs")}>{f}</td><td className={tdCls}>{sample(f)}</td><td className={tdCls}>{editable && <button type="button" data-row-action aria-label={`${names.computed[k] || k} wijzigen`} onClick={() => setEdit({ kind: "computed", name: k })} className="text-primary"><RowChevron /></button>}</td></tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
         {editable && <div className="mt-4"><PillButton variant="outline" onClick={() => setEdit({ kind: "computed", name: null })}><PlusIcon />Berekend veld toevoegen</PillButton></div>}
       </Card>
 
