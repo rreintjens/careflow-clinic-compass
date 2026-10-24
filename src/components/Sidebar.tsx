@@ -1,5 +1,9 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
+import { Menu } from "lucide-react";
+import { PillButton } from "./PillButton";
+import { UiIcon } from "./UiIcon";
 
 import { Logo } from "@/components/Logo";
 import { Select } from "@/components/Select";
@@ -87,11 +91,13 @@ export function Sidebar({ fullName, email, roleName, onSignOut, tenants = [], on
     Object.fromEntries(GROUPS.map((g) => [g.key, pathname.startsWith(`/${g.key}`)])),
   );
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  useEffect(() => { setMobileOpen(false); }, [pathname]);
   const initials = fullName.split(" ").filter(Boolean).map((p) => p[0]).slice(0, 2).join("").toUpperCase();
   const rowBase = "flex h-11 items-center gap-3 whitespace-nowrap rounded-xl px-3 text-sm font-medium";
 
-  return (
-    <aside aria-label="Beheermenu" className="sticky top-0 flex h-screen w-[248px] shrink-0 flex-col gap-5 overflow-y-auto bg-sidebar px-3.5 pb-4 pt-[22px]">
+  const contents = (
+    <div className="flex h-full min-h-0 flex-col gap-5 overflow-y-auto bg-sidebar px-3.5 pb-4 pt-[22px]">
       <div className="flex h-10 items-center gap-2.5 px-2.5">
         <Logo small />
         <span className="whitespace-nowrap rounded-full bg-teal-light px-2.5 py-[3px] text-xs font-semibold text-primary-hover">Beheer</span>
@@ -181,6 +187,23 @@ export function Sidebar({ fullName, email, roleName, onSignOut, tenants = [], on
           <Chevron up={!menuOpen} />
         </button>
       </div>
-    </aside>
+    </div>
   );
+  return <>
+    <header className="sticky top-0 z-30 grid h-16 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 bg-background px-4 shadow-sm lg:hidden">
+      <div className="min-w-0"><Logo small /></div>
+      <Dialog.Root open={mobileOpen} onOpenChange={setMobileOpen}>
+        <Dialog.Trigger asChild><PillButton variant="ghost" aria-label="Hoofdmenu openen" aria-expanded={mobileOpen} className="size-11 shrink-0 px-0"><Menu className="size-6" /></PillButton></Dialog.Trigger>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-[60] bg-foreground/30" />
+          <Dialog.Content aria-describedby={undefined} className="fixed inset-y-0 left-0 z-[70] w-[min(320px,calc(100%-32px))] bg-sidebar shadow-lg">
+            <Dialog.Title className="sr-only">Hoofdmenu</Dialog.Title>
+            <Dialog.Close asChild><PillButton variant="ghost" aria-label="Hoofdmenu sluiten" className="absolute right-2 top-2 z-10 size-10 px-0"><UiIcon name="kruis" className="size-4" /></PillButton></Dialog.Close>
+            {contents}
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+    </header>
+    <aside aria-label="Beheermenu" className="sticky top-0 hidden h-dvh w-[248px] shrink-0 lg:block">{contents}</aside>
+  </>;
 }

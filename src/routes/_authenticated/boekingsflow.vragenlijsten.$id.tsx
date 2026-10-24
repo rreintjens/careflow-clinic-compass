@@ -257,7 +257,7 @@ function Builder() {
           {archived ? <VersionPill tone="archive">Archief · versie {archived.version_no}</VersionPill>
             : inEdit && draft ? <VersionPill tone="draft">Concept · versie {draft.version_no}, nog niet live</VersionPill>
             : pub ? <VersionPill tone="live">Live · versie {pub.version_no}</VersionPill> : null}
-          <div className="ml-auto flex gap-2">
+          <div className="ml-auto flex flex-wrap gap-2">
             {!inEdit && !archived && testLink(pub, "Test als patiënt")}
             <PillButton variant="outline" onClick={() => setEdit({ kind: "versions" })}><UiIcon name="klok" className="size-4" />Versies</PillButton>
             {!inEdit && !archived && pub && !draft && <PillButton onClick={startEdit} disabled={mut.isPending}>Aanpassen</PillButton>}
@@ -278,7 +278,7 @@ function Builder() {
 
       {inEdit && draft && (
         <div className="sticky top-0 z-20 flex flex-wrap items-center gap-4 rounded-[16px] bg-warning-bg px-5 py-4 ring-1 ring-warning/30">
-          <div className="min-w-[280px] flex-1 text-sm">
+          <div className="min-w-0 flex-1 text-sm">
             <p className="font-semibold text-warning">Je werkt aan versie {draft.version_no} · concept</p>
             <p>{pub ? `Versie ${pub.version_no} blijft live voor patiënten tot je publiceert. ` : ""}Alles wat je wijzigt wordt meteen bewaard · {changesCount(changes.length)}{mut.isPending ? " · bezig met bewaren…" : ""}.</p>
           </div>
@@ -308,7 +308,7 @@ function Builder() {
 
       {notice && <p className="flex items-center gap-3 rounded-[14px] bg-teal-light px-4 py-3 text-sm text-primary-hover"><UiIcon name="vinkje" className="size-4 shrink-0" /><span className="mr-auto">{notice}</span><button type="button" aria-label="Sluiten" onClick={() => setNotice(null)}><UiIcon name="kruis" className="size-4" /></button></p>}
 
-      <div className="grid grid-cols-[minmax(0,1fr)_300px] items-start gap-6">
+      <div className="grid min-w-0 grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
       <div className="flex min-w-0 flex-col gap-6">
       <Card title="Opbouw van de vragenlijst" description="Klik op een regel om rechts te zien hoe de patiënt hem ziet." action={<span className="text-[13px] text-muted-foreground">{editable ? "Sleep om de volgorde te wijzigen" : "Alleen-lezen"}</span>}>
         <div className="flex flex-col gap-2">
@@ -350,7 +350,7 @@ function Builder() {
       </Card>
 
       <Card title="Instellingen van deze vragenlijst">
-        <fieldset disabled={!editable} className="grid grid-cols-2 gap-4">
+        <fieldset disabled={!editable} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Select label="Moment" value={def.moment} onChange={(v) => writeDef({ ...def, moment: v })} options={opts(org, "questionnaire_moment")} />
           <MultiSelect label="Gekoppeld aan" value={linked.map((t) => t.id)} onChange={(ids) => mut.mutate(() => linkTreatments(q.key, q.moment, ids, org.treatments))} options={org.treatments.map((t) => ({ value: t.id, label: t.name_nl }))} />
           {Object.entries((def["outcomes"] ?? {}) as Record<string, string>).map(([k, v]) => (
@@ -361,7 +361,7 @@ function Builder() {
 
       {Object.keys(settings).some((k) => k === "bmi") && (
         <Card title="Grenswaarden" description={`Waarden van versie ${working.version_no}${inEdit ? " · concept" : " · alleen-lezen"}.`} action={inEdit && pub && configurationChanges(pub.version_config, working.version_config).length > 0 ? <VersionPill tone="draft">Gewijzigd</VersionPill> : undefined}>
-          <table className="w-full">
+          <div className="min-w-0 overflow-x-auto"><table className="w-full">
             <thead><tr className="border-b border-line"><th className={thCls}>Regel</th><th className={thCls}>Standaard</th><th className={thCls}>Verlaagd, bij herkomst uit de genoemde regio’s</th></tr></thead>
             <tbody className="divide-y divide-line">
               {THRESHOLDS.map((r) => {
@@ -369,20 +369,20 @@ function Builder() {
                 return <tr key={r.label}><td className={tdCls}>{names.thresholds[r.std] || r.label}</td><td className={tdCls}>{v(r.std)}{r.unit ?? ""}</td><td className={tdCls}>{v(r.red)}{r.unit ?? ""}</td></tr>;
               })}
             </tbody>
-          </table>
+          </table></div>
           {editable && <div className="mt-4"><PillButton variant="outline" onClick={() => setEdit({ kind: "thresholds" })}>Grenswaarden wijzigen</PillButton></div>}
         </Card>
       )}
 
       <Card title="Berekende velden" description="Eenvoudige formules met velden tussen accolades. Je gebruikt ze in voorwaarden en in teksten.">
-        <table className="w-full" onClick={rowOpen}>
+        <div className="min-w-0 overflow-x-auto"><table className="w-full" onClick={rowOpen}>
           <thead><tr className="border-b border-line"><th className={thCls}>Veld</th><th className={thCls}>Formule</th><th className={thCls}>Voorbeeld</th><th className={thCls} /></tr></thead>
           <tbody className="divide-y divide-line">
             {Object.entries(computed).map(([k, f]) => (
               <tr key={k} {...(editable ? { "data-list-row": "" } : {})}><td className={tdCls}>{names.computed[k] || "Berekend veld zonder naam"}</td><td className={cn(tdCls, "font-mono text-xs")}>{f}</td><td className={tdCls}>{sample(f)}</td><td className={tdCls}>{editable && <button type="button" data-row-action aria-label={`${names.computed[k] || k} wijzigen`} onClick={() => setEdit({ kind: "computed", name: k })} className="text-primary"><RowChevron /></button>}</td></tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
         {editable && <div className="mt-4"><PillButton variant="outline" onClick={() => setEdit({ kind: "computed", name: null })}><PlusIcon />Berekend veld toevoegen</PillButton></div>}
       </Card>
 

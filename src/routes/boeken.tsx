@@ -198,7 +198,7 @@ function List({ title, rows, onPick }: { title: string; rows: Array<{ id: string
         {rows.map((r) => (
           <button key={r.id} type="button" onClick={() => onPick(r.id)} className="patient-choice flex min-h-[60px] items-center gap-4 rounded-[16px] bg-sand px-5 text-left">
             {r.icon ? <span className="flex size-8 shrink-0 items-center justify-center"><img src={`/treatment-icons/${r.icon}.png`} alt="" className="size-7" /></span> : null}
-            <span className="flex-1"><span className="block whitespace-nowrap text-[16px]">{r.title}</span>{r.sub && <span className="block text-[13px] text-muted-foreground">{r.sub}</span>}</span>
+            <span className="min-w-0 flex-1 py-3"><span className="block break-words text-[16px]">{r.title}</span>{r.sub && <span className="block break-words text-[13px] text-muted-foreground">{r.sub}</span>}</span>
             <Chevron />
           </button>
         ))}

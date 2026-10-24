@@ -3,9 +3,9 @@ import type { ReactNode } from "react";
 export function PageHeader({ title, description, actions }: { title: string; description?: string; actions?: ReactNode }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-[28px] font-semibold tracking-tight">{title}</h1>
-        {actions && <div className="flex gap-2">{actions}</div>}
+      <div className="grid min-w-0 grid-cols-1 items-center gap-3 sm:flex sm:flex-wrap sm:justify-between sm:gap-4">
+        <h1 className="min-w-0 break-words text-2xl font-semibold sm:text-[28px]">{title}</h1>
+        {actions && <div className="flex min-w-0 flex-wrap gap-2">{actions}</div>}
       </div>
       {description && <p className="text-[15px] text-muted-foreground">{description}</p>}
     </div>

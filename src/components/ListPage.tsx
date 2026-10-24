@@ -16,10 +16,10 @@ export function rowOpen(e: MouseEvent) {
 export function ListPage({children,className}:{children:ReactNode;className?:string}){
  const ref=useRef<HTMLDivElement>(null);
  useEffect(()=>{const root=ref.current;if(!root)return;const mark=()=>{root.querySelectorAll("table tbody tr").forEach(row=>{if(row.querySelector("a[href],button[data-row-action]"))row.setAttribute("data-list-row","");});};mark();const observer=new MutationObserver(mark);observer.observe(root,{childList:true,subtree:true});return()=>observer.disconnect();},[]);
- return <div ref={ref} className={cn("admin-list-page flex flex-col gap-6",className)} onClick={rowOpen}>{children}</div>;
+ return <div ref={ref} className={cn("admin-list-page flex min-w-0 flex-col gap-6",className)} onClick={rowOpen}>{children}</div>;
 }
 export function DataTable({children,className,loading=false,count,columnLayout}:{children:ReactNode;className?:string;loading?:boolean;count?:number;label?:string;columnLayout?:"equipment"|"mail-variants"}){
- return <div data-column-layout={columnLayout} className={cn("admin-data-table min-w-0 overflow-x-auto",className)} onClick={rowOpen}>{loading?<ListState loading/>:count===0?<ListState/>:children}</div>;
+ return <div data-column-layout={columnLayout} className={cn("admin-data-table w-full min-w-0 max-w-full overflow-x-auto",className)} onClick={rowOpen}>{loading?<ListState loading/>:count===0?<ListState/>:children}</div>;
 }
 export function ListState({loading=false}:{loading?:boolean}){return <p role="status" className="py-8 text-sm text-muted-foreground">{loading?"Laden…":"Geen resultaten"}</p>;}
 export function RowChevron(){return <UiIcon name="pijl-rechts" className="h-4 w-4 shrink-0 text-primary"/>;}

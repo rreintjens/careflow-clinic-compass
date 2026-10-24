@@ -49,9 +49,9 @@ function Layout() {
   const nextDay = next && new Date(next.starts_at).toLocaleString("nl-NL", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", timeZone: TZ }).replace(" om ", ", ");
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-end justify-between gap-4">
+      <div className="grid min-w-0 gap-3 xl:flex xl:items-end xl:justify-between xl:gap-4">
         <div><Link to="/patienten" className="text-[13px] text-primary">Patiënten</Link><h1 className="text-[28px] font-semibold tracking-tight">Dossier</h1></div>
-        <div className="flex gap-2">
+        <div className="flex min-w-0 flex-wrap gap-2">
           {consultAppt && <StartConsultButton patientId={id} apptId={consultAppt.id} note={note} />}
           <PillButton onClick={() => setAdding(true)}><img src="/ui-icons/plus.svg" alt="" className="size-4 invert" />Toevoegen</PillButton>
           <Link to="/patienten/$id/portal" params={{ id: key }}><PillButton variant="outline">Bekijk als patiënt</PillButton></Link>
@@ -59,12 +59,12 @@ function Layout() {
           <PillButton variant="outline" disabled>Exporteren</PillButton>
         </div>
       </div>
-      <div className="flex items-center justify-between gap-6 rounded-[20px] bg-sand p-6">
-        <div className="flex min-w-0 items-center gap-5">
+      <div className="flex min-w-0 flex-col items-stretch gap-4 rounded-[20px] bg-sand p-4 xl:flex-row xl:items-center xl:justify-between xl:gap-6 xl:p-6">
+        <div className="flex min-w-0 items-center gap-3 sm:gap-5">
           <div className="flex size-16 shrink-0 items-center justify-center rounded-full bg-teal-light text-[20px] font-semibold text-primary">{p.first_name[0]}{p.last_name[0]}</div>
           <div className="min-w-0">
-            <h2 className="text-[24px] font-semibold">{p.first_name} {p.last_name}</h2>
-            <p className="text-[14px] text-muted-foreground">{[p.patient_number, `${d}-${mo}-${y}, ${ageOf(p.date_of_birth)} jaar`, p.phone, p.email, p.city].filter(Boolean).join(" · ")}</p>
+            <h2 className="break-words text-xl font-semibold sm:text-[24px]">{p.first_name} {p.last_name}</h2>
+            <p className="break-words text-[14px] text-muted-foreground">{[p.patient_number, `${d}-${mo}-${y}, ${ageOf(p.date_of_birth)} jaar`, p.phone, p.email, p.city].filter(Boolean).join(" · ")}</p>
             <div className="mt-2 flex flex-wrap gap-2">
               {next?.treatment && <span className="whitespace-nowrap rounded-full bg-teal-light px-3 py-1 text-[12px] text-primary">{next.treatment.name_nl}</span>}
               {next?.new_patient && <span className="px-1 py-1 text-[12px]">Nieuw</span>}
@@ -73,7 +73,7 @@ function Layout() {
           </div>
         </div>
         {next && (
-          <div className="flex w-[290px] shrink-0 flex-col gap-1 rounded-[16px] bg-background p-4">
+          <div className="flex w-full min-w-0 shrink-0 flex-col gap-1 rounded-[16px] bg-background p-4 xl:w-[290px]">
             <p className="text-[12px] text-muted-foreground">Volgende afspraak</p>
             <p className="text-[14px] font-semibold first-letter:uppercase">{nextDay}{online ? " · online" : ""}</p>
             <p className="text-[12px] text-muted-foreground">{next.treatment?.name_nl} · {next.practitioner?.first_name} {next.practitioner?.last_name}</p>
@@ -83,7 +83,7 @@ function Layout() {
           </div>
         )}
       </div>
-      <nav className="flex gap-2 border-b border-mist">
+      <nav aria-label="Dossieronderdelen" className="flex min-w-0 gap-2 overflow-x-auto border-b border-mist">
         {TABS.map(([to, l]) => (
           <Link key={to} to={to} params={{ id: key }} activeOptions={{ exact: true }} className="whitespace-nowrap border-b-2 border-transparent px-4 py-3 text-[14px]" activeProps={{ className: "border-primary text-primary" }}>{l}</Link>
         ))}

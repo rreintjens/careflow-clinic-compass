@@ -80,9 +80,9 @@ function TreatmentsPage() {
         actions={<PillButton variant="outline" onClick={() => setKindsOpen(true)}>Soorten apparatuur</PillButton>}
       />
       {kindsOpen && <EquipmentKindsModal org={org} onClose={() => setKindsOpen(false)} />}
-      <div className="grid grid-cols-[360px_minmax(0,1fr)] items-start gap-6">
+      <div className="grid min-w-0 grid-cols-1 items-start gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
         <Card>
-          <div className="mb-4 flex items-center justify-between gap-3">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-base font-semibold">Categorieën</h2>
             <PillButton variant="outline" onClick={() => setCatModal("new")}><PlusIcon />Nieuwe categorie</PillButton>
           </div>
@@ -141,11 +141,11 @@ function TreatmentsPage() {
           </p>
         </Card>
 
-        <section>
+        <section className="min-w-0">
           <h2 className="text-lg font-semibold">
             {selected?.name_nl ?? "Alle behandelingen"} <span className="font-normal text-muted-foreground">· {total} behandelingen</span>
           </h2>
-          <div className="mt-4 flex items-center gap-3">
+          <div className="mt-4 flex flex-wrap items-center gap-3">
             <SearchField placeholder="Zoek een behandeling" value={q} onChange={(e) => setQ(e.target.value)} className="w-[230px]" aria-label="Zoek een behandeling" />
             <PillButton variant="outline" onClick={() => setNewOpen(true)}><PlusIcon />Nieuwe behandeling</PillButton>
           </div>
