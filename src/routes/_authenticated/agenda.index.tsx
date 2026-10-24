@@ -148,7 +148,7 @@ function Page() {
             </div>
           ) : <p className="text-[13px] text-muted-foreground">{view.cols.filter(c => !c.key.includes(":" )).length} behandelaars ingeroosterd op deze dag</p>}
           {view.cols.length > 0 && <div className="overflow-x-auto">
-            <div className="grid min-w-max" style={{ gridTemplateColumns: `56px repeat(${Math.max(1, view.cols.length)}, minmax(${week ? 150 : 190}px, 1fr))` }}>
+            <div className="grid min-w-max" style={{ gridTemplateColumns: `56px repeat(${Math.max(1, view.cols.length)}, ${week ? "148px" : "minmax(190px, 1fr)"})` }}>
               <span />
               {view.cols.map((c) => week
                 ? <div key={c.key} className="min-w-0 px-1.5 pb-3"><p className={cn("truncate text-[13px]", c.today && "font-semibold text-primary")}>{c.title}</p><div className="mt-1.5 flex items-center gap-1.5"><Avatar path={c.photo ?? null} size={24} /><span className="truncate text-[11px]">{c.sub}</span></div></div>
