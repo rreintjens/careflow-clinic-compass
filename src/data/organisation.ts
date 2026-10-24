@@ -4,6 +4,7 @@ import type { EquipmentLite, Mobility } from "@/domain/organisation";
 import { supabase } from "@/integrations/supabase/client";
 import { practitionerPhotoBucket } from "@/data/tenant";
 import type { Database } from "@/integrations/supabase/types";
+import { getOrganisation } from "./organisation-read.functions";
 
 type T = Database["public"]["Tables"];
 export type Location = T["locations"]["Row"];
@@ -28,55 +29,7 @@ function must<D>(r: { data: D | null; error: unknown }): D {
 export const orgQuery = queryOptions({
   queryKey: ["org"],
   staleTime: 5 * 60_000,
-  queryFn: async () => {
-    const [
-      options, roles, languages, locations, hours, rooms, equipment, dayLocs, kinds, types, categories, treatments,
-      catLinks, treatRoles, treatLocs, reqs, practitioners, pracLangs, pracLocs, pracTreats,
-    ] = await Promise.all([
-      supabase.from("option_lists").select("*").order("sort"),
-      supabase.from("practitioner_roles").select("*").order("sort"),
-      supabase.from("languages").select("*").order("sort"),
-      supabase.from("locations").select("*").order("sort"),
-      supabase.from("location_hours").select("*"),
-      supabase.from("rooms").select("*").order("sort"),
-      supabase.from("equipment").select("*").order("sort"),
-      supabase.from("equipment_schedule").select("*"),
-      supabase.from("equipment_kinds").select("*").order("sort"),
-      supabase.from("equipment_types").select("*").order("brand").order("type"),
-      supabase.from("treatment_categories").select("*").order("sort"),
-      supabase.from("treatments").select("*").order("name_nl"),
-      supabase.from("treatment_category_links").select("*").order("sort"),
-      supabase.from("treatment_practitioner_roles").select("*"),
-      supabase.from("treatment_locations").select("*"),
-      supabase.from("treatment_requirements").select("*").order("sort"),
-      supabase.from("practitioners").select("*").order("sort"),
-      supabase.from("practitioner_languages").select("*"),
-      supabase.from("practitioner_locations").select("*"),
-      supabase.from("practitioner_treatments").select("*"),
-    ]);
-    return {
-      options: must(options),
-      roles: must(roles),
-      languages: must(languages),
-      locations: must(locations),
-      hours: must(hours),
-      rooms: must(rooms),
-      equipment: must(equipment),
-      dayLocations: must(dayLocs),
-      equipmentKinds: must(kinds),
-      equipmentTypes: must(types),
-      categories: must(categories),
-      treatments: must(treatments),
-      categoryLinks: must(catLinks),
-      treatmentRoles: must(treatRoles),
-      treatmentLocations: must(treatLocs),
-      requirements: must(reqs),
-      practitioners: must(practitioners),
-      practitionerLanguages: must(pracLangs),
-      practitionerLocations: must(pracLocs),
-      practitionerTreatments: must(pracTreats),
-    };
-  },
+  queryFn: () => getOrganisation(),
 });
 export type Org = Awaited<ReturnType<NonNullable<typeof orgQuery.queryFn>>>;
 
