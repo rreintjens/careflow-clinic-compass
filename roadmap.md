@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Bugonderzoek — eigenaar 24-10
+- [ ] Agenda vervolg: behandelaars op locatie/datum beperken, geen kamers/apparatuur op lege dagen, selecties links over volle breedte en legenda's verwijderen; als Rob controleren.
 - [x] Patiënten toont alle patiënten zonder standaard dagfilter, met een goede zoekbalk; 12 identiteiten als Rob, volledige naam → één resultaat → dossier → herladen gecontroleerd.
 - [x] Agenda: eerst locaties (Alle locaties boven Online), daarna meerdere behandelaars met verwijderbare selectiechips en kruisje links; Week standaard alle behandelaars. Als Rob selecteren/verwijderen/beide weergaven gecontroleerd.
 - [x] Traag wisselen tussen pagina’s versneld met korte queryfreshness, referentiehergebruik, parallelle navigatiecontroles en dashboardreads; RLS/servercontroles blijven intact. Herhaalde lokale schermwisselingen circa 0,06–0,21 s, ook met 250 ms toegevoegde netwerkvertraging. Geen claim over gepubliceerde snelheid.
