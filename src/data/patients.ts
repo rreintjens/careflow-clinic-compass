@@ -37,6 +37,19 @@ export const patientListQuery = (fromIso: string, toIso: string, weekFromIso: st
   });
 
 /** Free-text search on name, patient number or e-mail. */
+export const patientDirectoryQuery = queryOptions({
+  queryKey: ['patient-directory'],
+  queryFn: async () => {
+    const rows: Array<Pick<Tables<'patients'>, 'id' | 'patient_number' | 'first_name' | 'last_name' | 'email' | 'phone' | 'date_of_birth' | 'created_at'>> = [];
+    const size = 500;
+    for (let offset = 0; ; offset += size) {
+      const page = must(await supabase.from('patients').select('id, patient_number, first_name, last_name, email, phone, date_of_birth, created_at').is('deleted_at', null).order('last_name').order('first_name').order('id').range(offset, offset + size - 1));
+      rows.push(...page);
+      if (page.length < size) return rows;
+    }
+  },
+});
+
 export async function searchPatients(q: string) {
   const t = q.trim();
   if (t.length < 2) return [];

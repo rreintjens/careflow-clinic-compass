@@ -79,7 +79,7 @@ function Page() {
       const people = agendaSelectedPractitioners(ref.practitioners, practitionerIds).filter(p => doesCat(p.id));
       cols = agendaWeekTracks(days, people.map(p => p.id)).map(track => {
         const p = people.find(person => person.id === track.practitionerId);
-        return { ...track, title: cap(fmt(track.date, { weekday: "short" }).replace(".", "")) + " " + Number(track.date.slice(8)), sub: p ? `${p.first_name} ${p.last_name}` : '', photo: p?.photo_path, segs: seg(track.practitionerId, track.date), own: appts.filter(a => a.practitioner_id === track.practitionerId && a.s.date === track.date), today: track.date === today() };
+        return { ...track, title: cap(fmt(track.date, { weekday: "short" }).replace(".", "")) + " " + Number(track.date.slice(8)), sub: p ? `${p.first_name} ${p.last_name}` : '', photo: p?.photo_path ?? null, segs: seg(track.practitionerId, track.date), own: appts.filter(a => a.practitioner_id === track.practitionerId && a.s.date === track.date), today: track.date === today() };
       });
     } else {
       cols = agendaSelectedPractitioners(ref.practitioners, practitionerIds).filter((p) => doesCat(p.id)).map((p) => {
