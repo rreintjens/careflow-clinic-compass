@@ -540,6 +540,13 @@
       "when": 1792606868512,
       "tag": "0077_billing_catalog_price_guard",
       "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "7",
+      "when": 1792835974350,
+      "tag": "0078_cache_reference_rls_checks_per_statement",
+      "breakpoints": true
     }
   ]
 }
