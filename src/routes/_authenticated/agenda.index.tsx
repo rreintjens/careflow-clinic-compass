@@ -151,11 +151,11 @@ function Page() {
             <div className="grid min-w-max" style={{ gridTemplateColumns: `56px repeat(${Math.max(1, view.cols.length)}, minmax(${week ? 150 : 190}px, 1fr))` }}>
               <span />
               {view.cols.map((c) => week
-                ? <div key={c.key} className="px-2 pb-3"><p className={cn("text-[14px]", c.today && "font-semibold text-primary")}>{c.title}</p><div className="mt-2 flex items-center gap-2"><Avatar path={c.photo ?? null} size={28} /><span className="text-xs">{c.sub}</span></div></div>
+                ? <div key={c.key} className="min-w-0 px-1.5 pb-3"><p className={cn("truncate text-[13px]", c.today && "font-semibold text-primary")}>{c.title}</p><div className="mt-1.5 flex items-center gap-1.5"><Avatar path={c.photo ?? null} size={24} /><span className="truncate text-[11px]">{c.sub}</span></div></div>
                 : (
-                  <Link key={c.key} to="/agenda/mijn-dag" disabled={c.key.includes(":")} search={{ datum: date, behandelaar: c.key }} aria-label={`Bekijk de dag van ${c.title}`} className="flex items-center gap-3 rounded-[12px] px-2 pb-3 text-left transition-colors hover:bg-teal-light focus-visible:outline-2 focus-visible:outline-primary">
-                    <Avatar path={c.photo ?? null} size={36} />
-                    <div className="min-w-0"><p className="whitespace-nowrap text-[14px] font-semibold">{c.title}</p><p className="whitespace-nowrap text-[12px] text-muted-foreground">{c.sub}</p></div>
+                  <Link key={c.key} to="/agenda/mijn-dag" disabled={c.key.includes(":")} search={{ datum: date, behandelaar: c.key }} aria-label={`Bekijk de dag van ${c.title}`} className="flex items-center gap-2 rounded-[12px] px-1.5 pb-3 text-left transition-colors hover:bg-teal-light focus-visible:outline-2 focus-visible:outline-primary">
+                    <Avatar path={c.photo ?? null} size={28} className="shrink-0" />
+                    <div className="min-w-0"><p className="truncate text-[13px] font-semibold">{c.title}</p><p className="truncate text-[11px] text-muted-foreground">{c.sub}</p></div>
                   </Link>
                 ))}
               <div className="relative" style={{ height: (view.range[1] - view.range[0]) * HOUR }}>
