@@ -462,7 +462,7 @@ a.portal-tile:hover {box-shadow:var(--portal-shadow);transform:translateY(-2px);
 
 /* Mobile staff screens keep wide tables and calendars inside their own scroll regions. */
 @media(max-width:639px) {
- .agenda-filters > button {width:auto!important;flex:1 1 0;min-width:0;padding-left:8px;padding-right:8px;font-size:11px;}
+ .agenda-filters > .contents > button {width:auto!important;flex:1 1 0;min-width:0;padding-left:8px;padding-right:8px;font-size:11px;}
  .agenda-filters > div {max-width:100%;}
  .staff-content section.rounded-\[20px\] {padding:16px;}
  .staff-content .grid:not(.grid-cols-7):not(.agenda-grid), .app-modal .grid:not(.grid-cols-7) {min-width:0;}

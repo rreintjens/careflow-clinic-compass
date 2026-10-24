@@ -1,9 +1,9 @@
 # Roadmap
 
 ## Mobiele app — eigenaar 24-10
-- [ ] Hoofdmenu via hamburger op mobiel, bestaande desktopzijbalk behouden.
-- [ ] Gedeelde schermkoppen, lijsten, formulieren en pop-ups aanpassen; agenda, dossier, boeken en portaal controleren.
-- [ ] Als Rob mobiel menu, navigatie en afspraakformulier testen; desktop controleren.
+- [x] Hoofdmenu via hamburger op mobiel, bestaande desktopzijbalk behouden.
+- [x] Gedeelde schermkoppen, lijsten, formulieren en pop-ups aanpassen; agenda, dossier, boeken en portaal controleren. 23 beheerschermen en twee editors zonder paginabrede overflow op 375px; Sanne ingelogd op Start en Profiel gecontroleerd.
+- [x] Als Rob mobiel menu, navigatie en afspraakformulier getest; desktopzijbalk behouden. Alle 544 tests groen.
 
 ## Bugonderzoek — eigenaar 24-10
 - [x] Agenda: keuzelijsten compact naast elkaar; alle pillen even hoog op één rij eronder met scheidingsstreepjes tussen filtergroepen; als Rob geselecteerd/verwijderd en visueel gecontroleerd.
