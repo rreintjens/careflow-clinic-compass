@@ -148,9 +148,9 @@ function Page() {
               ))}
             </div>
           ) : <p className="text-[13px] text-muted-foreground">{view.cols.filter(c => !c.key.includes(":" )).length} behandelaars ingeroosterd op deze dag</p>}
-          {view.cols.length > 0 && <div className="overflow-x-auto">
-            <div className="agenda-grid grid w-full min-w-0" style={{ gridTemplateColumns: `56px repeat(${Math.max(1, view.cols.length)}, ${week ? "148px" : "minmax(190px, 1fr)"})` }}>
-              <span className="sticky top-0 z-10 bg-background" />
+          {view.cols.length > 0 && <div>
+            <div className="agenda-grid grid w-full min-w-0" style={{ gridTemplateColumns: `56px repeat(${Math.max(1, view.cols.length)}, ${week ? "minmax(110px, 1fr)" : "minmax(150px, 1fr)"})` }}>
+              <span className="sticky left-0 top-16 z-20 bg-background lg:top-0" />
               {view.cols.map((c) => week
                 ? <Link key={c.key} to="/agenda" search={{ datum: c.date, locatie: s.locatie, behandelaar: c.practitionerId }} aria-label={`Bekijk de dag van ${c.sub}`} className="sticky top-0 z-10 block min-w-0 rounded-[12px] bg-background px-1.5 pb-3 text-left transition-colors hover:bg-teal-light focus-visible:outline-2 focus-visible:outline-primary"><p className={cn("truncate text-[13px]", c.today && "font-semibold text-primary")}>{c.title}</p><div className="mt-1.5 flex items-center gap-1.5"><Avatar path={c.photo ?? null} size={24} className="shrink-0" /><span className="truncate text-[11px]">{c.sub}</span></div></Link>
                 : (
