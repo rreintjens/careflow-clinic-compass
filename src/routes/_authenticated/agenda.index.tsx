@@ -111,6 +111,9 @@ function Page() {
   const selected = view?.all.find((a) => a.id === s.afspraak);
   const linkedId=highlighted??s.afspraak;
   const topCats = (ref?.categories ?? []).filter((c) => !c.parent_id);
+  const headRef = useRef<HTMLDivElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const template = `56px repeat(${Math.max(1, view?.cols.length ?? 1)}, ${week ? "minmax(110px, 1fr)" : "minmax(150px, 1fr)"})`;
 
   return (
     <div className="flex flex-col gap-6">
@@ -196,6 +199,7 @@ function Page() {
                   })}
                 </div>
               ))}
+            </div>
             </div>
           </div>}
         </>
