@@ -61,7 +61,7 @@ function Treatment() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex gap-2">{["Consult: evaluatie en plan", "Behandelplan en medicatie", "Afspraken en vervolg"].map((l, i) => <button key={l} type="button" onClick={() => go(i)} className={cn("whitespace-nowrap rounded-full px-3.5 py-2 text-[13px]", tab === i ? "bg-primary text-primary-foreground" : "bg-sand")}>{l}</button>)}</div>
+      <div className="flex min-w-0 gap-2 overflow-x-auto">{["Consult: evaluatie en plan", "Behandelplan en medicatie", "Afspraken en vervolg"].map((l, i) => <button key={l} type="button" onClick={() => go(i)} className={cn("shrink-0 whitespace-nowrap rounded-full px-3.5 py-2 text-[13px]", tab === i ? "bg-primary text-primary-foreground" : "bg-sand")}>{l}</button>)}</div>
 
       <section id="consulten" className="rounded-[20px] p-6 ring-1 ring-mist">
         <h3 className="text-[17px] font-semibold">Consulten</h3>
@@ -69,8 +69,8 @@ function Treatment() {
         {current ? (
           <div className="mt-5 rounded-[16px] p-5 ring-1 ring-primary">
             <div className="flex items-center justify-between"><p className="text-[14px] font-semibold first-letter:uppercase">{when(current.starts_at)} · {current.new_patient ? "eerste consult" : "consult"} · {current.practitioner?.first_name} {current.practitioner?.last_name}</p>{draft && <span className="rounded-full bg-teal-light px-2.5 py-1 text-[12px] text-primary">Bezig</span>}</div>
-            <div className="mt-4 grid grid-cols-2 gap-4">{SOEP.map(([k, l]) => <TextArea key={k} label={l} value={val(k)} onChange={(e) => setSoep({ ...soep, [k]: e.target.value })} />)}</div>
-            <div className="mt-4 flex gap-2"><PillButton disabled={save.isPending} onClick={() => save.mutate()}>Opslaan</PillButton><PillButton variant="outline" disabled={save.isPending} onClick={() => save.mutate(undefined, { onSuccess: () => setPlanOpen(true) })}>Opslaan en behandelplan maken</PillButton></div>
+            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">{SOEP.map(([k, l]) => <TextArea key={k} label={l} value={val(k)} onChange={(e) => setSoep({ ...soep, [k]: e.target.value })} />)}</div>
+            <div className="mt-4 flex flex-wrap gap-2"><PillButton disabled={save.isPending} onClick={() => save.mutate()}>Opslaan</PillButton><PillButton variant="outline" disabled={save.isPending} onClick={() => save.mutate(undefined, { onSuccess: () => setPlanOpen(true) })}>Opslaan en behandelplan maken</PillButton></div>
           </div>
         ) : <p className="mt-4 text-[14px] text-muted-foreground">Er is nu geen consult gepland.</p>}
         <PillButton variant="outline" className="mt-4" onClick={() => setStandaloneOpen(true)}>Telefonisch of tussentijds consult vastleggen</PillButton>

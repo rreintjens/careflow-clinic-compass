@@ -57,7 +57,7 @@ function Medical() {
   const intake = d.sets.filter((s) => s.status === "completed").slice().reverse();
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex gap-2">{["1 Intake: wat de patiënt invulde", "2 Anamnese: aanvullen", "3 Metingen"].map((l, i) => <button key={l} type="button" onClick={() => go(i)} className={cn("whitespace-nowrap rounded-full px-3.5 py-2 text-[13px]", tab === i ? "bg-primary text-primary-foreground" : "bg-sand")}>{l}</button>)}</div>
+      <div className="flex min-w-0 gap-2 overflow-x-auto">{["1 Intake: wat de patiënt invulde", "2 Anamnese: aanvullen", "3 Metingen"].map((l, i) => <button key={l} type="button" onClick={() => go(i)} className={cn("shrink-0 whitespace-nowrap rounded-full px-3.5 py-2 text-[13px]", tab === i ? "bg-primary text-primary-foreground" : "bg-sand")}>{l}</button>)}</div>
 
       <section id="intake" className="rounded-[20px] p-6 ring-1 ring-mist">
         <h3 className="text-[17px] font-semibold">Intake: triage en medische vragenlijst</h3>
@@ -73,7 +73,7 @@ function Medical() {
               <p className="mb-2 text-[14px] font-semibold">{def?.name ?? s.questionnaire_key}, {fmtDate(s.completed_at ?? s.created_at)}</p>
               <dl className="grid grid-cols-1 gap-x-6">
                 {items.map((it) => (
-                  <div key={it.id} className="grid grid-cols-[200px_1fr] gap-4 border-b border-mist py-2.5 text-[13px]">
+                  <div key={it.id} className="grid min-w-0 gap-1 border-b border-mist py-2.5 text-[13px] sm:grid-cols-[200px_minmax(0,1fr)] sm:gap-4">
                     <dt className="text-muted-foreground">{it.text}</dt>
                     <dd>{answerText(it, ans)}{sig.has(it.id) && <span className="ml-2 whitespace-nowrap rounded-full bg-signal px-2.5 py-0.5 text-[11px] ring-1 ring-signal-border">signaal</span>}</dd>
                   </div>

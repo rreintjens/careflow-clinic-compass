@@ -14,6 +14,7 @@
 - Read the design package first; its security rules override defaults. Build phases in order without confirmation pauses.
 - TanStack Start (not React Router); app-internal server logic in `createServerFn`, never new Edge Functions — platform stack.
 - Tested logic in `src/domain/`, queries in `src/data/`, shared UI in `src/components/`; extend props, never duplicate.
+- Mobile staff navigation uses the same Sidebar contents in an accessible Radix drawer; shared headers/modals reflow, and wide agenda/table/tab regions scroll locally rather than widening the page.
 - Agenda shares AgendaToolbar; booking shares slots with online-location IDs/block flags to prevent mixed-consult conflicts.
 - Agenda filter pills reuse SearchablePicker's below-selection rendering for single and multiple selection; selectionOptions excludes all-options so clearing a pill restores the unfiltered state.
 - Organisation reference reads use one authenticated server function with at most six concurrent RLS reads; agenda reuses that query cache, warms references after staff sign-in, and shares week appointment ranges across day/week navigation to avoid duplicate requests. Schedule edits invalidate agenda references.

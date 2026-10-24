@@ -184,7 +184,7 @@ export function ActiveConsultMode() {
       </section>
 
       <div ref={panel} aria-label={`Consultnotities voor ${name}`} role="complementary"
-        className={cn("fixed z-40 flex flex-col overflow-hidden rounded-[20px] bg-sand shadow-[0_8px_24px_rgba(57,51,46,0.16)] ring-1", otherRecord ? "ring-2 ring-warning" : "ring-primary", !prefs.min && "resize")}
+        className={cn("consult-notes fixed z-40 flex flex-col overflow-hidden rounded-[20px] bg-sand shadow-[0_8px_24px_rgba(57,51,46,0.16)] ring-1", otherRecord ? "ring-2 ring-warning" : "ring-primary", !prefs.min && "resize")}
         style={{ top, right, width: prefs.w, ...(prefs.min ? {} : { height: prefs.h ? `min(${prefs.h}px, calc(100vh - ${top + 16}px))` : `calc(100vh - ${top + 24}px)` }), minWidth: 300, minHeight: prefs.min ? undefined : 260, maxHeight: `calc(100vh - ${top + 16}px)` }}>
         <div className="flex cursor-move touch-none select-none items-center gap-2 px-5 pt-4" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp}>
           <span className="text-[14px] font-semibold">Consultnotities</span>

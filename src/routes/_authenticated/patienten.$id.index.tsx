@@ -45,7 +45,7 @@ function Overview() {
         <div className="mt-5"><p className="mb-2 text-[13px] font-medium">Let op voor het consult</p>
           <div className="rounded-[14px] bg-sand p-4 text-[14px]">{signals.map((s) => s.label).join(". ")}.</div></div>
       )}
-      <dl className="mt-5">{rows.map(([k, v]) => <div key={k} className="grid grid-cols-[220px_1fr] gap-4 border-b border-mist py-3 text-[14px]"><dt className="whitespace-nowrap text-muted-foreground">{k}</dt><dd>{v}</dd></div>)}</dl>
+      <dl className="mt-5">{rows.map(([k, v]) => <div key={k} className="grid min-w-0 gap-1 border-b border-mist py-3 text-[14px] sm:grid-cols-[220px_minmax(0,1fr)] sm:gap-4"><dt className="text-muted-foreground">{k}</dt><dd className="min-w-0 break-words">{v}</dd></div>)}</dl>
       <p className="mb-4 mt-6 text-[14px] font-semibold">Laatste gebeurtenissen</p>
       <TimelineList events={buildTimeline(d, consults, measurements).slice(0, 3)} />
       <Link to="/patienten/$id/tijdlijn" params={{ id: key }} className="text-[14px] text-primary underline">Volledige tijdlijn</Link>

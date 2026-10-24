@@ -122,12 +122,12 @@ function Page() {
         onChange={(v) => v === "mijn" ? void navigate({ to: "/agenda/mijn-dag", search: { datum: s.datum, behandelaar: practitionerIds.length === 1 ? practitionerIds[0] : undefined } }) : go({ weergave: v === "week" ? "week" : undefined, afspraak: undefined })}
         dateControls={<>
           <button type="button" aria-label="Vorige" onClick={() => go({ datum: shift(date, -step), afspraak: undefined })} className="flex size-9 items-center justify-center rounded-full bg-sand"><img src="/ui-icons/pijl-links.svg" alt="" className="size-4" /></button>
-          <span className="whitespace-nowrap text-[15px] font-semibold">{label}</span>
+          <span className="min-w-0 text-[13px] font-semibold sm:whitespace-nowrap sm:text-[15px]">{label}</span>
           <button type="button" aria-label="Volgende" onClick={() => go({ datum: shift(date, step), afspraak: undefined })} className="flex size-9 items-center justify-center rounded-full bg-sand"><img src="/ui-icons/pijl-rechts.svg" alt="" className="size-4" /></button>
           {!days.includes(today()) && <button type="button" onClick={() => go({ datum: undefined })} className="text-[14px] text-primary underline">Vandaag</button>}
         </>}
         filters={<>
-          <div className="flex w-full flex-wrap items-start gap-x-3 gap-y-2 after:order-1 after:basis-full after:content-['']">
+          <div className="agenda-filters flex w-full min-w-0 flex-wrap items-start gap-x-3 gap-y-2 after:order-1 after:basis-full after:content-['']">
           <SearchablePicker label="Locatie" preserveOrder selectionPlacement="below" selectionClassName="order-2" className="contents [&>label]:hidden [&>button]:w-[190px] [&>button]:max-w-full" value={s.locatie ?? "all"} onChange={values => go({ locatie: values[0] === "all" ? undefined : values[0] })}
             selectionOptions={(ref?.locations ?? []).map(l => ({ value: l.id, label: l.name }))}
             options={[{ value: "all", label: "Alle locaties" }, ...(ref?.locations ?? []).slice().sort((a,b) => Number(b.kind === 'online') - Number(a.kind === 'online')).map((l) => ({ value: l.id, label: l.name }))]} />
@@ -142,14 +142,14 @@ function Page() {
       {!view ? <p className="text-[14px] text-muted-foreground">Laden…</p> : (
         <>
           {view.stats ? (
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
               {([["Afspraken deze week", view.stats.appts], ["Vrije plekken deze week", view.stats.free], ["Waarvan online", view.stats.online]] as const).map(([k, v]) => (
                 <div key={k} className="rounded-[16px] bg-sand px-5 py-4"><p className="text-[13px] text-muted-foreground">{k}</p><p className="text-[24px] font-semibold">{v}</p></div>
               ))}
             </div>
           ) : <p className="text-[13px] text-muted-foreground">{view.cols.filter(c => !c.key.includes(":" )).length} behandelaars ingeroosterd op deze dag</p>}
           {view.cols.length > 0 && <div className="overflow-x-auto">
-            <div className="grid w-full min-w-0" style={{ gridTemplateColumns: `56px repeat(${Math.max(1, view.cols.length)}, ${week ? "148px" : "minmax(190px, 1fr)"})` }}>
+            <div className="agenda-grid grid w-full min-w-0" style={{ gridTemplateColumns: `56px repeat(${Math.max(1, view.cols.length)}, ${week ? "148px" : "minmax(190px, 1fr)"})` }}>
               <span className="sticky top-0 z-10 bg-background" />
               {view.cols.map((c) => week
                 ? <Link key={c.key} to="/agenda" search={{ datum: c.date, locatie: s.locatie, behandelaar: c.practitionerId }} aria-label={`Bekijk de dag van ${c.sub}`} className="sticky top-0 z-10 block min-w-0 rounded-[12px] bg-background px-1.5 pb-3 text-left transition-colors hover:bg-teal-light focus-visible:outline-2 focus-visible:outline-primary"><p className={cn("truncate text-[13px]", c.today && "font-semibold text-primary")}>{c.title}</p><div className="mt-1.5 flex items-center gap-1.5"><Avatar path={c.photo ?? null} size={24} className="shrink-0" /><span className="truncate text-[11px]">{c.sub}</span></div></Link>
@@ -195,7 +195,7 @@ function Page() {
           </div>}
         </>
       )}
-      {selected && ref && <aside className="fixed inset-y-0 right-0 z-30 w-[420px] overflow-y-auto bg-background shadow-[0_8px_24px_rgba(57,51,46,0.10)]"><PatientCard a={selected} treatment={ref.treatments.find((t) => t.id === selected.treatment_id)?.name_nl ?? ""} online={view?.locs.get(selected.location_id)?.kind === "online"} onClose={() => go({ afspraak: undefined })} /></aside>}
+      {selected && ref && <aside className="fixed inset-y-0 right-0 z-40 w-[420px] max-w-full overflow-y-auto bg-background shadow-[0_8px_24px_rgba(57,51,46,0.10)]"><PatientCard a={selected} treatment={ref.treatments.find((t) => t.id === selected.treatment_id)?.name_nl ?? ""} online={view?.locs.get(selected.location_id)?.kind === "online"} onClose={() => go({ afspraak: undefined })} /></aside>}
       {ref && <NewAppointmentModal open={newOpen} onOpenChange={setNewOpen} data={ref} onPickInAgenda={(p) => go({ weergave: "week", behandelaar: undefined, behandelaars: [p] })} />}
     </div>
   );
