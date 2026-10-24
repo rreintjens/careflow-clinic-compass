@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router';
 import { Video, Check, CalendarPlus } from 'lucide-react';
 import { copy } from './PortalShell';
 import { usePortalData, fmtDay, fmtTime, fill, Photo, pracName } from './PortalStart';
+import {portalAppointmentDays} from '@/domain/portal';
 
 /** Afspraken (v0.1 §6): volgende afspraak met deelnameknop, extra afspraak, eerdere afspraken. */
 export function PortalAppointments(){
@@ -9,7 +10,7 @@ export function PortalAppointments(){
  const c=d.content;
  const next=upcoming[0];
  const nextT=next?treat(next.treatment_id):null,nextP=next?prac(next.practitioner_id):null;
- const days=next?Math.max(0,Math.ceil((Date.parse(next.starts_at)-Date.now())/86_400_000)):0;
+ const days=next?portalAppointmentDays(next.starts_at,d.today):0;
  const joinable=next?Date.parse(next.starts_at)-Date.now()<=10*60_000:false;
  const online=next?loc(next.location_id)?.kind==='online'||!!next.meet_link:false;
  return <><h1>{copy(c,'apptsTitle')}</h1>

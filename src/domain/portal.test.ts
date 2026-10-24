@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { packageEnd, portalLanding, usablePortalToken, PORTAL_LINK_MINUTES, patientInitials, feedbackDue, ownDoctor, orderWindow, readMaConfig, monthPrice, packageTotal, packageSavings, strengthState, portalAppointmentDone, portalLinkPath, portalTokenSchema } from "./portal";
+import { packageEnd, portalLanding, usablePortalToken, PORTAL_LINK_MINUTES, patientInitials, feedbackDue, ownDoctor, orderWindow, readMaConfig, monthPrice, packageTotal, packageSavings, strengthState, portalAppointmentDone, portalAppointmentDays, portalLinkPath, portalTokenSchema } from "./portal";
 
 describe("patient portal rules", () => {
+  it('uses calendar days rather than rounding a few hours up to tomorrow', () => {
+    expect(portalAppointmentDays('2026-10-24T14:00:00+02:00','2026-10-24')).toBe(0);
+    expect(portalAppointmentDays('2026-10-25T14:00:00+01:00','2026-10-24')).toBe(1);
+  });
   it('keeps an appointment later today upcoming, including winter time', () => {
     expect(portalAppointmentDone({starts_at:'2026-10-24T14:00:00+02:00',status:'booked'},Date.parse('2026-10-24T08:00:00Z'))).toBe(false);
     expect(portalAppointmentDone({starts_at:'2026-10-25T14:00:00+01:00',status:'booked'},Date.parse('2026-10-25T08:00:00Z'))).toBe(false);

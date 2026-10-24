@@ -15,6 +15,10 @@ export const portalLinkPath = (token: string, merk?: string) => `/mijn/link/${to
 export function portalAppointmentDone(a: { starts_at: string; status?: string | null }, now: number) {
   return Date.parse(a.starts_at) < now || a.status === 'afgerond' || a.status === 'klaar_voor_betaling';
 }
+export function portalAppointmentDays(startsAt: string, today: string) {
+  const day = new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Amsterdam'}).format(new Date(startsAt));
+  return Math.max(0,Math.round((Date.parse(`${day}T00:00:00Z`)-Date.parse(`${today}T00:00:00Z`))/86_400_000));
+}
 export const PORTAL_LINK_MINUTES = 10;
 export function usablePortalToken(expiresAt: string, usedAt: string | null, now: number) {
   return usedAt === null && Date.parse(expiresAt) > now;
