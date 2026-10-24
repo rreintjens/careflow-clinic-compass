@@ -15,6 +15,7 @@
 - TanStack Start (not React Router); app-internal server logic in `createServerFn`, never new Edge Functions — platform stack.
 - Tested logic in `src/domain/`, queries in `src/data/`, shared UI in `src/components/`; extend props, never duplicate.
 - Agenda shares AgendaToolbar; booking shares slots with online-location IDs/block flags to prevent mixed-consult conflicts.
+- Agenda filter pills reuse SearchablePicker's below-selection rendering for single and multiple selection; selectionOptions excludes all-options so clearing a pill restores the unfiltered state.
 - Agenda day/week practitioner filters use URL-backed multiple selections and shared SearchablePicker; week tracks retain practitioner identity so schedules and busy blocks cannot mix between people.
 - Agenda picker and tracks derive visibility from location-filtered daySegments or existing appointments; resource tracks require a visible practitioner work segment so unscheduled days stay empty. Shared picker selectionOptions preserve removable selections independently of current eligibility.
 - Patient directory reads identity rows under existing RLS, independently of appointment dates; its URL search filters the loaded identities, with stable ranged reads to avoid silently truncated lists.

@@ -119,7 +119,7 @@ function Picker({ label, options, value, onChange, multiple, help, disabled, cla
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>
-    {multiple && selectionPlacement === "below" && chosen.length > 0 && <div className={cn("flex flex-wrap gap-2", selectionClassName)} aria-label="Geselecteerde behandelaars">{chosen.map(option => <PillButton key={option.value} variant="ghost" size="sm" className="h-auto whitespace-normal bg-teal-light text-primary" aria-label={`${option.label} verwijderen`} onClick={() => onChange(selected.filter(v => v !== option.value))}><UiIcon name="kruis" className="size-3 shrink-0" />{option.photoPath && <Avatar path={option.photoPath} size={24} />}{option.label}</PillButton>)}</div>}
+    {selectionPlacement === "below" && chosen.length > 0 && <div className={cn("flex flex-wrap gap-2", selectionClassName)} aria-label={`Geselecteerd: ${label}`}>{chosen.map(option => <PillButton key={option.value} variant="ghost" size="sm" className="h-auto whitespace-normal bg-teal-light text-primary" aria-label={`${option.label} verwijderen`} onClick={() => onChange(selected.filter(v => v !== option.value))}><UiIcon name="kruis" className="size-3 shrink-0" />{option.photoPath && <Avatar path={option.photoPath} size={24} />}{option.label}</PillButton>)}</div>}
     {help && <span className="text-xs leading-[1.45] text-muted-foreground">{help}</span>}
   </div>;
 }
