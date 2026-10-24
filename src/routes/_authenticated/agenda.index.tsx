@@ -147,7 +147,7 @@ function Page() {
               ))}
             </div>
           ) : <p className="text-[13px] text-muted-foreground">{view.cols.filter(c => !c.key.includes(":" )).length} behandelaars ingeroosterd op deze dag</p>}
-          <div className="overflow-x-auto">
+          {view.cols.length > 0 && <div className="overflow-x-auto">
             <div className="grid min-w-max" style={{ gridTemplateColumns: `56px repeat(${Math.max(1, view.cols.length)}, minmax(340px, 1fr))` }}>
               <span />
               {view.cols.map((c) => week
@@ -191,7 +191,7 @@ function Page() {
                 </div>
               ))}
             </div>
-          </div>
+          </div>}
         </>
       )}
       {selected && ref && <aside className="fixed inset-y-0 right-0 z-30 w-[420px] overflow-y-auto bg-background shadow-[0_8px_24px_rgba(57,51,46,0.10)]"><PatientCard a={selected} treatment={ref.treatments.find((t) => t.id === selected.treatment_id)?.name_nl ?? ""} online={view?.locs.get(selected.location_id)?.kind === "online"} onClose={() => go({ afspraak: undefined })} /></aside>}
