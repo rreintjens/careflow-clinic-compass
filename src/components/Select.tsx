@@ -11,6 +11,7 @@ export interface SelectProps {
   disabled?: boolean;
   className?: string;
   inline?: boolean;
+  preserveOrder?: boolean;
 }
 
 /** Single selection delegates to the shared searchable picker. */
