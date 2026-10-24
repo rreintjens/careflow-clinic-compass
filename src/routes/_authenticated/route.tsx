@@ -115,9 +115,9 @@ function StaffLayout() {
 
   if (!staff) return null;
   return (
-    <div className="flex min-h-screen">
+    <div className="staff-shell flex min-h-dvh flex-col lg:flex-row">
       <Sidebar fullName={staff.full_name} email={staff.email} roleName={staff.role_name} onSignOut={signOut} tenants={tenants} onSwitchTenant={onSwitchTenant} />
-      <main className="min-w-0 flex-1 px-10 pb-12 pt-8">
+      <main className="staff-content w-full min-w-0 flex-1 px-4 pb-8 pt-5 sm:px-6 lg:px-10 lg:pb-12 lg:pt-8">
         <ActiveConsultMode />
         <Outlet />
       </main>

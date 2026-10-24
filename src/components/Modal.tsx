@@ -26,12 +26,12 @@ export function Modal({ open, onOpenChange, title, description, children, footer
             if (field) { event.preventDefault(); field.focus(); }
           }}
           className={cn(
-            "fixed left-1/2 top-1/2 z-50 flex max-h-[90vh] w-[calc(100%-32px)] -translate-x-1/2 -translate-y-1/2 flex-col rounded-[20px] bg-background shadow-[0_8px_24px_rgba(57,51,46,0.10)]",
+            "app-modal fixed left-1/2 top-1/2 z-50 flex max-h-[calc(100dvh-24px)] w-[calc(100%-24px)] -translate-x-1/2 -translate-y-1/2 flex-col rounded-[20px] bg-background shadow-[0_8px_24px_rgba(57,51,46,0.10)] sm:max-h-[90dvh] sm:w-[calc(100%-32px)]",
             width === "md" ? "max-w-[560px]" : width === "lg" ? "max-w-[820px]" : "max-w-[1180px]",
           )}
         >
-          <div className="flex items-start justify-between gap-4 px-7 pt-6">
-            <div>
+          <div className="grid shrink-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-3 px-4 pt-4 sm:px-7 sm:pt-6">
+            <div className="min-w-0 break-words">
               <Dialog.Title className="text-lg font-semibold">{title}</Dialog.Title>
               {description && <Dialog.Description className="mt-1 text-sm text-muted-foreground">{description}</Dialog.Description>}
             </div>
@@ -41,8 +41,8 @@ export function Modal({ open, onOpenChange, title, description, children, footer
               </svg>
             </Dialog.Close>
           </div>
-          <div className="overflow-y-auto px-7 py-5">{children}</div>
-          {footer && <div className="flex justify-end gap-2 border-t border-line px-7 py-4">{footer}</div>}
+          <div className="min-h-0 min-w-0 overflow-y-auto px-4 py-4 sm:px-7 sm:py-5">{children}</div>
+          {footer && <div className="flex shrink-0 flex-wrap justify-end gap-2 border-t border-line px-4 py-3 sm:px-7 sm:py-4">{footer}</div>}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

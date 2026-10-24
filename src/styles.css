@@ -459,3 +459,19 @@ a.portal-tile:hover {box-shadow:var(--portal-shadow);transform:translateY(-2px);
 .patient-slot[aria-pressed="true"],.patient-slot[aria-pressed="true"]:enabled:hover,.patient-slot[aria-pressed="true"]:enabled:active{background-color:var(--primary);color:var(--primary-foreground);}
 .portal-tile-sub.portal-with-photo{display:block;}
 .portal-tile-sub .portal-photo{display:inline-block;vertical-align:-4px;margin:0 4px 0 2px;}
+
+/* Mobile staff screens keep wide tables and calendars inside their own scroll regions. */
+@media(max-width:639px) {
+ .staff-content .grid:not(.grid-cols-7):not(.agenda-grid), .app-modal .grid:not(.grid-cols-7) {min-width:0;}
+ .app-modal .grid-cols-2,.app-modal .grid-cols-3 {grid-template-columns:minmax(0,1fr);}
+ .app-modal .col-span-2,.app-modal .col-span-3 {grid-column:auto;}
+ .staff-content input:not([type=checkbox]):not([type=radio]),.staff-content textarea,.app-modal input:not([type=checkbox]):not([type=radio]),.app-modal textarea,.portal input,.portal textarea {font-size:16px;}
+ .admin-list-page {min-width:0;}
+ .admin-list-page table {min-width:620px;}
+ .admin-list-page > .flex.flex-wrap > .w-\[300px\], .admin-list-page > .flex.flex-wrap > .w-\[340px\] {width:100%;}
+ .portal-weight,.portal-course {flex-wrap:wrap;justify-content:center;}
+ .portal-weight-side {min-width:0;}
+ .portal-tile-value-long {overflow-wrap:anywhere;}
+ .portal-row > .flex-1 {min-width:0;overflow-wrap:anywhere;}
+ .consult-notes {top:auto!important;bottom:8px;right:8px!important;width:calc(100% - 16px)!important;min-width:0!important;max-height:72dvh!important;resize:none!important;}
+}
