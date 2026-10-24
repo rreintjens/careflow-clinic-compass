@@ -2,6 +2,8 @@ import { queryOptions } from "@tanstack/react-query";
 
 import { supabase } from "@/integrations/supabase/client";
 import { agendaStatuses } from "@/domain/appointment-status";
+import { orgQuery, type Org } from "./organisation";
+import { getOrganisation } from "./organisation-read.functions";
 
 function must<D>(r: { data: D | null; error: unknown }): D {
   if (r.error) throw r.error;
@@ -9,29 +11,21 @@ function must<D>(r: { data: D | null; error: unknown }): D {
 }
 
 /** Reference data for the agenda (practitioners, schedules, catalogue); RLS scopes to the active tenant. */
-export async function loadAgendaRef() {
+export async function loadAgendaRef(organisation: Promise<Org> = getOrganisation()) {
   {
-    const [prac, blocks, exc, locs, treats, cats, links, pt, pl, tl, opts] = await Promise.all([
-      supabase.from("practitioners").select("id, first_name, last_name, photo_path, status").eq("status", "active"),
+    const [org, blocks, exc] = await Promise.all([
+      organisation,
       supabase.from("schedule_blocks").select("practitioner_id, weekday, location_id, starts, ends, recurrence, valid_from, valid_until, treatment_ids, allows_online"),
       supabase.from("schedule_exceptions").select("practitioner_id, kind, date_from, date_to, starts, ends, location_id"),
-      supabase.from("locations").select("id, name, kind").order("sort"),
-      supabase.from("treatments").select("id, name_nl, duration_min, status").eq("status", "active").order("name_nl"),
-      supabase.from("treatment_categories").select("id, parent_id, name_nl, sort, icon").order("sort"),
-      supabase.from("treatment_category_links").select("treatment_id, category_id"),
-      supabase.from("practitioner_treatments").select("practitioner_id, treatment_id, excluded_location_ids"),
-      supabase.from("practitioner_locations").select("practitioner_id, location_id"),
-      supabase.from("treatment_locations").select("treatment_id, location_id"),
-      supabase.from("option_lists").select("list_key, value, label_nl").in("list_key", ["agenda_notify", "agenda_reason","mail_moment"]).order("sort"),
     ]);
     return {
-      practitioners: must(prac).sort((a, b) => a.first_name.localeCompare(b.first_name, "nl")), blocks: must(blocks), exceptions: must(exc), locations: must(locs),
-      treatments: must(treats), categories: must(cats), links: must(links), pracTreat: must(pt), pracLoc: must(pl), treatLoc: must(tl), options: must(opts),
+      practitioners: org.practitioners.filter(p => p.status === "active").sort((a, b) => a.first_name.localeCompare(b.first_name, "nl")), blocks: must(blocks), exceptions: must(exc), locations: org.locations,
+      treatments: org.treatments.filter(t => t.status === "active"), categories: org.categories, links: org.categoryLinks, pracTreat: org.practitionerTreatments, pracLoc: org.practitionerLocations, treatLoc: org.treatmentLocations, options: org.options.filter(o => ["agenda_notify", "agenda_reason", "mail_moment"].includes(o.list_key)),
     };
   }
 }
 export type AgendaRef = Awaited<ReturnType<typeof loadAgendaRef>>;
-export const agendaRefQuery = queryOptions({ queryKey: ["agenda-ref"], queryFn: loadAgendaRef, staleTime: 60_000 });
+export const agendaRefQuery = queryOptions({ queryKey: ["agenda-ref"], queryFn: ({ client }) => loadAgendaRef(client.fetchQuery(orgQuery)), staleTime: 60_000 });
 
 /** Booked appointments between two UTC instants. */
 export async function loadAgendaAppts(from: string, to: string) {
@@ -40,7 +34,7 @@ export async function loadAgendaAppts(from: string, to: string) {
     .in("status", [...agendaStatuses, "cancelled"]).gte("starts_at", from).lt("starts_at", to));
 }
 export type AgendaAppt = Awaited<ReturnType<typeof loadAgendaAppts>>[number];
-export const agendaApptsQuery = (from: string, to: string) => queryOptions({ queryKey: ["agenda-appts", from, to], queryFn: () => loadAgendaAppts(from, to) });
+export const agendaApptsQuery = (from: string, to: string) => queryOptions({ queryKey: ["agenda-appts", from, to], queryFn: () => loadAgendaAppts(from, to), staleTime: 30_000 });
 
 /** Patient search for "Voor wie" (number, name or e-mail). */
 export const patientSearchQuery = (q: string) => queryOptions({

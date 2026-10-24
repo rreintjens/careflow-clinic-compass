@@ -1,7 +1,8 @@
 # Roadmap
 
 ## Bugonderzoek — eigenaar 24-10
-- [x] Agenda: locaties en behandelingen krijgen verwijderbare pillen met kruisje links; locatie, behandelaars en behandelingen elk op een eigen rij; als Rob drie pillen getoond en verwijderd, URL weer ongefilterd; negen gerichte tests groen, build OK.
+- [x] Agenda: keuzelijsten compact naast elkaar; alle pillen even hoog op één rij eronder met scheidingsstreepjes tussen filtergroepen; als Rob geselecteerd/verwijderd en visueel gecontroleerd.
+- [x] Trage agenda: dubbele referentielezingen verwijderd, gedeelde tenantcache en weekbereiken, voorladen na staff-inlog; bestaande toegangsregels eenmaal per databaseaanvraag geëvalueerd. Als Rob eerste agenda circa 1,83 s (voorheen 10,47 s), heropenen 0,17–0,19 s; 38 cache-, selectie-, tenant-, rol- en portaaltests groen. Gepubliceerde snelheid niet gemeten.
 - [x] Agenda vervolg: behandelaars op locatie/datum beperkt, geen kamers/apparatuur op lege dagen, selecties links naast elkaar over volle breedte en legenda's verwijderd; Utrecht maandag/zondag en week als Rob gecontroleerd, 26 gerichte tests groen.
 - [x] Patiënten toont alle patiënten zonder standaard dagfilter, met een goede zoekbalk; 12 identiteiten als Rob, volledige naam → één resultaat → dossier → herladen gecontroleerd.
 - [x] Agenda: eerst locaties (Alle locaties boven Online), daarna meerdere behandelaars met verwijderbare selectiechips en kruisje links; Week standaard alle behandelaars. Als Rob selecteren/verwijderen/beide weergaven gecontroleerd.

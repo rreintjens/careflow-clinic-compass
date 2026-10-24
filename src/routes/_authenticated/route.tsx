@@ -11,6 +11,7 @@ import { myTenantsQuery, resetTenantCaches } from "@/data/tenant";
 import { appFlagsQuery, staffContextQuery } from "@/data/staff";
 import { logAuthEvent, switchTenant } from "@/features/auth/auth.functions";
 import { supabase } from "@/integrations/supabase/client";
+import { agendaRefQuery } from "@/data/agenda";
 
 // Staff area: valid session + verified second factor (aal2) + an active role.
 export const Route = createFileRoute("/_authenticated")({
@@ -51,6 +52,11 @@ function StaffLayout() {
   const { data: tenants } = useSuspenseQuery(myTenantsQuery);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+
+  // Warm only this signed-in tenant's reference cache before the first agenda visit.
+  useEffect(() => {
+    if (staff) void queryClient.prefetchQuery(agendaRefQuery);
+  }, [staff, queryClient]);
 
   const signOut = useCallback(async () => {
     try {
