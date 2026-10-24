@@ -94,7 +94,7 @@ function Medical() {
       <section id="metingen" className="rounded-[20px] p-6 ring-1 ring-mist">
         <h3 className="text-[17px] font-semibold">Metingen en lichamelijk onderzoek</h3>
         <p className="text-[13px] text-muted-foreground">Per consult; de eerste rij komt uit de triage</p>
-        <table className="mt-4 w-full text-[13px]">
+        <div className="min-w-0 overflow-x-auto"><table className="mt-4 w-full min-w-[560px] text-[13px]">
           <thead><tr className="border-b border-mist text-left text-[12px] text-muted-foreground">{["Datum", "Gewicht", "BMI", "Buikomvang", "Bloeddruk", "Pols", "Door"].map((h) => <th key={h} className="whitespace-nowrap px-2.5 py-2.5 font-normal">{h}</th>)}</tr></thead>
           <tbody>
             {rows.map((m) => {
@@ -103,7 +103,7 @@ function Medical() {
               return <tr key={m.id} className="border-b border-mist">{[fmtDate(m.measured_on), m.weight_kg ? `${String(m.weight_kg).replace(".", ",")} kg` : "–", bmi, m.waist_cm ? `${m.waist_cm} cm` : "–", m.bp_systolic ? `${m.bp_systolic}/${m.bp_diastolic ?? ""}` : "–", m.pulse ?? "–", m.source === "triage" ? "Patiënt, bij het boeken" : "Medewerker"].map((v, i) => <td key={i} className="whitespace-nowrap px-2.5 py-3">{v}</td>)}</tr>;
             })}
           </tbody>
-        </table>
+        </table></div>
         <PillButton variant="outline" className="mt-4" onClick={() => setEdit("measure")}>Meting toevoegen</PillButton>
         {rows.length < 2 && <p className="mt-2 text-[12px] text-muted-foreground">Hier komt de grafiek van het gewichtsverloop zodra er twee metingen zijn.</p>}
       </section>

@@ -100,12 +100,12 @@ function SchedulePage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
         <Link to="/agenda" className="text-sm text-primary hover:text-primary-hover">Agenda</Link>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-[28px] font-semibold tracking-tight">Rooster bewerken</h1>
           <PillButton size="lg" onClick={() => toast.success("Rooster is opgeslagen")}>Opslaan</PillButton>
         </div>
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex min-w-0 flex-wrap items-center gap-3">
         <div className="flex items-center gap-2">
           <Avatar path={p.photo_path} size={30} />
           <Select label="Behandelaar" value={pid} onChange={(v) => navigate({ search: { practitioner: v, from: s.from } })} options={org.practitioners.map((x) => ({ value: x.id, label: fullName(x) }))} className="w-[220px] [&>label]:sr-only" />
@@ -113,14 +113,14 @@ function SchedulePage() {
         <button type="button" aria-label="Vorige week" onClick={() => navigate({ search: { practitioner: pid, from: addDays(weekStart, -7) } })} className="flex h-9 w-9 items-center justify-center rounded-full bg-sand text-primary">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>
         </button>
-        <span className="whitespace-nowrap text-[15px] font-semibold">Rooster vanaf {longDate.format(new Date(`${weekStart}T00:00:00Z`))}</span>
+        <span className="min-w-0 text-[13px] font-semibold sm:whitespace-nowrap sm:text-[15px]">Rooster vanaf {longDate.format(new Date(`${weekStart}T00:00:00Z`))}</span>
         <button type="button" aria-label="Volgende week" onClick={() => navigate({ search: { practitioner: pid, from: addDays(weekStart, 7) } })} className="flex h-9 w-9 items-center justify-center rounded-full bg-sand text-primary">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
         </button>
         <Link to="/agenda" className="ml-auto text-sm text-primary underline underline-offset-2">Bekijk de echte week in de agenda</Link>
       </div>
 
-      <div className="grid grid-cols-[minmax(0,1fr)_300px] items-start gap-6">
+      <div className="grid min-w-0 grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
         <div className="flex min-w-0 flex-col gap-6">
           <Card title="Herhalend rooster" description="Elk blok herhaalt zich: elke week, elke 2 weken of elke maand. Het label rechtsboven in een blok laat dat zien. Online consulten kunnen in vrije tijd van een kliniekblok worden geboekt. Klik een blok om het te wijzigen.">
             <div className="mb-4 flex flex-wrap items-center gap-4 text-[13px]">

@@ -73,7 +73,7 @@ function Treatment() {
             <div className="mt-4 flex flex-wrap gap-2"><PillButton disabled={save.isPending} onClick={() => save.mutate()}>Opslaan</PillButton><PillButton variant="outline" disabled={save.isPending} onClick={() => save.mutate(undefined, { onSuccess: () => setPlanOpen(true) })}>Opslaan en behandelplan maken</PillButton></div>
           </div>
         ) : <p className="mt-4 text-[14px] text-muted-foreground">Er is nu geen consult gepland.</p>}
-        <PillButton variant="outline" className="mt-4" onClick={() => setStandaloneOpen(true)}>Telefonisch of tussentijds consult vastleggen</PillButton>
+        <PillButton variant="outline" className="mt-4 h-auto min-h-11 max-w-full whitespace-normal py-2" onClick={() => setStandaloneOpen(true)}>Telefonisch of tussentijds consult vastleggen</PillButton>
         <p className="mt-4 text-[13px] text-muted-foreground">Eerdere consulten: {earlier.length ? "" : "geen."}</p>
         {earlier.map((n) => (
           <div key={n.id} className="mt-3 rounded-[14px] bg-sand p-4 text-[13px]">
@@ -92,7 +92,7 @@ function Treatment() {
 
       <section id="afspraken" className="rounded-[20px] p-6 ring-1 ring-mist">
         <h3 className="text-[17px] font-semibold">Afspraken</h3>
-        <table className="mt-4 w-full text-[13px]">
+        <div className="min-w-0 overflow-x-auto"><table className="mt-4 w-full min-w-[620px] text-[13px]">
           <thead><tr className="border-b border-mist text-left text-[12px] text-muted-foreground">{["Datum", "Afspraak", "Behandelaar", "Waar", "Status"].map((h) => <th key={h} className="whitespace-nowrap px-2.5 py-2.5 font-normal">{h}</th>)}</tr></thead>
           <tbody>{d.appointments.map((a) => (
             <tr key={a.id} className="border-b border-mist">
@@ -103,7 +103,7 @@ function Treatment() {
               <td className="whitespace-nowrap px-2.5">{STATUS[a.status] ?? a.status}</td>
             </tr>
           ))}</tbody>
-        </table>
+        </table></div>
       </section>
 
       {planOpen && data && <PlanModal id={id} fields={data.fields} plan={data.plan} focusField={focusField} onClose={() => { setPlanOpen(false); setFocusField(undefined); }} />}

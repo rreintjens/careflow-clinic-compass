@@ -65,9 +65,9 @@ function EquipmentPage() {
       <PageHeader
         title="Apparatuur"
         description="Per locatie: welke apparatuur er staat. Een apparaat heeft een soort; de soort bepaalt welke behandelingen ermee kunnen. Namen zijn de soort plus een nummer, je verzint ze niet zelf."
-        actions={<div className="flex gap-3"><PillButton size="lg" variant="outline" onClick={() => setKindsOpen(true)}>Soorten beheren</PillButton><PillButton size="lg" onClick={() => setDraft({ device: null })}><PlusIcon />Apparaat toevoegen</PillButton></div>}
+        actions={<div className="flex flex-wrap gap-3"><PillButton variant="outline" onClick={() => setKindsOpen(true)}>Soorten beheren</PillButton><PillButton onClick={() => setDraft({ device: null })}><PlusIcon />Apparaat toevoegen</PillButton></div>}
       />
-      <div className="flex items-center gap-2.5">
+      <div className="flex min-w-0 flex-wrap items-center gap-2.5">
         <SearchField className="w-[300px]" placeholder="Zoek een apparaat" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Zoek een apparaat" />
         <InlineSelect value={locFilter} onChange={setLocFilter} options={[{ value: "all", label: "Alle locaties" }, ...org.locations.map((l) => ({ value: l.id, label: l.name }))]} />
         <InlineSelect value={kindFilter} onChange={setKindFilter} options={[{ value: "all", label: "Alle soorten" }, ...kindOpts(org)]} />
