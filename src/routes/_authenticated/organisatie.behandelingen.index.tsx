@@ -13,7 +13,6 @@ import { PillButton } from "@/components/PillButton";
 import { SearchablePicker } from "@/components/SearchablePicker";
 import { Select } from "@/components/Select";
 import { UiIcon } from "@/components/UiIcon";
-import joyceAsset from "@/assets/joyce-maas.jpg.asset.json";
 import {
   addPlacement, createGroup, createMenuTreatment, dissolveGroup, menuData, moveMenuItem, orgQuery, removePlacement, setTreatmentAddon, setTreatmentIcon, updateGroup, uploadCustomIcon,
   type Org,
@@ -290,7 +289,7 @@ function TreatmentsPage() {
             </div>
           </section>
           <aside className="xl:sticky xl:top-6">
-            <PhonePreview org={org} m={m} sel={sel} onGroup={(id) => { setSel(id); if (id) setOpen((s) => { const n = new Set(s); let cur: string | null = id; while (cur) { n.add(cur); cur = org.categories.find((c) => c.id === cur)?.parent_id ?? null; } return n; }); }} />
+            <PhonePreview org={org} sel={sel} onGroup={(id) => { setSel(id); if (id) setOpen((s) => { const n = new Set(s); let cur: string | null = id; while (cur) { n.add(cur); cur = org.categories.find((c) => c.id === cur)?.parent_id ?? null; } return n; }); }} />
           </aside>
         </div>
 
@@ -562,74 +561,32 @@ function AddModal({ org, m, parent: initial, onClose, onDone }: { org: Org; m: M
   );
 }
 
-/** The real booking-flow look: what the patient sees for the selected level. */
-function PhonePreview({ org, m, sel, onGroup }: { org: Org; m: MenuData; sel: Parent; onGroup: (id: Parent) => void }) {
-  const [treatment, setTreatment] = useState<string | null>(null);
-  const [history, setHistory] = useState<Parent[]>([]);
-  // Same rule as /boeken: offered at an open location.
-  const offeredOpen = (id: string) => org.treatmentLocations.filter((x) => x.treatment_id === id && org.locations.some((l) => l.id === x.location_id && l.status === "open")).map((x) => x.location_id);
-  const visible = (id: string) => {
-    const t = org.treatments.find((x) => x.id === id);
-    return !!t && t.status === "active" && t.online_booking === "bookable" && offeredOpen(id).length > 0;
-  };
-  const label = (key: string) => org.options.find((o) => o.list_key === "booking_ui" && o.value === key)?.label_nl ?? "";
-  const items = visibleChildren(m, sel, visible);
-  const groupIcon = (id: string) => org.categories.find((c) => c.id === id)?.icon;
-  const icon = (own: string | null | undefined, parent: Parent) => resolveIcon({ ...m, groupIcon }, own, parent, org.menuDefaultIcon).icon;
-  const t = treatment ? org.treatments.find((x) => x.id === treatment) : null;
-  const goBack = () => {
-    if (treatment) return setTreatment(null);
-    const prev = history[history.length - 1];
-    setHistory(history.slice(0, -1));
-    onGroup(prev !== undefined ? prev : (sel ? org.categories.find((c) => c.id === sel)?.parent_id ?? null : null));
-  };
-  const top = sel === null && !treatment;
+/** The real /boeken screens (same components and data as the patient), framed; it follows and reports the selected group. */
+function PhonePreview({ org, sel, onGroup }: { org: Org; sel: Parent; onGroup: (id: Parent) => void }) {
+  const { data: tenant } = useQuery(currentTenantQuery);
+  const frame = useRef<HTMLIFrameElement | null>(null);
+  const shown = useRef<Parent | undefined>(undefined);
+  const [version, setVersion] = useState(0);
+  const src = (g: Parent) => `/boeken?${new URLSearchParams({ ...(tenant?.slug ? { merk: tenant.slug } : {}), voorbeeld: "1", ...(g ? { cat: g } : {}) }).toString()}`;
+  useEffect(() => {
+    const on = (e: MessageEvent) => {
+      if (e.origin !== window.location.origin || e.source !== frame.current?.contentWindow) return;
+      const d = e.data as { type?: string; group?: string | null; treatment?: string | null };
+      if (d?.type !== "tbc-booking-preview" || d.treatment) return;
+      shown.current = d.group ?? null;
+      if ((d.group ?? null) !== sel) onGroup(d.group ?? null);
+    };
+    window.addEventListener("message", on);
+    return () => window.removeEventListener("message", on);
+  }, [sel, onGroup]);
+  // A group picked in the tree opens that level; menu changes reload the screens.
+  useEffect(() => { if (frame.current && shown.current !== sel) frame.current.src = src(sel); }, [sel, tenant?.slug]);
+  useEffect(() => setVersion((v) => v + 1), [org]);
+  useEffect(() => { if (frame.current && version > 1) frame.current.src = src(sel); }, [version]);
+  if (!tenant) return null;
   return (
-    <div className="mx-auto w-full max-w-[360px] overflow-hidden rounded-[32px] bg-background shadow-[0_8px_24px_rgba(57,51,46,0.10)]" aria-label="Voorbeeld voor de patiënt">
-      <header className="grid h-14 grid-cols-[48px_1fr_48px] items-center px-2">
-        {top ? <span className="text-center text-[13px] font-semibold text-primary">EN</span>
-          : <button type="button" onClick={goBack} aria-label="Terug" className="flex justify-center"><img src="/ui-icons/pijl-links.svg" alt="" className="size-5" /></button>}
-        <span className="text-center text-sm font-semibold">The Body Clinic</span>
-        <span className="flex justify-center"><img src="/ui-icons/kruis.svg" alt="" className="size-5" /></span>
-      </header>
-      <div className="h-[3px] bg-muted"><div className="h-full bg-primary" style={{ width: t ? "30%" : top ? "10%" : "15%" }} /></div>
-      <div className="max-h-[calc(100dvh-200px)] min-h-[480px] overflow-y-auto px-5 pb-6 pt-7">
-        {t ? (
-          <>
-            <h3 className="mb-6 text-[24px] font-semibold leading-[1.2] tracking-tight">{label("q_location")}</h3>
-            <div className="flex flex-col gap-2">
-              {[...org.locations].filter((l) => offeredOpen(t.id).includes(l.id)).sort((a, z) => Number(z.kind === "online") - Number(a.kind === "online") || a.sort - z.sort).map((l) => { return (
-                <div key={l.id} className="flex min-h-[56px] items-center gap-3 rounded-[16px] bg-sand px-4 text-[15px]"><img src={l?.kind === "online" ? "/ui-icons/videogesprek.svg" : "/ui-icons/locatie.svg"} alt="" className="size-5" />{l?.name}</div>
-              ); })}
-            </div>
-          </>
-        ) : (
-          <>
-            <h3 className="mb-6 text-[24px] font-semibold leading-[1.2] tracking-tight">{sel ? org.categories.find((c) => c.id === sel)?.name_nl : label("q_category")}</h3>
-            <div className="flex flex-col gap-2">
-              {items.map((it) => {
-                const g = it.kind === "group" ? org.categories.find((c) => c.id === it.id) : null;
-                const tr = it.kind === "treatment" ? org.treatments.find((x) => x.id === it.id) : null;
-                return (
-                  <button key={`${it.kind}:${it.id}`} type="button" className="patient-choice flex min-h-[56px] items-center gap-3 rounded-[16px] bg-sand px-4 text-left"
-                    onClick={() => { if (g) { setHistory([...history, sel]); onGroup(g.id); } else if (tr) setTreatment(tr.id); }}>
-                    <span className="flex size-8 shrink-0 items-center justify-center"><MenuIcon icon={g ? icon(g.icon, g.parent_id) : icon(tr?.icon, sel)} /></span>
-                    <span className="min-w-0 flex-1 py-2.5"><span className="block break-words text-[15px]">{g?.name_nl ?? tr?.name_nl}</span>{tr && <span className="block text-[12px] text-muted-foreground">{tr.duration_min} min</span>}</span>
-                    <img src="/ui-icons/pijl-rechts.svg" alt="" className="size-4 shrink-0" />
-                  </button>
-                );
-              })}
-              {items.length === 0 && <p className="text-sm text-muted-foreground">Hier ziet de patiënt niets.</p>}
-            </div>
-          </>
-        )}
-      </div>
-      {top && (
-        <footer className="flex items-center justify-center gap-3 px-5 pb-6">
-          <img src={joyceAsset.url} alt="" className="size-11 shrink-0 rounded-full object-cover" style={{ objectPosition: "50% 18%" }} />
-          <span className="text-[13px] text-muted-foreground"><span className="block">{label("call")} <span className="text-primary underline">{org.clinicPhone}</span></span><span className="block">{label("call_team")}</span></span>
-        </footer>
-      )}
+    <div className="mx-auto w-full max-w-[360px] overflow-hidden rounded-[32px] bg-background shadow-[0_8px_24px_rgba(57,51,46,0.10)]">
+      <iframe ref={frame} title="Voorbeeld voor de patiënt" src={src(sel)} className="block h-[720px] max-h-[calc(100dvh-120px)] w-full border-0" />
     </div>
   );
 }
