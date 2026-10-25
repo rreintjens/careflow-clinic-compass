@@ -49,7 +49,8 @@ export type LinkScope = LinkDraft & Partial<Pick<BookingLinkInput, "treatment_id
 export function scopeTreatments(c: LinkCatalog, d: LinkScope): string[] {
   const treatments = d.treatment_ids?.length ? d.treatment_ids : d.treatment_id ? [d.treatment_id] : [];
   const categories = new Set(d.category_ids ?? []);
-  for (const category of c.categories ?? []) if (category.parent_id && categories.has(category.parent_id)) categories.add(category.id);
+  // Groups nest freely: include every level below a chosen group.
+  for (let grew = true; grew;) { grew = false; for (const category of c.categories ?? []) if (category.parent_id && categories.has(category.parent_id) && !categories.has(category.id)) { categories.add(category.id); grew = true; } }
   if (!treatments.length && !categories.size) return c.treatments.map(t => t.id);
   return c.treatments.filter(t => treatments.includes(t.id) || t.categories?.some(id => categories.has(id))).map(t => t.id);
 }
