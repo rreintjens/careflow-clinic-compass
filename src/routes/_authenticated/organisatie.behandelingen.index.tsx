@@ -51,11 +51,10 @@ function treatmentWarning(org: Org, id: string): string {
   if (t.online_booking !== "bookable") return "Niet online boekbaar";
   const b = treatmentBookability(org, id);
   if (b.total === 0) return "Nergens aangeboden";
-  const bad = b.perLocation.filter((p) => p.reason !== "ok").map((p) => org.locations.find((l) => l.id === p.locationId)?.name ?? "");
   const clinics = org.locations.filter(l => l.kind !== "online" && l.status !== "inactive");
-  const coverage = org.treatments.map(t => ({ id: t.id, kind: t.kind, bookable: treatmentBookability(org, t.id).perLocation.filter(p => p.reason === "ok").map(p => p.locationId) }));
+  const coverage = org.treatments.map(t => ({ id: t.id, kind: t.kind, bookable: treatmentBookability(org, t.id).offered }));
   const missing = missingGroupLocations(menuData(org), coverage, id, clinics.map(l => l.id)).map(id => clinics.find(l => l.id === id)?.name ?? "");
-  const all = [...new Set([...missing, ...bad])];
+  const all = [...new Set(missing)];
   return all.length ? `Niet in ${joinNl(all)}` : "";
 }
 
