@@ -85,7 +85,7 @@ function RunnerContent({
     if (screen.startsWith('red:')) { setPageId(screen.slice(4)); setRed(redRef.current); }
     else { setPageId(screen); setRed(null); }
   });
-  useBookingTransition(mainRef, screenKey, { direction: navigation.direction, scrollRef, pageScroll: fullScreen });
+  useBookingTransition(mainRef, screenKey, { direction: navigation.direction, scrollRef });
   useEffect(() => { onAnswers?.(answers); }, [answers, onAnswers]);
   const ctx = useMemo(() => makeCtx(configOfDefinition(def, flow), answers, today), [def, flow, answers, today]);
   const pages = visiblePages(def, ctx);

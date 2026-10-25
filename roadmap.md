@@ -274,5 +274,7 @@ Verificatie: als Rob desktop en 390px; dag/week behouden scroll, tijd toont Verd
 Gecontroleerd: 390px/desktop, 100 ms feedback, 280 ms schuiven in beide richtingen inclusief browser terug; 120 ms fade zonder transform bij reduced-motion. Als Rob echte iframe vooruit/terug; nieuwe stappen scroll 0, dag blijft 250, tijd toont Verder en geen pointerring. 581 tests groen, build OK.
 
 ## Vragenlijstovergangen — eigenaar 25-10 20:38
-- [ ] Gedeelde boekingsovergang voor alle runners; vaste kop/voortgang en stilstaande antwoorden binnen een pagina.
-- [ ] Vooruit, terug/browser terug, nieuwe pagina bovenaan, validatie en reduced-motion controleren op desktop/390px; tests uitvoeren.
+- [x] Gedeelde boekingsovergang voor alle runners; vaste kop/voortgang en stilstaande antwoorden binnen een pagina.
+- [x] Vooruit, terug/browser terug, nieuwe pagina bovenaan, validatie en reduced-motion controleren op desktop/390px; tests uitvoeren.
+
+Gecontroleerd als Rob: triagebouwervoorbeeld op desktop/390px vooruit en beide terugknoppen; echte /boeken-reservering opent triage met 280ms schuiven en validatie. Medische vragenlijst in bouwervoorbeeld op beide maten met 120ms reduced-motion fade. Antwoorden wijzigen zonder overgang en antwoordbehoud bij terug gedekt door tests; geen antwoorden in history. Volledige suite 586 tests groen; na laatste navigatiefixes 153 gerichte tests groen. Medische patiëntlink na boeking niet afzonderlijk browsermatig getest; gedeelde runner gebruikt dezelfde overgang.
