@@ -471,9 +471,11 @@ function AddModal({ org, m, parent: initial, onClose, onDone }: { org: Org; m: M
 function PhonePreview({ org, m, sel, onGroup }: { org: Org; m: MenuData; sel: Parent; onGroup: (id: Parent) => void }) {
   const [treatment, setTreatment] = useState<string | null>(null);
   const [history, setHistory] = useState<Parent[]>([]);
+  // Same rule as /boeken: offered at an open location.
+  const offeredOpen = (id: string) => org.treatmentLocations.filter((x) => x.treatment_id === id && org.locations.some((l) => l.id === x.location_id && l.status === "open")).map((x) => x.location_id);
   const visible = (id: string) => {
     const t = org.treatments.find((x) => x.id === id);
-    return !!t && t.status === "active" && t.online_booking === "bookable" && treatmentBookability(org, id).ok > 0;
+    return !!t && t.status === "active" && t.online_booking === "bookable" && offeredOpen(id).length > 0;
   };
   const label = (key: string) => org.options.find((o) => o.list_key === "booking_ui" && o.value === key)?.label_nl ?? "";
   const items = visibleChildren(m, sel, visible);
@@ -487,7 +489,6 @@ function PhonePreview({ org, m, sel, onGroup }: { org: Org; m: MenuData; sel: Pa
     onGroup(prev !== undefined ? prev : (sel ? org.categories.find((c) => c.id === sel)?.parent_id ?? null : null));
   };
   const top = sel === null && !treatment;
-  const b = t ? treatmentBookability(org, t.id) : null;
   return (
     <div className="mx-auto w-full max-w-[360px] overflow-hidden rounded-[32px] bg-background shadow-[0_8px_24px_rgba(57,51,46,0.10)]" aria-label="Voorbeeld voor de patiënt">
       <header className="grid h-14 grid-cols-[48px_1fr_48px] items-center px-2">
@@ -498,12 +499,12 @@ function PhonePreview({ org, m, sel, onGroup }: { org: Org; m: MenuData; sel: Pa
       </header>
       <div className="h-[3px] bg-muted"><div className="h-full bg-primary" style={{ width: t ? "30%" : top ? "10%" : "15%" }} /></div>
       <div className="max-h-[560px] min-h-[480px] overflow-y-auto px-5 pb-6 pt-7">
-        {t && b ? (
+        {t ? (
           <>
             <h3 className="mb-6 text-[24px] font-semibold leading-[1.2] tracking-tight">{label("q_location")}</h3>
             <div className="flex flex-col gap-2">
-              {b.perLocation.filter((p) => p.reason === "ok").map((p) => { const l = org.locations.find((x) => x.id === p.locationId); return (
-                <div key={p.locationId} className="flex min-h-[56px] items-center gap-3 rounded-[16px] bg-sand px-4 text-[15px]"><img src={l?.kind === "online" ? "/ui-icons/videogesprek.svg" : "/ui-icons/locatie.svg"} alt="" className="size-5" />{l?.name}</div>
+              {[...org.locations].filter((l) => offeredOpen(t.id).includes(l.id)).sort((a, z) => Number(z.kind === "online") - Number(a.kind === "online") || a.sort - z.sort).map((l) => { return (
+                <div key={l.id} className="flex min-h-[56px] items-center gap-3 rounded-[16px] bg-sand px-4 text-[15px]"><img src={l?.kind === "online" ? "/ui-icons/videogesprek.svg" : "/ui-icons/locatie.svg"} alt="" className="size-5" />{l?.name}</div>
               ); })}
             </div>
           </>
