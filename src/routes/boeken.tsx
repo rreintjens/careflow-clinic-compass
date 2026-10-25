@@ -210,6 +210,55 @@ export function Title({ children, sub }: { children: React.ReactNode; sub?: Reac
   return <div className="mb-6"><h1 className="text-[28px] font-semibold leading-[1.2] tracking-tight">{children}</h1>{sub && <div className="mt-3 text-[15px] leading-[1.6] text-muted-foreground">{sub}</div>}</div>;
 }
 
+const euro = (n: number) => new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR", maximumFractionDigits: n % 1 ? 2 : 0 }).format(n);
+const addonParams = (s: Search) => ({ ...(s.x === "consult" || s.x === "pakket" ? { addon: s.x } : {}), ...((s.sub ?? s.cat) ? { via: s.sub ?? s.cat } : {}) });
+type MenuShape = { groups: Full["categories"]; links: Full["links"]; roots: Full["roots"] };
+
+/** The toevoeging the patient chose for this treatment, for summaries; the server re-derives it when holding. */
+function chosenAddon(c: Full, menu: MenuShape | null, s: Search, treatmentId: string): AddonChoice | null {
+  if (s.x !== "consult" && s.x !== "pakket") return null;
+  const t = c.treatments.find((x) => x.id === treatmentId);
+  if (!t) return null;
+  const m = menu ?? { groups: c.categories, links: c.links, roots: c.roots };
+  const a = effectiveAddon(c.categories, t, placementParent(m, treatmentId, s.sub ?? s.cat ?? null));
+  if (a?.type === "consult" && s.x === "consult") return { type: "consult", minutes: a.minutes };
+  if (a?.type === "pakket" && s.x === "pakket") return { type: "pakket", label: a.label, price_eur: a.price_eur };
+  return null;
+}
+
+/** One extra question after choosing a treatment: a consult erbij, or a pakket. */
+export function AddonStep({ c, menu, step, tx, name, lang, onDone }: { c: Full; menu: MenuShape; step: { treatment: string; via: string | null; addon: Exclude<Addon, { type: "none" }> }; tx: Tx; name: (x: { name_nl: string; name_en: string | null }) => string; lang: string; onDone: (x: "ja" | "consult" | "pakket" | "een", switchTo?: string) => void }) {
+  const t = c.treatments.find((x) => x.id === step.treatment);
+  const parent = placementParent(menu, step.treatment, step.via);
+  const [pick, setPick] = useState<"ja" | "consult" | "pakket" | "een">(step.addon.type === "consult" ? "ja" : "pakket");
+  if (!t) return null;
+  const price = t.price_cents != null ? `${t.price_is_from ? `${tx("a_from")} ` : ""}${euro(t.price_cents / 100)}` : "";
+  const tg = typeGroup(c.categories, parent);
+  const g = c.categories.find((x) => x.id === tg);
+  const consult = step.addon.type === "consult" ? consultFor(menu, c.categories, c.treatments, parent) : null;
+  const options = step.addon.type === "consult"
+    ? [{ v: "ja" as const, title: tx("a_consult_yes"), sub: "" }, { v: "consult" as const, title: tx("a_consult_no"), sub: tx("a_consult_no_help", { min: step.addon.minutes }) }]
+    : [{ v: "pakket" as const, title: tx("a_pakket_yes", { label: step.addon.label.charAt(0).toLowerCase() + step.addon.label.slice(1) }), sub: euro(step.addon.price_eur) }, { v: "een" as const, title: tx("a_pakket_no"), sub: t.price_cents != null ? euro(t.price_cents / 100) : "" }];
+  return (
+    <>
+      <span className="mb-4 inline-flex self-start rounded-full bg-teal-light px-3 py-1 text-[13px] text-primary">{[name(t), tx("c_minutes", { min: t.duration_min }), price].filter(Boolean).join(" · ")}</span>
+      <Title>{step.addon.type === "consult" ? tx("a_consult_title", { groep: groupPhrase(g ? name(g) : name(t)) }) : step.addon.question}</Title>
+      <div className="flex flex-col gap-2" role="radiogroup">
+        {options.map((o) => (
+          <button key={o.v} type="button" role="radio" aria-checked={pick === o.v} onClick={() => setPick(o.v)}
+            className={cn("patient-choice flex min-h-[60px] flex-col justify-center rounded-[16px] px-5 py-3 text-left", pick === o.v ? "bg-teal-light" : "bg-sand")}>
+            <span className="block text-[16px]">{o.title}</span>
+            {o.sub && <span className="block text-[13px] text-muted-foreground">{o.sub}</span>}
+          </button>
+        ))}
+      </div>
+      {consult && consult !== step.treatment && <button type="button" onClick={() => onDone("ja", consult)} className="mt-4 self-start text-[14px] text-primary underline">{tx("a_consult_only")}</button>}
+      <PillButton size="lg" className="patient-choice choice-primary mt-8 w-full" onClick={() => onDone(pick)}>{tx("a_continue")}</PillButton>
+      <span className="hidden">{lang}</span>
+    </>
+  );
+}
+
 const Chevron = () => <img src="/ui-icons/pijl-rechts.svg" alt="" className="size-4 shrink-0" />;
 
 function List({ title, rows, onPick }: { title: string; rows: Array<{ id: string; title: string; sub?: string; icon?: string | null | undefined }>; onPick: (id: string) => void }) {
@@ -776,7 +825,7 @@ function ConfirmedStep({ c, s, treatmentId, locationId, practitionerId, manageTo
   const ics = () => {
     const [h, m] = (s.tijd ?? "00:00").split(":").map(Number) as [number, number];
     const startD = new Date(`${s.d}T${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`);
-    const end = new Date(startD.getTime() + (t?.duration_min ?? 30) * 60_000);
+    const end = new Date(startD.getTime() + addonMinutes(t?.duration_min ?? 30, chosenAddon(c, null, s, treatmentId)) * 60_000);
     const body = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//The Body Clinic//Booking//NL", "BEGIN:VEVENT", `UID:${manageToken}`, `DTSTAMP:${icsDate(new Date())}`, `DTSTART:${icsDate(startD)}`, `DTEND:${icsDate(end)}`, `SUMMARY:${tName} · ${c.tenant.name}`, `LOCATION:${l?.kind === "online" ? tx("d_online_meet") : `${l?.name ?? ""}, ${l?.address ?? ""}`}`, "END:VEVENT", "END:VCALENDAR"].join("\r\n");
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([body], { type: "text/calendar" }));
@@ -795,7 +844,7 @@ function ConfirmedStep({ c, s, treatmentId, locationId, practitionerId, manageTo
         </div>
         <p className="mt-4 flex items-center gap-3 text-[14px]"><img src={l?.kind === "online" ? "/ui-icons/videogesprek.svg" : "/ui-icons/locatie.svg"} alt="" className="size-4" />{l?.kind === "online" ? tx("d_online_meet") : `${l?.name ?? ""}, ${l?.address ?? ""}`}</p>
         {l?.kind === "online" && meetLink && <p className="mt-2 flex items-center gap-3 text-[14px]"><img src="/ui-icons/videogesprek.svg" alt="" className="size-4 shrink-0" /><a href={meetLink} target="_blank" rel="noreferrer" className="truncate text-primary underline">{tx("m_join")}</a></p>}
-        <p className="mt-2 flex items-center gap-3 text-[14px]"><img src="/ui-icons/klok.svg" alt="" className="size-4" />{tName}, {tx("c_minutes", { min: t?.duration_min ?? 0 })}</p>
+        <p className="mt-2 flex items-center gap-3 text-[14px]"><img src="/ui-icons/klok.svg" alt="" className="size-4" />{tName}{chosenAddon(c, null, s, treatmentId)?.type === "consult" ? ` ${tx("a_summary_consult")}` : ""}, {tx("c_minutes", { min: addonMinutes(t?.duration_min ?? 0, chosenAddon(c, null, s, treatmentId)) })}</p>
         <button type="button" onClick={ics} className="mt-4 text-[14px] underline">{tx("c_add_calendar")}</button>
       </div>
       {hasQ && (
