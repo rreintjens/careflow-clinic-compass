@@ -57,3 +57,6 @@
 - Treatment settings share one validated modal; public availability never restricts staff booking.
 - Stats keys are header-only. Photos share a demo resolver; frozen reminders use the mail job.
 - Toevoegingen (addon jsonb on treatment_categories/treatments, choice on appointments) resolve via `src/domain/addons.ts`; the server re-derives the choice from the stored tree so the browser cannot set minutes or prices. The admin phone preview frames the real same-origin `/boeken?voorbeeld=1` so the two cannot drift.
+
+- Menu availability warnings use tested peer-group coverage in src/domain/menu-bookability.ts; the chip compares configured offers, while detailed technical room/practitioner checks remain separate, avoiding cross-specialty false positives.
+- Booking Shell shares contact information through its route-scoped context, and patient frames remain page-scrolled so bottom booking controls can stick without a nested vertical scroller.

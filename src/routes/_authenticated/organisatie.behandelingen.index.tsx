@@ -18,6 +18,7 @@ import {
   type Org,
 } from "@/data/organisation";
 import { canAddGroup, children, depth, moveError, parentsOfTreatment, pathLabel, resolveIcon, treatmentsIn, visibleChildren, type MenuData, type MenuItem, type Parent } from "@/domain/menu";
+import { missingGroupLocations } from "@/domain/menu-bookability";
 import { durationOptions } from "@/domain/organisation";
 import { ADDON_MINUTES, addonExplain, groupAddon, parseAddon, type Addon } from "@/domain/addons";
 import { currentTenantQuery } from "@/data/tenant";
@@ -47,15 +48,13 @@ function treatmentWarning(org: Org, id: string): string {
   const t = org.treatments.find((x) => x.id === id);
   if (!t) return "";
   if (t.status !== "active") return "Niet actief";
-  if (t.online_booking !== "bookable") return "Niet online boekbaar";
   const b = treatmentBookability(org, id);
-  if (b.total === 0) return "Nergens aangeboden";
-  const bad = b.perLocation.filter((p) => p.reason !== "ok").map((p) => org.locations.find((l) => l.id === p.locationId)?.name ?? "");
-  // Offered in most clinics but not all: name the clinics it is missing from, as eKis does.
-  const clinics = org.locations.filter((l) => l.kind !== "online" && l.status !== "inactive");
-  const offeredClinics = clinics.filter((l) => b.offered.includes(l.id));
-  const missing = offeredClinics.length * 2 >= clinics.length ? clinics.filter((l) => !b.offered.includes(l.id)).map((l) => l.name) : [];
-  const all = [...new Set([...missing, ...bad])];
+  if (b.total === 0) return "Nergens boekbaar";
+  if (t.online_booking !== "bookable") return "Niet online boekbaar";
+  const clinics = org.locations.filter(l => l.kind !== "online" && l.status !== "inactive");
+  const coverage = org.treatments.map(t => ({ id: t.id, kind: t.kind, bookable: treatmentBookability(org, t.id).offered }));
+  const missing = missingGroupLocations(menuData(org), coverage, id, clinics.map(l => l.id)).map(id => clinics.find(l => l.id === id)?.name ?? "");
+  const all = [...new Set(missing)];
   return all.length ? `Niet in ${joinNl(all)}` : "";
 }
 

@@ -165,8 +165,9 @@
 
 .patient-choice { border:1px solid transparent; background-color:var(--sand); transition:background-color 140ms,transform 140ms; }
 .patient-choice:enabled:hover { background-color:var(--choice-hover); }
-.patient-choice:focus-visible {outline:2px solid var(--primary);outline-offset:3px;}
-.patient-choice:enabled:active,.patient-choice[aria-pressed="true"],.patient-choice[aria-selected="true"] {background-color:var(--teal-light);color:var(--foreground);}
+.patient-choice:focus {outline:none;}
+[data-patient-keyboard="true"] .patient-choice:focus-visible {outline:2px solid var(--primary);outline-offset:3px;}
+.patient-choice:enabled:active,.patient-choice[aria-pressed="true"],.patient-choice[aria-selected="true"],.patient-choice[aria-checked="true"],.patient-choice[aria-checked="true"]:enabled:hover {background-color:var(--teal-light);color:var(--foreground);}
 /* Day picker: no box behind the day cell; hover/active live on the circle only. */
 .patient-day,.patient-day:enabled:hover,.patient-day:enabled:active,.patient-day[aria-pressed="true"],.patient-day[aria-selected="true"] {background-color:transparent;}
 .patient-day:enabled:hover .day-circle.bg-sand {background-color:var(--choice-hover);}

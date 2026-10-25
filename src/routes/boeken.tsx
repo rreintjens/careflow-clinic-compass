@@ -2,7 +2,7 @@ import joyceAsset from "@/assets/joyce-maas.jpg.asset.json";
 import { useQuery, useSuspenseQuery, queryOptions } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, useContext, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 
 import { resolveStartScreen,startScreenPage } from "@/domain/start-screen";
@@ -67,7 +67,21 @@ export const Route = createFileRoute("/boeken")({
 type Cat = Awaited<ReturnType<typeof getBookingCatalog>>;
 type Full = Extract<Cat, { categories: unknown }>;
 
+const BookingContact = createContext<{ phone: string; tx: Tx } | null>(null);
+
 function Booking() {
+  const s = Route.useSearch();
+  const { catalog, link } = Route.useLoaderData();
+  const lang = s.lang ?? (link?.found ? link.link.language : null) ?? "nl";
+  const tx: Tx = (key, vars = {}) => {
+    const row = catalog.ui.find(u => (u.list_key === "booking_ui" || u.list_key === "questionnaire_ui") && u.value === key);
+    return ((lang === "en" && row?.label_en) || row?.label_nl || "").replace(/\{(\w+)\}/g, (_, k: string) => String(vars[k] ?? ""));
+  };
+  const phone = catalog.tenant?.phone;
+  return <BookingContact.Provider value={phone ? { phone, tx } : null}><BookingContent /></BookingContact.Provider>;
+}
+
+function BookingContent() {
   const s = Route.useSearch();
   const navigate = useNavigate({ from: "/boeken" });
   const loaded=Route.useLoaderData();
@@ -80,7 +94,7 @@ function Booking() {
     const base = (lang === "en" && r?.label_en) || r?.label_nl || "";
     return base.replace(/\{(\w+)\}/g, (_, k: string) => String(vars[k] ?? ""));
   };
-  const go = (patch: Partial<Search>, replace = false) => navigate({ search: (prev) => ({ ...prev, ...patch }), replace });
+  const go = (patch: Partial<Search>, replace = false) => navigate({ search: (prev) => ({ ...prev, ...patch }), replace, resetScroll: Object.keys(patch).some(key => !["d", "tijd", "lang"].includes(key)) });
 
   // One tap may never advance more than one step: ignore touches for ~400 ms after a step change,
   // so a tap that started on the previous screen cannot land on a button of the new screen.
@@ -167,8 +181,8 @@ function Booking() {
     <CustomIconsProvider icons={c.customIcons}>
     <Shell lang={lang} progress={progress} onBack={back} onClose={close} onLang={top ? () => go({ lang: lang === "nl" ? "en" : "nl" }, true) : undefined}
       bar={showBar ? <LoginBar tx={tx} onClick={openLogin} /> : undefined}
-      footer={top && phone ? <CallFooter phone={phone} tx={tx} /> : null}>
-      <div className={guard}>
+      >
+      <div className={cn("flex flex-1 flex-col", guard)}>
       {step.kind === "none" && <p className="pt-10 text-[15px]">{tx("nothing_bookable")}</p>}
       {step.kind === "menu" && (
         <List title={step.group ? name(c.categories.find((k) => k.id === step.group) ?? { name_nl: "", name_en: null }) : tx("q_category")}
@@ -190,6 +204,14 @@ function Booking() {
 }
 
 export function Shell({ children, footer, bar, progress = 0, onBack, onClose, onLang, lang }: { children: React.ReactNode; footer?: React.ReactNode; bar?: React.ReactNode; progress?: number; onBack?: (() => void) | undefined; onClose?: () => void; onLang?: (() => void) | undefined; lang: string }) {
+  const contact = useContext(BookingContact);
+  useEffect(() => {
+    const pointer = () => { document.documentElement.dataset["patientKeyboard"] = "false"; };
+    const keyboard = (event: KeyboardEvent) => { if (event.key === "Tab" || event.key.startsWith("Arrow")) document.documentElement.dataset["patientKeyboard"] = "true"; };
+    document.addEventListener("pointerdown", pointer, true);
+    document.addEventListener("keydown", keyboard, true);
+    return () => { document.removeEventListener("pointerdown", pointer, true); document.removeEventListener("keydown", keyboard, true); };
+  }, []);
   return (
     <PatientFrame>
         <header className="grid h-14 grid-cols-[48px_1fr_48px] items-center px-2">
@@ -201,7 +223,7 @@ export function Shell({ children, footer, bar, progress = 0, onBack, onClose, on
         <div className="h-[3px] bg-muted"><div className="h-full bg-primary transition-all" style={{ width: `${Math.round(progress * 100)}%` }} /></div>
         {bar}
         <main className="flex flex-1 flex-col px-5 pb-6 pt-8">{children}</main>
-        {footer && <footer className="px-5 pb-6">{footer}</footer>}
+        {(footer || contact) && <footer className="flex flex-col gap-6 px-5 pb-6">{footer}{contact && <CallFooter phone={contact.phone} tx={contact.tx} />}</footer>}
     </PatientFrame>
   );
 }
@@ -246,9 +268,10 @@ export function AddonStep({ c, menu, step, tx, name, onDone }: { c: Full; menu: 
       <div className="flex flex-col gap-2" role="radiogroup">
         {options.map((o) => (
           <button key={o.v} type="button" role="radio" aria-checked={pick === o.v} onClick={() => setPick(o.v)}
-            className={cn("patient-choice flex min-h-[60px] flex-col justify-center rounded-[16px] px-5 py-3 text-left", pick === o.v ? "bg-teal-light" : "bg-sand")}>
-            <span className="block text-[16px]">{o.title}</span>
-            {o.sub && <span className="block text-[13px] text-muted-foreground">{o.sub}</span>}
+            className={cn("patient-choice flex min-h-[60px] items-center gap-3 rounded-[16px] px-5 py-3 text-left", pick === o.v ? "bg-teal-light" : "bg-sand")}>
+            <span aria-hidden="true" className="flex size-5 shrink-0 items-center justify-center rounded-full bg-background">{pick === o.v && <span className="size-3 rounded-full bg-primary" />}</span>
+            <span className="min-w-0 flex-1"><span className="block text-[16px]">{o.title}</span>
+            {o.sub && <span className="block text-[13px] text-muted-foreground">{o.sub}</span>}</span>
           </button>
         ))}
       </div>
@@ -326,7 +349,7 @@ function LocationStep({ c, treatmentId, options, tx, name, onPick,hidePeople=fal
           <span className="flex -space-x-3">{people.map((p) => <Avatar key={p.id} src={p.photo} size={40} />)}</span>
           <span>{tx("duration_line", { rol: roles.length === 1 ? roles[0] ?? "" : tx("practitioner"), min: t.duration_min + extraMin })}</span>
         </span>
-      )}>{tx("q_location")}</Title>
+      )}>{tx(t?.kind === "consult" ? "q_location" : "q_location_treatment")}</Title>
       <div className="flex flex-col gap-2">
         {locs.map((l, i) => {
           const online = l.kind === "online";
@@ -361,6 +384,7 @@ function useSlots(c: Full, s: Search, treatmentId: string, locationId: string, p
     queryKey: ["booking-slots", s.merk ?? "", treatmentId, locationId, practitionerIds.join(","), from, days, s.x ?? ""],
     queryFn: () => fn({ data: { merk: s.merk, treatmentId, locationId, practitionerIds: practitionerIds.length ? practitionerIds : eligiblePractitioners(c,treatmentId,locationId).map(p=>p.id), from, days, link:s.link, ...addonParams(s) } }),
     enabled: !!c,
+    placeholderData: (previous) => previous,
   });
 }
 
@@ -413,6 +437,12 @@ function Card({ avatar, title, sub, when, onClick }: { avatar: React.ReactNode; 
 }
 
 function PlannerStep({ c, s, step, tx, lang, go, me, preferredId }: { c: Full; s: Search; step: Extract<ReturnType<typeof nextStep>, { kind: "planner" }>; tx: Tx; lang: string; go: (p: Partial<Search>, replace?: boolean) => void; me?: Awaited<ReturnType<typeof bookingPatientContext>> | null; preferredId?: string | null }) {
+  const continueRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!s.tijd) return;
+    const frame = requestAnimationFrame(() => continueRef.current?.scrollIntoView({ block: "nearest", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" }));
+    return () => cancelAnimationFrame(frame);
+  }, [s.tijd]);
   const today = todayLocal();
   const horizon = c.maxAheadWeeks * 7;
   const q = useSlots(c, s, step.treatment, step.location, step.practitioner ? [step.practitioner] : [], today, horizon);
@@ -427,6 +457,11 @@ function PlannerStep({ c, s, step, tx, lang, go, me, preferredId }: { c: Full; s
   const fmt = (d: string, o: Intl.DateTimeFormatOptions) => new Date(`${d}T12:00:00Z`).toLocaleDateString(lang === "en" ? "en-GB" : "nl-NL", { timeZone: "UTC", ...o });
   const chosen = s.tijd ? daySlots.find((x) => fmtTime(x.start) === s.tijd) : undefined;
   const p = step.practitioner ? c.practitioners.find((x) => x.id === step.practitioner) : null;
+  const pickWeek = (offset: number) => {
+    const first = addDays(start, offset) < today ? today : addDays(start, offset);
+    const last = addDays(first, 7);
+    go({ d: slots.find(x => x.date >= first && x.date < last)?.date ?? first, tijd: undefined }, true);
+  };
   const roles = [...new Set(c.treatmentRoles.filter((x) => x.treatment_id === step.treatment).map((x) => roleName(c, x.role_id, lang)))];
   const roleLabel = roles.length === 1 ? (roles[0] ?? "") : tx("practitioner");
   return (
@@ -438,7 +473,7 @@ function PlannerStep({ c, s, step, tx, lang, go, me, preferredId }: { c: Full; s
       </div>}
       <Title>{tx("q_when")}</Title>
       {step.canChoose && (
-        <button type="button" onClick={() => go({ stap: "wie" })} className="patient-choice mb-6 flex items-center gap-3 rounded-[16px] bg-sand px-4 py-3 text-left">
+        <button type="button" onClick={() => go({ stap: "wie" })} className="patient-choice mb-6 flex w-full items-center gap-3 rounded-[16px] bg-sand px-4 py-3 text-left">
           {p ? <Avatar src={p.photo} size={40} /> : <span className="flex size-10 items-center justify-center rounded-full bg-background"><img src="/ui-icons/team.svg" alt="" className="size-5" /></span>}
           <span className="flex-1"><span className="block text-[12px] text-muted-foreground">{roleLabel.charAt(0).toUpperCase() + roleLabel.slice(1)}</span><span className="block text-[15px]">{p ? `${p.first_name} ${p.last_name}` : tx("no_preference")}</span></span>
           <span className="flex items-center gap-1 whitespace-nowrap text-[14px] text-primary">{tx("choose", { rol: roleLabel.toLowerCase() })}<Chevron /></span>
@@ -447,8 +482,8 @@ function PlannerStep({ c, s, step, tx, lang, go, me, preferredId }: { c: Full; s
       <div className="mb-3 flex items-center justify-between">
         <span className="text-[15px] font-semibold capitalize">{fmt(start, { month: "long", year: "numeric" })}</span>
         <span className="flex gap-2">
-          <button type="button" aria-label="Vorige week" disabled={start <= today} onClick={() => go({ d: addDays(start, -7) < today ? today : addDays(start, -7), tijd: undefined }, true)} className="flex size-9 items-center justify-center rounded-full disabled:opacity-30"><img src="/ui-icons/pijl-links.svg" alt="" className="size-4" /></button>
-          <button type="button" aria-label="Volgende week" disabled={daysBetween(today, addDays(start, 7)) > horizon} onClick={() => go({ d: addDays(start, 7), tijd: undefined }, true)} className="flex size-9 items-center justify-center rounded-full bg-sand disabled:opacity-30"><img src="/ui-icons/pijl-rechts.svg" alt="" className="size-4" /></button>
+          <button type="button" aria-label="Vorige week" disabled={start <= today} onClick={() => pickWeek(-7)} className="flex size-9 items-center justify-center rounded-full disabled:opacity-30"><img src="/ui-icons/pijl-links.svg" alt="" className="size-4" /></button>
+          <button type="button" aria-label="Volgende week" disabled={daysBetween(today, addDays(start, 7)) > horizon} onClick={() => pickWeek(7)} className="flex size-9 items-center justify-center rounded-full bg-sand disabled:opacity-30"><img src="/ui-icons/pijl-rechts.svg" alt="" className="size-4" /></button>
         </span>
       </div>
       <div className="mb-6 grid grid-cols-7 gap-1 text-center">
@@ -493,7 +528,7 @@ function PlannerStep({ c, s, step, tx, lang, go, me, preferredId }: { c: Full; s
       )}
       <div className="flex-1" />
       {chosen && (
-        <div className="sticky bottom-0 -mx-5 mt-6 border-t border-line bg-background px-5 pb-2 pt-4">
+        <div ref={continueRef} className="sticky bottom-0 z-10 -mx-5 mt-6 border-t border-line bg-background px-5 pb-2 pt-4">
           <PillButton size="lg" className="patient-choice choice-primary w-full" onClick={() => go({ stap: "vasthouden", d: selected })}>
             {tx("continue_with", { when: `${fmt(selected, { weekday: "short", day: "numeric", month: "short" })}, ${s.tijd}` })}
           </PillButton>
