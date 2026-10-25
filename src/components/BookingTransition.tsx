@@ -57,11 +57,20 @@ export function useBookingTransition(ref: RefObject<HTMLElement | null>, key: st
     overlay.append(previous.node);
     const frame = main.parentElement;
     const overflow = frame?.style.overflow ?? '';
-    if (frame) { if (!options?.scrollRef) frame.style.overflow = 'clip'; frame.append(overlay); }
+    const position = frame?.style.position ?? '';
+    if (frame) {
+      if (options?.scrollRef) {
+        // Anchor to the preview itself, not the viewport: router scroll restoration
+        // must not pull an outgoing snapshot over the stationary header.
+        frame.style.position = 'relative';
+        Object.assign(overlay.style, { position: 'absolute', left: `${main.offsetLeft}px`, top: `${main.offsetTop}px` });
+      } else frame.style.overflow = 'clip';
+      frame.append(overlay);
+    }
     const timing = { duration: reduced ? BOOKING_FADE_MS : BOOKING_SLIDE_MS, easing: 'ease-out' };
     const incoming = main.animate([{ transform: reduced ? 'none' : `translateX(${sign * 100}%)`, opacity: 0 }, { transform: 'none', opacity: 1 }], timing);
     const outgoing = previous.node.animate([{ transform: 'none', opacity: 1 }, { transform: reduced ? 'none' : `translateX(${-sign * 100}%)`, opacity: 0 }], timing);
-    const finish = () => { overlay.remove(); if (frame) frame.style.overflow = overflow; };
+    const finish = () => { overlay.remove(); if (frame) { frame.style.overflow = overflow; frame.style.position = position; } };
     void incoming.finished.then(finish).catch(finish);
     return () => { cancelAnimationFrame(scrollFrame); incoming.cancel(); outgoing.cancel(); finish(); };
   }, [key, ref]);
