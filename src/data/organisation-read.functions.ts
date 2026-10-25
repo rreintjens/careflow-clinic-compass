@@ -24,7 +24,7 @@ export const getOrganisation = createServerFn({ method: "POST" })
     };
     const [
       options, roles, languages, locations, hours, rooms, equipment, dayLocs, kinds, types, categories, treatments,
-      catLinks, treatRoles, treatLocs, reqs, practitioners, pracLangs, pracLocs, pracTreats,
+      catLinks, treatRoles, treatLocs, reqs, practitioners, pracLangs, pracLocs, pracTreats, menuRoots, customIcons, menuSettings,
     ] = await Promise.all([
       read(() => context.supabase.from("option_lists").select("*").order("sort")),
       read(() => context.supabase.from("practitioner_roles").select("*").order("sort")),
@@ -46,6 +46,9 @@ export const getOrganisation = createServerFn({ method: "POST" })
       read(() => context.supabase.from("practitioner_languages").select("*")),
       read(() => context.supabase.from("practitioner_locations").select("*")),
       read(() => context.supabase.from("practitioner_treatments").select("*")),
+      read(() => context.supabase.from("treatment_menu_root").select("treatment_id, sort")),
+      read(() => context.supabase.from("custom_icons").select("id, name, svg").order("created_at")),
+      read(() => context.supabase.from("settings").select("key, value").in("key", ["menu_max_depth", "menu_default_icon"])),
     ]);
     return {
       options: must(options),
@@ -68,5 +71,9 @@ export const getOrganisation = createServerFn({ method: "POST" })
       practitionerLanguages: must(pracLangs),
       practitionerLocations: must(pracLocs),
       practitionerTreatments: must(pracTreats),
+      menuRoots: must(menuRoots),
+      customIcons: must(customIcons),
+      menuMaxDepth: Number(must(menuSettings).find((x) => x.key === "menu_max_depth")?.value ?? 3) || 3,
+      menuDefaultIcon: (() => { const v = must(menuSettings).find((x) => x.key === "menu_default_icon")?.value; return typeof v === "string" ? v : "ui:blad"; })(),
     };
   });
