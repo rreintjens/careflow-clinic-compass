@@ -50,6 +50,7 @@ function SettingsPage() {
     mutationFn: () => updateSettings(changes),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: settingsQuery.queryKey });
+      void qc.invalidateQueries({ queryKey: orgQuery.queryKey });
       setDraft({});
       toast.success("Opgeslagen");
     },
@@ -225,6 +226,7 @@ function HolidayModal({ open, onOpenChange }: { open: boolean; onOpenChange: (o:
     },
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: settingsQuery.queryKey });
+      void qc.invalidateQueries({ queryKey: orgQuery.queryKey });
       onOpenChange(false);
       setName("");
       setFrom("");
