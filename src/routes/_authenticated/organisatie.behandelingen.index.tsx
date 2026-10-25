@@ -51,7 +51,12 @@ function treatmentWarning(org: Org, id: string): string {
   const b = treatmentBookability(org, id);
   if (b.total === 0) return "Nergens aangeboden";
   const bad = b.perLocation.filter((p) => p.reason !== "ok").map((p) => org.locations.find((l) => l.id === p.locationId)?.name ?? "");
-  return bad.length ? `Niet in ${joinNl(bad)}` : "";
+  // Offered in most clinics but not all: name the clinics it is missing from, as eKis does.
+  const clinics = org.locations.filter((l) => l.kind !== "online" && l.status !== "inactive");
+  const offeredClinics = clinics.filter((l) => b.offered.includes(l.id));
+  const missing = offeredClinics.length * 2 >= clinics.length ? clinics.filter((l) => !b.offered.includes(l.id)).map((l) => l.name) : [];
+  const all = [...new Set([...missing, ...bad])];
+  return all.length ? `Niet in ${joinNl(all)}` : "";
 }
 
 function TreatmentsPage() {
