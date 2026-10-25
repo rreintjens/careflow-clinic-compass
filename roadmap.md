@@ -272,3 +272,7 @@ Verificatie: als Rob desktop en 390px; dag/week behouden scroll, tijd toont Verd
 - [x] Desktop/390px, telefoonvoorbeeld en bestaande scroll/focus controleren; tests uitvoeren.
 
 Gecontroleerd: 390px/desktop, 100 ms feedback, 280 ms schuiven in beide richtingen inclusief browser terug; 120 ms fade zonder transform bij reduced-motion. Als Rob echte iframe vooruit/terug; nieuwe stappen scroll 0, dag blijft 250, tijd toont Verder en geen pointerring. 581 tests groen, build OK.
+
+## Vragenlijstovergangen — eigenaar 25-10 20:38
+- [ ] Gedeelde boekingsovergang voor alle runners; vaste kop/voortgang en stilstaande antwoorden binnen een pagina.
+- [ ] Vooruit, terug/browser terug, nieuwe pagina bovenaan, validatie en reduced-motion controleren op desktop/390px; tests uitvoeren.
