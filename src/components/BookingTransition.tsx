@@ -58,7 +58,11 @@ export function useBookingTransition(ref: RefObject<HTMLElement | null>, key: st
     const frame = main.parentElement;
     const overflow = frame?.style.overflow ?? '';
     const position = frame?.style.position ?? '';
+    const clipPath = frame?.style.clipPath ?? '';
     if (frame) {
+      // Clip both the incoming page and outgoing snapshot, including in page-scrolled
+      // questionnaires. Unlike overflow:hidden, this does not add a scroll container.
+      frame.style.clipPath = 'inset(0)';
       if (options?.scrollRef) {
         // Anchor to the preview itself, not the viewport: router scroll restoration
         // must not pull an outgoing snapshot over the stationary header.
@@ -70,7 +74,7 @@ export function useBookingTransition(ref: RefObject<HTMLElement | null>, key: st
     const timing = { duration: reduced ? BOOKING_FADE_MS : BOOKING_SLIDE_MS, easing: 'ease-out' };
     const incoming = main.animate([{ transform: reduced ? 'none' : `translateX(${sign * 100}%)`, opacity: 0 }, { transform: 'none', opacity: 1 }], timing);
     const outgoing = previous.node.animate([{ transform: 'none', opacity: 1 }, { transform: reduced ? 'none' : `translateX(${-sign * 100}%)`, opacity: 0 }], timing);
-    const finish = () => { overlay.remove(); if (frame) { frame.style.overflow = overflow; frame.style.position = position; } };
+    const finish = () => { overlay.remove(); if (frame) { frame.style.overflow = overflow; frame.style.position = position; frame.style.clipPath = clipPath; } };
     void incoming.finished.then(finish).catch(finish);
     return () => { cancelAnimationFrame(scrollFrame); incoming.cancel(); outgoing.cancel(); finish(); };
   }, [key, ref]);
