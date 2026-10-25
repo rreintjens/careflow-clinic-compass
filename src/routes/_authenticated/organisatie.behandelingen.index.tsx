@@ -15,11 +15,16 @@ import { Select } from "@/components/Select";
 import { UiIcon } from "@/components/UiIcon";
 import joyceAsset from "@/assets/joyce-maas.jpg.asset.json";
 import {
-  addPlacement, createGroup, createMenuTreatment, dissolveGroup, menuData, moveMenuItem, orgQuery, removePlacement, setTreatmentIcon, updateGroup, uploadCustomIcon,
+  addPlacement, createGroup, createMenuTreatment, dissolveGroup, menuData, moveMenuItem, orgQuery, removePlacement, setTreatmentAddon, setTreatmentIcon, updateGroup, uploadCustomIcon,
   type Org,
 } from "@/data/organisation";
 import { canAddGroup, children, depth, moveError, parentsOfTreatment, pathLabel, resolveIcon, treatmentsIn, visibleChildren, type MenuData, type MenuItem, type Parent } from "@/domain/menu";
 import { durationOptions } from "@/domain/organisation";
+import { ADDON_MINUTES, addonExplain, groupAddon, parseAddon, type Addon } from "@/domain/addons";
+import { currentTenantQuery } from "@/data/tenant";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { treatmentBookability } from "@/features/organisation/bookability";
 import { EquipmentKindsModal } from "@/features/organisation/EquipmentKindsModal";
 import { IconPicker } from "@/features/organisation/IconPicker";
@@ -179,6 +184,7 @@ function TreatmentsPage() {
               <span className="min-w-0 flex-1">
                 <span className={cn("block truncate text-sm font-medium", sel === g.id && "text-primary")}>{g.name_nl}</span>
                 {note && <span className={cn("block truncate text-xs", note.warn ? "text-warning" : "text-muted-foreground")}>{note.text}</span>}
+                {parseAddon(g.addon) && <span className="block truncate text-xs text-muted-foreground">Toevoeging voor alles hieronder: {addonShort(parseAddon(g.addon))}</span>}
               </span>
               <span className="shrink-0 text-xs text-muted-foreground">{treatmentsIn(m, g.id).length}</span>
               <button type="button" aria-label={`${g.name_nl} bewerken`} onClick={(e) => { e.stopPropagation(); setEditGroup(g.id); }}
@@ -211,6 +217,7 @@ function TreatmentsPage() {
               <MenuIcon icon={ic.icon} inherited={ic.inherited} />
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm">{t.name_nl}</span>
+                {parseAddon(t.addon) && <span className="block truncate text-xs text-muted-foreground">Toevoeging: {addonShort(parseAddon(t.addon))}</span>}
                 {(w && !sharedWarning(parent)) || others.length ? (
                   <span className="block truncate text-xs">
                     {w && !sharedWarning(parent) && <span className="text-warning">{w}</span>}
@@ -295,6 +302,36 @@ function TreatmentsPage() {
   );
 }
 
+function addonShort(a: Addon | null): string {
+  if (!a || a.type === "none") return "geen";
+  if (a.type === "consult") return `consult erbij, ${a.minutes} minuten extra`;
+  return `pakket "${a.label}", € ${a.price_eur}`;
+}
+
+/** "Toevoeging na het kiezen": like the group, none, consult erbij (15/30/45 min) or, on a treatment, a pakket. */
+function AddonField({ value, inherited, forTreatment, kind, onChange }: { value: Addon | null; inherited: Addon | null; forTreatment: boolean; kind?: string; onChange: (a: Addon | null) => void }) {
+  const mode = value ? value.type : "inherit";
+  const opts = [{ value: "inherit", label: "Zoals de groep" }, { value: "none", label: "Geen toevoeging" }, { value: "consult", label: "Consult erbij" }, ...(forTreatment ? [{ value: "pakket", label: "Pakket" }] : [])];
+  const set = (v: string) => onChange(v === "inherit" ? null : v === "none" ? { type: "none" } : v === "consult" ? { type: "consult", minutes: value?.type === "consult" ? value.minutes : 15 } : { type: "pakket", label: value?.type === "pakket" ? value.label : "", price_eur: value?.type === "pakket" ? value.price_eur : 0, question: value?.type === "pakket" ? value.question : "" });
+  const shown = value ?? inherited;
+  const explain = forTreatment && kind && kind !== "behandeling" ? "Dit is een " + kind + "; die krijgt nooit een toevoeging." : addonExplain(shown && shown.type === "pakket" && !value ? null : shown, !value);
+  return (
+    <div className="flex flex-col gap-3 rounded-[14px] bg-sand/60 p-4">
+      <span className="text-[13px] font-medium">Toevoeging na het kiezen</span>
+      <Select label="Soort" value={mode} onChange={set} options={opts} preserveOrder />
+      {value?.type === "consult" && <Select label="Extra minuten" value={String(value.minutes)} onChange={(v) => onChange({ type: "consult", minutes: Number(v) })} options={ADDON_MINUTES.map((n) => ({ value: String(n), label: `${n} minuten` }))} preserveOrder />}
+      {value?.type === "pakket" && (
+        <>
+          <TextField label="Vraag" value={value.question} onChange={(e) => onChange({ ...value, question: e.target.value })} />
+          <TextField label="Naam pakket" value={value.label} onChange={(e) => onChange({ ...value, label: e.target.value })} />
+          <TextField label="Prijs pakket (euro)" inputMode="decimal" value={String(value.price_eur || "")} onChange={(e) => onChange({ ...value, price_eur: Number(e.target.value.replace(",", ".")) || 0 })} />
+        </>
+      )}
+      <p className="text-xs text-muted-foreground">{!value && inherited ? `Van de groep: ${addonShort(inherited)}. ` : ""}{explain}</p>
+    </div>
+  );
+}
+
 function errorText(e: unknown) {
   const msg = e instanceof Error ? e.message : typeof e === "object" && e && "message" in e ? String((e as { message: unknown }).message) : "";
   return msg.startsWith("Kan niet") ? msg.replace("maximaal 3 lagen", "maximaal drie lagen") : "Opslaan is niet gelukt";
@@ -345,7 +382,8 @@ function GroupModal({ org, m, id, onClose, onDone }: { org: Org; m: MenuData; id
   const [name, setName] = useState(g?.name_nl ?? "");
   const [icon, setIcon] = useState<string | null>(g?.icon ?? null);
   const [confirm, setConfirm] = useState(false);
-  const save = useMutation({ mutationFn: () => updateGroup(id, { name_nl: name.trim(), icon }), onSuccess: async () => { await onDone(); toast.success("Opgeslagen"); onClose(); }, onError: (e) => toast.error(errorText(e)) });
+  const [addon, setAddon] = useState<Addon | null>(parseAddon(g?.addon));
+  const save = useMutation({ mutationFn: () => updateGroup(id, { name_nl: name.trim(), icon, addon }), onSuccess: async () => { await onDone(); toast.success("Opgeslagen"); onClose(); }, onError: (e) => toast.error(errorText(e)) });
   const dissolve = useMutation({ mutationFn: () => dissolveGroup(org, id), onSuccess: async () => { await onDone(); toast.success("Groep opgeheven"); onClose(); }, onError: (e) => toast.error(errorText(e)) });
   if (!g) return null;
   return (
@@ -354,6 +392,7 @@ function GroupModal({ org, m, id, onClose, onDone }: { org: Org; m: MenuData; id
       <div className="flex flex-col gap-5">
         <TextField label="Naam" value={name} onChange={(e) => setName(e.target.value)} />
         <IconField org={org} m={m} own={icon} parent={g.parent_id} onChange={setIcon} onDone={onDone} />
+        <AddonField value={addon} inherited={groupAddon(org.categories, g.parent_id)} forTreatment={false} onChange={setAddon} />
         <p className="text-sm text-muted-foreground">Laag {depth(m, id)} van maximaal {org.menuMaxDepth}</p>
         <div className="rounded-[14px] bg-sand p-4">
           {!confirm ? (
@@ -382,7 +421,7 @@ function TreatmentModal({ org, m, id, warning, onClose, onDone }: { org: Org; m:
   const options = placeOptions(org, m, (p) => (places.includes(p) ? "Staat hier al" : null));
   const ic = t.icon;
   return (
-    <Modal open onOpenChange={(o) => !o && onClose()} title={t.name_nl} description={`${t.duration_min} minuten`}
+    <Modal open onOpenChange={(o) => !o && onClose()} title={t.name_nl} description={treatmentFacts(t)}
       footer={<><Link to="/organisatie/behandelingen/$id" params={{ id }} className="mr-auto self-center text-sm text-primary underline">Alle instellingen van deze behandeling</Link><PillButton onClick={onClose}>Klaar</PillButton></>}>
       <div className="flex flex-col gap-6">
         <IconField org={org} m={m} own={ic} parent={places[0] ?? null} onChange={(v) => act.mutate(() => setTreatmentIcon(id, v))} onDone={onDone} />
@@ -400,12 +439,68 @@ function TreatmentModal({ org, m, id, warning, onClose, onDone }: { org: Org; m:
           <SearchablePicker className="mt-3" label="Ook op een andere plek zetten…" options={options} value="" preserveOrder
             onChange={(v) => { const p = v[0]; if (p !== undefined && p !== "") act.mutate(() => addPlacement(org, id, toParent(p))); }} />
         </div>
+        <TreatmentAddon org={org} id={id} parent={places[0] ?? null} onDone={onDone} />
+        <TreatmentInfo org={org} id={id} />
         <div>
           <span className="text-[13px] font-medium">Boekbaar</span>
           <p className={cn("mt-1 text-sm", warning ? "text-warning" : "text-muted-foreground")}>{warning ? bookabilityDetail(org, id, warning) : "Overal waar hij wordt aangeboden."}</p>
         </div>
       </div>
     </Modal>
+  );
+}
+
+type OrgTreatment = Org["treatments"][number];
+const eur = (cents: number) => new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(cents / 100);
+function treatmentFacts(t: OrgTreatment) {
+  const kind = { consult: "Consult", controle: "Controle", behandeling: "Behandeling" }[t.kind] ?? "";
+  return [kind, `${t.duration_min} minuten`, t.price_cents != null ? `${t.price_is_from ? "vanaf " : ""}${eur(t.price_cents)}` : "geen prijs"].join(" · ");
+}
+
+function TreatmentAddon({ org, id, parent, onDone }: { org: Org; id: string; parent: Parent; onDone: () => Promise<unknown> }) {
+  const t = org.treatments.find((x) => x.id === id);
+  const [v, setV] = useState<Addon | null>(parseAddon(t?.addon));
+  const saved = JSON.stringify(parseAddon(t?.addon)) === JSON.stringify(v);
+  const save = useMutation({ mutationFn: () => setTreatmentAddon(id, v), onSuccess: async () => { await onDone(); toast.success("Opgeslagen"); }, onError: (e) => toast.error(errorText(e)) });
+  if (!t) return null;
+  const ready = v?.type !== "pakket" || (!!v.label.trim() && v.price_eur > 0 && !!v.question.trim());
+  return (
+    <div className="flex flex-col gap-2">
+      <AddonField value={v} inherited={groupAddon(org.categories, parent)} forTreatment kind={t.kind} onChange={setV} />
+      {!saved && <PillButton size="sm" className="self-start" disabled={!ready || save.isPending} onClick={() => save.mutate()}>Toevoeging opslaan</PillButton>}
+    </div>
+  );
+}
+
+/** Description, payment, locations with the number of practitioners, questionnaires. */
+function TreatmentInfo({ org, id }: { org: Org; id: string }) {
+  const t = org.treatments.find((x) => x.id === id);
+  const keys = [t?.pre_questionnaire_key, t?.post_questionnaire_key].filter((k): k is string => !!k);
+  const { data: qs = [] } = useQuery({ queryKey: ["questionnaire-names", keys.join(",")], enabled: keys.length > 0, queryFn: async () => (await supabase.from("questionnaires").select("key, name").in("key", keys)).data ?? [] });
+  if (!t) return null;
+  const locs = org.locations.filter((l) => org.treatmentLocations.some((x) => x.treatment_id === id && x.location_id === l.id)).sort((a, z) => a.sort - z.sort);
+  const count = (lid: string) => org.practitionerTreatments.filter((p) => p.treatment_id === id && !(p.excluded_location_ids ?? []).includes(lid)).length;
+  const pay = t.online_payment ? `Online betalen bij het boeken${t.deposit_cents ? ` (${eur(t.deposit_cents)})` : ""}` : t.deposit_cents ? `Aanbetaling ${eur(t.deposit_cents)}, de rest in de kliniek` : "Betalen in de kliniek";
+  const link = t.external_link as { label?: string; url?: string } | null;
+  const qName = (k: string | null) => qs.find((q) => q.key === k)?.name ?? k;
+  return (
+    <div className="flex flex-col gap-4 text-sm">
+      {t.description_nl && <div><span className="text-[13px] font-medium">Omschrijving</span><p className="mt-1 whitespace-pre-line text-muted-foreground">{t.description_nl}</p></div>}
+      <div><span className="text-[13px] font-medium">Betalen</span><p className="mt-1 text-muted-foreground">{pay}</p></div>
+      <div>
+        <span className="text-[13px] font-medium">Locaties</span>
+        {locs.length ? <ul className="mt-1 grid grid-cols-1 gap-x-4 sm:grid-cols-2">{locs.map((l) => <li key={l.id} className="flex justify-between gap-2 text-muted-foreground"><span>{l.name}</span><span>{count(l.id)} {count(l.id) === 1 ? "behandelaar" : "behandelaars"}</span></li>)}</ul>
+          : <p className="mt-1 text-muted-foreground">Nergens te boeken, dus niet zichtbaar voor de patiënt.</p>}
+      </div>
+      {link?.url && <div><span className="text-[13px] font-medium">Externe link</span><p className="mt-1"><a href={link.url} target="_blank" rel="noreferrer" className="text-primary underline">{link.label ?? link.url}</a></p></div>}
+      {keys.length > 0 && (
+        <div>
+          <span className="text-[13px] font-medium">Vragenlijsten</span>
+          {t.pre_questionnaire_key && <p className="mt-1 text-muted-foreground">Voor het bevestigen: {qName(t.pre_questionnaire_key)}</p>}
+          {t.post_questionnaire_key && <p className="text-muted-foreground">Na het boeken: {qName(t.post_questionnaire_key)} ({t.questionnaire_minutes} minuten)</p>}
+        </div>
+      )}
+    </div>
   );
 }
 
