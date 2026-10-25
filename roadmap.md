@@ -254,3 +254,8 @@ Verificatie 19-10: alle vijf punten op 1000007 als Rob doorlopen; 58 gerichte te
 - [x] Dag 190px / week 148px vaste kolommen, geen oprekking door lange afspraaktekst
 - [x] Categorie-dropdown toont elke hoofdcategorie één keer (geen dubbele groepskop)
 - [x] Koppenrij van de agenda sticky bij verticaal scrollen, tijdkolom sticky bij horizontaal scrollen; typecheck en 542 tests groen
+
+## Vrije menuboom
+- [x] Boom met groepen en behandelingen door elkaar, slepen, telefoonvoorbeeld
+- [x] Iconenbibliotheek + eigen SVG + Standaardicoon
+- [x] /boeken en boekingslinks naar elke laag

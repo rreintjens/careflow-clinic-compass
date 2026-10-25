@@ -43,6 +43,8 @@
 - Contact/request entries use shared validated authenticated saves and tenant RLS with patient view/edit permissions; follow-ups, timeline and modal editing read the same stored rows.
 - Select/MultiSelect use SearchablePicker and shared eligibility rules for consistent keyboard/group selection.
 - Booking attribution uses tenant-scoped channel/place/campaign rows and immutable in-use codes; appointments snapshot the resolved link attribution at hold creation so later configuration changes cannot rewrite history.
+- The treatment menu is one free tree: groups are treatment_categories, placements are treatment_category_links plus treatment_menu_root (top level) sharing one sort per parent; tree rules live in src/domain/menu.ts and depth is enforced by a DB trigger from the menu_max_depth setting, so admin, preview and /boeken cannot disagree.
+- Uploaded SVG icons pass svgIconError on upload and render, and are only drawn as CSS masks, so a tenant upload can never run script.
 
 - Patient choices use semantic states; DataTable owns grouped tracks/row actions; Field rows and Modal focus share editing.
 - Preparation gates reminder mail by missing data/validity; fee tokens expose amount/status, with test-mode payment and compare-and-set.
