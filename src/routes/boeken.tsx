@@ -35,7 +35,7 @@ const search = z.object({
   p: z.string().optional(), d: z.string().optional(), tijd: z.string().optional(), stap: z.string().optional(),
   inloggen: z.enum(["nee"]).optional(),
   x: z.enum(["ja", "consult", "pakket", "een"]).optional(),
-  voorbeeld: z.literal("1").optional(),
+  voorbeeld: z.union([z.literal("1"), z.literal(1)]).transform(() => "1" as const).optional(),
 });
 type Search = z.infer<typeof search>;
 
