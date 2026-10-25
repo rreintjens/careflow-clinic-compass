@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { Condition, FlowFile, Item, Page } from "@/domain/questionnaire/engine";
 import seed from "@/seed/tbc_flow_medisch_afvallen_v0.2.json";
 
-vi.mock("@tanstack/react-router", () => ({ Link: ({ children }: { children: unknown }) => <a>{children as string}</a> }));
+vi.mock("@tanstack/react-router", () => ({ Link: ({ children }: { children: unknown }) => <a>{children as string}</a>, useRouter: () => ({ history: { subscribe: () => () => {} } }) }));
 
 Element.prototype.scrollTo = () => {};
 const { ItemModal } = await import("./BuilderModals");
