@@ -268,5 +268,7 @@ Verificatie 19-10: alle vijf punten op 1000007 als Rob doorlopen; 58 gerichte te
 Verificatie: als Rob desktop en 390px; dag/week behouden scroll, tijd toont Verder, pointer geen ring en toetsenbordfocus actief, toevoeging zichtbaar, behandelvraag en Joyce aanwezig. Chip 10 (groepsregels, niet geforceerd naar 9); alle 576 tests groen.
 
 ## Boekingsstapovergang — eigenaar 25-10 20:22
-- [ ] Vooruit/terug, tegelfeedback en reduced-motion toevoegen zonder beweging binnen een stap.
-- [ ] Desktop/390px, telefoonvoorbeeld en bestaande scroll/focus controleren; tests uitvoeren.
+- [x] Vooruit/terug, tegelfeedback en reduced-motion toevoegen zonder beweging binnen een stap.
+- [x] Desktop/390px, telefoonvoorbeeld en bestaande scroll/focus controleren; tests uitvoeren.
+
+Gecontroleerd: 390px/desktop, 100 ms feedback, 280 ms schuiven in beide richtingen inclusief browser terug; 120 ms fade zonder transform bij reduced-motion. Als Rob echte iframe vooruit/terug; nieuwe stappen scroll 0, dag blijft 250, tijd toont Verder en geen pointerring. 581 tests groen, build OK.
