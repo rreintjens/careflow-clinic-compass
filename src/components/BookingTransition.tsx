@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useLayoutEffect, useRef, type ReactNode, type RefObject } from 'react';
 import { BOOKING_FADE_MS, BOOKING_SLIDE_MS, bookingHistoryDirection } from '@/domain/booking-transition';
 
-type Snapshot = { key: string; node: HTMLElement; height: number };
+type Snapshot = { key: string; node: HTMLElement; height: number; historyIndex: number };
 type Motion = { snapshot: RefObject<Snapshot | null>; direction: RefObject<'forward' | 'back'> };
 const Context = createContext<Motion | null>(null);
 
@@ -32,7 +32,9 @@ export function useBookingTransition(ref: RefObject<HTMLElement | null>, key: st
     const previous = motion.snapshot.current;
     const clone = main.cloneNode(true) as HTMLElement;
     clone.querySelectorAll('[data-booking-tapped]').forEach(node => node.removeAttribute('data-booking-tapped'));
-    motion.snapshot.current = { key, node: clone, height: main.getBoundingClientRect().height };
+    const historyIndex = Number(window.history.state?.__TSR_index ?? 0);
+    motion.snapshot.current = { key, node: clone, height: main.getBoundingClientRect().height, historyIndex };
+    if (previous) motion.direction.current = bookingHistoryDirection(previous.historyIndex, historyIndex);
     if (!previous || previous.key === key) return;
     window.scrollTo({ top: 0, behavior: 'instant' });
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
