@@ -8,6 +8,8 @@ import { z } from "zod";
 import { resolveStartScreen,startScreenPage } from "@/domain/start-screen";
 import { Boodschap } from "@/features/questionnaire/QuestionnaireRunner";
 import { Logo } from "@/components/Logo";
+import { BookingTransitionProvider, useBookingTransition } from "@/components/BookingTransition";
+import { BOOKING_TAP_MS, bookingScreenKey } from "@/domain/booking-transition";
 import { PatientFrame } from "@/components/PatientFrame";
 import { PillButton } from "@/components/PillButton";
 import { dayPart, nextStep, sortLocations, type Catalog } from "@/domain/booking";
@@ -78,7 +80,7 @@ function Booking() {
     return ((lang === "en" && row?.label_en) || row?.label_nl || "").replace(/\{(\w+)\}/g, (_, k: string) => String(vars[k] ?? ""));
   };
   const phone = catalog.tenant?.phone;
-  return <BookingContact.Provider value={phone ? { phone, tx } : null}><BookingContent /></BookingContact.Provider>;
+  return <BookingContact.Provider value={phone ? { phone, tx } : null}><BookingTransitionProvider><BookingContent /></BookingTransitionProvider></BookingContact.Provider>;
 }
 
 function BookingContent() {
@@ -94,7 +96,19 @@ function BookingContent() {
     const base = (lang === "en" && r?.label_en) || r?.label_nl || "";
     return base.replace(/\{(\w+)\}/g, (_, k: string) => String(vars[k] ?? ""));
   };
-  const go = (patch: Partial<Search>, replace = false) => navigate({ search: (prev) => ({ ...prev, ...patch }), replace, resetScroll: Object.keys(patch).some(key => !["d", "tijd", "lang"].includes(key)) });
+  const advancing = useRef(false);
+  const go = async (patch: Partial<Search>, replace = false) => {
+    const changesStep = Object.keys(patch).some(key => !["d", "tijd", "lang"].includes(key));
+    if (changesStep) {
+      if (advancing.current) return;
+      advancing.current = true;
+      const tapped = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      tapped?.setAttribute("data-booking-tapped", "true");
+      await new Promise(resolve => window.setTimeout(resolve, BOOKING_TAP_MS));
+      try { await navigate({ search: prev => ({ ...prev, ...patch }), replace, resetScroll: true }); }
+      finally { tapped?.removeAttribute("data-booking-tapped"); advancing.current = false; }
+    } else await navigate({ search: prev => ({ ...prev, ...patch }), replace, resetScroll: false });
+  };
 
   // One tap may never advance more than one step: ignore touches for ~400 ms after a step change,
   // so a tap that started on the previous screen cannot land on a button of the new screen.
@@ -179,7 +193,7 @@ function BookingContent() {
 
   return (
     <CustomIconsProvider icons={c.customIcons}>
-    <Shell lang={lang} progress={progress} onBack={back} onClose={close} onLang={top ? () => go({ lang: lang === "nl" ? "en" : "nl" }, true) : undefined}
+    <Shell screenKey={bookingScreenKey(step)} lang={lang} progress={progress} onBack={back} onClose={close} onLang={top ? () => go({ lang: lang === "nl" ? "en" : "nl" }, true) : undefined}
       bar={showBar ? <LoginBar tx={tx} onClick={openLogin} /> : undefined}
       >
       <div className={cn("flex flex-1 flex-col", guard)}>
@@ -194,7 +208,7 @@ function BookingContent() {
           onPick={(id) => (id.startsWith("g:") ? go({ cat: id.slice(2), sub: undefined }) : go({ t: id.slice(2), x: undefined }))} />
       )}
       {step.kind === "addon" && <AddonStep c={c} menu={menu} step={step} tx={tx} name={name} onDone={(x, t) => go(t ? { t, x: undefined } : { t: step.treatment, x })} />}
-      {step.kind === "location" && <LocationStep c={c} treatmentId={step.treatment} options={step.options} hidePeople={!!startScreen} tx={tx} name={name} extraMin={chosenAddon(c, menu, eff, step.treatment)?.type === "consult" ? (chosenAddon(c, menu, eff, step.treatment) as { minutes: number }).minutes : 0} onPick={(id) => { if (!preview) go({ l: id }); }} />}
+      {step.kind === "location" && <LocationStep c={c} treatmentId={step.treatment} options={step.options} hidePeople={!!startScreen} tx={tx} name={name} extraMin={chosenAddon(c, menu, eff, step.treatment)?.type === "consult" ? (chosenAddon(c, menu, eff, step.treatment) as { minutes: number }).minutes : 0} onPick={(id) => { void go({ l: id }); }} />}
       {step.kind === "practitioner" && <PractitionerStep c={c} s={s} treatmentId={step.treatment} locationId={step.location} required={step.required} tx={tx} preferredId={preferredId} onPick={(p) => go({ p, stap: undefined, tijd: undefined })} />}
       {step.kind === "planner" && <PlannerStep c={c} s={s} step={step} tx={tx} lang={lang} go={go} me={me} preferredId={preferredId} />}
       </div>
@@ -203,7 +217,9 @@ function BookingContent() {
   );
 }
 
-export function Shell({ children, footer, bar, progress = 0, onBack, onClose, onLang, lang }: { children: React.ReactNode; footer?: React.ReactNode; bar?: React.ReactNode; progress?: number; onBack?: (() => void) | undefined; onClose?: () => void; onLang?: (() => void) | undefined; lang: string }) {
+export function Shell({ children, footer, bar, progress = 0, onBack, onClose, onLang, lang, screenKey }: { children: React.ReactNode; footer?: React.ReactNode; bar?: React.ReactNode; progress?: number; onBack?: (() => void) | undefined; onClose?: () => void; onLang?: (() => void) | undefined; lang: string; screenKey?: string }) {
+  const mainRef = useRef<HTMLElement>(null);
+  useBookingTransition(mainRef, screenKey ?? `phase:${progress}`);
   const contact = useContext(BookingContact);
   useEffect(() => {
     const pointer = () => { document.documentElement.dataset["patientKeyboard"] = "false"; };
@@ -222,7 +238,7 @@ export function Shell({ children, footer, bar, progress = 0, onBack, onClose, on
         </header>
         <div className="h-[3px] bg-muted"><div className="h-full bg-primary transition-all" style={{ width: `${Math.round(progress * 100)}%` }} /></div>
         {bar}
-        <main className="flex flex-1 flex-col px-5 pb-6 pt-8">{children}</main>
+        <main ref={mainRef} className="flex flex-1 flex-col px-5 pb-6 pt-8">{children}</main>
         {(footer || contact) && <footer className="flex flex-col gap-6 px-5 pb-6">{footer}{contact && <CallFooter phone={contact.phone} tx={contact.tx} />}</footer>}
     </PatientFrame>
   );
