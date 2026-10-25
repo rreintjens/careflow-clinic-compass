@@ -48,7 +48,7 @@ export const getOrganisation = createServerFn({ method: "POST" })
       read(() => context.supabase.from("practitioner_treatments").select("*")),
       read(() => context.supabase.from("treatment_menu_root").select("treatment_id, sort")),
       read(() => context.supabase.from("custom_icons").select("id, name, svg").order("created_at")),
-      read(() => context.supabase.from("settings").select("key, value").in("key", ["menu_max_depth", "menu_default_icon"])),
+      read(() => context.supabase.from("settings").select("key, value").in("key", ["menu_max_depth", "menu_default_icon", "mail_phone"])),
     ]);
     return {
       options: must(options),
@@ -74,6 +74,7 @@ export const getOrganisation = createServerFn({ method: "POST" })
       menuRoots: must(menuRoots),
       customIcons: must(customIcons),
       menuMaxDepth: Number(must(menuSettings).find((x) => x.key === "menu_max_depth")?.value ?? 3) || 3,
+      clinicPhone: (() => { const v = must(menuSettings).find((x) => x.key === "mail_phone")?.value; return typeof v === "string" ? v : null; })(),
       menuDefaultIcon: (() => { const v = must(menuSettings).find((x) => x.key === "menu_default_icon")?.value; return typeof v === "string" ? v : "ui:blad"; })(),
     };
   });
