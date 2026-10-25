@@ -1,15 +1,19 @@
+import type { Addon } from "./addons";
 import { visibleChildren, type MenuData, type MenuItem } from "./menu";
 
 /** Patient booking flow: which step to show, given what is chosen. Single-choice steps are skipped. */
 export type ChoiceMode = "assigned" | "optional" | "required" | "fixed";
-export interface Pick { cat?: string | undefined; sub?: string | undefined; t?: string | undefined; l?: string | undefined; p?: string | undefined; stap?: string | undefined }
+export interface Pick { cat?: string | undefined; sub?: string | undefined; t?: string | undefined; l?: string | undefined; p?: string | undefined; stap?: string | undefined; x?: string | undefined }
 export interface Catalog {
   menu: MenuData;
   treatments: Array<{ id: string; practitioner_choice: string }>;
   locationsFor: (treatmentId: string) => string[];
+  /** Toevoeging to ask before the location step; null = no extra question. */
+  addonFor?: (treatmentId: string, via: string | null) => Exclude<Addon, { type: "none" }> | null;
 }
 export type Step =
   | { kind: "menu"; group: string | null; items: MenuItem[] }
+  | { kind: "addon"; treatment: string; via: string | null; addon: Exclude<Addon, { type: "none" }> }
   | { kind: "location"; treatment: string; options: string[] }
   | { kind: "practitioner"; treatment: string; location: string; required: boolean }
   | { kind: "planner"; treatment: string; location: string; practitioner: string | null; canChoose: boolean }
@@ -17,6 +21,7 @@ export type Step =
 
 export function nextStep(c: Catalog, pick: Pick): Step {
   let { t, l } = pick;
+  let via: string | null = pick.sub ?? pick.cat ?? null;
   if (!t) {
     const ok = new Set(c.treatments.filter((x) => c.locationsFor(x.id).length > 0).map((x) => x.id));
     let group: string | null = pick.sub ?? pick.cat ?? null;
@@ -28,10 +33,13 @@ export function nextStep(c: Catalog, pick: Pick): Step {
       if (only.kind === "treatment") t = only.id;
       else group = only.id;
     }
+    via = group;
     if (!t) return { kind: "none" };
   }
   const treatment = c.treatments.find((x) => x.id === t);
   if (!treatment) return { kind: "none" };
+  const addon = c.addonFor?.(treatment.id, via) ?? null;
+  if (addon && !pick.x) return { kind: "addon", treatment: treatment.id, via, addon };
   const locs = c.locationsFor(treatment.id);
   if (!l) {
     if (locs.length === 0) return { kind: "none" };
