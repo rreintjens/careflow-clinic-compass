@@ -48,9 +48,9 @@ function treatmentWarning(org: Org, id: string): string {
   const t = org.treatments.find((x) => x.id === id);
   if (!t) return "";
   if (t.status !== "active") return "Niet actief";
-  if (t.online_booking !== "bookable") return "Niet online boekbaar";
   const b = treatmentBookability(org, id);
-  if (b.total === 0) return "Nergens aangeboden";
+  if (b.total === 0) return "Nergens boekbaar";
+  if (t.online_booking !== "bookable") return "Niet online boekbaar";
   const clinics = org.locations.filter(l => l.kind !== "online" && l.status !== "inactive");
   const coverage = org.treatments.map(t => ({ id: t.id, kind: t.kind, bookable: treatmentBookability(org, t.id).offered }));
   const missing = missingGroupLocations(menuData(org), coverage, id, clinics.map(l => l.id)).map(id => clinics.find(l => l.id === id)?.name ?? "");
