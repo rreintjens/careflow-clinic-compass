@@ -27,10 +27,10 @@ export interface SearchablePickerProps {
 function enrich(options: readonly PickerOption[], org: Org | undefined, preserveOrder = false): PickerOption[] {
   if (!org) return [...options];
   const path = (id: string): string => {
-    const category = org.categories.find(c => c.id === id);
-    if (!category) return "";
-    const parent = org.categories.find(c => c.id === category.parent_id);
-    return [parent?.name_nl, category.name_nl].filter(Boolean).join(" › ");
+    const names: string[] = [];
+    let category = org.categories.find(c => c.id === id);
+    for (let i = 0; category && i < 10; i++) { names.unshift(category.name_nl); category = org.categories.find(c => c.id === category?.parent_id); }
+    return names.join(" › ");
   };
   return options.map(option => {
     const practitioner = org.practitioners.find(p => p.id === option.value);
