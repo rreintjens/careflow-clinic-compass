@@ -179,7 +179,7 @@ function Booking() {
           })}
           onPick={(id) => (id.startsWith("g:") ? go({ cat: id.slice(2), sub: undefined }) : go({ t: id.slice(2), x: undefined }))} />
       )}
-      {step.kind === "addon" && <AddonStep c={c} menu={menu} step={step} tx={tx} name={name} lang={lang} onDone={(x, t) => go(t ? { t, x: undefined } : { t: step.treatment, x })} />}
+      {step.kind === "addon" && <AddonStep c={c} menu={menu} step={step} tx={tx} name={name} onDone={(x, t) => go(t ? { t, x: undefined } : { t: step.treatment, x })} />}
       {step.kind === "location" && <LocationStep c={c} treatmentId={step.treatment} options={step.options} hidePeople={!!startScreen} tx={tx} name={name} extraMin={chosenAddon(c, menu, eff, step.treatment)?.type === "consult" ? (chosenAddon(c, menu, eff, step.treatment) as { minutes: number }).minutes : 0} onPick={(id) => { if (!preview) go({ l: id }); }} />}
       {step.kind === "practitioner" && <PractitionerStep c={c} s={s} treatmentId={step.treatment} locationId={step.location} required={step.required} tx={tx} preferredId={preferredId} onPick={(p) => go({ p, stap: undefined, tijd: undefined })} />}
       {step.kind === "planner" && <PlannerStep c={c} s={s} step={step} tx={tx} lang={lang} go={go} me={me} preferredId={preferredId} />}
@@ -227,7 +227,7 @@ function chosenAddon(c: Full, menu: MenuShape | null, s: Search, treatmentId: st
 }
 
 /** One extra question after choosing a treatment: a consult erbij, or a pakket. */
-export function AddonStep({ c, menu, step, tx, name, lang, onDone }: { c: Full; menu: MenuShape; step: { treatment: string; via: string | null; addon: Exclude<Addon, { type: "none" }> }; tx: Tx; name: (x: { name_nl: string; name_en: string | null }) => string; lang: string; onDone: (x: "ja" | "consult" | "pakket" | "een", switchTo?: string) => void }) {
+export function AddonStep({ c, menu, step, tx, name, onDone }: { c: Full; menu: MenuShape; step: { treatment: string; via: string | null; addon: Exclude<Addon, { type: "none" }> }; tx: Tx; name: (x: { name_nl: string; name_en: string | null }) => string; onDone: (x: "ja" | "consult" | "pakket" | "een", switchTo?: string) => void }) {
   const t = c.treatments.find((x) => x.id === step.treatment);
   const parent = placementParent(menu, step.treatment, step.via);
   const [pick, setPick] = useState<"ja" | "consult" | "pakket" | "een">(step.addon.type === "consult" ? "ja" : "pakket");
@@ -254,7 +254,6 @@ export function AddonStep({ c, menu, step, tx, name, lang, onDone }: { c: Full; 
       </div>
       {consult && consult !== step.treatment && <button type="button" onClick={() => onDone("ja", consult)} className="mt-4 self-start text-[14px] text-primary underline">{tx("a_consult_only")}</button>}
       <PillButton size="lg" className="patient-choice choice-primary mt-8 w-full" onClick={() => onDone(pick)}>{tx("a_continue")}</PillButton>
-      <span className="hidden">{lang}</span>
     </>
   );
 }
