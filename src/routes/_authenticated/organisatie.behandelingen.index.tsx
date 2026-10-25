@@ -119,7 +119,7 @@ function TreatmentsPage() {
       if (d.from === "none") return;
       return run.mutate(() => moveMenuItem(org, d.item, d.from, "none", 0));
     }
-    const err = moveError(m, d.item, d.from === "none" ? "__none__" : d.from, to, org.menuMaxDepth);
+    const err = moveError(m, d.item, (d.from === "none" ? "__none__" : d.from) as Parent, to, org.menuMaxDepth);
     if (err) return refuse(err);
     let idx = index;
     if (d.from === to) {
@@ -241,7 +241,7 @@ function TreatmentsPage() {
           <SearchField placeholder="Zoek een groep of behandeling" value={q} onChange={(e) => setQ(e.target.value)} className="w-full sm:w-[300px]" aria-label="Zoek een groep of behandeling" />
           {problemCount > 0 && (
             <button type="button" aria-pressed={problems} onClick={() => setProblems(!problems)}
-              className={cn("inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-full px-4 text-sm transition-colors", problems ? "bg-warning text-primary-foreground" : "bg-warning-light text-warning hover:bg-signal")}>
+              className={cn("inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-full px-4 text-sm transition-colors", problems ? "bg-warning text-primary-foreground" : "bg-warning-bg text-warning hover:bg-signal")}>
               <UiIcon name="waarschuwing" className="size-4" />{problemCount} niet overal boekbaar
             </button>
           )}
@@ -302,13 +302,13 @@ function errorText(e: unknown) {
 
 /** Indented select options for every group, plus the top level. */
 function placeOptions(org: Org, m: MenuData, disabled: (p: Parent) => string | null = () => null) {
-  const out: Array<{ value: string; label: string; disabled?: boolean; detail?: string }> = [];
+  const out: Array<{ value: string; label: string; group: string; disabled?: boolean; reason?: string }> = [];
   const top = disabled(null);
-  out.push({ value: "top", label: "Eerste laag", ...(top ? { disabled: true, detail: top } : {}) });
+  out.push({ value: "top", label: "Eerste laag", group: "", ...(top ? { disabled: true, reason: top } : {}) });
   const walk = (parent: Parent, level: number) => {
     for (const it of children(m, parent)) if (it.kind === "group") {
       const why = disabled(it.id);
-      out.push({ value: it.id, label: `${"\u2002".repeat(level * 2)}${org.categories.find((c) => c.id === it.id)?.name_nl ?? ""}`, ...(why ? { disabled: true, detail: why } : {}) });
+      out.push({ value: it.id, label: `${"\u2002".repeat(level * 2)}${org.categories.find((c) => c.id === it.id)?.name_nl ?? ""}`, group: "", ...(why ? { disabled: true, reason: why } : {}) });
       walk(it.id, level + 1);
     }
   };
@@ -355,7 +355,6 @@ function GroupModal({ org, m, id, onClose, onDone }: { org: Org; m: MenuData; id
         <TextField label="Naam" value={name} onChange={(e) => setName(e.target.value)} />
         <IconField org={org} m={m} own={icon} parent={g.parent_id} onChange={setIcon} onDone={onDone} />
         <p className="text-sm text-muted-foreground">Laag {depth(m, id)} van maximaal {org.menuMaxDepth}</p>
-        <Link to="/organisatie/behandelingen" className="hidden" />
         <div className="rounded-[14px] bg-sand p-4">
           {!confirm ? (
             <PillButton variant="ghost" className="text-warning" onClick={() => setConfirm(true)}>Groep opheffen</PillButton>
@@ -398,9 +397,8 @@ function TreatmentModal({ org, m, id, warning, onClose, onDone }: { org: Org; m:
             ))}
             {places.length === 0 && <li className="text-sm text-muted-foreground">Niet in het menu: alleen boekbaar via een directe boekingslink.</li>}
           </ul>
-          <SearchablePicker className="mt-3" label="" options={options} value="" preserveOrder
-            onChange={(v) => { const p = v[0]; if (p !== undefined && p !== "") act.mutate(() => addPlacement(org, id, toParent(p))); }}
-            help={null} selectionPlacement="inside" aria-label="Ook op een andere plek zetten" {...{ placeholder: "Ook op een andere plek zetten…" }} />
+          <SearchablePicker className="mt-3" label="Ook op een andere plek zetten…" options={options} value="" preserveOrder
+            onChange={(v) => { const p = v[0]; if (p !== undefined && p !== "") act.mutate(() => addPlacement(org, id, toParent(p))); }} />
         </div>
         <div>
           <span className="text-[13px] font-medium">Boekbaar</span>
@@ -459,7 +457,7 @@ function AddModal({ org, m, parent: initial, onClose, onDone }: { org: Org; m: M
         </div>
         {mode === "existing" && (
           <SearchablePicker label="Behandeling" value={existing} onChange={(v) => setExisting(v[0] ?? "")}
-            options={org.treatments.map((t) => ({ value: t.id, label: t.name_nl, ...(here.has(t.id) ? { disabled: true, detail: "Staat hier al" } : {}) }))} />
+            options={org.treatments.map((t) => ({ value: t.id, label: t.name_nl, group: "", ...(here.has(t.id) ? { disabled: true, reason: "Staat hier al" } : {}) }))} />
         )}
         {mode !== "existing" && <TextField label="Naam" value={name} onChange={(e) => setName(e.target.value)} />}
         {mode === "treatment" && <Select label="Duur" value={dur} onChange={setDur} options={durationOptions().map((d) => ({ value: String(d), label: `${d} minuten` }))} />}
