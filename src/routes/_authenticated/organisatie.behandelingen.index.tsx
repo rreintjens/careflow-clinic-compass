@@ -498,7 +498,7 @@ function PhonePreview({ org, m, sel, onGroup }: { org: Org; m: MenuData; sel: Pa
         <span className="flex justify-center"><img src="/ui-icons/kruis.svg" alt="" className="size-5" /></span>
       </header>
       <div className="h-[3px] bg-muted"><div className="h-full bg-primary" style={{ width: t ? "30%" : top ? "10%" : "15%" }} /></div>
-      <div className="max-h-[560px] min-h-[480px] overflow-y-auto px-5 pb-6 pt-7">
+      <div className="max-h-[calc(100dvh-200px)] min-h-[480px] overflow-y-auto px-5 pb-6 pt-7">
         {t ? (
           <>
             <h3 className="mb-6 text-[24px] font-semibold leading-[1.2] tracking-tight">{label("q_location")}</h3>
