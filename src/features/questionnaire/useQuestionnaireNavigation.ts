@@ -34,6 +34,8 @@ export function useQuestionnaireNavigation(onRestore: (page: string) => void) {
     if (screen?.owner !== owner) {
       position.current = 0;
       router.history.replace(location.href, { ...location.state, questionnaireScreen: { owner, page: from, position: 0 } });
+      // Browser history batches writes; commit the initial page before pushing the next.
+      router.history.flush();
     }
     position.current += 1;
     router.history.push(location.href, { ...router.history.location.state,

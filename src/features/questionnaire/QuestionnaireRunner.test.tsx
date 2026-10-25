@@ -12,7 +12,7 @@ const def: QuestionnaireDef = { id: 'transition-test', name: 'Test', moment: 'af
   { id: 'one', items: [{ id: 'answer', text: 'Keuze', type: 'yes_no' }, { id: 'text', text: 'Tekst', type: 'text', optional: true }] },
   { id: 'two', title: 'Tweede pagina', items: [{ id: 'date', text: 'Datum', type: 'date_segmented', optional: true }] },
 ] };
-const animate = vi.fn(() => ({ finished: new Promise<void>(() => {}), cancel: vi.fn() }));
+const animate = vi.fn((_frames: Keyframe[], _timing: KeyframeAnimationOptions) => ({ finished: new Promise<void>(() => {}), cancel: vi.fn() }));
 beforeEach(() => {
   vi.useFakeTimers();
   mocked.router.history = createMemoryHistory({ initialEntries: ['/vragenlijst/test'] });
