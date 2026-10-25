@@ -1,46 +1,34 @@
+import { visibleChildren, type MenuData, type MenuItem } from "./menu";
+
 /** Patient booking flow: which step to show, given what is chosen. Single-choice steps are skipped. */
 export type ChoiceMode = "assigned" | "optional" | "required" | "fixed";
 export interface Pick { cat?: string | undefined; sub?: string | undefined; t?: string | undefined; l?: string | undefined; p?: string | undefined; stap?: string | undefined }
 export interface Catalog {
-  categories: Array<{ id: string; parent_id: string | null }>;
-  links: Array<{ treatment_id: string; category_id: string }>;
+  menu: MenuData;
   treatments: Array<{ id: string; practitioner_choice: string }>;
   locationsFor: (treatmentId: string) => string[];
 }
 export type Step =
-  | { kind: "category"; options: string[] }
-  | { kind: "subcategory"; category: string; options: string[] }
-  | { kind: "treatment"; category: string; options: string[] }
+  | { kind: "menu"; group: string | null; items: MenuItem[] }
   | { kind: "location"; treatment: string; options: string[] }
   | { kind: "practitioner"; treatment: string; location: string; required: boolean }
   | { kind: "planner"; treatment: string; location: string; practitioner: string | null; canChoose: boolean }
   | { kind: "none" };
 
-/** Treatments reachable under a category (directly or via its subcategories) that have a bookable location. */
-export function treatmentsUnder(c: Catalog, categoryId: string): string[] {
-  const ids = new Set([categoryId, ...c.categories.filter((x) => x.parent_id === categoryId).map((x) => x.id)]);
-  const ok = new Set(c.treatments.filter((t) => c.locationsFor(t.id).length > 0).map((t) => t.id));
-  return [...new Set(c.links.filter((l) => ids.has(l.category_id) && ok.has(l.treatment_id)).map((l) => l.treatment_id))];
-}
-
 export function nextStep(c: Catalog, pick: Pick): Step {
-  let { cat, sub, t, l } = pick;
+  let { t, l } = pick;
   if (!t) {
-    if (!cat) {
-      const tops = c.categories.filter((x) => !x.parent_id && treatmentsUnder(c, x.id).length > 0).map((x) => x.id);
-      if (tops.length === 0) return { kind: "none" };
-      if (tops.length > 1) return { kind: "category", options: tops };
-      cat = tops[0];
+    const ok = new Set(c.treatments.filter((x) => c.locationsFor(x.id).length > 0).map((x) => x.id));
+    let group: string | null = pick.sub ?? pick.cat ?? null;
+    for (let i = 0; i < 10 && !t; i++) {
+      const items = visibleChildren(c.menu, group, (id) => ok.has(id));
+      if (items.length === 0) return { kind: "none" };
+      if (items.length > 1) return { kind: "menu", group, items };
+      const only = items[0] as MenuItem;
+      if (only.kind === "treatment") t = only.id;
+      else group = only.id;
     }
-    const subs = c.categories.filter((x) => x.parent_id === cat && treatmentsUnder(c, x.id).length > 0).map((x) => x.id);
-    if (!sub && subs.length > 1) return { kind: "subcategory", category: cat as string, options: subs };
-    const scope = sub ?? (subs.length === 1 ? subs[0] : cat) as string;
-    const direct = sub || subs.length === 1
-      ? treatmentsUnder(c, scope)
-      : treatmentsUnder(c, cat as string);
-    if (direct.length === 0) return { kind: "none" };
-    if (direct.length > 1) return { kind: "treatment", category: scope, options: direct };
-    t = direct[0];
+    if (!t) return { kind: "none" };
   }
   const treatment = c.treatments.find((x) => x.id === t);
   if (!treatment) return { kind: "none" };
