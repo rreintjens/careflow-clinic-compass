@@ -259,3 +259,8 @@ Verificatie 19-10: alle vijf punten op 1000007 als Rob doorlopen; 58 gerichte te
 - [x] Boom met groepen en behandelingen door elkaar, slepen, telefoonvoorbeeld
 - [x] Iconenbibliotheek + eigen SVG + Standaardicoon
 - [x] /boeken en boekingslinks naar elke laag
+
+## Boekingsflow en boekbaarheidschip — eigenaar 25-10
+- [ ] Scroll binnen stappen, blijvende tijden, zichtbare Verder-knop en toetsenbordfocus herstellen.
+- [ ] Toevoegingskeuze, volle behandelaarbreedte, locatievraag en Joyce op elke stap.
+- [ ] Boekbaarheidswaarschuwingen vergelijken binnen eigen groep; tests en desktop/390px controleren.
