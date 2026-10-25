@@ -3,6 +3,10 @@ import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } 
 import { Logo } from "@/components/Logo";
 import { PatientFrame } from "@/components/PatientFrame";
 import { UiIcon } from "@/components/UiIcon";
+import { PillButton } from "@/components/PillButton";
+import { BookingTransitionProvider, useBookingTransition } from "@/components/BookingTransition";
+import { BOOKING_TAP_MS, BOOKING_SLIDE_MS } from "@/domain/booking-transition";
+import { useQuestionnaireNavigation } from "./useQuestionnaireNavigation";
 import {
   flowSteps, makeCtx, itemAnswered, pageProgress, redOnPage, toggleOption, visibleItems, visiblePages,
   type Answers, type FlowFile, type Item, type Page, type QuestionnaireDef, type RedOutcome,
@@ -30,6 +34,27 @@ const fill = (s: string | undefined, vars: Record<string, string>) => (s ?? "").
 
 /** Patient-facing questionnaire at 390px; used in test mode now and in the booking flow later. */
 export function QuestionnaireRunner({
+  ...props
+}: QuestionnaireRunnerProps) {
+  return <BookingTransitionProvider><RunnerContent {...props} /></BookingTransitionProvider>;
+}
+
+type QuestionnaireRunnerProps = {
+  flow: Pick<FlowFile, "settings" | "computed_fields">;
+  def: QuestionnaireDef;
+  ui: UiTexts;
+  today: string;
+  vars?: Record<string, string>;
+  initial?: Answers;
+  startPageId?: string;
+  onFinish?: (answers: Answers) => void;
+  onRed?: (red: RedOutcome) => void;
+  onAnswers?: (answers: Answers) => void;
+  fullScreen?: boolean;
+  lang?: Lang;
+};
+
+function RunnerContent({
   flow, def, ui, today, vars = {}, initial = {}, startPageId, onFinish, onRed, onAnswers, fullScreen = false, lang = "nl",
 }: {
   flow: Pick<FlowFile, "settings" | "computed_fields">;
@@ -50,8 +75,17 @@ export function QuestionnaireRunner({
   const [red, setRed] = useState<RedOutcome | null>(null);
   const [showMissing, setShowMissing] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  // Every new page (and the rejection screen) starts at the top.
-  useEffect(() => { scrollRef.current?.scrollTo({ top: 0 }); if (fullScreen) window.scrollTo({ top: 0 }); }, [pageId, red, fullScreen]);
+  const mainRef = useRef<HTMLDivElement>(null);
+  const advancing = useRef(false);
+  const redRef = useRef<RedOutcome | null>(null);
+  if (red) redRef.current = red;
+  const screenKey = red ? `red:${pageId}` : pageId;
+  const navigation = useQuestionnaireNavigation((screen) => {
+    setShowMissing(false);
+    if (screen.startsWith('red:')) { setPageId(screen.slice(4)); setRed(redRef.current); }
+    else { setPageId(screen); setRed(null); }
+  });
+  useBookingTransition(mainRef, screenKey, { direction: navigation.direction, scrollRef, pageScroll: fullScreen });
   useEffect(() => { onAnswers?.(answers); }, [answers, onAnswers]);
   const ctx = useMemo(() => makeCtx(configOfDefinition(def, flow), answers, today), [def, flow, answers, today]);
   const pages = visiblePages(def, ctx);
@@ -60,30 +94,36 @@ export function QuestionnaireRunner({
   const set = (k: string, v: unknown) => setAnswers((a) => ({ ...a, [k]: v }));
   const t = (k: string, extra: Record<string, string | number> = {}) => fill(ui[k] ?? k, Object.fromEntries(Object.entries(extra).map(([a, b]) => [a, String(b)])));
 
-  const restart = () => { setAnswers({}); setRed(null); setPageId(def.pages[0]?.id ?? ""); };
-  const next = () => {
-    if (!page) return;
+  const restart = () => { setAnswers({}); navigation.move(screenKey, def.pages[0]?.id ?? "", true); };
+  const next = async () => {
+    if (!page || advancing.current) return;
     const missing = visibleItems(page, ctx).filter((i) => !i.optional && !itemAnswered(i, ctx.answers));
     if (missing.length) {
       setShowMissing(true);
-      document.getElementById(`q-${missing[0]?.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      mainRef.current?.querySelector(`[id="q-${missing[0]?.id}"]`)?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? "instant" : "smooth", block: "center" });
       return;
     }
     setShowMissing(false);
     const r = redOnPage(def, page, ctx);
-    if (r) { setRed(r); onRed?.(r); return; }
     const nextPage = pages[idx + 1];
-    if (nextPage) setPageId(nextPage.id);
+    advancing.current = true;
+    const tapped = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    tapped?.setAttribute('data-booking-tapped', 'true');
+    await new Promise(resolve => window.setTimeout(resolve, BOOKING_TAP_MS));
+    tapped?.removeAttribute('data-booking-tapped');
+    if (r) { redRef.current = r; navigation.move(screenKey, `red:${pageId}`); onRed?.(r); }
+    else if (nextPage) navigation.move(screenKey, nextPage.id);
     else onFinish?.(answers);
+    window.setTimeout(() => { advancing.current = false; }, BOOKING_SLIDE_MS);
   };
-  const back = () => { setShowMissing(false); if (red) { setRed(null); return; } const prev = pages[idx - 1]; if (prev) setPageId(prev.id); };
+  const back = () => { if (advancing.current) return; if (red) { navigation.move(screenKey, pageId, true); return; } const prev = pages[idx - 1]; if (prev) navigation.move(screenKey, prev.id, true); };
   const progress = pages.length ? (idx + 1) / pages.length : 0;
 
   if (red) {
     const v = def.rejection?.variants?.[red.variant];
     const buttons = def.rejection?.buttons ?? [];
     return (
-      <Frame scrollRef={scrollRef} fullScreen={fullScreen} progress={progress} onBack={back}
+      <Frame scrollRef={scrollRef} mainRef={mainRef} fullScreen={fullScreen} progress={progress} onBack={back}
         footer={<>
           {buttons[0] && <button type="button" onClick={restart} className="patient-choice choice-primary h-[54px] w-full rounded-full bg-primary text-[17px] font-medium text-primary-foreground">{buttons[0]}</button>}
           {buttons[1] && <a href="https://www.bodyclinic.nl" target="_blank" rel="noreferrer" className="mt-4 block text-center text-[15px] text-primary">{buttons[1]}</a>}
@@ -113,15 +153,15 @@ export function QuestionnaireRunner({
           .filter((s) => s.state !== "done" && !afterLbls.includes(s.label))
           .map((s) => s.label.toLowerCase());
         if (!rem.length) return null;
-        const secties = rem.length === 1 ? rem[0]! : `${rem.slice(0, -1).join(", ")} en ${rem[rem.length - 1]}`;
+        const secties = rem.length === 1 ? (rem[0] ?? "") : `${rem.slice(0, -1).join(", ")} en ${rem[rem.length - 1]}`;
         return fill(ui["flow_line"] as string, { secties });
       })()
     : null;
   return (
-    <Frame scrollRef={scrollRef} fullScreen={fullScreen} progress={progress} onBack={idx > 0 ? back : undefined}
+    <Frame scrollRef={scrollRef} mainRef={mainRef} fullScreen={fullScreen} progress={progress} onBack={idx > 0 ? back : undefined}
       footer={<>
         {isQuestions && <p className="mb-3 flex items-center justify-center gap-2 text-xs text-muted-foreground"><LockIcon />{t("privacy")}</p>}
-        <button type="button" onClick={next} className="patient-choice choice-primary h-[54px] w-full rounded-full bg-primary text-[17px] font-medium text-primary-foreground disabled:opacity-50">{fill(page.button, vars) || t("next")}</button>
+        <PillButton onClick={() => void next()} className="patient-choice choice-primary h-[54px] w-full text-[17px]">{fill(page.button, vars) || t("next")}</PillButton>
       </>}>
       {page.type === "boodschap" && page.image && <div className="-mx-5 -mt-8 mb-6 flex h-[140px] items-center justify-center bg-mist" aria-label={page.image}><span className="h-[42px] w-[70px] rounded-[8px] bg-muted-foreground/20" /></div>}
       {page.type !== "boodschap" && (page.section || (!isQuestions && page.bullets)) && <div className="mb-2 text-[13px] text-primary">{page.section ?? t("section_intro")}</div>}
@@ -216,7 +256,7 @@ export function Boodschap({ page, vars }: { page: Page; vars: Record<string, str
   );
 }
 
-function Frame({ progress, onBack, children, footer, scrollRef, fullScreen }: { progress: number; onBack?: (() => void) | undefined; children: ReactNode; footer: ReactNode; scrollRef: RefObject<HTMLDivElement | null>; fullScreen: boolean }) {
+function Frame({ progress, onBack, children, footer, scrollRef, mainRef, fullScreen }: { progress: number; onBack?: (() => void) | undefined; children: ReactNode; footer: ReactNode; scrollRef: RefObject<HTMLDivElement | null>; mainRef: RefObject<HTMLDivElement | null>; fullScreen: boolean }) {
   const card = (
     <div className={cn("flex flex-col bg-background", fullScreen ? "w-full flex-1" : "h-[844px] w-[390px] overflow-hidden rounded-[28px] border border-line")}>
       <div className="flex h-14 items-center justify-between px-5">
@@ -225,7 +265,7 @@ function Frame({ progress, onBack, children, footer, scrollRef, fullScreen }: { 
         <span aria-hidden="true"><CloseIcon /></span>
       </div>
       <div className="h-[3px] bg-mist"><div className="h-full bg-primary transition-all" style={{ width: `${progress * 100}%` }} /></div>
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 pt-8 pb-6">{children}</div>
+      <div ref={scrollRef} className={cn("min-h-0 flex-1 px-5 pt-8 pb-6", !fullScreen && "overflow-y-auto")}><div ref={mainRef} data-questionnaire-content>{children}</div></div>
       <div className="px-5 pb-6">{footer}</div>
     </div>
   );

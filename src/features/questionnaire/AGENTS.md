@@ -6,3 +6,4 @@
 
 - Library questions are referenced by code from dossier template versions and questionnaire items (`library_code`); saving one runs `saveLibraryQuestion`, which creates concepts for every user — template merge/sync rules live in `src/domain/dossier-templates.ts` so builder and consult cannot diverge.
 - Questionnaire messages and booking start screens share MessageFields and Boodschap rendering; treatment/link configuration stays outside questionnaire versions and public booking loads link and catalogue together to avoid hydration divergence.
+- Runner page changes reuse BookingTransition with a runner-scoped coordinator and page-only router history (never answers); embedded preview scroll is reset locally, while full-screen runners scroll the page, keeping headers/progress outside the animated content.
