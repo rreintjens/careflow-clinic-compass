@@ -261,7 +261,7 @@ Verificatie 19-10: alle vijf punten op 1000007 als Rob doorlopen; 58 gerichte te
 - [x] /boeken en boekingslinks naar elke laag
 
 ## Boekingsflow en boekbaarheidschip — eigenaar 25-10
-- [x] Scroll binnen stappen, blijvende tijden, zichtbare Verder-knop en toetsenbordfocus herstellen.
+- [ ] Scroll binnen stappen, blijvende tijden, zichtbare Verder-knop en toetsenbordfocus herstellen.
 - [x] Toevoegingskeuze, volle behandelaarbreedte, locatievraag en Joyce op elke stap.
 - [x] Boekbaarheidswaarschuwingen vergelijken binnen eigen groep; tests en desktop/390px controleren.
 

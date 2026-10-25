@@ -457,6 +457,11 @@ function PlannerStep({ c, s, step, tx, lang, go, me, preferredId }: { c: Full; s
   const fmt = (d: string, o: Intl.DateTimeFormatOptions) => new Date(`${d}T12:00:00Z`).toLocaleDateString(lang === "en" ? "en-GB" : "nl-NL", { timeZone: "UTC", ...o });
   const chosen = s.tijd ? daySlots.find((x) => fmtTime(x.start) === s.tijd) : undefined;
   const p = step.practitioner ? c.practitioners.find((x) => x.id === step.practitioner) : null;
+  const pickWeek = (offset: number) => {
+    const first = addDays(start, offset) < today ? today : addDays(start, offset);
+    const last = addDays(first, 7);
+    go({ d: slots.find(x => x.date >= first && x.date < last)?.date ?? first, tijd: undefined }, true);
+  };
   const roles = [...new Set(c.treatmentRoles.filter((x) => x.treatment_id === step.treatment).map((x) => roleName(c, x.role_id, lang)))];
   const roleLabel = roles.length === 1 ? (roles[0] ?? "") : tx("practitioner");
   return (
@@ -477,8 +482,8 @@ function PlannerStep({ c, s, step, tx, lang, go, me, preferredId }: { c: Full; s
       <div className="mb-3 flex items-center justify-between">
         <span className="text-[15px] font-semibold capitalize">{fmt(start, { month: "long", year: "numeric" })}</span>
         <span className="flex gap-2">
-          <button type="button" aria-label="Vorige week" disabled={start <= today} onClick={() => go({ d: addDays(start, -7) < today ? today : addDays(start, -7), tijd: undefined }, true)} className="flex size-9 items-center justify-center rounded-full disabled:opacity-30"><img src="/ui-icons/pijl-links.svg" alt="" className="size-4" /></button>
-          <button type="button" aria-label="Volgende week" disabled={daysBetween(today, addDays(start, 7)) > horizon} onClick={() => go({ d: addDays(start, 7), tijd: undefined }, true)} className="flex size-9 items-center justify-center rounded-full bg-sand disabled:opacity-30"><img src="/ui-icons/pijl-rechts.svg" alt="" className="size-4" /></button>
+          <button type="button" aria-label="Vorige week" disabled={start <= today} onClick={() => pickWeek(-7)} className="flex size-9 items-center justify-center rounded-full disabled:opacity-30"><img src="/ui-icons/pijl-links.svg" alt="" className="size-4" /></button>
+          <button type="button" aria-label="Volgende week" disabled={daysBetween(today, addDays(start, 7)) > horizon} onClick={() => pickWeek(7)} className="flex size-9 items-center justify-center rounded-full bg-sand disabled:opacity-30"><img src="/ui-icons/pijl-rechts.svg" alt="" className="size-4" /></button>
         </span>
       </div>
       <div className="mb-6 grid grid-cols-7 gap-1 text-center">
