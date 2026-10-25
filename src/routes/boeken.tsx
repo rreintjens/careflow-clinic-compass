@@ -11,7 +11,8 @@ import { Logo } from "@/components/Logo";
 import { PatientFrame } from "@/components/PatientFrame";
 import { PillButton } from "@/components/PillButton";
 import { dayPart, nextStep, sortLocations, type Catalog } from "@/domain/booking";
-import { resolveIcon } from "@/domain/menu";
+import { resolveIcon, treatmentsIn } from "@/domain/menu";
+import { addonMinutes, consultFor, effectiveAddon, groupPhrase, placementParent, typeGroup, type Addon, type AddonChoice } from "@/domain/addons";
 import { CustomIconsProvider, MenuIcon } from "@/components/MenuIcon";
 import { fmtTime, type Slot } from "@/domain/slots";
 import { cn } from "@/lib/utils";
@@ -33,6 +34,8 @@ const search = z.object({
   cat: z.string().optional(), sub: z.string().optional(), t: z.string().optional(), l: z.string().optional(),
   p: z.string().optional(), d: z.string().optional(), tijd: z.string().optional(), stap: z.string().optional(),
   inloggen: z.enum(["nee"]).optional(),
+  x: z.enum(["ja", "consult", "pakket", "een"]).optional(),
+  voorbeeld: z.union([z.literal("1"), z.literal(1)]).transform(() => "1" as const).optional(),
 });
 type Search = z.infer<typeof search>;
 
@@ -82,7 +85,7 @@ function Booking() {
   // One tap may never advance more than one step: ignore touches for ~400 ms after a step change,
   // so a tap that started on the previous screen cannot land on a button of the new screen.
   const [startPassed,setStartPassed]=useState(false);
-  const stepKey = `${s.cat ?? ""}|${s.sub ?? ""}|${s.t ?? ""}|${s.l ?? ""}|${s.p ?? ""}|${s.stap ?? ""}`;
+  const stepKey = `${s.cat ?? ""}|${s.sub ?? ""}|${s.t ?? ""}|${s.x ?? ""}|${s.l ?? ""}|${s.p ?? ""}|${s.stap ?? ""}`;
   const [settling, setSettling] = useState(true);
   useEffect(() => {
     setSettling(true);
@@ -90,6 +93,9 @@ function Booking() {
     return () => window.clearTimeout(t);
   }, [stepKey]);
   const guard = settling ? "pointer-events-none" : undefined;
+  useEffect(() => {
+    if (s.voorbeeld === "1" && window.parent !== window) window.parent.postMessage({ type: "tbc-booking-preview", group: s.t ? null : s.sub ?? s.cat ?? null, treatment: s.t ?? null }, window.location.origin);
+  }, [s.voorbeeld, s.cat, s.sub, s.t]);
 
   // A Mijn omgeving session hides the login bar, presets the patient's own practitioner and prefills the details.
   const [me, setMe] = useState<Awaited<ReturnType<typeof bookingPatientContext>> | null>(null);
@@ -112,7 +118,17 @@ function Booking() {
   const locationsFor = (tid: string) => c.treatmentLocations.filter((x) => x.treatment_id === tid && c.locations.some((l) => l.id === x.location_id) && (!allowed || allowed.has(x.location_id))).map((x) => x.location_id);
   const treatments = (link?.treatmentId ? c.treatments.filter((t) => t.id === link.treatmentId) : c.treatments).map((t) => (mode ? { ...t, practitioner_choice: mode } : t));
   const menu = { groups: c.categories, links: link?.treatmentId ? c.links.filter((x) => x.treatment_id === link.treatmentId) : c.links, roots: link?.treatmentId ? c.roots.filter((x) => x.treatment_id === link.treatmentId) : c.roots };
-  const catalog: Catalog = { menu, treatments, locationsFor };
+  // Skip the toevoeging for a signed-in patient who already had a treatment in the same treatment-type group.
+  const addonFor = (tid: string, via: string | null) => {
+    const t = c.treatments.find((x) => x.id === tid);
+    if (!t) return null;
+    const parent = placementParent(menu, tid, via);
+    const a = effectiveAddon(c.categories, t, parent);
+    const tg = typeGroup(c.categories, parent);
+    if (a && me?.patient && tg) { const inGroup = new Set(treatmentsIn(menu, tg)); if (me.visits.some((v) => inGroup.has(v.treatment_id))) return null; }
+    return a;
+  };
+  const catalog: Catalog = { menu, treatments, locationsFor, addonFor };
   /** Icon with fallback up the tree: own icon, nearest group with one, else the standard icon. */
   const iconOf = (own: string | null | undefined, parent: string | null) => resolveIcon({ ...menu, groupIcon: (id) => c.categories.find((k) => k.id === id)?.icon }, own, parent, c.defaultIcon).icon;
   // Bron: een eigen ?bron= wint, dan de bron van de boekingslink, dan de utm-bron uit het webadres.
@@ -126,12 +142,14 @@ function Booking() {
     if (people.length === 1) step = nextStep(catalog,{...eff,p:people[0]?.id});
   }
   const top = step.kind === "menu" && step.group === null;
-  const progress = step.kind === "menu" ? (top ? 0.1 : 0.15) : { location: 0.3, practitioner: 0.4, planner: 0.45, none: 0 }[step.kind];
+  // The preview in Organisatie › Behandelingen shows these same screens and follows the group the patient opens.
+  const preview = s.voorbeeld === "1";
+  const progress = step.kind === "menu" ? (top ? 0.1 : 0.15) : { addon: 0.2, location: 0.3, practitioner: 0.4, planner: 0.45, none: 0 }[step.kind];
   const back = top ? undefined : () => window.history.back();
   const close = () => navigate({ search: { merk: s.merk, lang: s.lang, bron: s.bron } });
   const phone = c.tenant.phone;
   const loginAllowed = (link?.showPatientLogin ?? true) && s.inloggen !== "nee";
-  const showBar = loginAllowed && !me?.patient && (top || step.kind === "planner");
+  const showBar = !preview && loginAllowed && !me?.patient && (top || step.kind === "planner");
   const preferredId = me?.patient && (step.kind === "planner" || step.kind === "practitioner") ? preferredPractitioner(c, me.visits, step.treatment, step.location) : null;
   const openLogin = () => {
     const params = new URLSearchParams(Object.entries(eff).filter(([k, v]) => v != null && v !== "" && k !== "stap" && k !== "inloggen") as [string, string][]).toString();
@@ -159,9 +177,10 @@ function Booking() {
             const x = c.treatments.find((k) => k.id === it.id);
             return { id: `t:${it.id}`, title: x ? name(x) : "", sub: x ? `${x.duration_min} min` : "", icon: iconOf(x?.icon, step.group) };
           })}
-          onPick={(id) => (id.startsWith("g:") ? go({ cat: id.slice(2), sub: undefined }) : go({ t: id.slice(2) }))} />
+          onPick={(id) => (id.startsWith("g:") ? go({ cat: id.slice(2), sub: undefined }) : go({ t: id.slice(2), x: undefined }))} />
       )}
-      {step.kind === "location" && <LocationStep c={c} treatmentId={step.treatment} options={step.options} hidePeople={!!startScreen} tx={tx} name={name} onPick={(id) => go({ l: id })} />}
+      {step.kind === "addon" && <AddonStep c={c} menu={menu} step={step} tx={tx} name={name} onDone={(x, t) => go(t ? { t, x: undefined } : { t: step.treatment, x })} />}
+      {step.kind === "location" && <LocationStep c={c} treatmentId={step.treatment} options={step.options} hidePeople={!!startScreen} tx={tx} name={name} extraMin={chosenAddon(c, menu, eff, step.treatment)?.type === "consult" ? (chosenAddon(c, menu, eff, step.treatment) as { minutes: number }).minutes : 0} onPick={(id) => { if (!preview) go({ l: id }); }} />}
       {step.kind === "practitioner" && <PractitionerStep c={c} s={s} treatmentId={step.treatment} locationId={step.location} required={step.required} tx={tx} preferredId={preferredId} onPick={(p) => go({ p, stap: undefined, tijd: undefined })} />}
       {step.kind === "planner" && <PlannerStep c={c} s={s} step={step} tx={tx} lang={lang} go={go} me={me} preferredId={preferredId} />}
       </div>
@@ -189,6 +208,54 @@ export function Shell({ children, footer, bar, progress = 0, onBack, onClose, on
 
 export function Title({ children, sub }: { children: React.ReactNode; sub?: React.ReactNode }) {
   return <div className="mb-6"><h1 className="text-[28px] font-semibold leading-[1.2] tracking-tight">{children}</h1>{sub && <div className="mt-3 text-[15px] leading-[1.6] text-muted-foreground">{sub}</div>}</div>;
+}
+
+const euro = (n: number) => new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR", maximumFractionDigits: n % 1 ? 2 : 0 }).format(n);
+const addonParams = (s: Search) => ({ ...(s.x === "consult" || s.x === "pakket" ? { addon: s.x } : {}), ...((s.sub ?? s.cat) ? { via: s.sub ?? s.cat } : {}) });
+type MenuShape = { groups: Full["categories"]; links: Full["links"]; roots: Full["roots"] };
+
+/** The toevoeging the patient chose for this treatment, for summaries; the server re-derives it when holding. */
+function chosenAddon(c: Full, menu: MenuShape | null, s: Search, treatmentId: string): AddonChoice | null {
+  if (s.x !== "consult" && s.x !== "pakket") return null;
+  const t = c.treatments.find((x) => x.id === treatmentId);
+  if (!t) return null;
+  const m = menu ?? { groups: c.categories, links: c.links, roots: c.roots };
+  const a = effectiveAddon(c.categories, t, placementParent(m, treatmentId, s.sub ?? s.cat ?? null));
+  if (a?.type === "consult" && s.x === "consult") return { type: "consult", minutes: a.minutes };
+  if (a?.type === "pakket" && s.x === "pakket") return { type: "pakket", label: a.label, price_eur: a.price_eur };
+  return null;
+}
+
+/** One extra question after choosing a treatment: a consult erbij, or a pakket. */
+export function AddonStep({ c, menu, step, tx, name, onDone }: { c: Full; menu: MenuShape; step: { treatment: string; via: string | null; addon: Exclude<Addon, { type: "none" }> }; tx: Tx; name: (x: { name_nl: string; name_en: string | null }) => string; onDone: (x: "ja" | "consult" | "pakket" | "een", switchTo?: string) => void }) {
+  const t = c.treatments.find((x) => x.id === step.treatment);
+  const parent = placementParent(menu, step.treatment, step.via);
+  const [pick, setPick] = useState<"ja" | "consult" | "pakket" | "een">(step.addon.type === "consult" ? "ja" : "pakket");
+  if (!t) return null;
+  const price = t.price_cents != null ? `${t.price_is_from ? `${tx("a_from")} ` : ""}${euro(t.price_cents / 100)}` : "";
+  const tg = typeGroup(c.categories, parent);
+  const g = c.categories.find((x) => x.id === tg);
+  const consult = step.addon.type === "consult" ? consultFor(menu, c.categories, c.treatments, parent) : null;
+  const options = step.addon.type === "consult"
+    ? [{ v: "ja" as const, title: tx("a_consult_yes"), sub: "" }, { v: "consult" as const, title: tx("a_consult_no"), sub: tx("a_consult_no_help", { min: step.addon.minutes }) }]
+    : [{ v: "pakket" as const, title: tx("a_pakket_yes", { label: step.addon.label.charAt(0).toLowerCase() + step.addon.label.slice(1) }), sub: euro(step.addon.price_eur) }, { v: "een" as const, title: tx("a_pakket_no"), sub: t.price_cents != null ? euro(t.price_cents / 100) : "" }];
+  return (
+    <>
+      <span className="mb-4 inline-flex self-start rounded-full bg-teal-light px-3 py-1 text-[13px] text-primary">{[name(t), tx("c_minutes", { min: t.duration_min }), price].filter(Boolean).join(" · ")}</span>
+      <Title>{step.addon.type === "consult" ? tx("a_consult_title", { groep: groupPhrase(g ? name(g) : name(t)) }) : step.addon.question}</Title>
+      <div className="flex flex-col gap-2" role="radiogroup">
+        {options.map((o) => (
+          <button key={o.v} type="button" role="radio" aria-checked={pick === o.v} onClick={() => setPick(o.v)}
+            className={cn("patient-choice flex min-h-[60px] flex-col justify-center rounded-[16px] px-5 py-3 text-left", pick === o.v ? "bg-teal-light" : "bg-sand")}>
+            <span className="block text-[16px]">{o.title}</span>
+            {o.sub && <span className="block text-[13px] text-muted-foreground">{o.sub}</span>}
+          </button>
+        ))}
+      </div>
+      {consult && consult !== step.treatment && <button type="button" onClick={() => onDone("ja", consult)} className="mt-4 self-start text-[14px] text-primary underline">{tx("a_consult_only")}</button>}
+      <PillButton size="lg" className="patient-choice choice-primary mt-8 w-full" onClick={() => onDone(pick)}>{tx("a_continue")}</PillButton>
+    </>
+  );
 }
 
 const Chevron = () => <img src="/ui-icons/pijl-rechts.svg" alt="" className="size-4 shrink-0" />;
@@ -247,7 +314,7 @@ function preferredPractitioner(c: Full, visits: ReadonlyArray<{ treatment_id: st
   return [...count.entries()].sort((a, b) => b[1].n - a[1].n || b[1].last.localeCompare(a[1].last))[0]?.[0] ?? null;
 }
 
-function LocationStep({ c, treatmentId, options, tx, name, onPick,hidePeople=false }: { c: Full; treatmentId: string; options: string[];hidePeople?:boolean; tx: Tx; name: (x: { name_nl: string; name_en: string | null }) => string; onPick: (id: string) => void }) {
+function LocationStep({ c, treatmentId, options, tx, name, onPick,hidePeople=false,extraMin=0 }: { c: Full; treatmentId: string; options: string[];hidePeople?:boolean;extraMin?:number; tx: Tx; name: (x: { name_nl: string; name_en: string | null }) => string; onPick: (id: string) => void }) {
   const t = c.treatments.find((x) => x.id === treatmentId);
   const locs = sortLocations(c.locations.filter((l) => options.includes(l.id)));
   const roles = [...new Set(c.treatmentRoles.filter((x) => x.treatment_id === treatmentId).map((x) => roleName(c, x.role_id).toLowerCase()))];
@@ -257,7 +324,7 @@ function LocationStep({ c, treatmentId, options, tx, name, onPick,hidePeople=fal
       <Title sub={!hidePeople && t && (
         <span className="flex items-center gap-3">
           <span className="flex -space-x-3">{people.map((p) => <Avatar key={p.id} src={p.photo} size={40} />)}</span>
-          <span>{tx("duration_line", { rol: roles.length === 1 ? roles[0] ?? "" : tx("practitioner"), min: t.duration_min })}</span>
+          <span>{tx("duration_line", { rol: roles.length === 1 ? roles[0] ?? "" : tx("practitioner"), min: t.duration_min + extraMin })}</span>
         </span>
       )}>{tx("q_location")}</Title>
       <div className="flex flex-col gap-2">
@@ -291,8 +358,8 @@ const daysBetween = (a: string, b: string) => Math.round((Date.parse(`${b}T00:00
 function useSlots(c: Full, s: Search, treatmentId: string, locationId: string, practitionerIds: string[], from: string, days: number) {
   const fn = useServerFn(getBookingSlots);
   return useQuery({
-    queryKey: ["booking-slots", s.merk ?? "", treatmentId, locationId, practitionerIds.join(","), from, days],
-    queryFn: () => fn({ data: { merk: s.merk, treatmentId, locationId, practitionerIds: practitionerIds.length ? practitionerIds : eligiblePractitioners(c,treatmentId,locationId).map(p=>p.id), from, days, link:s.link } }),
+    queryKey: ["booking-slots", s.merk ?? "", treatmentId, locationId, practitionerIds.join(","), from, days, s.x ?? ""],
+    queryFn: () => fn({ data: { merk: s.merk, treatmentId, locationId, practitionerIds: practitionerIds.length ? practitionerIds : eligiblePractitioners(c,treatmentId,locationId).map(p=>p.id), from, days, link:s.link, ...addonParams(s) } }),
     enabled: !!c,
   });
 }
@@ -462,7 +529,7 @@ function HoldStep({ c, s, me, treatmentId, locationId, practitionerId, tx, lang,
     started.current = true;
     setInitial(readJson<Answers>(ANSWERS_KEY) ?? {});
     const prev = readJson<{ token: string }>(HOLD_KEY);
-    hold({ data: { merk: s.merk, treatmentId, locationId, practitionerId, date: s.d ?? "", time: s.tijd ?? "", language: lang === "en" ? "en" : "nl", source: s.bron, link: s.link, replaceToken: prev?.token } }).then((r) => {
+    hold({ data: { merk: s.merk, treatmentId, locationId, practitionerId, date: s.d ?? "", time: s.tijd ?? "", language: lang === "en" ? "en" : "nl", source: s.bron, link: s.link, replaceToken: prev?.token, ...addonParams(s) } }).then((r) => {
       if (!r.ok) { setState({ kind: "taken" }); return; }
       sessionStorage.setItem(HOLD_KEY, JSON.stringify({ token: r.token, expiresAt: r.expiresAt }));
       setState({ kind: "held", token: r.token, expiresAt: Date.parse(r.expiresAt), minutes: r.holdMinutes, practitionerId: r.practitionerId });
@@ -530,11 +597,13 @@ function AppointmentSummary({ c, s, treatmentId, locationId, practitionerId, tx,
   const l = c.locations.find((x) => x.id === locationId);
   const p = c.practitioners.find((x) => x.id === practitionerId);
   const tName = t ? ((lang === "en" && t.name_en) || t.name_nl) : "";
+  const extra = chosenAddon(c, null, s, treatmentId);
   return (
     <div className="rounded-[18px] bg-teal-light p-4">
       <p className="text-[12px] text-primary">{tx("d_your_appt")}</p>
       <p className="mt-1 text-[16px] font-semibold first-letter:uppercase">{fmtLong(s.d ?? "", lang)}, {s.tijd}</p>
-      <p className="mt-1 text-[14px]">{tName}, {tx("c_minutes", { min: t?.duration_min ?? 0 })}</p>
+      <p className="mt-1 text-[14px]">{tName}{extra?.type === "consult" ? ` ${tx("a_summary_consult")}` : ""}, {tx("c_minutes", { min: addonMinutes(t?.duration_min ?? 0, extra) })}</p>
+      {t && (extra?.type === "pakket" || s.x === "een") && <p className="text-[14px]">{extra?.type === "pakket" ? `${extra.label} · ${euro(extra.price_eur)}` : `${tx("a_pakket_no")} · ${euro((t.price_cents ?? 0) / 100)}`}</p>}
       <p className="text-[14px]">{[l?.kind === "online" ? tx("d_online_meet") : l?.name, p ? `${p.first_name} ${p.last_name}` : ""].filter(Boolean).join(" · ")}</p>
       {onChange && <button type="button" onClick={onChange} className="mt-2 text-[13px] text-primary underline">{tx("d_change")}</button>}
     </div>
@@ -755,7 +824,7 @@ function ConfirmedStep({ c, s, treatmentId, locationId, practitionerId, manageTo
   const ics = () => {
     const [h, m] = (s.tijd ?? "00:00").split(":").map(Number) as [number, number];
     const startD = new Date(`${s.d}T${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`);
-    const end = new Date(startD.getTime() + (t?.duration_min ?? 30) * 60_000);
+    const end = new Date(startD.getTime() + addonMinutes(t?.duration_min ?? 30, chosenAddon(c, null, s, treatmentId)) * 60_000);
     const body = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//The Body Clinic//Booking//NL", "BEGIN:VEVENT", `UID:${manageToken}`, `DTSTAMP:${icsDate(new Date())}`, `DTSTART:${icsDate(startD)}`, `DTEND:${icsDate(end)}`, `SUMMARY:${tName} · ${c.tenant.name}`, `LOCATION:${l?.kind === "online" ? tx("d_online_meet") : `${l?.name ?? ""}, ${l?.address ?? ""}`}`, "END:VEVENT", "END:VCALENDAR"].join("\r\n");
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([body], { type: "text/calendar" }));
@@ -774,7 +843,7 @@ function ConfirmedStep({ c, s, treatmentId, locationId, practitionerId, manageTo
         </div>
         <p className="mt-4 flex items-center gap-3 text-[14px]"><img src={l?.kind === "online" ? "/ui-icons/videogesprek.svg" : "/ui-icons/locatie.svg"} alt="" className="size-4" />{l?.kind === "online" ? tx("d_online_meet") : `${l?.name ?? ""}, ${l?.address ?? ""}`}</p>
         {l?.kind === "online" && meetLink && <p className="mt-2 flex items-center gap-3 text-[14px]"><img src="/ui-icons/videogesprek.svg" alt="" className="size-4 shrink-0" /><a href={meetLink} target="_blank" rel="noreferrer" className="truncate text-primary underline">{tx("m_join")}</a></p>}
-        <p className="mt-2 flex items-center gap-3 text-[14px]"><img src="/ui-icons/klok.svg" alt="" className="size-4" />{tName}, {tx("c_minutes", { min: t?.duration_min ?? 0 })}</p>
+        <p className="mt-2 flex items-center gap-3 text-[14px]"><img src="/ui-icons/klok.svg" alt="" className="size-4" />{tName}{chosenAddon(c, null, s, treatmentId)?.type === "consult" ? ` ${tx("a_summary_consult")}` : ""}, {tx("c_minutes", { min: addonMinutes(t?.duration_min ?? 0, chosenAddon(c, null, s, treatmentId)) })}</p>
         <button type="button" onClick={ics} className="mt-4 text-[14px] underline">{tx("c_add_calendar")}</button>
       </div>
       {hasQ && (

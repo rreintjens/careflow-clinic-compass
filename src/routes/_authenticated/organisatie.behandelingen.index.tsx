@@ -13,13 +13,17 @@ import { PillButton } from "@/components/PillButton";
 import { SearchablePicker } from "@/components/SearchablePicker";
 import { Select } from "@/components/Select";
 import { UiIcon } from "@/components/UiIcon";
-import joyceAsset from "@/assets/joyce-maas.jpg.asset.json";
 import {
-  addPlacement, createGroup, createMenuTreatment, dissolveGroup, menuData, moveMenuItem, orgQuery, removePlacement, setTreatmentIcon, updateGroup, uploadCustomIcon,
+  addPlacement, createGroup, createMenuTreatment, dissolveGroup, menuData, moveMenuItem, orgQuery, removePlacement, setTreatmentAddon, setTreatmentIcon, updateGroup, uploadCustomIcon,
   type Org,
 } from "@/data/organisation";
 import { canAddGroup, children, depth, moveError, parentsOfTreatment, pathLabel, resolveIcon, treatmentsIn, visibleChildren, type MenuData, type MenuItem, type Parent } from "@/domain/menu";
 import { durationOptions } from "@/domain/organisation";
+import { ADDON_MINUTES, addonExplain, groupAddon, parseAddon, type Addon } from "@/domain/addons";
+import { currentTenantQuery } from "@/data/tenant";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { treatmentBookability } from "@/features/organisation/bookability";
 import { EquipmentKindsModal } from "@/features/organisation/EquipmentKindsModal";
 import { IconPicker } from "@/features/organisation/IconPicker";
@@ -47,7 +51,12 @@ function treatmentWarning(org: Org, id: string): string {
   const b = treatmentBookability(org, id);
   if (b.total === 0) return "Nergens aangeboden";
   const bad = b.perLocation.filter((p) => p.reason !== "ok").map((p) => org.locations.find((l) => l.id === p.locationId)?.name ?? "");
-  return bad.length ? `Niet in ${joinNl(bad)}` : "";
+  // Offered in most clinics but not all: name the clinics it is missing from, as eKis does.
+  const clinics = org.locations.filter((l) => l.kind !== "online" && l.status !== "inactive");
+  const offeredClinics = clinics.filter((l) => b.offered.includes(l.id));
+  const missing = offeredClinics.length * 2 >= clinics.length ? clinics.filter((l) => !b.offered.includes(l.id)).map((l) => l.name) : [];
+  const all = [...new Set([...missing, ...bad])];
+  return all.length ? `Niet in ${joinNl(all)}` : "";
 }
 
 function TreatmentsPage() {
@@ -179,6 +188,7 @@ function TreatmentsPage() {
               <span className="min-w-0 flex-1">
                 <span className={cn("block truncate text-sm font-medium", sel === g.id && "text-primary")}>{g.name_nl}</span>
                 {note && <span className={cn("block truncate text-xs", note.warn ? "text-warning" : "text-muted-foreground")}>{note.text}</span>}
+                {parseAddon(g.addon) && <span className="block truncate text-xs text-muted-foreground">Toevoeging voor alles hieronder: {addonShort(parseAddon(g.addon))}</span>}
               </span>
               <span className="shrink-0 text-xs text-muted-foreground">{treatmentsIn(m, g.id).length}</span>
               <button type="button" aria-label={`${g.name_nl} bewerken`} onClick={(e) => { e.stopPropagation(); setEditGroup(g.id); }}
@@ -211,6 +221,7 @@ function TreatmentsPage() {
               <MenuIcon icon={ic.icon} inherited={ic.inherited} />
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm">{t.name_nl}</span>
+                {parseAddon(t.addon) && <span className="block truncate text-xs text-muted-foreground">Toevoeging: {addonShort(parseAddon(t.addon))}</span>}
                 {(w && !sharedWarning(parent)) || others.length ? (
                   <span className="block truncate text-xs">
                     {w && !sharedWarning(parent) && <span className="text-warning">{w}</span>}
@@ -283,7 +294,7 @@ function TreatmentsPage() {
             </div>
           </section>
           <aside className="xl:sticky xl:top-6">
-            <PhonePreview org={org} m={m} sel={sel} onGroup={(id) => { setSel(id); if (id) setOpen((s) => { const n = new Set(s); let cur: string | null = id; while (cur) { n.add(cur); cur = org.categories.find((c) => c.id === cur)?.parent_id ?? null; } return n; }); }} />
+            <PhonePreview org={org} sel={sel} onGroup={(id) => { setSel(id); if (id) setOpen((s) => { const n = new Set(s); let cur: string | null = id; while (cur) { n.add(cur); cur = org.categories.find((c) => c.id === cur)?.parent_id ?? null; } return n; }); }} />
           </aside>
         </div>
 
@@ -292,6 +303,36 @@ function TreatmentsPage() {
         {addIn !== undefined && <AddModal org={org} m={m} parent={addIn} onClose={() => setAddIn(undefined)} onDone={refresh} />}
       </ListPage>
     </CustomIconsProvider>
+  );
+}
+
+function addonShort(a: Addon | null): string {
+  if (!a || a.type === "none") return "geen";
+  if (a.type === "consult") return `consult erbij, ${a.minutes} minuten extra`;
+  return `pakket "${a.label}", € ${a.price_eur}`;
+}
+
+/** "Toevoeging na het kiezen": like the group, none, consult erbij (15/30/45 min) or, on a treatment, a pakket. */
+function AddonField({ value, inherited, forTreatment, kind, onChange }: { value: Addon | null; inherited: Addon | null; forTreatment: boolean; kind?: string; onChange: (a: Addon | null) => void }) {
+  const mode = value ? value.type : "inherit";
+  const opts = [{ value: "inherit", label: "Zoals de groep" }, { value: "none", label: "Geen toevoeging" }, { value: "consult", label: "Consult erbij" }, ...(forTreatment ? [{ value: "pakket", label: "Pakket" }] : [])];
+  const set = (v: string) => onChange(v === "inherit" ? null : v === "none" ? { type: "none" } : v === "consult" ? { type: "consult", minutes: value?.type === "consult" ? value.minutes : 15 } : { type: "pakket", label: value?.type === "pakket" ? value.label : "", price_eur: value?.type === "pakket" ? value.price_eur : 0, question: value?.type === "pakket" ? value.question : "" });
+  const shown = value ?? inherited;
+  const explain = forTreatment && kind && kind !== "behandeling" ? "Dit is een " + kind + "; die krijgt nooit een toevoeging." : addonExplain(shown && shown.type === "pakket" && !value ? null : shown, !value);
+  return (
+    <div className="flex flex-col gap-3 rounded-[14px] bg-sand/60 p-4">
+      <span className="text-[13px] font-medium">Toevoeging na het kiezen</span>
+      <Select label="Soort" value={mode} onChange={set} options={opts} preserveOrder />
+      {value?.type === "consult" && <Select label="Extra minuten" value={String(value.minutes)} onChange={(v) => onChange({ type: "consult", minutes: Number(v) })} options={ADDON_MINUTES.map((n) => ({ value: String(n), label: `${n} minuten` }))} preserveOrder />}
+      {value?.type === "pakket" && (
+        <>
+          <TextField label="Vraag" value={value.question} onChange={(e) => onChange({ ...value, question: e.target.value })} />
+          <TextField label="Naam pakket" value={value.label} onChange={(e) => onChange({ ...value, label: e.target.value })} />
+          <TextField label="Prijs pakket (euro)" inputMode="decimal" value={String(value.price_eur || "")} onChange={(e) => onChange({ ...value, price_eur: Number(e.target.value.replace(",", ".")) || 0 })} />
+        </>
+      )}
+      <p className="text-xs text-muted-foreground">{!value && inherited ? `Van de groep: ${addonShort(inherited)}. ` : ""}{explain}</p>
+    </div>
   );
 }
 
@@ -345,7 +386,8 @@ function GroupModal({ org, m, id, onClose, onDone }: { org: Org; m: MenuData; id
   const [name, setName] = useState(g?.name_nl ?? "");
   const [icon, setIcon] = useState<string | null>(g?.icon ?? null);
   const [confirm, setConfirm] = useState(false);
-  const save = useMutation({ mutationFn: () => updateGroup(id, { name_nl: name.trim(), icon }), onSuccess: async () => { await onDone(); toast.success("Opgeslagen"); onClose(); }, onError: (e) => toast.error(errorText(e)) });
+  const [addon, setAddon] = useState<Addon | null>(parseAddon(g?.addon));
+  const save = useMutation({ mutationFn: () => updateGroup(id, { name_nl: name.trim(), icon, addon }), onSuccess: async () => { await onDone(); toast.success("Opgeslagen"); onClose(); }, onError: (e) => toast.error(errorText(e)) });
   const dissolve = useMutation({ mutationFn: () => dissolveGroup(org, id), onSuccess: async () => { await onDone(); toast.success("Groep opgeheven"); onClose(); }, onError: (e) => toast.error(errorText(e)) });
   if (!g) return null;
   return (
@@ -354,6 +396,7 @@ function GroupModal({ org, m, id, onClose, onDone }: { org: Org; m: MenuData; id
       <div className="flex flex-col gap-5">
         <TextField label="Naam" value={name} onChange={(e) => setName(e.target.value)} />
         <IconField org={org} m={m} own={icon} parent={g.parent_id} onChange={setIcon} onDone={onDone} />
+        <AddonField value={addon} inherited={groupAddon(org.categories, g.parent_id)} forTreatment={false} onChange={setAddon} />
         <p className="text-sm text-muted-foreground">Laag {depth(m, id)} van maximaal {org.menuMaxDepth}</p>
         <div className="rounded-[14px] bg-sand p-4">
           {!confirm ? (
@@ -382,7 +425,7 @@ function TreatmentModal({ org, m, id, warning, onClose, onDone }: { org: Org; m:
   const options = placeOptions(org, m, (p) => (places.includes(p) ? "Staat hier al" : null));
   const ic = t.icon;
   return (
-    <Modal open onOpenChange={(o) => !o && onClose()} title={t.name_nl} description={`${t.duration_min} minuten`}
+    <Modal open onOpenChange={(o) => !o && onClose()} title={t.name_nl} description={treatmentFacts(t)}
       footer={<><Link to="/organisatie/behandelingen/$id" params={{ id }} className="mr-auto self-center text-sm text-primary underline">Alle instellingen van deze behandeling</Link><PillButton onClick={onClose}>Klaar</PillButton></>}>
       <div className="flex flex-col gap-6">
         <IconField org={org} m={m} own={ic} parent={places[0] ?? null} onChange={(v) => act.mutate(() => setTreatmentIcon(id, v))} onDone={onDone} />
@@ -400,12 +443,68 @@ function TreatmentModal({ org, m, id, warning, onClose, onDone }: { org: Org; m:
           <SearchablePicker className="mt-3" label="Ook op een andere plek zetten…" options={options} value="" preserveOrder
             onChange={(v) => { const p = v[0]; if (p !== undefined && p !== "") act.mutate(() => addPlacement(org, id, toParent(p))); }} />
         </div>
+        <TreatmentAddon org={org} id={id} parent={places[0] ?? null} onDone={onDone} />
+        <TreatmentInfo org={org} id={id} />
         <div>
           <span className="text-[13px] font-medium">Boekbaar</span>
           <p className={cn("mt-1 text-sm", warning ? "text-warning" : "text-muted-foreground")}>{warning ? bookabilityDetail(org, id, warning) : "Overal waar hij wordt aangeboden."}</p>
         </div>
       </div>
     </Modal>
+  );
+}
+
+type OrgTreatment = Org["treatments"][number];
+const eur = (cents: number) => new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(cents / 100);
+function treatmentFacts(t: OrgTreatment) {
+  const kind = { consult: "Consult", controle: "Controle", behandeling: "Behandeling" }[t.kind] ?? "";
+  return [kind, `${t.duration_min} minuten`, t.price_cents != null ? `${t.price_is_from ? "vanaf " : ""}${eur(t.price_cents)}` : "geen prijs"].join(" · ");
+}
+
+function TreatmentAddon({ org, id, parent, onDone }: { org: Org; id: string; parent: Parent; onDone: () => Promise<unknown> }) {
+  const t = org.treatments.find((x) => x.id === id);
+  const [v, setV] = useState<Addon | null>(parseAddon(t?.addon));
+  const saved = JSON.stringify(parseAddon(t?.addon)) === JSON.stringify(v);
+  const save = useMutation({ mutationFn: () => setTreatmentAddon(id, v), onSuccess: async () => { await onDone(); toast.success("Opgeslagen"); }, onError: (e) => toast.error(errorText(e)) });
+  if (!t) return null;
+  const ready = v?.type !== "pakket" || (!!v.label.trim() && v.price_eur > 0 && !!v.question.trim());
+  return (
+    <div className="flex flex-col gap-2">
+      <AddonField value={v} inherited={groupAddon(org.categories, parent)} forTreatment kind={t.kind} onChange={setV} />
+      {!saved && <PillButton size="sm" className="self-start" disabled={!ready || save.isPending} onClick={() => save.mutate()}>Toevoeging opslaan</PillButton>}
+    </div>
+  );
+}
+
+/** Description, payment, locations with the number of practitioners, questionnaires. */
+function TreatmentInfo({ org, id }: { org: Org; id: string }) {
+  const t = org.treatments.find((x) => x.id === id);
+  const keys = [t?.pre_questionnaire_key, t?.post_questionnaire_key].filter((k): k is string => !!k);
+  const { data: qs = [] } = useQuery({ queryKey: ["questionnaire-names", keys.join(",")], enabled: keys.length > 0, queryFn: async () => (await supabase.from("questionnaires").select("key, name").in("key", keys)).data ?? [] });
+  if (!t) return null;
+  const locs = org.locations.filter((l) => org.treatmentLocations.some((x) => x.treatment_id === id && x.location_id === l.id)).sort((a, z) => a.sort - z.sort);
+  const count = (lid: string) => org.practitionerTreatments.filter((p) => p.treatment_id === id && !(p.excluded_location_ids ?? []).includes(lid)).length;
+  const pay = t.online_payment ? `Online betalen bij het boeken${t.deposit_cents ? ` (${eur(t.deposit_cents)})` : ""}` : t.deposit_cents ? `Aanbetaling ${eur(t.deposit_cents)}, de rest in de kliniek` : "Betalen in de kliniek";
+  const link = t.external_link as { label?: string; url?: string } | null;
+  const qName = (k: string | null) => qs.find((q) => q.key === k)?.name ?? k;
+  return (
+    <div className="flex flex-col gap-4 text-sm">
+      {t.description_nl && <div><span className="text-[13px] font-medium">Omschrijving</span><p className="mt-1 whitespace-pre-line text-muted-foreground">{t.description_nl}</p></div>}
+      <div><span className="text-[13px] font-medium">Betalen</span><p className="mt-1 text-muted-foreground">{pay}</p></div>
+      <div>
+        <span className="text-[13px] font-medium">Locaties</span>
+        {locs.length ? <ul className="mt-1 grid grid-cols-1 gap-x-4 sm:grid-cols-2">{locs.map((l) => <li key={l.id} className="flex justify-between gap-2 text-muted-foreground"><span>{l.name}</span><span>{count(l.id)} {count(l.id) === 1 ? "behandelaar" : "behandelaars"}</span></li>)}</ul>
+          : <p className="mt-1 text-muted-foreground">Nergens te boeken, dus niet zichtbaar voor de patiënt.</p>}
+      </div>
+      {link?.url && <div><span className="text-[13px] font-medium">Externe link</span><p className="mt-1"><a href={link.url} target="_blank" rel="noreferrer" className="text-primary underline">{link.label ?? link.url}</a></p></div>}
+      {keys.length > 0 && (
+        <div>
+          <span className="text-[13px] font-medium">Vragenlijsten</span>
+          {t.pre_questionnaire_key && <p className="mt-1 text-muted-foreground">Voor het bevestigen: {qName(t.pre_questionnaire_key)}</p>}
+          {t.post_questionnaire_key && <p className="text-muted-foreground">Na het boeken: {qName(t.post_questionnaire_key)} ({t.questionnaire_minutes} minuten)</p>}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -467,74 +566,32 @@ function AddModal({ org, m, parent: initial, onClose, onDone }: { org: Org; m: M
   );
 }
 
-/** The real booking-flow look: what the patient sees for the selected level. */
-function PhonePreview({ org, m, sel, onGroup }: { org: Org; m: MenuData; sel: Parent; onGroup: (id: Parent) => void }) {
-  const [treatment, setTreatment] = useState<string | null>(null);
-  const [history, setHistory] = useState<Parent[]>([]);
-  // Same rule as /boeken: offered at an open location.
-  const offeredOpen = (id: string) => org.treatmentLocations.filter((x) => x.treatment_id === id && org.locations.some((l) => l.id === x.location_id && l.status === "open")).map((x) => x.location_id);
-  const visible = (id: string) => {
-    const t = org.treatments.find((x) => x.id === id);
-    return !!t && t.status === "active" && t.online_booking === "bookable" && offeredOpen(id).length > 0;
-  };
-  const label = (key: string) => org.options.find((o) => o.list_key === "booking_ui" && o.value === key)?.label_nl ?? "";
-  const items = visibleChildren(m, sel, visible);
-  const groupIcon = (id: string) => org.categories.find((c) => c.id === id)?.icon;
-  const icon = (own: string | null | undefined, parent: Parent) => resolveIcon({ ...m, groupIcon }, own, parent, org.menuDefaultIcon).icon;
-  const t = treatment ? org.treatments.find((x) => x.id === treatment) : null;
-  const goBack = () => {
-    if (treatment) return setTreatment(null);
-    const prev = history[history.length - 1];
-    setHistory(history.slice(0, -1));
-    onGroup(prev !== undefined ? prev : (sel ? org.categories.find((c) => c.id === sel)?.parent_id ?? null : null));
-  };
-  const top = sel === null && !treatment;
+/** The real /boeken screens (same components and data as the patient), framed; it follows and reports the selected group. */
+function PhonePreview({ org, sel, onGroup }: { org: Org; sel: Parent; onGroup: (id: Parent) => void }) {
+  const { data: tenant } = useQuery(currentTenantQuery);
+  const frame = useRef<HTMLIFrameElement | null>(null);
+  const shown = useRef<Parent | undefined>(undefined);
+  const [version, setVersion] = useState(0);
+  const src = (g: Parent) => `/boeken?${new URLSearchParams({ ...(tenant?.slug ? { merk: tenant.slug } : {}), voorbeeld: "1", ...(g ? { cat: g } : {}) }).toString()}`;
+  useEffect(() => {
+    const on = (e: MessageEvent) => {
+      if (e.origin !== window.location.origin || e.source !== frame.current?.contentWindow) return;
+      const d = e.data as { type?: string; group?: string | null; treatment?: string | null };
+      if (d?.type !== "tbc-booking-preview" || d.treatment) return;
+      shown.current = d.group ?? null;
+      if ((d.group ?? null) !== sel) onGroup(d.group ?? null);
+    };
+    window.addEventListener("message", on);
+    return () => window.removeEventListener("message", on);
+  }, [sel, onGroup]);
+  // A group picked in the tree opens that level; menu changes reload the screens.
+  useEffect(() => { if (frame.current && shown.current !== sel) frame.current.src = src(sel); }, [sel, tenant?.slug]);
+  useEffect(() => setVersion((v) => v + 1), [org]);
+  useEffect(() => { if (frame.current && version > 1) frame.current.src = src(sel); }, [version]);
+  if (!tenant) return null;
   return (
-    <div className="mx-auto w-full max-w-[360px] overflow-hidden rounded-[32px] bg-background shadow-[0_8px_24px_rgba(57,51,46,0.10)]" aria-label="Voorbeeld voor de patiënt">
-      <header className="grid h-14 grid-cols-[48px_1fr_48px] items-center px-2">
-        {top ? <span className="text-center text-[13px] font-semibold text-primary">EN</span>
-          : <button type="button" onClick={goBack} aria-label="Terug" className="flex justify-center"><img src="/ui-icons/pijl-links.svg" alt="" className="size-5" /></button>}
-        <span className="text-center text-sm font-semibold">The Body Clinic</span>
-        <span className="flex justify-center"><img src="/ui-icons/kruis.svg" alt="" className="size-5" /></span>
-      </header>
-      <div className="h-[3px] bg-muted"><div className="h-full bg-primary" style={{ width: t ? "30%" : top ? "10%" : "15%" }} /></div>
-      <div className="max-h-[calc(100dvh-200px)] min-h-[480px] overflow-y-auto px-5 pb-6 pt-7">
-        {t ? (
-          <>
-            <h3 className="mb-6 text-[24px] font-semibold leading-[1.2] tracking-tight">{label("q_location")}</h3>
-            <div className="flex flex-col gap-2">
-              {[...org.locations].filter((l) => offeredOpen(t.id).includes(l.id)).sort((a, z) => Number(z.kind === "online") - Number(a.kind === "online") || a.sort - z.sort).map((l) => { return (
-                <div key={l.id} className="flex min-h-[56px] items-center gap-3 rounded-[16px] bg-sand px-4 text-[15px]"><img src={l?.kind === "online" ? "/ui-icons/videogesprek.svg" : "/ui-icons/locatie.svg"} alt="" className="size-5" />{l?.name}</div>
-              ); })}
-            </div>
-          </>
-        ) : (
-          <>
-            <h3 className="mb-6 text-[24px] font-semibold leading-[1.2] tracking-tight">{sel ? org.categories.find((c) => c.id === sel)?.name_nl : label("q_category")}</h3>
-            <div className="flex flex-col gap-2">
-              {items.map((it) => {
-                const g = it.kind === "group" ? org.categories.find((c) => c.id === it.id) : null;
-                const tr = it.kind === "treatment" ? org.treatments.find((x) => x.id === it.id) : null;
-                return (
-                  <button key={`${it.kind}:${it.id}`} type="button" className="patient-choice flex min-h-[56px] items-center gap-3 rounded-[16px] bg-sand px-4 text-left"
-                    onClick={() => { if (g) { setHistory([...history, sel]); onGroup(g.id); } else if (tr) setTreatment(tr.id); }}>
-                    <span className="flex size-8 shrink-0 items-center justify-center"><MenuIcon icon={g ? icon(g.icon, g.parent_id) : icon(tr?.icon, sel)} /></span>
-                    <span className="min-w-0 flex-1 py-2.5"><span className="block break-words text-[15px]">{g?.name_nl ?? tr?.name_nl}</span>{tr && <span className="block text-[12px] text-muted-foreground">{tr.duration_min} min</span>}</span>
-                    <img src="/ui-icons/pijl-rechts.svg" alt="" className="size-4 shrink-0" />
-                  </button>
-                );
-              })}
-              {items.length === 0 && <p className="text-sm text-muted-foreground">Hier ziet de patiënt niets.</p>}
-            </div>
-          </>
-        )}
-      </div>
-      {top && (
-        <footer className="flex items-center justify-center gap-3 px-5 pb-6">
-          <img src={joyceAsset.url} alt="" className="size-11 shrink-0 rounded-full object-cover" style={{ objectPosition: "50% 18%" }} />
-          <span className="text-[13px] text-muted-foreground"><span className="block">{label("call")} <span className="text-primary underline">{org.clinicPhone}</span></span><span className="block">{label("call_team")}</span></span>
-        </footer>
-      )}
+    <div className="mx-auto w-full max-w-[360px] overflow-hidden rounded-[32px] bg-background shadow-[0_8px_24px_rgba(57,51,46,0.10)]">
+      <iframe ref={frame} title="Voorbeeld voor de patiënt" src={src(sel)} className="block h-[720px] max-h-[calc(100dvh-120px)] w-full border-0" />
     </div>
   );
 }

@@ -12,7 +12,8 @@ import { z } from "zod";
 
 import type { Slot } from "@/domain/slots";
 import {publiclyBookable} from '@/domain/treatment-settings';
-import { admin, computeSlots, localParts, localToUtc, resolveTenant, settingNum } from "./booking.server";
+import { admin, computeSlots, localParts, localToUtc, resolveAddonChoice, resolveTenant, settingNum } from "./booking.server";
+import { addonMinutes } from "@/domain/addons";
 import { attachMeeting } from "./meeting.server";
 import { answerSignals } from "@/domain/questionnaire/answers";
 import type { Answers, QuestionnaireDef } from "@/domain/questionnaire/engine";
@@ -29,9 +30,9 @@ export const getBookingCatalog = createServerFn({ method: "GET" })
     if (!tenant) return { tenant: null, ui: ui ?? [] } as const;
     const tid = tenant.id;
     const [cats, links, treatments, tLocs, locs, prs, pLocs, pTreat, roles, tRoles, settings, mixed, roots, customIcons] = await Promise.all([
-      db.from("treatment_categories").select("id, parent_id, name_nl, name_en, icon, sort").eq("tenant_id", tid).order("sort"),
+      db.from("treatment_categories").select("id, parent_id, name_nl, name_en, icon, sort, addon").eq("tenant_id", tid).order("sort"),
       db.from("treatment_category_links").select("treatment_id, category_id, sort").eq("tenant_id", tid),
-      db.from("treatments").select("id, slug, name_nl, name_en, icon, duration_min, practitioner_choice, status, pre_questionnaire_key, post_questionnaire_key, questionnaire_minutes, start_screen").eq("tenant_id", tid).eq("status", "active").eq('online_booking','bookable'),
+      db.from("treatments").select("id, slug, name_nl, name_en, icon, duration_min, practitioner_choice, status, kind, addon, price_cents, price_is_from, pre_questionnaire_key, post_questionnaire_key, questionnaire_minutes, start_screen").eq("tenant_id", tid).eq("status", "active").eq('online_booking','bookable'),
       db.from("treatment_locations").select("treatment_id, location_id").eq("tenant_id", tid),
       db.from("locations").select("id, slug, name, kind, address, status, show_new_label, sort").eq("tenant_id", tid).order("sort"),
       db.from("practitioners").select("id, first_name, last_name, role_id, photo_path, bio_nl, status, sort").eq("tenant_id", tid).eq("status", "active"),
@@ -88,19 +89,23 @@ export const getBookingSlots = createServerFn({ method: "POST" })
     practitionerIds: z.array(z.string().uuid()).max(100),
     from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     days: z.number().int().min(1).max(70),
+    addon: z.enum(["consult", "pakket"]).optional(),
+    via: z.string().uuid().optional(),
   }))
   .handler(async ({ data }) => {
     const tenant = await resolveTenant(data.merk);
     if (!tenant) return { perPractitioner: {} as Record<string, Slot[]>, merged: [] as Slot[], today: "" };
     const treatment=await (await admin()).from('treatments').select('status,online_booking').eq('tenant_id',tenant.id).eq('id',data.treatmentId).maybeSingle();
     if(treatment.error||!publiclyBookable(treatment.data))return {perPractitioner:{} as Record<string,Slot[]>,merged:[] as Slot[],today:''};
-    if (!data.link) return computeSlots(tenant,data);
+    const choice = await resolveAddonChoice(tenant.id, data.treatmentId, data.via, data.addon);
+    const extraMinutes = choice?.type === "consult" ? choice.minutes : 0;
+    if (!data.link) return computeSlots(tenant,{...data,extraMinutes});
     const scope=await resolveLinkScope(await admin(),tenant.id,data.link);
     if (!scope || !scope.treatmentIds.includes(data.treatmentId) || !scope.row.location_ids.includes(data.locationId)) return {perPractitioner:{} as Record<string,Slot[]>,merged:[] as Slot[],today:""};
     const allowed=scopePractitioners(scope.catalog,scope.draft,data.treatmentId,data.locationId);
     const ids=data.practitionerIds.length?data.practitionerIds.filter(id=>allowed.includes(id)):allowed;
     if (!ids.length) return {perPractitioner:{} as Record<string,Slot[]>,merged:[] as Slot[],today:""};
-    return computeSlots(tenant,{...data,practitionerIds:ids});
+    return computeSlots(tenant,{...data,practitionerIds:ids,extraMinutes});
   });
 
 
@@ -117,6 +122,8 @@ export const holdSlot = createServerFn({ method: "POST" })
     source: z.string().max(80).optional(),
     link: z.string().max(60).optional(),
     replaceToken: z.string().uuid().optional(),
+    addon: z.enum(["consult", "pakket"]).optional(),
+    via: z.string().uuid().optional(),
   }))
   .handler(async ({ data }) => {
     const tenant = await resolveTenant(data.merk);
@@ -133,7 +140,8 @@ export const holdSlot = createServerFn({ method: "POST" })
     let attribution=null;
     if(linkRow){const [channel,place,campaign]=await Promise.all([db.from("booking_channels").select("name,utm_source,utm_medium").eq("tenant_id",tenant.id).eq("id",linkRow.channel_id??"").maybeSingle(),db.from("booking_places").select("name,code").eq("tenant_id",tenant.id).eq("id",linkRow.place_id??"").maybeSingle(),db.from("booking_campaigns").select("name,code").eq("tenant_id",tenant.id).eq("id",linkRow.campaign_id??"").maybeSingle()]);attribution={channel:channel.data?.name??"",source:channel.data?.utm_source??"",medium:channel.data?.utm_medium??"",place:place.data?.name??"",content:place.data?.code??"",campaign:campaign.data?.name??"",campaignCode:campaign.data?.code??"",extra:linkRow.extra,hash:linkRow.hash};}
     const minute = Number(data.time.slice(0, 2)) * 60 + Number(data.time.slice(3));
-    const slots = await computeSlots(tenant, { treatmentId: data.treatmentId, locationId: data.locationId, practitionerIds: data.practitionerId === "any" ? allowed ?? [] : [data.practitionerId], from: data.date, days: 1 });
+    const choice = await resolveAddonChoice(tenant.id, data.treatmentId, data.via, data.addon);
+    const slots = await computeSlots(tenant, { extraMinutes: choice?.type === "consult" ? choice.minutes : 0, treatmentId: data.treatmentId, locationId: data.locationId, practitionerIds: data.practitionerId === "any" ? allowed ?? [] : [data.practitionerId], from: data.date, days: 1 });
     const pick = data.practitionerId === "any"
       ? slots.merged.find((x) => x.date === data.date && x.start === minute)
       : slots.perPractitioner[data.practitionerId]?.find((x) => x.date === data.date && x.start === minute);
@@ -143,12 +151,12 @@ export const holdSlot = createServerFn({ method: "POST" })
     const holdMin = Number(raw) > 0 ? Number(raw) : 15;
     const t = await db.from("treatments").select("duration_min").eq("id", data.treatmentId).single();
     const startsAt = localToUtc(data.date, minute, tenant.time_zone);
-    const endsAt = new Date(startsAt.getTime() + (t.data?.duration_min ?? 30) * 60_000);
+    const endsAt = new Date(startsAt.getTime() + addonMinutes(t.data?.duration_min ?? 30, choice) * 60_000);
     const expires = new Date(Date.now() + holdMin * 60_000);
     const ins = await db.from("appointments").insert({
       tenant_id: tenant.id, treatment_id: data.treatmentId, location_id: data.locationId, practitioner_id: pick.practitioner_id,
       starts_at: startsAt.toISOString(), ends_at: endsAt.toISOString(), status: "held", hold_expires_at: expires.toISOString(),
-      language: data.language, source: linkRow?.source ?? data.source ?? null, booking_link_id: linkRow?.id ?? null,booking_channel_id:linkRow?.channel_id??null,booking_place_id:linkRow?.place_id??null,booking_campaign_id:linkRow?.campaign_id??null,booking_hash:linkRow?.hash??null,booking_extra:linkRow?.extra??null,booking_attribution:attribution,
+      language: data.language, source: linkRow?.source ?? data.source ?? null, booking_link_id: linkRow?.id ?? null,booking_channel_id:linkRow?.channel_id??null,booking_place_id:linkRow?.place_id??null,booking_campaign_id:linkRow?.campaign_id??null,booking_hash:linkRow?.hash??null,booking_extra:linkRow?.extra??null,booking_attribution:attribution, addon: choice,
     }).select("hold_token").single();
     if (ins.error || !ins.data?.hold_token) return { ok: false as const };
     // Lost a race: another hold for the same practitioner overlaps and was created first.

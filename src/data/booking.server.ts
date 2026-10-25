@@ -1,3 +1,4 @@
+import { effectiveAddon, placementParent, type AddonChoice } from "@/domain/addons";
 /** Server-only helpers for the public booking functions. */
 import { getRequestHeader } from "@tanstack/react-start/server";
 
@@ -33,7 +34,26 @@ export function localParts(d: Date, tz: string) {
 }
 export const addDays = (date: string, n: number) => { const d = new Date(`${date}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 export type Tenant = NonNullable<Awaited<ReturnType<typeof resolveTenant>>>;
-export type SlotQuery = { treatmentId: string; locationId: string; practitionerIds: string[]; from: string; days: number; excludeAppointmentId?: string | undefined };
+export type SlotQuery = { treatmentId: string; locationId: string; practitionerIds: string[]; from: string; days: number; excludeAppointmentId?: string | undefined; extraMinutes?: number | undefined };
+
+/** The toevoeging the patient chose, re-derived from the stored tree so the browser cannot invent minutes or prices. */
+export async function resolveAddonChoice(tenantId: string, treatmentId: string, via: string | null | undefined, choice: "consult" | "pakket" | undefined): Promise<AddonChoice | null> {
+  if (!choice) return null;
+  const db = await admin();
+  const [t, cats, links, roots] = await Promise.all([
+    db.from("treatments").select("kind, addon").eq("tenant_id", tenantId).eq("id", treatmentId).maybeSingle(),
+    db.from("treatment_categories").select("id, parent_id, addon, sort").eq("tenant_id", tenantId),
+    db.from("treatment_category_links").select("treatment_id, category_id, sort").eq("tenant_id", tenantId).eq("treatment_id", treatmentId),
+    db.from("treatment_menu_root").select("treatment_id, sort").eq("tenant_id", tenantId).eq("treatment_id", treatmentId),
+  ]);
+  if (!t.data) return null;
+  const groups = cats.data ?? [];
+  const parent = placementParent({ groups, links: links.data ?? [], roots: roots.data ?? [] }, treatmentId, via && groups.some((g) => g.id === via) ? via : null);
+  const a = effectiveAddon(groups, t.data, parent);
+  if (a?.type === "consult" && choice === "consult") return { type: "consult", minutes: a.minutes };
+  if (a?.type === "pakket" && choice === "pakket") return { type: "pakket", label: a.label, price_eur: a.price_eur };
+  return null;
+}
 
 export async function computeSlots(tenant: Tenant, data: SlotQuery) {
     const db = await admin();
@@ -89,7 +109,7 @@ export async function computeSlots(tenant: Tenant, data: SlotQuery) {
     for (let i = 0; i < data.days; i++) {
       const date = addDays(data.from, i);
       const slots = freeSlots({
-        date, locationId: data.locationId, treatmentId: data.treatmentId, durationMin: t.data.duration_min, practitionerIds: eligible, onlineLocationIds,
+        date, locationId: data.locationId, treatmentId: data.treatmentId, durationMin: t.data.duration_min + (data.extraMinutes ?? 0), practitionerIds: eligible, onlineLocationIds,
         blocks: (blocks.data ?? []) as SlotBlock[], exceptions: (exc.data ?? []) as SlotException[], busy, now, leadMinutes: lead, maxAheadWeeks: maxWeeks,
       });
       for (const s of slots) (perPractitioner[s.practitioner_id] ??= []).push(s);

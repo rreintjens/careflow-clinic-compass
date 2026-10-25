@@ -29,8 +29,8 @@ describe("menu tree", () => {
     expect(moveError(m, { kind: "treatment", id: "peeling" }, null, "huid", 3)).toBe("Kan niet: deze behandeling staat hier al"));
   it("allows a treatment to the top level", () =>
     expect(moveError(m, { kind: "treatment", id: "ontharing" }, "laser", null, 3)).toBeNull());
-  it("a group with one item shows that item directly", () =>
-    expect(visibleChildren(m, "fillers", () => true)).toEqual([{ kind: "treatment", id: "wallen" }, { kind: "group", id: "lippen" }]));
+  it("a group with one item keeps its own tile", () =>
+    expect(visibleChildren(m, "fillers", () => true)).toEqual([{ kind: "group", id: "ogen" }, { kind: "group", id: "lippen" }]));
   it("new group only under depth limit", () => {
     expect(canAddGroup(m, "voorhoofd", 3)).toBe(false);
     expect(canAddGroup(m, "gezicht", 3)).toBe(true);

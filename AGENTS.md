@@ -56,3 +56,4 @@
 - Billing uses catalog prices and bounded till discounts; invoices stay immutable; reception sees no medical answers.
 - Treatment settings share one validated modal; public availability never restricts staff booking.
 - Stats keys are header-only. Photos share a demo resolver; frozen reminders use the mail job.
+- Toevoegingen (addon jsonb on treatment_categories/treatments, choice on appointments) resolve via `src/domain/addons.ts`; the server re-derives the choice from the stored tree so the browser cannot set minutes or prices. The admin phone preview frames the real same-origin `/boeken?voorbeeld=1` so the two cannot drift.

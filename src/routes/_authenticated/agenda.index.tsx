@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { addonLabel } from "@/domain/addons";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
 import { z } from "zod";
@@ -181,7 +182,7 @@ function Page() {
                   {c.own.map((a) => {
                     const on = a.id === linkedId;
                     const online = view.locs.get(a.location_id)?.kind === "online";
-                    const tName = ref?.treatments.find((t) => t.id === a.treatment_id)?.name_nl ?? "";
+                    const tName = [ref?.treatments.find((t) => t.id === a.treatment_id)?.name_nl ?? "", addonLabel(a.addon)].filter(Boolean).join(" ");
                     const categoryIds = ref?.links.filter(l => l.treatment_id === a.treatment_id).map(l => l.category_id) ?? [];
                     const category = topCats.find(c => categoryIds.includes(c.id) || ref?.categories.some(child => categoryIds.includes(child.id) && child.parent_id === c.id));
                     return (
@@ -204,7 +205,7 @@ function Page() {
           </div>}
         </>
       )}
-      {selected && ref && <aside className="fixed inset-y-0 right-0 z-40 w-[420px] max-w-full overflow-y-auto bg-background shadow-[0_8px_24px_rgba(57,51,46,0.10)]"><PatientCard a={selected} treatment={ref.treatments.find((t) => t.id === selected.treatment_id)?.name_nl ?? ""} online={view?.locs.get(selected.location_id)?.kind === "online"} onClose={() => go({ afspraak: undefined })} /></aside>}
+      {selected && ref && <aside className="fixed inset-y-0 right-0 z-40 w-[420px] max-w-full overflow-y-auto bg-background shadow-[0_8px_24px_rgba(57,51,46,0.10)]"><PatientCard a={selected} treatment={[ref.treatments.find((t) => t.id === selected.treatment_id)?.name_nl ?? "", addonLabel(selected.addon)].filter(Boolean).join(" ")} online={view?.locs.get(selected.location_id)?.kind === "online"} onClose={() => go({ afspraak: undefined })} /></aside>}
       {ref && <NewAppointmentModal open={newOpen} onOpenChange={setNewOpen} data={ref} onPickInAgenda={(p) => go({ weergave: "week", behandelaar: undefined, behandelaars: [p] })} />}
     </div>
   );

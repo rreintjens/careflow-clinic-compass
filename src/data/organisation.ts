@@ -1,3 +1,5 @@
+import type { Addon } from "@/domain/addons";
+import type { Json } from "@/integrations/supabase/types";
 import { svgIconError } from "@/domain/svg-icon";
 import { queryOptions } from "@tanstack/react-query";
 
@@ -359,7 +361,11 @@ export async function createGroup(org: Org, parent: Parent, row: { name_nl: stri
   await reorderMenu(parent, [...menuChildren(menuData(org), parent), { kind: "group", id: data.id }]);
   return data.id;
 }
-export async function updateGroup(id: string, patch: { name_nl?: string; icon?: string | null }) {
+/** Toevoeging on a group or treatment; null = like the group above. */
+export async function setTreatmentAddon(id: string, addon: Addon | null) {
+  await ok(supabase.from("treatments").update({ addon: addon as Json }).eq("id", id));
+}
+export async function updateGroup(id: string, patch: { name_nl?: string; icon?: string | null; addon?: Json | null }) {
   await ok(supabase.from("treatment_categories").update(patch).eq("id", id));
 }
 export async function setTreatmentIcon(id: string, icon: string | null) {

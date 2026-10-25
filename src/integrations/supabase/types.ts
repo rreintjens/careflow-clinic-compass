@@ -283,6 +283,7 @@ export type Database = {
       }
       appointments: {
         Row: {
+          addon: Json | null
           booking_attribution: Json | null
           booking_campaign_id: string | null
           booking_channel_id: string | null
@@ -324,6 +325,7 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          addon?: Json | null
           booking_attribution?: Json | null
           booking_campaign_id?: string | null
           booking_channel_id?: string | null
@@ -365,6 +367,7 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          addon?: Json | null
           booking_attribution?: Json | null
           booking_campaign_id?: string | null
           booking_channel_id?: string | null
@@ -4373,6 +4376,7 @@ export type Database = {
       }
       treatment_categories: {
         Row: {
+          addon: Json | null
           cancel_until_hours: number | null
           created_at: string
           created_by: string | null
@@ -4389,6 +4393,7 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          addon?: Json | null
           cancel_until_hours?: number | null
           created_at?: string
           created_by?: string | null
@@ -4405,6 +4410,7 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          addon?: Json | null
           cancel_until_hours?: number | null
           created_at?: string
           created_by?: string | null
@@ -4826,18 +4832,22 @@ export type Database = {
       }
       treatments: {
         Row: {
+          addon: Json | null
           aftercare_en: string | null
           aftercare_nl: string | null
           btw_rate: string | null
           cancel_until_hours: number | null
           created_at: string
           created_by: string | null
+          deposit_cents: number
           description_en: string | null
           description_nl: string | null
           dossier_template_override: string | null
           duration_min: number
+          external_link: Json | null
           icon: string | null
           id: string
+          kind: string
           lot_required: boolean
           material_brand: string | null
           material_unit: string | null
@@ -4845,6 +4855,7 @@ export type Database = {
           name_nl: string
           no_show_fee_eur: number | null
           online_booking: string
+          online_payment: boolean
           portal_settings: Json
           post_questionnaire_key: string | null
           practitioner_choice: string
@@ -4852,6 +4863,7 @@ export type Database = {
           preparation_en: string | null
           preparation_nl: string | null
           price_cents: number | null
+          price_is_from: boolean
           price_per: string | null
           questionnaire_minutes: number
           reminder_days: number | null
@@ -4865,18 +4877,22 @@ export type Database = {
           vat_exemption_possible: boolean
         }
         Insert: {
+          addon?: Json | null
           aftercare_en?: string | null
           aftercare_nl?: string | null
           btw_rate?: string | null
           cancel_until_hours?: number | null
           created_at?: string
           created_by?: string | null
+          deposit_cents?: number
           description_en?: string | null
           description_nl?: string | null
           dossier_template_override?: string | null
           duration_min: number
+          external_link?: Json | null
           icon?: string | null
           id?: string
+          kind?: string
           lot_required?: boolean
           material_brand?: string | null
           material_unit?: string | null
@@ -4884,6 +4900,7 @@ export type Database = {
           name_nl: string
           no_show_fee_eur?: number | null
           online_booking?: string
+          online_payment?: boolean
           portal_settings?: Json
           post_questionnaire_key?: string | null
           practitioner_choice?: string
@@ -4891,6 +4908,7 @@ export type Database = {
           preparation_en?: string | null
           preparation_nl?: string | null
           price_cents?: number | null
+          price_is_from?: boolean
           price_per?: string | null
           questionnaire_minutes?: number
           reminder_days?: number | null
@@ -4904,18 +4922,22 @@ export type Database = {
           vat_exemption_possible?: boolean
         }
         Update: {
+          addon?: Json | null
           aftercare_en?: string | null
           aftercare_nl?: string | null
           btw_rate?: string | null
           cancel_until_hours?: number | null
           created_at?: string
           created_by?: string | null
+          deposit_cents?: number
           description_en?: string | null
           description_nl?: string | null
           dossier_template_override?: string | null
           duration_min?: number
+          external_link?: Json | null
           icon?: string | null
           id?: string
+          kind?: string
           lot_required?: boolean
           material_brand?: string | null
           material_unit?: string | null
@@ -4923,6 +4945,7 @@ export type Database = {
           name_nl?: string
           no_show_fee_eur?: number | null
           online_booking?: string
+          online_payment?: boolean
           portal_settings?: Json
           post_questionnaire_key?: string | null
           practitioner_choice?: string
@@ -4930,6 +4953,7 @@ export type Database = {
           preparation_en?: string | null
           preparation_nl?: string | null
           price_cents?: number | null
+          price_is_from?: boolean
           price_per?: string | null
           questionnaire_minutes?: number
           reminder_days?: number | null

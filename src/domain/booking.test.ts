@@ -17,8 +17,9 @@ const cat = (over: Partial<Catalog> = {}): Catalog => ({
 describe("nextStep", () => {
   it("top level mixes groups and treatments in tree order", () =>
     expect(nextStep(cat(), {})).toEqual({ kind: "menu", group: null, items: [{ kind: "group", id: "A" }, { kind: "treatment", id: "t5" }, { kind: "group", id: "B" }] }));
-  it("a group with one visible item shows that item directly", () => {
-    expect(nextStep(cat(), { cat: "A" })).toEqual({ kind: "menu", group: "A", items: [{ kind: "treatment", id: "t1" }, { kind: "group", id: "A2" }] });
+  it("a group with one visible item keeps its own tile; opening it goes straight to that item", () => {
+    expect(nextStep(cat(), { cat: "A" })).toEqual({ kind: "menu", group: "A", items: [{ kind: "group", id: "A1" }, { kind: "group", id: "A2" }] });
+    expect(nextStep(cat(), { cat: "A1" })).toEqual({ kind: "location", treatment: "t1", options: ["L1", "L2"] });
     expect(nextStep(cat(), { cat: "A2" })).toEqual({ kind: "menu", group: "A2", items: [{ kind: "treatment", id: "t2" }, { kind: "treatment", id: "t3" }] });
   });
   it("hides groups without bookable treatments and skips a single remaining choice", () => {
@@ -44,3 +45,9 @@ it("Online first", () => {
   expect(sortLocations([{ kind: "clinic", sort: 0, n: 1 }, { kind: "online", sort: 5, n: 2 }]).map((x) => x.n)).toEqual([2, 1]);
 });
 it("day parts", () => expect([dayPart(719), dayPart(720), dayPart(1019), dayPart(1020)]).toEqual(["morning", "afternoon", "afternoon", "evening"]));
+
+it("asks the toevoeging before the location, then continues once answered", () => {
+  const c = cat({ addonFor: (t) => (t === "t1" ? { type: "consult", minutes: 15 } : null) });
+  expect(nextStep(c, { cat: "A1" })).toEqual({ kind: "addon", treatment: "t1", via: "A1", addon: { type: "consult", minutes: 15 } });
+  expect(nextStep(c, { cat: "A1", t: "t1", x: "consult" })).toEqual({ kind: "location", treatment: "t1", options: ["L1", "L2"] });
+});
