@@ -69,7 +69,7 @@ export function resolveIcon(m: MenuData & { groupIcon: (id: string) => string | 
   return { icon: fallback, inherited: true };
 }
 
-/** What the patient sees under a parent: empty groups hidden; a group with one visible item shows that item instead. */
+/** What the patient sees under a parent: empty groups hidden; a group with one visible item keeps its own tile (tapping it goes straight to that item). */
 export function visibleChildren(m: MenuData, parent: Parent, visibleTreatment: (id: string) => boolean): MenuItem[] {
   const out: MenuItem[] = [];
   const seen = new Set<string>();
@@ -84,7 +84,6 @@ function collapse(m: MenuData, groupId: string, vis: (id: string) => boolean, gu
   if (guard > 20) return null;
   const inner = visibleChildren(m, groupId, vis);
   if (inner.length === 0) return null;
-  if (inner.length === 1) return inner[0] as MenuItem;
   return { kind: "group", id: groupId };
 }
 
