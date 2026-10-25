@@ -37,6 +37,7 @@ export function useBookingTransition(ref: RefObject<HTMLElement | null>, key: st
     if (previous) motion.direction.current = bookingHistoryDirection(previous.historyIndex, historyIndex);
     if (!previous || previous.key === key) return;
     window.scrollTo({ top: 0, behavior: 'instant' });
+    const scrollFrame = requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'instant' }));
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const sign = motion.direction.current === 'back' ? -1 : 1;
     const box = main.getBoundingClientRect();
@@ -47,11 +48,14 @@ export function useBookingTransition(ref: RefObject<HTMLElement | null>, key: st
     Object.assign(overlay.style, { left: `${box.left}px`, top: `${box.top}px`, width: `${box.width}px`, height: `${Math.max(box.height, previous.height)}px` });
     previous.node.classList.add('booking-transition-old');
     overlay.append(previous.node);
-    main.parentElement?.append(overlay);
+    const frame = main.parentElement;
+    const overflow = frame?.style.overflow ?? '';
+    if (frame) { frame.style.overflow = 'clip'; frame.append(overlay); }
     const timing = { duration: reduced ? BOOKING_FADE_MS : BOOKING_SLIDE_MS, easing: 'ease-out' };
     const incoming = main.animate([{ transform: reduced ? 'none' : `translateX(${sign * 100}%)`, opacity: 0 }, { transform: 'none', opacity: 1 }], timing);
     const outgoing = previous.node.animate([{ transform: 'none', opacity: 1 }, { transform: reduced ? 'none' : `translateX(${-sign * 100}%)`, opacity: 0 }], timing);
-    void incoming.finished.then(() => overlay.remove()).catch(() => overlay.remove());
-    return () => { incoming.cancel(); outgoing.cancel(); overlay.remove(); };
+    const finish = () => { overlay.remove(); if (frame) frame.style.overflow = overflow; };
+    void incoming.finished.then(finish).catch(finish);
+    return () => { cancelAnimationFrame(scrollFrame); incoming.cancel(); outgoing.cancel(); finish(); };
   }, [key, ref]);
 }
