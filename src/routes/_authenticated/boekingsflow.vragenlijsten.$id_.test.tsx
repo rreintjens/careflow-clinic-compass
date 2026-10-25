@@ -12,7 +12,7 @@ import { QuestionnaireRunner } from "@/features/questionnaire/QuestionnaireRunne
 import { configOfDefinition } from "@/domain/questionnaire/version-config";
 
 export const Route = createFileRoute("/_authenticated/boekingsflow/vragenlijsten/$id_/test")({
-  head: () => ({ meta: [{ title: "Testmodus vragenlijst · Beheer · The Body Clinic" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Testmodus vragenlijst · Beheer · The Body Clinic" }, { name: "description", content: "Bekijk de patiëntvragenlijst in testmodus bij The Body Clinic." }, { property: "og:title", content: "Vragenlijst testen · The Body Clinic" }, { property: "og:description", content: "Bekijk de patiëntvragenlijst in testmodus bij The Body Clinic." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { name: "robots", content: "noindex" }] }),
   validateSearch: (s: Record<string, unknown>): { pagina?: string; versie?: string } => ({ ...(typeof s["pagina"] === "string" ? { pagina: s["pagina"] } : {}), ...(typeof s["versie"] === "string" ? { versie: s["versie"] } : {}) }),
   loader: ({ context }) => Promise.all([context.queryClient.ensureQueryData(questionnairesQuery), context.queryClient.ensureQueryData(orgQuery)]),
   component: TestMode,
