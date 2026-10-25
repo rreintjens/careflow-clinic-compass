@@ -1,3 +1,4 @@
+import { svgIconError } from "@/domain/svg-icon";
 import { queryOptions } from "@tanstack/react-query";
 
 import type { EquipmentLite, Mobility } from "@/domain/organisation";
@@ -389,7 +390,8 @@ export async function createMenuTreatment(org: Org, parent: Parent, row: { name_
 export async function uploadCustomIcon(file: File) {
   if (file.size > 60_000) throw new Error("Het bestand is te groot (maximaal 60 kB)");
   const svg = await file.text();
-  if (!/^\s*(<\?xml[^>]*>\s*)?<svg/i.test(svg)) throw new Error("Dit is geen SVG-bestand");
+  const why = svgIconError(svg);
+  if (why) throw new Error(why);
   const { data, error } = await supabase.from("custom_icons").insert({ name: file.name.replace(/\.svg$/i, ""), svg }).select("id").single();
   if (error) throw error;
   return `custom:${data.id}`;
