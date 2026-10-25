@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { practitionerPhotoBucket } from "@/data/tenant";
 import type { Database } from "@/integrations/supabase/types";
 import { getOrganisation } from "./organisation-read.functions";
+import { children as menuChildren, dissolvePlan, type MenuData, type MenuItem, type Parent } from "@/domain/menu";
 
 type T = Database["public"]["Tables"];
 export type Location = T["locations"]["Row"];
@@ -316,4 +317,80 @@ export async function saveException(id: string | null, row: T["schedule_exceptio
 }
 export async function deleteException(id: string) {
   await ok(supabase.from("schedule_exceptions").delete().eq("id", id));
+}
+
+// ---------- menu tree ----------
+export const menuData = (org: Org): MenuData => ({ groups: org.categories, links: org.categoryLinks, roots: org.menuRoots });
+type Where = Parent | "none";
+
+async function reorderMenu(parent: Parent, items: MenuItem[]) {
+  await ok(supabase.rpc("menu_reorder", { _parent: parent as string, _items: items.map((i) => ({ k: i.kind === "group" ? "g" : "t", id: i.id })) }));
+}
+async function placeTreatment(treatmentId: string, parent: Parent) {
+  if (parent === null) await ok(supabase.from("treatment_menu_root").insert({ treatment_id: treatmentId, sort: 9999 }));
+  else await ok(supabase.from("treatment_category_links").insert({ treatment_id: treatmentId, category_id: parent, sort: 9999 }));
+}
+export async function removePlacement(treatmentId: string, parent: Parent) {
+  if (parent === null) await ok(supabase.from("treatment_menu_root").delete().eq("treatment_id", treatmentId));
+  else await ok(supabase.from("treatment_category_links").delete().eq("treatment_id", treatmentId).eq("category_id", parent));
+}
+/** Moves or places an item; `index` is its position among the target's children. Depth is re-checked by the database. */
+export async function moveMenuItem(org: Org, item: MenuItem, from: Where, to: Where, index: number) {
+  const m = menuData(org);
+  if (to === "none") { if (item.kind === "treatment" && from !== "none") await removePlacement(item.id, from); return; }
+  if (item.kind === "group") {
+    if (from !== to) await ok(supabase.from("treatment_categories").update({ parent_id: to }).eq("id", item.id));
+  } else if (from !== to) {
+    await placeTreatment(item.id, to);
+    if (from !== "none") await removePlacement(item.id, from);
+  }
+  const rest = menuChildren(m, to).filter((x) => !(x.kind === item.kind && x.id === item.id));
+  rest.splice(Math.max(0, Math.min(index, rest.length)), 0, item);
+  await reorderMenu(to, rest);
+}
+export async function addPlacement(org: Org, treatmentId: string, parent: Parent) {
+  await placeTreatment(treatmentId, parent);
+  await reorderMenu(parent, [...menuChildren(menuData(org), parent), { kind: "treatment", id: treatmentId }]);
+}
+export async function createGroup(org: Org, parent: Parent, row: { name_nl: string; icon: string | null }) {
+  const { data, error } = await supabase.from("treatment_categories").insert({ parent_id: parent, name_nl: row.name_nl, icon: row.icon, sort: 9999 }).select("id").single();
+  if (error) throw error;
+  await reorderMenu(parent, [...menuChildren(menuData(org), parent), { kind: "group", id: data.id }]);
+  return data.id;
+}
+export async function updateGroup(id: string, patch: { name_nl?: string; icon?: string | null }) {
+  await ok(supabase.from("treatment_categories").update(patch).eq("id", id));
+}
+export async function setTreatmentIcon(id: string, icon: string | null) {
+  await ok(supabase.from("treatments").update({ icon }).eq("id", id));
+}
+/** Contents move one level up at the group's place; nothing but the empty group itself is removed. */
+export async function dissolveGroup(org: Org, groupId: string) {
+  const plan = dissolvePlan(menuData(org), groupId);
+  for (const it of plan.moved) {
+    if (it.kind === "group") await ok(supabase.from("treatment_categories").update({ parent_id: plan.parent }).eq("id", it.id));
+    else await placeTreatment(it.id, plan.parent);
+  }
+  const { error } = await supabase.from("treatment_categories").delete().eq("id", groupId);
+  if (error) {
+    if ((error as { code?: string }).code === "23503") throw new Error("Kan niet: er hangt nog een mail of dossiersjabloon aan deze groep");
+    throw error;
+  }
+  await reorderMenu(plan.parent, plan.order);
+}
+export async function createMenuTreatment(org: Org, parent: Parent, row: { name_nl: string; duration_min: number; icon: string | null }) {
+  const slug = `${row.name_nl.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}-${Math.random().toString(36).slice(2, 6)}`;
+  const { data, error } = await supabase.from("treatments").insert({ slug, name_nl: row.name_nl, duration_min: row.duration_min, icon: row.icon }).select("id").single();
+  if (error) throw error;
+  await ok(supabase.from("treatment_requirements").insert({ treatment_id: data.id, kind: "room", quantity: 1 }));
+  await addPlacement(org, data.id, parent);
+  return data.id;
+}
+export async function uploadCustomIcon(file: File) {
+  if (file.size > 60_000) throw new Error("Het bestand is te groot (maximaal 60 kB)");
+  const svg = await file.text();
+  if (!/^\s*(<\?xml[^>]*>\s*)?<svg/i.test(svg)) throw new Error("Dit is geen SVG-bestand");
+  const { data, error } = await supabase.from("custom_icons").insert({ name: file.name.replace(/\.svg$/i, ""), svg }).select("id").single();
+  if (error) throw error;
+  return `custom:${data.id}`;
 }
