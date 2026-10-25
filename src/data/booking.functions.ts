@@ -28,7 +28,7 @@ export const getBookingCatalog = createServerFn({ method: "GET" })
     const { data: ui } = await db.from("option_lists").select("list_key, value, label_nl, label_en").in("list_key", ["booking_ui", "questionnaire_ui", "salutation", "referral_source", "country", "phone_country"]).order("sort");
     if (!tenant) return { tenant: null, ui: ui ?? [] } as const;
     const tid = tenant.id;
-    const [cats, links, treatments, tLocs, locs, prs, pLocs, pTreat, roles, tRoles, settings, mixed] = await Promise.all([
+    const [cats, links, treatments, tLocs, locs, prs, pLocs, pTreat, roles, tRoles, settings, mixed, roots, customIcons] = await Promise.all([
       db.from("treatment_categories").select("id, parent_id, name_nl, name_en, icon, sort").eq("tenant_id", tid).order("sort"),
       db.from("treatment_category_links").select("treatment_id, category_id, sort").eq("tenant_id", tid),
       db.from("treatments").select("id, slug, name_nl, name_en, icon, duration_min, practitioner_choice, status, pre_questionnaire_key, post_questionnaire_key, questionnaire_minutes, start_screen").eq("tenant_id", tid).eq("status", "active").eq('online_booking','bookable'),
@@ -41,6 +41,8 @@ export const getBookingCatalog = createServerFn({ method: "GET" })
       db.from("treatment_practitioner_roles").select("treatment_id, role_id").eq("tenant_id", tid),
       db.from("settings").select("key, value").eq("tenant_id", tid),
       db.from("schedule_blocks").select("practitioner_id, location_id, treatment_ids").eq("tenant_id", tid).eq("allows_online", true),
+      db.from("treatment_menu_root").select("treatment_id, sort").eq("tenant_id", tid),
+      db.from("custom_icons").select("id, svg").eq("tenant_id", tid),
     ]);
     const bucket = `practitioner-photos-${tenant.slug}`;
     const photos = await Promise.all((prs.data ?? []).map(async (p) => {
@@ -55,6 +57,9 @@ export const getBookingCatalog = createServerFn({ method: "GET" })
       ui: ui ?? [],
       categories: cats.data ?? [],
       links: (links.data ?? []).filter(l=>treatments.data?.some(t=>t.id===l.treatment_id)),
+      roots: (roots.data ?? []).filter(l=>treatments.data?.some(t=>t.id===l.treatment_id)),
+      customIcons: (customIcons.data ?? []).filter(ic => (cats.data ?? []).some(c => c.icon === `custom:${ic.id}`) || (treatments.data ?? []).some(t => t.icon === `custom:${ic.id}`) || st.some(r => r.key === "menu_default_icon" && r.value === `custom:${ic.id}`)),
+      defaultIcon: (() => { const v = st.find((r) => r.key === "menu_default_icon")?.value; return typeof v === "string" ? v : "ui:blad"; })(),
       treatments: treatments.data ?? [],
       treatmentLocations: (tLocs.data ?? []).filter(l=>treatments.data?.some(t=>t.id===l.treatment_id)),
       locations: (locs.data ?? []).filter((l) => l.status === "open"),

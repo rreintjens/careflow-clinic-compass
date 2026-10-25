@@ -1168,6 +1168,41 @@ export type Database = {
           },
         ]
       }
+      custom_icons: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          svg: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          svg: string
+          tenant_id?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          svg?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_icons_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dossier_template_versions: {
         Row: {
           change_note: string | null
@@ -4586,6 +4621,45 @@ export type Database = {
           },
         ]
       }
+      treatment_menu_root: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          sort: number
+          tenant_id: string
+          treatment_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          sort?: number
+          tenant_id?: string
+          treatment_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          sort?: number
+          tenant_id?: string
+          treatment_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "treatment_menu_root_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "treatment_menu_root_treatment_id_fkey"
+            columns: ["treatment_id"]
+            isOneToOne: false
+            referencedRelation: "treatments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       treatment_plans: {
         Row: {
           created_at: string
@@ -5045,6 +5119,10 @@ export type Database = {
           _template?: string
         }
         Returns: string
+      }
+      menu_reorder: {
+        Args: { _items: Json; _parent: string }
+        Returns: undefined
       }
       mfa_required: { Args: never; Returns: boolean }
       my_staff_context: {

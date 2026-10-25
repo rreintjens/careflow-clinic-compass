@@ -2,23 +2,27 @@ import { describe, expect, it } from "vitest";
 
 import { dayPart, nextStep, sortLocations, type Catalog } from "./booking";
 
+// Top: A (A1: t1 | A2: t2, t3), B (t4), plus t5 directly in the top level.
 const cat = (over: Partial<Catalog> = {}): Catalog => ({
-  categories: [{ id: "A", parent_id: null }, { id: "B", parent_id: null }, { id: "A1", parent_id: "A" }, { id: "A2", parent_id: "A" }],
-  links: [{ treatment_id: "t1", category_id: "A1" }, { treatment_id: "t2", category_id: "A2" }, { treatment_id: "t3", category_id: "A2" }, { treatment_id: "t4", category_id: "B" }],
-  treatments: [{ id: "t1", practitioner_choice: "optional" }, { id: "t2", practitioner_choice: "required" }, { id: "t3", practitioner_choice: "assigned" }, { id: "t4", practitioner_choice: "fixed" }],
+  menu: {
+    groups: [{ id: "A", parent_id: null, sort: 0 }, { id: "B", parent_id: null, sort: 2 }, { id: "A1", parent_id: "A", sort: 0 }, { id: "A2", parent_id: "A", sort: 1 }],
+    links: [{ treatment_id: "t1", category_id: "A1", sort: 0 }, { treatment_id: "t2", category_id: "A2", sort: 0 }, { treatment_id: "t3", category_id: "A2", sort: 1 }, { treatment_id: "t4", category_id: "B", sort: 0 }, { treatment_id: "t6", category_id: "B", sort: 1 }],
+    roots: [{ treatment_id: "t5", sort: 1 }],
+  },
+  treatments: ["t1", "t2", "t3", "t4", "t5", "t6"].map((id) => ({ id, practitioner_choice: { t1: "optional", t2: "required", t3: "assigned", t4: "fixed" }[id] ?? "optional" })),
   locationsFor: (t) => (t === "t1" ? ["L1", "L2"] : ["L1"]),
   ...over,
 });
 
 describe("nextStep", () => {
-  it("starts with categories", () => expect(nextStep(cat(), {})).toEqual({ kind: "category", options: ["A", "B"] }));
-  it("subcategories when more than one", () => expect(nextStep(cat(), { cat: "A" }).kind).toBe("subcategory"));
-  it("skips a single treatment and a single location", () => {
-    expect(nextStep(cat(), { cat: "A", sub: "A1" })).toEqual({ kind: "location", treatment: "t1", options: ["L1", "L2"] });
-    expect(nextStep(cat(), { cat: "A", sub: "A2" })).toEqual({ kind: "treatment", category: "A2", options: ["t2", "t3"] });
+  it("top level mixes groups and treatments in tree order", () =>
+    expect(nextStep(cat(), {})).toEqual({ kind: "menu", group: null, items: [{ kind: "group", id: "A" }, { kind: "treatment", id: "t5" }, { kind: "group", id: "B" }] }));
+  it("a group with one visible item shows that item directly", () => {
+    expect(nextStep(cat(), { cat: "A" })).toEqual({ kind: "menu", group: "A", items: [{ kind: "treatment", id: "t1" }, { kind: "group", id: "A2" }] });
+    expect(nextStep(cat(), { cat: "A2" })).toEqual({ kind: "menu", group: "A2", items: [{ kind: "treatment", id: "t2" }, { kind: "treatment", id: "t3" }] });
   });
-  it("hides categories without bookable treatments", () => {
-    expect(nextStep(cat({ locationsFor: (t) => (t === "t4" ? [] : ["L1"]) }), {})).toEqual({ kind: "subcategory", category: "A", options: ["A1", "A2"] });
+  it("hides groups without bookable treatments and skips a single remaining choice", () => {
+    expect(nextStep(cat({ locationsFor: (t) => (t === "t1" ? ["L1", "L2"] : []) }), {})).toEqual({ kind: "location", treatment: "t1", options: ["L1", "L2"] });
   });
   it("optional: planner with no preference, practitioner list on request", () => {
     expect(nextStep(cat(), { t: "t1", l: "L1" })).toMatchObject({ kind: "planner", practitioner: null, canChoose: true });

@@ -11,6 +11,8 @@ import { Logo } from "@/components/Logo";
 import { PatientFrame } from "@/components/PatientFrame";
 import { PillButton } from "@/components/PillButton";
 import { dayPart, nextStep, sortLocations, type Catalog } from "@/domain/booking";
+import { resolveIcon } from "@/domain/menu";
+import { CustomIconsProvider, MenuIcon } from "@/components/MenuIcon";
 import { fmtTime, type Slot } from "@/domain/slots";
 import { cn } from "@/lib/utils";
 import { confirmBooking, getBookingCatalog, getBookingSlots, getTriage, holdSlot, lookupAddress, releaseHold } from "@/data/booking.functions";
@@ -105,16 +107,14 @@ function Booking() {
   const original = data as Full;
   const c: Full = link ? {...original,treatments:original.treatments.filter(t=>link.treatmentIds.includes(t.id)),practitioners:original.practitioners.filter(p=>!link.practitionerIds||link.practitionerIds.includes(p.id))} : original;
   const name = (x: { name_nl: string; name_en: string | null }) => (lang === "en" && x.name_en) || x.name_nl;
-  /** Icon with fallback up the tree: subcategory → parent category, treatment → its (sub)category. */
-  const catIcon = (id: string | null | undefined): string | null | undefined => {
-    const x = c.categories.find((k) => k.id === id);
-    return x?.icon ?? (x?.parent_id ? catIcon(x.parent_id) : undefined);
-  };
   const allowed = link ? new Set(link.locationIds) : null;
   const mode = link?.practitionerMode && MODES.has(link.practitionerMode) ? (link.practitionerMode as ChoiceMode) : null;
   const locationsFor = (tid: string) => c.treatmentLocations.filter((x) => x.treatment_id === tid && c.locations.some((l) => l.id === x.location_id) && (!allowed || allowed.has(x.location_id))).map((x) => x.location_id);
   const treatments = (link?.treatmentId ? c.treatments.filter((t) => t.id === link.treatmentId) : c.treatments).map((t) => (mode ? { ...t, practitioner_choice: mode } : t));
-  const catalog: Catalog = { categories: c.categories, links: link?.treatmentId ? c.links.filter((x) => x.treatment_id === link.treatmentId) : c.links, treatments, locationsFor };
+  const menu = { groups: c.categories, links: link?.treatmentId ? c.links.filter((x) => x.treatment_id === link.treatmentId) : c.links, roots: link?.treatmentId ? c.roots.filter((x) => x.treatment_id === link.treatmentId) : c.roots };
+  const catalog: Catalog = { menu, treatments, locationsFor };
+  /** Icon with fallback up the tree: own icon, nearest group with one, else the standard icon. */
+  const iconOf = (own: string | null | undefined, parent: string | null) => resolveIcon({ ...menu, groupIcon: (id) => c.categories.find((k) => k.id === id)?.icon }, own, parent, c.defaultIcon).icon;
   // Bron: een eigen ?bron= wint, dan de bron van de boekingslink, dan de utm-bron uit het webadres.
   const eff: Search = link
     ? { ...s, t: s.t ?? link.treatmentId ?? undefined, p: link.practitionerId ?? (s.p && s.p!=="any" && link.practitionerIds && !link.practitionerIds.includes(s.p) ? undefined : s.p), bron: s.bron ?? (link.source || undefined) ?? s.utm_source }
@@ -125,12 +125,13 @@ function Booking() {
     const people = eligiblePractitioners(c,step.treatment,step.location);
     if (people.length === 1) step = nextStep(catalog,{...eff,p:people[0]?.id});
   }
-  const progress = { category: 0.1, subcategory: 0.15, treatment: 0.2, location: 0.3, practitioner: 0.4, planner: 0.45, none: 0 }[step.kind];
-  const back = step.kind === "category" ? undefined : () => window.history.back();
+  const top = step.kind === "menu" && step.group === null;
+  const progress = step.kind === "menu" ? (top ? 0.1 : 0.15) : { location: 0.3, practitioner: 0.4, planner: 0.45, none: 0 }[step.kind];
+  const back = top ? undefined : () => window.history.back();
   const close = () => navigate({ search: { merk: s.merk, lang: s.lang, bron: s.bron } });
   const phone = c.tenant.phone;
   const loginAllowed = (link?.showPatientLogin ?? true) && s.inloggen !== "nee";
-  const showBar = loginAllowed && !me?.patient && (step.kind === "category" || step.kind === "planner");
+  const showBar = loginAllowed && !me?.patient && (top || step.kind === "planner");
   const preferredId = me?.patient && (step.kind === "planner" || step.kind === "practitioner") ? preferredPractitioner(c, me.visits, step.treatment, step.location) : null;
   const openLogin = () => {
     const params = new URLSearchParams(Object.entries(eff).filter(([k, v]) => v != null && v !== "" && k !== "stap" && k !== "inloggen") as [string, string][]).toString();
@@ -145,25 +146,27 @@ function Booking() {
   }
 
   return (
-    <Shell lang={lang} progress={progress} onBack={back} onClose={close} onLang={step.kind === "category" ? () => go({ lang: lang === "nl" ? "en" : "nl" }, true) : undefined}
+    <CustomIconsProvider icons={c.customIcons}>
+    <Shell lang={lang} progress={progress} onBack={back} onClose={close} onLang={top ? () => go({ lang: lang === "nl" ? "en" : "nl" }, true) : undefined}
       bar={showBar ? <LoginBar tx={tx} onClick={openLogin} /> : undefined}
-      footer={step.kind === "category" && phone ? <CallFooter phone={phone} tx={tx} /> : null}>
+      footer={top && phone ? <CallFooter phone={phone} tx={tx} /> : null}>
       <div className={guard}>
       {step.kind === "none" && <p className="pt-10 text-[15px]">{tx("nothing_bookable")}</p>}
-      {step.kind === "category" && (
-        <List title={tx("q_category")} rows={step.options.map((id) => { const x = c.categories.find((k) => k.id === id); return { id, title: x ? name(x) : "", icon: x?.icon }; })} onPick={(id) => go({ cat: id })} />
-      )}
-      {step.kind === "subcategory" && (
-        <List title={name(c.categories.find((k) => k.id === step.category) ?? { name_nl: "", name_en: null })} rows={step.options.map((id) => { const x = c.categories.find((k) => k.id === id); return { id, title: x ? name(x) : "", icon: x?.icon ?? catIcon(x?.parent_id) }; })} onPick={(id) => go({ sub: id })} />
-      )}
-      {step.kind === "treatment" && (
-        <List title={tx("q_treatment")} rows={step.options.map((id) => { const x = c.treatments.find((k) => k.id === id); return { id, title: x ? name(x) : "", sub: x ? `${x.duration_min} min` : "", icon: x?.icon ?? catIcon(step.category) }; })} onPick={(id) => go({ t: id })} />
+      {step.kind === "menu" && (
+        <List title={step.group ? name(c.categories.find((k) => k.id === step.group) ?? { name_nl: "", name_en: null }) : tx("q_category")}
+          rows={step.items.map((it) => {
+            if (it.kind === "group") { const x = c.categories.find((k) => k.id === it.id); return { id: `g:${it.id}`, title: x ? name(x) : "", icon: iconOf(x?.icon, x?.parent_id ?? null) }; }
+            const x = c.treatments.find((k) => k.id === it.id);
+            return { id: `t:${it.id}`, title: x ? name(x) : "", sub: x ? `${x.duration_min} min` : "", icon: iconOf(x?.icon, step.group) };
+          })}
+          onPick={(id) => (id.startsWith("g:") ? go({ cat: id.slice(2), sub: undefined }) : go({ t: id.slice(2) }))} />
       )}
       {step.kind === "location" && <LocationStep c={c} treatmentId={step.treatment} options={step.options} hidePeople={!!startScreen} tx={tx} name={name} onPick={(id) => go({ l: id })} />}
       {step.kind === "practitioner" && <PractitionerStep c={c} s={s} treatmentId={step.treatment} locationId={step.location} required={step.required} tx={tx} preferredId={preferredId} onPick={(p) => go({ p, stap: undefined, tijd: undefined })} />}
       {step.kind === "planner" && <PlannerStep c={c} s={s} step={step} tx={tx} lang={lang} go={go} me={me} preferredId={preferredId} />}
       </div>
     </Shell>
+    </CustomIconsProvider>
   );
 }
 
@@ -197,7 +200,7 @@ function List({ title, rows, onPick }: { title: string; rows: Array<{ id: string
       <div className="flex flex-col gap-2">
         {rows.map((r) => (
           <button key={r.id} type="button" onClick={() => onPick(r.id)} className="patient-choice flex min-h-[60px] items-center gap-4 rounded-[16px] bg-sand px-5 text-left">
-            {r.icon ? <span className="flex size-8 shrink-0 items-center justify-center"><img src={`/treatment-icons/${r.icon}.png`} alt="" className="size-7" /></span> : null}
+            {r.icon ? <span className="flex size-8 shrink-0 items-center justify-center"><MenuIcon icon={r.icon} /></span> : null}
             <span className="min-w-0 flex-1 py-3"><span className="block break-words text-[16px]">{r.title}</span>{r.sub && <span className="block break-words text-[13px] text-muted-foreground">{r.sub}</span>}</span>
             <Chevron />
           </button>
