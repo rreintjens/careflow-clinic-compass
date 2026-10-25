@@ -38,8 +38,8 @@ export function useQuestionnaireNavigation(onRestore: (page: string) => void) {
       router.history.flush();
     }
     position.current += 1;
-    router.history.push(location.href, { ...router.history.location.state,
-      questionnaireScreen: { owner, page: to, position: position.current } });
+    void router.navigate({ to: location.href, resetScroll: false,
+      state: { ...router.history.location.state, questionnaireScreen: { owner, page: to, position: position.current } } });
     restore.current(to);
   };
   return { direction, move };

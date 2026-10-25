@@ -4,7 +4,7 @@ import { createMemoryHistory } from '@tanstack/history';
 import type { QuestionnaireDef } from '@/domain/questionnaire/engine';
 import { BOOKING_TAP_MS } from '@/domain/booking-transition';
 
-const mocked = vi.hoisted(() => ({ router: {} as { history: ReturnType<typeof createMemoryHistory> } }));
+const mocked = vi.hoisted(() => ({ router: {} as { history: ReturnType<typeof createMemoryHistory>; navigate: (options: { to: string; state: object }) => Promise<void> } }));
 vi.mock('@tanstack/react-router', () => ({ useRouter: () => mocked.router }));
 import { QuestionnaireRunner } from './QuestionnaireRunner';
 
@@ -16,6 +16,7 @@ const animate = vi.fn((_frames: Keyframe[], _timing: KeyframeAnimationOptions) =
 beforeEach(() => {
   vi.useFakeTimers();
   mocked.router.history = createMemoryHistory({ initialEntries: ['/vragenlijst/test'] });
+  mocked.router.navigate = async ({ to, state }) => { mocked.router.history.push(to, state); };
   Element.prototype.animate = animate as unknown as typeof Element.prototype.animate;
   Element.prototype.scrollTo = vi.fn();
   Element.prototype.scrollIntoView = vi.fn();
