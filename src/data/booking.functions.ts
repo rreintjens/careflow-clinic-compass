@@ -12,7 +12,8 @@ import { z } from "zod";
 
 import type { Slot } from "@/domain/slots";
 import {publiclyBookable} from '@/domain/treatment-settings';
-import { admin, computeSlots, localParts, localToUtc, resolveTenant, settingNum } from "./booking.server";
+import { admin, computeSlots, localParts, localToUtc, resolveAddonChoice, resolveTenant, settingNum } from "./booking.server";
+import { addonMinutes } from "@/domain/addons";
 import { attachMeeting } from "./meeting.server";
 import { answerSignals } from "@/domain/questionnaire/answers";
 import type { Answers, QuestionnaireDef } from "@/domain/questionnaire/engine";
