@@ -1,0 +1,55 @@
+import { createContext, useContext, useEffect, useLayoutEffect, useRef, type ReactNode, type RefObject } from 'react';
+import { BOOKING_FADE_MS, BOOKING_SLIDE_MS, bookingHistoryDirection } from '@/domain/booking-transition';
+
+type Snapshot = { key: string; node: HTMLElement; height: number };
+type Motion = { snapshot: RefObject<Snapshot | null>; direction: RefObject<'forward' | 'back'> };
+const Context = createContext<Motion | null>(null);
+
+/** One coordinator survives Shell changes, including holding a slot and reviewing the booking. */
+export function BookingTransitionProvider({ children }: { children: ReactNode }) {
+  const snapshot = useRef<Snapshot | null>(null);
+  const direction = useRef<'forward' | 'back'>('forward');
+  useEffect(() => {
+    let index = Number(window.history.state?.__TSR_index ?? 0);
+    const pop = () => {
+      const next = Number(window.history.state?.__TSR_index ?? 0);
+      direction.current = bookingHistoryDirection(index, next);
+      index = next;
+    };
+    const push = () => { direction.current = 'forward'; index = Number(window.history.state?.__TSR_index ?? 0); };
+    window.addEventListener('popstate', pop);
+    document.addEventListener('click', push, true);
+    return () => { window.removeEventListener('popstate', pop); document.removeEventListener('click', push, true); };
+  }, []);
+  return <Context.Provider value={{ snapshot, direction }}>{children}</Context.Provider>;
+}
+
+export function useBookingTransition(ref: RefObject<HTMLElement | null>, key: string) {
+  const motion = useContext(Context);
+  useLayoutEffect(() => {
+    const main = ref.current;
+    if (!main || !motion) return;
+    const previous = motion.snapshot.current;
+    const clone = main.cloneNode(true) as HTMLElement;
+    clone.querySelectorAll('[data-booking-tapped]').forEach(node => node.removeAttribute('data-booking-tapped'));
+    motion.snapshot.current = { key, node: clone, height: main.getBoundingClientRect().height };
+    if (!previous || previous.key === key) return;
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const sign = motion.direction.current === 'back' ? -1 : 1;
+    const box = main.getBoundingClientRect();
+    const overlay = document.createElement('div');
+    overlay.className = 'booking-transition-overlay';
+    overlay.setAttribute('aria-hidden', 'true');
+    overlay.inert = true;
+    Object.assign(overlay.style, { left: `${box.left}px`, top: `${box.top}px`, width: `${box.width}px`, height: `${Math.max(box.height, previous.height)}px` });
+    previous.node.classList.add('booking-transition-old');
+    overlay.append(previous.node);
+    main.parentElement?.append(overlay);
+    const timing = { duration: reduced ? BOOKING_FADE_MS : BOOKING_SLIDE_MS, easing: 'ease-out' };
+    const incoming = main.animate([{ transform: reduced ? 'none' : `translateX(${sign * 100}%)`, opacity: 0 }, { transform: 'none', opacity: 1 }], timing);
+    const outgoing = previous.node.animate([{ transform: 'none', opacity: 1 }, { transform: reduced ? 'none' : `translateX(${-sign * 100}%)`, opacity: 0 }], timing);
+    void incoming.finished.then(() => overlay.remove()).catch(() => overlay.remove());
+    return () => { incoming.cancel(); outgoing.cancel(); overlay.remove(); };
+  }, [key, ref]);
+}

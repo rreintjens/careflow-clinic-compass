@@ -60,3 +60,5 @@
 
 - Menu availability warnings use tested peer-group coverage in src/domain/menu-bookability.ts; the chip compares configured offers, while detailed technical room/practitioner checks remain separate, avoiding cross-specialty false positives.
 - Booking Shell shares contact information through its route-scoped context, and patient frames remain page-scrolled so bottom booking controls can stick without a nested vertical scroller.
+
+- Booking Shell animates inert DOM snapshots through a route-scoped transition coordinator, keyed by semantic screen identity rather than individual choices, preserving editor state and stationary headers.

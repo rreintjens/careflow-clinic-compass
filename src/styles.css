@@ -483,3 +483,8 @@ a.portal-tile:hover {box-shadow:var(--portal-shadow);transform:translateY(-2px);
  .portal-row > .flex-1 {min-width:0;overflow-wrap:anywhere;}
  .consult-notes {top:auto!important;bottom:8px;right:8px!important;width:calc(100% - 16px)!important;min-width:0!important;max-height:72dvh!important;resize:none!important;}
 }
+
+/* Ephemeral, inert snapshots never participate in layout or keyboard focus. */
+.booking-transition-overlay { position: fixed; overflow: clip; pointer-events: none; z-index: 20; }
+.booking-transition-old { margin: 0; width: 100%; }
+.patient-choice[data-booking-tapped="true"], .patient-choice[data-booking-tapped="true"]:enabled:hover { background-color: var(--teal-light); color: var(--foreground); transition: none; }
