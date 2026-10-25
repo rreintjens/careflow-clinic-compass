@@ -205,6 +205,13 @@ function BookingContent() {
 
 export function Shell({ children, footer, bar, progress = 0, onBack, onClose, onLang, lang }: { children: React.ReactNode; footer?: React.ReactNode; bar?: React.ReactNode; progress?: number; onBack?: (() => void) | undefined; onClose?: () => void; onLang?: (() => void) | undefined; lang: string }) {
   const contact = useContext(BookingContact);
+  useEffect(() => {
+    const pointer = () => { document.documentElement.dataset.patientKeyboard = "false"; };
+    const keyboard = (event: KeyboardEvent) => { if (event.key === "Tab" || event.key.startsWith("Arrow")) document.documentElement.dataset.patientKeyboard = "true"; };
+    document.addEventListener("pointerdown", pointer, true);
+    document.addEventListener("keydown", keyboard, true);
+    return () => { document.removeEventListener("pointerdown", pointer, true); document.removeEventListener("keydown", keyboard, true); };
+  }, []);
   return (
     <PatientFrame>
         <header className="grid h-14 grid-cols-[48px_1fr_48px] items-center px-2">
