@@ -117,7 +117,7 @@ export function dissolvePlan(m: MenuData, groupId: string) {
   const g = m.groups.find((x) => x.id === groupId);
   const up: Parent = g?.parent_id ?? null;
   const own = children(m, groupId);
-  const already = new Set(parentsOfTreatment.length ? m.links.filter((l) => l.category_id === up).map((l) => l.treatment_id) : []);
+  const already = new Set(m.links.filter((l) => l.category_id === up).map((l) => l.treatment_id));
   if (up === null) for (const r of m.roots) already.add(r.treatment_id);
   const moved = own.filter((it) => it.kind === "group" || !already.has(it.id));
   const dropped = own.filter((it) => it.kind === "treatment" && already.has(it.id)).map((it) => it.id);
