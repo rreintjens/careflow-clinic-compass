@@ -1,3 +1,4 @@
+import { svgIconError } from "@/domain/svg-icon";
 import { createContext, useContext, type ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
@@ -16,7 +17,7 @@ export function iconUrl(key: string, custom: ReadonlyArray<{ id: string; svg: st
   if (key.startsWith("tabler:")) return { url: `/tabler/${key.slice(7)}.svg`, mask: true };
   if (key.startsWith("custom:")) {
     const svg = custom.find((c) => c.id === key.slice(7))?.svg;
-    return svg ? { url: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`, mask: true } : null;
+    return svg && !svgIconError(svg) ? { url: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`, mask: true } : null;
   }
   return key ? { url: `/treatment-icons/${key}.png`, mask: false } : null;
 }
