@@ -116,7 +116,7 @@ function RunnerContent({
     else onFinish?.(answers);
     window.setTimeout(() => { advancing.current = false; }, BOOKING_SLIDE_MS);
   };
-  const back = () => { if (advancing.current) return; if (red) { navigation.move(screenKey, pageId, true); return; } const prev = pages[idx - 1]; if (prev) navigation.move(screenKey, prev.id, true); };
+  const back = () => { if (red) { navigation.move(screenKey, pageId, true); return; } const prev = pages[idx - 1]; if (prev) navigation.move(screenKey, prev.id, true); };
   const progress = pages.length ? (idx + 1) / pages.length : 0;
 
   if (red) {
