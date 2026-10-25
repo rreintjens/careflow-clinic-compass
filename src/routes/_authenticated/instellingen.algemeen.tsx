@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -8,6 +8,9 @@ import { Modal } from "@/components/Modal";
 import { PageHeader } from "@/components/PageHeader";
 import { PillButton } from "@/components/PillButton";
 import { Select } from "@/components/Select";
+import { CustomIconsProvider, MenuIcon } from "@/components/MenuIcon";
+import { orgQuery, uploadCustomIcon } from "@/data/organisation";
+import { IconPicker } from "@/features/organisation/IconPicker";
 import { addHoliday, parseOptions, settingsQuery, updateSettings } from "@/data/settings";
 import { currentTenantQuery, saveTenant } from "@/data/tenant";
 import type { Json } from "@/integrations/supabase/types";
@@ -70,7 +73,9 @@ function SettingsPage() {
             ) : (
               <div className="grid grid-cols-2 gap-x-4 gap-y-5">
                 {items.map((s) =>
-                  s.input_type === "select" ? (
+                  s.input_type === "icon" ? (
+                    <SettingIcon key={s.key} label={s.label} help={s.help} value={JSON.parse(current(s.key, s.value)) as string} onChange={(v) => setDraft((d) => ({ ...d, [s.key]: JSON.stringify(v) }))} />
+                  ) : s.input_type === "select" ? (
                     <Select
                       key={s.key}
                       label={s.label}
@@ -100,6 +105,28 @@ function SettingsPage() {
       })}
       <HolidayModal open={holidayOpen} onOpenChange={setHolidayOpen} />
     </div>
+  );
+}
+
+/** An icon setting: opens the shared icon picker; the setting stores only the icon key. */
+function SettingIcon({ label, help, value, onChange }: { label: string; help: string | null; value: string; onChange: (v: string) => void }) {
+  const qc = useQueryClient();
+  const org = useQuery(orgQuery);
+  const [open, setOpen] = useState(false);
+  return (
+    <CustomIconsProvider icons={org.data?.customIcons ?? []}>
+      <div className="flex min-w-0 flex-col gap-2">
+        <span className="text-[13px] font-medium">{label}</span>
+        <div className="flex items-center gap-3">
+          <span className="flex size-12 items-center justify-center rounded-[14px] bg-sand"><MenuIcon icon={value} /></span>
+          <PillButton variant="outline" onClick={() => setOpen(true)}>Icoon kiezen</PillButton>
+        </div>
+        {help && <span className="text-xs text-muted-foreground">{help}</span>}
+        {open && <IconPicker value={value} fallback={value} custom={org.data?.customIcons ?? []}
+          onUpload={async (f) => { const k = await uploadCustomIcon(f); await qc.invalidateQueries({ queryKey: orgQuery.queryKey }); return k; }}
+          onPick={(v) => { if (v) onChange(v); setOpen(false); }} onClose={() => setOpen(false)} />}
+      </div>
+    </CustomIconsProvider>
   );
 }
 
