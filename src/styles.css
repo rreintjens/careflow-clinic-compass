@@ -176,7 +176,8 @@
 .patient-choice:hover svg:last-child,.patient-choice:hover img[src$="pijl-rechts.svg"] {transform:translateX(2px);}
 .patient-choice.choice-recommended {border-color:var(--primary);}
 .patient-choice.choice-primary {background-color:var(--primary);color:var(--primary-foreground);}
-.patient-choice.choice-primary:hover {color:var(--foreground);}
+.patient-choice.choice-primary:enabled:hover {background-color:var(--primary-hover);color:var(--primary-foreground);}
+
 @media(prefers-reduced-motion:reduce) {.patient-choice,.patient-choice svg {transition:none;}}
 
 .admin-list-page table {width:100%;border-collapse:collapse;}
